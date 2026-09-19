@@ -101,10 +101,12 @@ if (-not $chosenTag) {
             throw "Failed to find any dlssnr release tags on github.com/$Repo"
         }
 
-        $downloadUrl = "https://github.com/$Repo/releases/download/$chosenTag/nvngx_dlssnr_$chosenTag.zip"
+        $assetVersion = $chosenTag -replace '^dlssnr-', ''
+        $downloadUrl = "https://github.com/$Repo/releases/download/$chosenTag/nvngx_dlssnr_$assetVersion.zip"
     }
 } else {
-    $downloadUrl = "https://github.com/$Repo/releases/download/$chosenTag/nvngx_dlssnr_$chosenTag.zip"
+    $assetVersion = $chosenTag -replace '^dlssnr-', ''
+    $downloadUrl = "https://github.com/$Repo/releases/download/$chosenTag/nvngx_dlssnr_$assetVersion.zip"
 }
 
 Write-Host "Selected DLSS-NR model release: $chosenTag"
