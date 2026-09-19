@@ -1,0 +1,167 @@
+{
+  "l2Target": 0.08,
+  "cosineTarget": 0.997,
+  "blocks": {
+    "23": {
+      "file": "weights_sm89_block23.bin",
+      "outlierRatio": 0.0,
+      "groupSize": 64,
+      "weightBits": 8,
+      "relativeL2": 0.0081,
+      "cosine": 0.999967,
+      "sha256": "ca6588a0b02010a61eb4741c1f2886551258ef749165b34cbcbf19e1dae06b2b",
+      "bytes": 795294
+    },
+    "24": {
+      "file": "weights_sm89_block24.bin",
+      "outlierRatio": 0.0,
+      "groupSize": 64,
+      "weightBits": 8,
+      "relativeL2": 0.0078,
+      "cosine": 0.99997,
+      "sha256": "81f3507a42467192da0b435a04c0204572f470d6e105da6be9acece050a33c51",
+      "bytes": 795294
+    },
+    "25": {
+      "file": "weights_sm89_block25.bin",
+      "outlierRatio": 0.0,
+      "groupSize": 64,
+      "weightBits": 8,
+      "relativeL2": 0.0122,
+      "cosine": 0.999927,
+      "sha256": "3d24970a1a86d5046645fd34723ce1c27cafc19e7fbdbf0695d48dccb119a4ac",
+      "bytes": 795294
+    },
+    "26": {
+      "file": "weights_sm89_block26.bin",
+      "outlierRatio": 0.0,
+      "groupSize": 64,
+      "weightBits": 8,
+      "relativeL2": 0.0126,
+      "cosine": 0.999921,
+      "sha256": "e610fa0821dc836784d98029a9cf65a030aad99c1bd0ce44cea66730fce5f5b9",
+      "bytes": 795295
+    },
+    "27": {
+      "file": "weights_sm89_block27.bin",
+      "outlierRatio": 0.0,
+      "groupSize": 64,
+      "weightBits": 8,
+      "relativeL2": 0.0124,
+      "cosine": 0.999924,
+      "sha256": "e22ed4d378129fa28f62df4db86e689632070127776317170eba823a1c109e1e",
+      "bytes": 795295
+    },
+    "28": {
+      "file": "weights_sm89_block28.bin",
+      "outlierRatio": 0.0,
+      "groupSize": 64,
+      "weightBits": 8,
+      "relativeL2": 0.0128,
+      "cosine": 0.999918,
+      "sha256": "27abfb1bd7332cdd307a8c18284d57916ed9767ac5a60a43c74c2fbbb3c564c7",
+      "bytes": 795293
+    },
+    "29": {
+      "file": "weights_sm89_block29.bin",
+      "outlierRatio": 0.0,
+      "groupSize": 64,
+      "weightBits": 8,
+      "relativeL2": 0.0143,
+      "cosine": 0.999898,
+      "sha256": "b1f05d6fa393172341a177a677140b1a3e0dfdf43c6736b9be269769f1ee6373",
+      "bytes": 795294
+    },
+    "30": {
+      "file": "weights_sm89_block30.bin",
+      "outlierRatio": 0.0,
+      "groupSize": 64,
+      "weightBits": 8,
+      "relativeL2": 0.0152,
+      "cosine": 0.999885,
+      "sha256": "776df3a8010b51462163f64fe5e828c78678ff0b308d68ed397560ce8e396fc2",
+      "bytes": 795294
+    },
+    "40": {
+      "file": "weights_sm89_block40.bin",
+      "outlierRatio": 0.0,
+      "groupSize": 64,
+      "weightBits": 8,
+      "relativeL2": 0.0145,
+      "cosine": 0.999895,
+      "sha256": "732777aff4e698581b23d7a57053e88fa72977612056db27da74024e42ba4759",
+      "bytes": 795294
+    },
+    "41": {
+      "file": "weights_sm89_block41.bin",
+      "outlierRatio": 0.0,
+      "groupSize": 64,
+      "weightBits": 8,
+      "relativeL2": 0.0136,
+      "cosine": 0.999908,
+      "sha256": "27a5f4e0d291229b10f1b78d65e66af3ee0dcc7faa8bbc9e65a4ae1a22597544",
+      "bytes": 795295
+    },
+    "42": {
+      "file": "weights_sm89_block42.bin",
+      "outlierRatio": 0.0,
+      "groupSize": 64,
+      "weightBits": 8,
+      "relativeL2": 0.0137,
+      "cosine": 0.999907,
+      "sha256": "f9727ade741b52ba5f5b5cd289e25019c6a7370c9650e0ffdd12464e57be79b6",
+      "bytes": 795295
+    },
+    "43": {
+      "file": "weights_sm89_block43.bin",
+      "outlierRatio": 0.0,
+      "groupSize": 64,
+      "weightBits": 8,
+      "relativeL2": 0.0134,
+      "cosine": 0.99991,
+      "sha256": "0b5a2b27bff6a5f05bd06c37d03ef5ba0bec03378a539f6e0265be6e93037a1d",
+      "bytes": 795293
+    },
+    "44": {
+      "file": "weights_sm89_block44.bin",
+      "outlierRatio": 0.0,
+      "groupSize": 64,
+      "weightBits": 8,
+      "relativeL2": 0.0137,
+      "cosine": 0.999907,
+      "sha256": "787b756a666622ac60c7f45f793bac8d0d4540b64ef48f97f5a5353425994405",
+      "bytes": 795294
+    },
+    "45": {
+      "file": "weights_sm89_block45.bin",
+      "outlierRatio": 0.0,
+      "groupSize": 64,
+      "weightBits": 8,
+      "relativeL2": 0.0133,
+      "cosine": 0.999912,
+      "sha256": "bdee7438267abd013e780eebe916e6bd7e079b8a2e15374e49f3757876b7bf9d",
+      "bytes": 795294
+    },
+    "46": {
+      "file": "weights_sm89_block46.bin",
+      "outlierRatio": 0.0,
+      "groupSize": 64,
+      "weightBits": 8,
+      "relativeL2": 0.0138,
+      "cosine": 0.999906,
+      "sha256": "58368d0a3dc05ed17fbb5bfbeec60ca5e830179efd20c0a03a65d1c65837fa32",
+      "bytes": 795294
+    },
+    "47": {
+      "file": "weights_sm89_block47.bin",
+      "outlierRatio": 0.0,
+      "groupSize": 64,
+      "weightBits": 8,
+      "relativeL2": 0.0144,
+      "cosine": 0.999898,
+      "sha256": "613f09bf1c7e02dabe59d5028dde04428d000cb29bea2f35bb23bfe39124e802",
+      "bytes": 795294
+    }
+  },
+  "failed": []
+}
