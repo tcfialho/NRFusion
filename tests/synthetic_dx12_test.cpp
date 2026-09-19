@@ -128,6 +128,8 @@ int main() {
     assert(provider.IsReady());
     std::cout << "  [PASS] SyntheticDx12Provider initialized on same-device context." << std::endl;
 
+    ComPtr<ID3D12Resource> testInputColor;
+
     // 4. Bounded Ring Slots & Submit Test
     {
         D3D12_HEAP_PROPERTIES heapProps{};
@@ -143,7 +145,6 @@ int main() {
         colorDesc.SampleDesc.Count = 1;
         colorDesc.Flags = D3D12_RESOURCE_FLAG_ALLOW_UNORDERED_ACCESS;
 
-        ComPtr<ID3D12Resource> testInputColor;
         assert(SUCCEEDED(device->CreateCommittedResource(&heapProps, D3D12_HEAP_FLAG_NONE, &colorDesc,
                                                          D3D12_RESOURCE_STATE_COMMON, nullptr, IID_PPV_ARGS(&testInputColor))));
 
