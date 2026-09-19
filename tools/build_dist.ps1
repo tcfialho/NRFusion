@@ -282,7 +282,7 @@ try {
     if (-not $RuntimePath -and ($AutoFetchRuntime -or $CompileInstaller)) {
         $fetchScript = Join-Path $PSScriptRoot 'fetch_dlssnr.ps1'
         $fetchedDll = Join-Path $root 'data\nvngx_dlssnr.dll'
-        & $fetchScript -DestinationPath $fetchedDll
+        & $fetchScript -DestinationPath $fetchedDll -Tag 'dlssnr-310.8.SF-v2'
         if (Test-Path -LiteralPath $fetchedDll -PathType Leaf) {
             $RuntimePath = $fetchedDll
         }
