@@ -38,26 +38,43 @@ jobs:
         id: package
         shell: powershell
         run: |
-          $tag = if ($env:GITHUB_REF_TYPE -eq 'tag') { $env:GITHUB_REF_NAME } else { "v0.5.4" }
+          $tag = if ($env:GITHUB_REF_TYPE -eq 'tag') { $env:GITHUB_REF_NAME } else { "dev" }
           $zipName = "NRFusion-$tag-Setup.zip"
-          Compress-Archive -Path dist\NRFusionSetup.exe -DestinationPath "dist\$zipName" -CompressionLevel Optimal
-          Write-Host "Created dist\$zipName"
+          $zipPath = Join-Path "dist" $zipName
+          $installer = "dist\NRFusionSetup.exe"
+
+          if (-not (Test-Path -LiteralPath $installer -PathType Leaf)) {
+            throw "NSIS installer was not produced: $installer"
+          }
+
+          if (Test-Path -LiteralPath $zipPath) {
+            Remove-Item -LiteralPath $zipPath -Force
+          }
+
+          Compress-Archive -LiteralPath $installer -DestinationPath $zipPath -CompressionLevel Optimal
+
+          $verifyDir = Join-Path $env:RUNNER_TEMP "nrfusion-release-zip"
+          if (Test-Path -LiteralPath $verifyDir) {
+            Remove-Item -LiteralPath $verifyDir -Recurse -Force
+          }
+          Expand-Archive -LiteralPath $zipPath -DestinationPath $verifyDir
+
+          $files = @(Get-ChildItem -LiteralPath $verifyDir -Recurse -File)
+          if ($files.Count -ne 1) {
+            throw "Release ZIP must contain exactly one file, found $($files.Count)."
+          }
+
+          $relative = [IO.Path]::GetRelativePath($verifyDir, $files[0].FullName)
+          if ($relative -ne "NRFusionSetup.exe") {
+            throw "Release ZIP contains unexpected path: $relative"
+          }
+
+          Write-Host "Release asset ready: $zipPath"
           "ZIP_NAME=$zipName" | Out-File -FilePath $env:GITHUB_ENV -Append
 
-      - name: Upload Artifact to Workflow
-        uses: actions/upload-artifact@v4
-        with:
-          name: NRFusion-Installer-Package
-          path: |
-            dist/*.zip
-            dist/SHA256SUMS.txt
-          if-no-files-found: error
-
-      - name: Create GitHub Release and Upload ZIP
+      - name: Create GitHub Release
         if: startsWith(github.ref, 'refs/tags/')
         uses: softprops/action-gh-release@v2
         with:
-          files: |
-            dist/${{ env.ZIP_NAME }}
-            dist/SHA256SUMS.txt
+          files: dist/${{ env.ZIP_NAME }}
           generate_release_notes: true
