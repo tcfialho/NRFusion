@@ -64,9 +64,10 @@ jobs:
             throw "Release ZIP must contain exactly one file, found $($files.Count)."
           }
 
-          $relative = [IO.Path]::GetRelativePath($verifyDir, $files[0].FullName)
-          if ($relative -ne "NRFusionSetup.exe") {
-            throw "Release ZIP contains unexpected path: $relative"
+          $expectedInstaller = [IO.Path]::GetFullPath((Join-Path $verifyDir "NRFusionSetup.exe"))
+          $actualInstaller = [IO.Path]::GetFullPath($files[0].FullName)
+          if ($actualInstaller -ne $expectedInstaller) {
+            throw "Release ZIP contains unexpected path: $actualInstaller"
           }
 
           Write-Host "Release asset ready: $zipPath"
