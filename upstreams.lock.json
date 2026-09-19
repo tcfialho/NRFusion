@@ -1,0 +1,9 @@
+{
+  "schema": 1,
+  "build": {
+    "optiscaler": {
+      "repository": "https://github.com/wilsjo2/OptiScaler-DLSSNR-PreSR-Multipass.git",
+      "commit": "1b1dd650d35ea59ea2d1d0bf7937b71645159f75"
+    }
+  }
+}
