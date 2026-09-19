@@ -1,0 +1,36 @@
+name: Windows validation
+
+on:
+  push:
+  pull_request:
+  workflow_dispatch:
+
+jobs:
+  build:
+    runs-on: windows-2022
+    timeout-minutes: 45
+    steps:
+      - uses: actions/checkout@v4
+        with:
+          fetch-depth: 1
+
+      - uses: actions/setup-python@v5
+        with:
+          python-version: '3.12'
+
+      - name: Install NSIS
+        shell: powershell
+        run: choco install nsis --no-progress -y
+
+      - name: Validate integrated Windows build
+        shell: powershell
+        run: ./tools/validate_windows.ps1
+
+      - name: Upload public developer dist
+        uses: actions/upload-artifact@v4
+        with:
+          name: NRFusion-windows-developer-dist
+          path: |
+            dist/**
+            .build/installer-validation/**
+          if-no-files-found: error
