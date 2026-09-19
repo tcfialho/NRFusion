@@ -249,7 +249,7 @@ int main() {
     const bool sourceVerified = ReadFirstPixelForTest(device.Get(), context.Get(), sharedColor.Get(), sourcePixel);
     colorMutex->ReleaseSync(0);
     if (!sourceVerified ||
-        sourcePixel[0] != 64 || sourcePixel[1] != 127 || sourcePixel[2] != 191 || sourcePixel[3] != 255) {
+        sourcePixel[0] != 64 || sourcePixel[1] != 128 || sourcePixel[2] != 191 || sourcePixel[3] != 255) {
         std::cerr << "[Capture32 Roundtrip] source pixel = " << static_cast<unsigned>(sourcePixel[0]) << ','
                   << static_cast<unsigned>(sourcePixel[1]) << ',' << static_cast<unsigned>(sourcePixel[2]) << ','
                   << static_cast<unsigned>(sourcePixel[3]) << "\n";
