@@ -1,0 +1,35 @@
+name: Retag v1.0.0 Once
+
+on:
+  push:
+    branches:
+      - master
+    paths:
+      - '.github/workflows/retag-v1-once.yml'
+
+permissions:
+  contents: write
+  actions: write
+
+jobs:
+  retag-and-dispatch:
+    runs-on: ubuntu-latest
+    steps:
+      - name: Checkout repository
+        uses: actions/checkout@v4
+        with:
+          fetch-depth: 0
+
+      - name: Point v1.0.0 at corrected release commit
+        env:
+          TARGET_SHA: eb08ba896ceda3ed6208ee4eac834cad6f1be810
+        run: |
+          git config user.name "github-actions[bot]"
+          git config user.email "41898282+github-actions[bot]@users.noreply.github.com"
+          git tag -f v1.0.0 "$TARGET_SHA"
+          git push origin refs/tags/v1.0.0 --force
+
+      - name: Dispatch release workflow on v1.0.0
+        env:
+          GH_TOKEN: ${{ github.token }}
+        run: gh workflow run release-installer.yml --ref v1.0.0
