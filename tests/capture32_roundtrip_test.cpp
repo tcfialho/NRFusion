@@ -307,7 +307,7 @@ int main() {
     }
     const auto* pixel = static_cast<const uint8_t*>(mapped.pData);
     const std::array<uint8_t, 4> returnedPixel = {pixel[0], pixel[1], pixel[2], pixel[3]};
-    const bool copied = returnedPixel[0] == 64 && returnedPixel[1] == 127 &&
+    const bool copied = returnedPixel[0] == 64 && returnedPixel[1] == 128 &&
         returnedPixel[2] == 191 && returnedPixel[3] == 255;
     context->Unmap(readback.Get(), 0);
     outputMutex->ReleaseSync(0);
