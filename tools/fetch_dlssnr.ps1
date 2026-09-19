@@ -45,9 +45,7 @@ if (-not $chosenTag) {
             'Accept' = 'application/vnd.github+json'
         }
         $resp = Invoke-RestMethod -Uri "https://api.github.com/repos/$Repo/releases?per_page=100" -Headers $headers -TimeoutSec 15 -ErrorAction Stop
-        if ($resp -is [System.Array]) {
-            $apiReleases = $resp
-        }
+        $apiReleases = @($resp)
     }
     catch {
         Write-Warning "GitHub API call failed ($($_.Exception.Message)). Falling back to HTML scraping."
@@ -71,7 +69,7 @@ if (-not $chosenTag) {
         }
 
         # Prefer ShortFuse .SF multi-generation builds (supports RTX 20, 30, 40)
-        $sfCandidates = $candidates | Where-Object { $_.IsSF }
+        $sfCandidates = @($candidates | Where-Object { $_.IsSF })
         if ($sfCandidates.Count -gt 0) {
             $chosen = $sfCandidates | Sort-Object -Property Tag -Descending | Select-Object -First 1
         } else {
@@ -94,7 +92,7 @@ if (-not $chosenTag) {
             if ($tags -notcontains $t) { $tags += $t }
         }
 
-        $sfTags = $tags | Where-Object { $_ -match '\.SF' }
+        $sfTags = @($tags | Where-Object { $_ -match '\.SF' })
         if ($sfTags.Count -gt 0) {
             $chosenTag = $sfTags | Sort-Object -Descending | Select-Object -First 1
         } elseif ($tags.Count -gt 0) {
