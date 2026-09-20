@@ -20,5 +20,6 @@
 
 ## Current session
 
-Start: 2026-09-20 15:49 BRT
-Target: improve NRFusion performance, portability, and validation without redundant CI runs.
+Start: 2026-09-20 18:10 BRT
+Base: master ec4299ab0816a4b7b161b281557734546a259410
+Target: remove remaining steady-state allocations from calibration, overlap measurement, and work tracking without redundant CI runs.
