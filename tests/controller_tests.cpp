@@ -1625,6 +1625,21 @@ int main() {
         }
         assert(clocks.Stable(1));
 
+        // Rolling calibration keeps only the bounded window after wraparound.
+        CrossQueueClockCalibrator rolling({4, 3, 0.25, 0.001});
+        for (std::uint64_t i = 1; i <= 12; ++i) {
+            QueueClockCalibrationSample sample;
+            sample.gpuTimestamp = i * 1'000'000ull;
+            sample.cpuQpcTimestamp = (10ull + i) * 1'000'000ull;
+            sample.gpuFrequencyHz = 1'000'000.0;
+            sample.cpuQpcFrequencyHz = 1'000'000.0;
+            assert(rolling.Update(9, sample));
+        }
+        assert(rolling.Stable(9));
+        assert(rolling.Status(9).samples == 4);
+        const auto rollingMapped = rolling.ToCommonSeconds(9, 20'000'000ull);
+        assert(rollingMapped && std::fabs(*rollingMapped - 30.0) < 1e-9);
+
         FusionRuntime runtime;
         runtime.QueueClocks() = clocks;
         const QueueGpuIntervalTicks nr{2, 10'004'000ull, 10'014'000ull}; // 14.002..14.007 s
