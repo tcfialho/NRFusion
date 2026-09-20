@@ -2,7 +2,6 @@
 
 #include "nrfusion/WorkLedger.hpp"
 #include <cstddef>
-#include <deque>
 #include <optional>
 #include <vector>
 
@@ -18,19 +17,20 @@ struct TimingMapEntry {
 // the next valid workload by mistake.
 class TimingWorkMapper {
 public:
-    explicit TimingWorkMapper(std::size_t capacity = 16) : capacity_(capacity ? capacity : 1) {}
+    explicit TimingWorkMapper(std::size_t capacity = 16) : entries_(capacity ? capacity : 1) {}
 
     std::optional<WorkTicket> Push(const WorkTicket& ticket);
     std::optional<WorkTicket> PushInvalid();
     std::optional<TimingMapEntry> Pop();
-    void Reset() { queue_.clear(); }
-    std::size_t Size() const noexcept { return queue_.size(); }
-    std::size_t Capacity() const noexcept { return capacity_; }
+    void Reset() noexcept { head_ = 0; size_ = 0; }
+    std::size_t Size() const noexcept { return size_; }
+    std::size_t Capacity() const noexcept { return entries_.size(); }
 
 private:
     std::optional<WorkTicket> PushEntry(TimingMapEntry entry);
-    std::size_t capacity_;
-    std::deque<TimingMapEntry> queue_;
+    std::vector<TimingMapEntry> entries_;
+    std::size_t head_ = 0;
+    std::size_t size_ = 0;
 };
 
 // Slot-addressable mapping for APIs whose timestamp rings expose the exact query slot (Vulkan).
