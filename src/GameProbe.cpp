@@ -4,6 +4,7 @@
 #include <array>
 #include <cctype>
 #include <cstdint>
+#include <cstring>
 #include <fstream>
 #include <string>
 #include <system_error>
@@ -163,9 +164,6 @@ PeInfo InspectPe(const std::filesystem::path& path) {
     return info;
 }
 
-int ReadPeBitness(const std::filesystem::path& path) {
-    return InspectPe(path).bitness;
-}
 
 int Hits(const std::string& data, std::initializer_list<std::pair<const char*, int>> needles) {
     int score = 0;

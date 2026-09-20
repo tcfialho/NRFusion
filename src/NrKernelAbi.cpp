@@ -31,8 +31,10 @@ using CUstream = void*;
 using CUresult = int;
 using CUdeviceptr = unsigned long long;
 constexpr CUresult kOk = 0;
-constexpr int kAttributeMemoryType = 2;   // CU_POINTER_ATTRIBUTE_MEMORY_TYPE
-constexpr unsigned kMemoryTypeDevice = 2; // CU_MEMORYTYPE_DEVICE
+#if defined(NRFUSION_ABI_HAS_DETOURS)
+constexpr int kAttributeMemoryType = 2;
+constexpr unsigned kMemoryTypeDevice = 2;
+#endif
 
 // Enough bytes to tell buffers apart without paying for a real copy. A weight that differs from
 // an input only past the first kilobyte would be indistinguishable, which is why the report says
@@ -83,6 +85,7 @@ State& Shared() {
     return state;
 }
 
+#if defined(NRFUSION_ABI_HAS_DETOURS)
 bool IsDevicePointer(State& state, std::uint64_t value) {
     if (!value || !state.pointerAttribute) return false;
     unsigned type = 0;
@@ -182,6 +185,7 @@ CUresult Hooked(CUfunction function, unsigned gx, unsigned gy, unsigned gz,
     }
     return result;
 }
+#endif
 
 } // namespace
 

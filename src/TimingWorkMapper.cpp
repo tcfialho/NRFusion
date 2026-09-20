@@ -4,11 +4,19 @@ namespace nrfusion {
 
 std::optional<WorkTicket> TimingWorkMapper::PushEntry(TimingMapEntry entry) {
     std::optional<WorkTicket> dropped;
-    if (queue_.size() >= capacity_) {
-        if (queue_.front().mapsWork) dropped = queue_.front().ticket;
-        queue_.pop_front();
+    const std::size_t capacity = entries_.size();
+
+    if (size_ == capacity) {
+        if (entries_[head_].mapsWork) dropped = entries_[head_].ticket;
+        entries_[head_] = entry;
+        head_ = head_ + 1 == capacity ? 0 : head_ + 1;
+        return dropped;
     }
-    queue_.push_back(entry);
+
+    std::size_t tail = head_ + size_;
+    if (tail >= capacity) tail -= capacity;
+    entries_[tail] = entry;
+    ++size_;
     return dropped;
 }
 
@@ -21,9 +29,11 @@ std::optional<WorkTicket> TimingWorkMapper::PushInvalid() {
 }
 
 std::optional<TimingMapEntry> TimingWorkMapper::Pop() {
-    if (queue_.empty()) return std::nullopt;
-    auto out = queue_.front();
-    queue_.pop_front();
+    if (size_ == 0) return std::nullopt;
+    const TimingMapEntry out = entries_[head_];
+    head_ = head_ + 1 == entries_.size() ? 0 : head_ + 1;
+    --size_;
+    if (size_ == 0) head_ = 0;
     return out;
 }
 

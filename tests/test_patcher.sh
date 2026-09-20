@@ -116,12 +116,16 @@ if command -v cl >/dev/null 2>&1; then
         cl //nologo //c //EHsc //std:c++20 //W4 //I "$TMP/OptiScaler/nrfusion" "$cpp" //Fo:"$TMP/msvc.obj" >/dev/null
     done
 fi
-# Linux syntax-check of every flattened portable source. This is not a replacement for MSBuild,
-# but it catches missing copied headers and source-only integration breakage immediately.
+# Linux syntax-check of flattened sources that are actually portable. Win32/D3D integration
+# remains covered by the MSVC pass above and by Windows validation.
 for cpp in "$TMP"/OptiScaler/nrfusion/*.cpp; do
-    # NrD3D12Diagnostics.cpp is host-only by design: it speaks D3D12 and NVAPI directly.
-    # MSBuild compiles it; this portable check would only fail on the missing Windows SDK.
-    case "$cpp" in *NrD3D12Diagnostics.cpp) continue ;; esac
+    case "$cpp" in
+        *AdaW4A8Interceptor.cpp|*DlssgTransfusion.cpp|*SyntheticDx12Provider.cpp|\
+        *NvofMotionProvider.cpp|*SyntheticDx11BridgeProvider.cpp|*SyntheticVulkanProvider.cpp|\
+        *NrD3D12Diagnostics.cpp)
+            continue
+            ;;
+    esac
     g++ -std=c++20 -Wall -Wextra -Wpedantic -Werror -I "$TMP/OptiScaler/nrfusion" -fsyntax-only "$cpp"
 done
 # The diagnostic ABI is dead weight unless the patcher installs it, compiles it into the host

@@ -89,7 +89,7 @@ State& Shared() {
 // The neural-rendering kernels the vendor runtime launches carry these markers in their
 // names. Everything else in the process -- the game's own compute, other libraries -- is left
 // untouched so the table describes the neural pass and nothing else.
-bool IsNeuralKernel(const char* name) {
+[[maybe_unused]] bool IsNeuralKernel(const char* name) {
     if (!name) return false;
     static const char* markers[] = {"swin", "ffwd", "qkv", "attn", "dlssnr", "cc_", "conv_res"};
     for (const char* marker : markers) {
@@ -124,6 +124,7 @@ void Resolve(State& state) {
     }
 }
 
+#if defined(NRFUSION_HAS_DETOURS)
 CUresult Hooked(CUfunction function, unsigned gx, unsigned gy, unsigned gz,
                 unsigned bx, unsigned by, unsigned bz, unsigned shared,
                 CUstream stream, void** params, void** extra) {
@@ -155,6 +156,7 @@ CUresult Hooked(CUfunction function, unsigned gx, unsigned gy, unsigned gz,
     if (sample) state.driver.record(sample->stop, stream);
     return result;
 }
+#endif
 
 } // namespace
 
@@ -209,7 +211,6 @@ bool NrKernelProfiler::Start() {
 #else
     // Without a detour the launches cannot be intercepted, and reporting an empty table as if
     // it were a measurement would be worse than refusing.
-    (void) &Hooked;
     const bool hooked = false;
 #endif
     if (!hooked) return false;

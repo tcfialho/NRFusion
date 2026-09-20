@@ -1,6 +1,7 @@
 #include "nrfusion/PerformanceController.hpp"
 
 #include <algorithm>
+#include <array>
 #include <cmath>
 #include <limits>
 #include <stdexcept>
@@ -10,18 +11,29 @@ namespace nrfusion {
 
 namespace {
 constexpr std::size_t kNrControlWindow = 5;
+constexpr std::size_t kMaxMedianSamples = 8;
 
 double Clamp01(double v) { return std::clamp(std::isfinite(v) ? v : 0.0, 0.0, 1.0); }
 double PositiveOrZero(double v) { return std::isfinite(v) && v > 0.0 ? v : 0.0; }
 double FiniteOr(double v, double fallback) { return std::isfinite(v) ? v : fallback; }
 float FiniteOr(float v, float fallback) { return std::isfinite(v) ? v : fallback; }
 
-double MedianOf(std::vector<double> values) {
-    if (values.empty()) return 0.0;
-    std::sort(values.begin(), values.end());
-    const std::size_t middle = values.size() / 2;
-    if ((values.size() & 1u) != 0u) return values[middle];
-    return (values[middle - 1] + values[middle]) * 0.5;
+double MedianOf(const double* values, std::size_t count) {
+    if (count == 0 || count > kMaxMedianSamples) return 0.0;
+    std::array<double, kMaxMedianSamples> sorted{};
+    std::copy_n(values, count, sorted.begin());
+    for (std::size_t i = 1; i < count; ++i) {
+        const double value = sorted[i];
+        std::size_t j = i;
+        while (j > 0 && sorted[j - 1] > value) {
+            sorted[j] = sorted[j - 1];
+            --j;
+        }
+        sorted[j] = value;
+    }
+    const std::size_t middle = count / 2;
+    if ((count & 1u) != 0u) return sorted[middle];
+    return (sorted[middle - 1] + sorted[middle]) * 0.5;
 }
 
 // Return a robust estimate for a newly retired NR timestamp. The raw sample is retained in the
@@ -33,11 +45,11 @@ double RobustNrEstimate(std::vector<double>& window, double sample) {
         window.erase(window.begin());
     if (window.size() < 3) return sample;
 
-    const double median = MedianOf(window);
-    std::vector<double> deviations;
-    deviations.reserve(window.size());
-    for (const double value : window) deviations.push_back(std::fabs(value - median));
-    const double mad = MedianOf(std::move(deviations));
+    const double median = MedianOf(window.data(), window.size());
+    std::array<double, kNrControlWindow> deviations{};
+    for (std::size_t i = 0; i < window.size(); ++i)
+        deviations[i] = std::fabs(window[i] - median);
+    const double mad = MedianOf(deviations.data(), window.size());
     const double tolerance = std::max(median * 0.50, mad * 4.0 + 0.05);
     return std::fabs(sample - median) > tolerance ? median : sample;
 }
@@ -85,6 +97,9 @@ PerformanceController::PerformanceController(PerformanceConfig config) : config_
     config_.maxPredictiveStepDrop = std::clamp<std::size_t>(config_.maxPredictiveStepDrop, 1,
                                                             config_.scaleSteps.size());
     failedScaleSteps_.assign(config_.scaleSteps.size(), false);
+    nrWarmupSamples_.reserve(config_.nrWarmupSamples);
+    nrRecentSamples_.reserve(std::max(config_.nrWarmupSamples, kNrControlWindow));
+    frameRecentSamples_.reserve(kNrControlWindow);
     Reset(config_.maxScale);
 }
 
@@ -109,8 +124,8 @@ double PerformanceController::Ewma(double previous, double value, double alpha) 
     return previous + alpha * (value - previous);
 }
 
-double PerformanceController::Median(std::vector<double> values) {
-    return MedianOf(std::move(values));
+double PerformanceController::Median(const std::vector<double>& values) {
+    return MedianOf(values.data(), values.size());
 }
 
 std::size_t PerformanceController::FindNearestStep(float value) const {

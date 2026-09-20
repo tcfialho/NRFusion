@@ -46,18 +46,23 @@ add_library(nrfusion_core STATIC
     src/Dlss5NeuralRendering.cpp
     src/AdaptiveExposure.cpp
     src/AdaptiveExposureController.cpp
-    src/AdaW4A8Interceptor.cpp
-    src/DlssgTransfusion.cpp
-    src/SyntheticDx12Provider.cpp
-    src/NvofMotionProvider.cpp
-    src/SyntheticDx11BridgeProvider.cpp
-    src/CaptureProvider32.cpp
-    src/CaptureProvider32Export.cpp
-    src/HostServer64.cpp
-    src/HostDlssNr.cpp
-    src/SyntheticVulkanProvider.cpp
-    src/SyntheticOpenGlProvider.cpp
 )
+
+if (WIN32)
+    target_sources(nrfusion_core PRIVATE
+        src/AdaW4A8Interceptor.cpp
+        src/DlssgTransfusion.cpp
+        src/SyntheticDx12Provider.cpp
+        src/NvofMotionProvider.cpp
+        src/SyntheticDx11BridgeProvider.cpp
+        src/CaptureProvider32.cpp
+        src/CaptureProvider32Export.cpp
+        src/HostServer64.cpp
+        src/HostDlssNr.cpp
+        src/SyntheticVulkanProvider.cpp
+        src/SyntheticOpenGlProvider.cpp
+    )
+endif()
 
 # The fused grouped feed-forward has a CUDA backend when a CUDA compiler is present, and a
 # stub that reports NoDevice when it is not. Callers ask the interface either way, so no
@@ -101,6 +106,22 @@ else()
     target_compile_options(nrfusion_game_probe_tests PRIVATE -UNDEBUG)
 endif()
 
+add_executable(nrfusion_telemetry_tests tests/telemetry_tracker_tests.cpp)
+target_link_libraries(nrfusion_telemetry_tests PRIVATE nrfusion_core)
+if (MSVC)
+    target_compile_options(nrfusion_telemetry_tests PRIVATE /UNDEBUG)
+else()
+    target_compile_options(nrfusion_telemetry_tests PRIVATE -UNDEBUG)
+endif()
+
+add_executable(nrfusion_timing_mapper_tests tests/timing_mapper_tests.cpp)
+target_link_libraries(nrfusion_timing_mapper_tests PRIVATE nrfusion_core)
+if (MSVC)
+    target_compile_options(nrfusion_timing_mapper_tests PRIVATE /UNDEBUG)
+else()
+    target_compile_options(nrfusion_timing_mapper_tests PRIVATE -UNDEBUG)
+endif()
+
 add_executable(nrfusion_probe tools/game_probe_main.cpp)
 target_link_libraries(nrfusion_probe PRIVATE nrfusion_core)
 set_target_properties(nrfusion_probe PROPERTIES OUTPUT_NAME "NRFusionProbe")
@@ -108,6 +129,8 @@ set_target_properties(nrfusion_probe PROPERTIES OUTPUT_NAME "NRFusionProbe")
 enable_testing()
 add_test(NAME nrfusion_tests COMMAND nrfusion_tests)
 add_test(NAME nrfusion_game_probe_tests COMMAND nrfusion_game_probe_tests)
+add_test(NAME nrfusion_telemetry_tests COMMAND nrfusion_telemetry_tests)
+add_test(NAME nrfusion_timing_mapper_tests COMMAND nrfusion_timing_mapper_tests)
 
 add_executable(nrfusion_sim tests/simulation.cpp)
 target_link_libraries(nrfusion_sim PRIVATE nrfusion_core)
