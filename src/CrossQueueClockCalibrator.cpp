@@ -2,7 +2,6 @@
 
 #include <algorithm>
 #include <cmath>
-#include <vector>
 
 namespace nrfusion {
 
@@ -15,12 +14,11 @@ CrossQueueClockCalibrator::CrossQueueClockCalibrator(CrossQueueClockCalibratorCo
     config_.offsetJumpResetMs = std::max(0.01, std::isfinite(config_.offsetJumpResetMs) ? config_.offsetJumpResetMs : 2.0);
 }
 
-double CrossQueueClockCalibrator::Percentile(std::deque<double> values, double q) {
-    if (values.empty()) return 0.0;
-    std::vector<double> sorted(values.begin(), values.end());
-    std::sort(sorted.begin(), sorted.end());
+double CrossQueueClockCalibrator::Percentile(const std::vector<double>& sorted,
+                                              std::size_t size, double q) {
+    if (size == 0) return 0.0;
     q = std::clamp(q, 0.0, 1.0);
-    const double pos = q * static_cast<double>(sorted.size() - 1);
+    const double pos = q * static_cast<double>(size - 1);
     const auto lo = static_cast<std::size_t>(std::floor(pos));
     const auto hi = static_cast<std::size_t>(std::ceil(pos));
     if (lo == hi) return sorted[lo];
@@ -28,12 +26,36 @@ double CrossQueueClockCalibrator::Percentile(std::deque<double> values, double q
     return sorted[lo] * (1.0 - f) + sorted[hi] * f;
 }
 
+void CrossQueueClockCalibrator::EnsureStorage(State& state) const {
+    if (state.offsets.size() == config_.windowSamples &&
+        state.scratch.size() == config_.windowSamples)
+        return;
+    state.offsets.assign(config_.windowSamples, 0.0);
+    state.scratch.assign(config_.windowSamples, 0.0);
+    state.head = 0;
+    state.size = 0;
+}
+
+void CrossQueueClockCalibrator::ResetState(State& state) const noexcept {
+    state.gpuFrequencyHz = 0.0;
+    state.cpuQpcFrequencyHz = 0.0;
+    state.head = 0;
+    state.size = 0;
+    state.medianOffset = 0.0;
+    state.spreadMs = 0.0;
+    state.stable = false;
+}
+
 void CrossQueueClockCalibrator::Recompute(State& state) const {
-    state.medianOffset = Percentile(state.offsets, 0.50);
-    const double p10 = Percentile(state.offsets, 0.10);
-    const double p90 = Percentile(state.offsets, 0.90);
+    for (std::size_t i = 0; i < state.size; ++i)
+        state.scratch[i] = state.offsets[(state.head + i) % state.offsets.size()];
+    std::sort(state.scratch.begin(), state.scratch.begin() + static_cast<std::ptrdiff_t>(state.size));
+
+    state.medianOffset = Percentile(state.scratch, state.size, 0.50);
+    const double p10 = Percentile(state.scratch, state.size, 0.10);
+    const double p90 = Percentile(state.scratch, state.size, 0.90);
     state.spreadMs = std::max(0.0, (p90 - p10) * 1000.0);
-    state.stable = state.offsets.size() >= config_.minStableSamples &&
+    state.stable = state.size >= config_.minStableSamples &&
                    state.spreadMs <= config_.maxStableSpreadMs;
 }
 
@@ -44,6 +66,7 @@ bool CrossQueueClockCalibrator::Update(QueueClockId queue,
         return false;
 
     State& state = states_[queue];
+    EnsureStorage(state);
     if (state.gpuFrequencyHz > 0.0) {
         const double gpuRatio = std::fabs(sample.gpuFrequencyHz - state.gpuFrequencyHz) /
                                 std::max(state.gpuFrequencyHz, sample.gpuFrequencyHz);
@@ -52,7 +75,7 @@ bool CrossQueueClockCalibrator::Update(QueueClockId queue,
                                           std::max(state.cpuQpcFrequencyHz, sample.cpuQpcFrequencyHz)
                                     : 0.0;
         if (gpuRatio > config_.frequencyChangeRatio || cpuRatio > config_.frequencyChangeRatio)
-            state = {};
+            ResetState(state);
     }
 
     const long double cpuSeconds = static_cast<long double>(sample.cpuQpcTimestamp) /
@@ -62,18 +85,22 @@ bool CrossQueueClockCalibrator::Update(QueueClockId queue,
     const double offset = static_cast<double>(cpuSeconds - gpuSeconds);
     if (!std::isfinite(offset)) return false;
 
-    // Queue COM pointers can be reused after device/queue recreation. Frequency alone does not
-    // identify a clock epoch, so a large offset jump must discard the old calibration window.
-    if (!state.offsets.empty()) {
-        const double reference = state.stable ? state.medianOffset : state.offsets.back();
+    if (state.size != 0) {
+        const std::size_t last = (state.head + state.size - 1) % state.offsets.size();
+        const double reference = state.stable ? state.medianOffset : state.offsets[last];
         if (std::fabs(offset - reference) * 1000.0 > config_.offsetJumpResetMs)
-            state = {};
+            ResetState(state);
     }
 
     state.gpuFrequencyHz = sample.gpuFrequencyHz;
     state.cpuQpcFrequencyHz = sample.cpuQpcFrequencyHz;
-    state.offsets.push_back(offset);
-    while (state.offsets.size() > config_.windowSamples) state.offsets.pop_front();
+    if (state.size < state.offsets.size()) {
+        state.offsets[(state.head + state.size) % state.offsets.size()] = offset;
+        ++state.size;
+    } else {
+        state.offsets[state.head] = offset;
+        state.head = (state.head + 1) % state.offsets.size();
+    }
     Recompute(state);
     return true;
 }
@@ -104,7 +131,7 @@ QueueClockCalibrationStatus CrossQueueClockCalibrator::Status(QueueClockId queue
     const auto it = states_.find(queue);
     if (it == states_.end()) return out;
     out.stable = it->second.stable;
-    out.samples = it->second.offsets.size();
+    out.samples = it->second.size;
     out.offsetSeconds = it->second.medianOffset;
     out.spreadMs = it->second.spreadMs;
     out.gpuFrequencyHz = it->second.gpuFrequencyHz;

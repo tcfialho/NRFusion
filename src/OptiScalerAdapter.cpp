@@ -96,6 +96,7 @@ OptiScalerAdapter& OptiScalerAdapter::Instance() {
 
 OptiScalerAdapter::OptiScalerAdapter()
     : runtime_(ToConfig(settings_)) {
+    asyncCommonIntervals_.reserve(16);
     precisionTuner_.Reset(scaleGeneration_);
 }
 
@@ -650,13 +651,27 @@ std::optional<double> OptiScalerAdapter::ObserveAsyncOverlap(
     if (sampleId == 0) { freshAsyncOverlapSampleId_ = 0; return std::nullopt; }
     const auto nrCommon = queueClocks_.ToCommonInterval(nr.queue, nr.startGpuTimestamp, nr.endGpuTimestamp);
     if (!nrCommon) { freshAsyncOverlapSampleId_ = 0; return std::nullopt; }
+    auto mapIntervals = [&](std::vector<GpuInterval>& common) {
+        common.clear();
+        for (const auto& interval : concurrent) {
+            const auto mapped = queueClocks_.ToCommonInterval(
+                interval.queue, interval.startGpuTimestamp, interval.endGpuTimestamp);
+            if (mapped) common.push_back(*mapped);
+        }
+    };
+
+    constexpr std::size_t kReusableIntervals = 16;
+    if (concurrent.size() <= kReusableIntervals) {
+        mapIntervals(asyncCommonIntervals_);
+        if (asyncCommonIntervals_.empty()) { freshAsyncOverlapSampleId_ = 0; return std::nullopt; }
+        const double overlap = asyncOverlap_.Update(*nrCommon, asyncCommonIntervals_, dtSeconds);
+        freshAsyncOverlapSampleId_ = sampleId;
+        return overlap;
+    }
+
     std::vector<GpuInterval> common;
     common.reserve(concurrent.size());
-    for (const auto& interval : concurrent) {
-        const auto mapped = queueClocks_.ToCommonInterval(interval.queue, interval.startGpuTimestamp,
-                                                           interval.endGpuTimestamp);
-        if (mapped) common.push_back(*mapped);
-    }
+    mapIntervals(common);
     if (common.empty()) { freshAsyncOverlapSampleId_ = 0; return std::nullopt; }
     const double overlap = asyncOverlap_.Update(*nrCommon, common, dtSeconds);
     freshAsyncOverlapSampleId_ = sampleId;

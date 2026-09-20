@@ -1024,6 +1024,20 @@ int main() {
         assert(!works.Complete(old));
         assert(works.Abandon(next));
         assert(works.Outstanding() == 0);
+
+        // Bursts above the reserved common case still preserve exact out-of-order identity.
+        std::vector<WorkTicket> burst;
+        burst.reserve(64);
+        for (std::uint64_t i = 0; i < 64; ++i) {
+            auto ticket = works.Begin(100 + i, i % 4);
+            if (!burst.empty()) assert(ticket.id == burst.back().id + 1);
+            assert(works.Submit(ticket));
+            burst.push_back(ticket);
+        }
+        assert(works.Outstanding() == burst.size());
+        for (auto it = burst.rbegin(); it != burst.rend(); ++it)
+            assert(works.Complete(*it));
+        assert(works.Outstanding() == 0);
     }
 
     {
@@ -1145,6 +1159,15 @@ int main() {
         assert(finiteSmoothing.Update(nr, {}, 1.0) == 0.0);
         const double recovered = finiteSmoothing.Update(nr, {{10.0, 20.0}}, 1.0);
         assert(std::isfinite(recovered) && recovered > 0.5);
+
+        // The overflow path must sort a large, reverse-ordered interval set correctly.
+        std::vector<GpuInterval> manyIntervals;
+        manyIntervals.reserve(32);
+        for (int i = 31; i >= 0; --i) {
+            const double begin = 10.0 + static_cast<double>(i) * 0.3125;
+            manyIntervals.push_back({begin, begin + 0.3125});
+        }
+        assert(std::fabs(AsyncOverlapEstimator::Instantaneous(nr, manyIntervals) - 1.0) < 0.001);
     }
 
 
@@ -1624,6 +1647,21 @@ int main() {
             assert(clocks.Update(1, jumped));
         }
         assert(clocks.Stable(1));
+
+        // Rolling calibration keeps only the bounded window after wraparound.
+        CrossQueueClockCalibrator rolling({4, 3, 0.25, 0.001});
+        for (std::uint64_t i = 1; i <= 12; ++i) {
+            QueueClockCalibrationSample sample;
+            sample.gpuTimestamp = i * 1'000'000ull;
+            sample.cpuQpcTimestamp = (10ull + i) * 1'000'000ull;
+            sample.gpuFrequencyHz = 1'000'000.0;
+            sample.cpuQpcFrequencyHz = 1'000'000.0;
+            assert(rolling.Update(9, sample));
+        }
+        assert(rolling.Stable(9));
+        assert(rolling.Status(9).samples == 4);
+        const auto rollingMapped = rolling.ToCommonSeconds(9, 20'000'000ull);
+        assert(rollingMapped && std::fabs(*rollingMapped - 30.0) < 1e-9);
 
         FusionRuntime runtime;
         runtime.QueueClocks() = clocks;

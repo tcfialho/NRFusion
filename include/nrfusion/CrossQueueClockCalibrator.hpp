@@ -4,9 +4,9 @@
 
 #include <cstddef>
 #include <cstdint>
-#include <deque>
 #include <optional>
 #include <unordered_map>
+#include <vector>
 
 namespace nrfusion {
 
@@ -18,7 +18,6 @@ struct QueueClockCalibrationSample {
     double gpuFrequencyHz = 0.0;
     double cpuQpcFrequencyHz = 0.0;
 };
-
 
 struct QueueGpuIntervalTicks {
     QueueClockId queue = 0;
@@ -62,13 +61,18 @@ private:
     struct State {
         double gpuFrequencyHz = 0.0;
         double cpuQpcFrequencyHz = 0.0;
-        std::deque<double> offsets;
+        std::vector<double> offsets;
+        std::vector<double> scratch;
+        std::size_t head = 0;
+        std::size_t size = 0;
         double medianOffset = 0.0;
         double spreadMs = 0.0;
         bool stable = false;
     };
 
-    static double Percentile(std::deque<double> values, double q);
+    static double Percentile(const std::vector<double>& sorted, std::size_t size, double q);
+    void EnsureStorage(State& state) const;
+    void ResetState(State& state) const noexcept;
     void Recompute(State& state) const;
 
     CrossQueueClockCalibratorConfig config_;
