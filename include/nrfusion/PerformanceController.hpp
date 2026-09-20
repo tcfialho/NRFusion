@@ -104,7 +104,7 @@ public:
 
 private:
     static double Ewma(double previous, double value, double alpha);
-    static double Median(std::vector<double> values);
+    static double Median(const std::vector<double>& values);
     std::size_t FindNearestStep(float value) const;
     bool CanScaleDown() const;
     bool CanScaleUp() const;
