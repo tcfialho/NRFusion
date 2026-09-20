@@ -211,7 +211,6 @@ bool NrKernelProfiler::Start() {
 #else
     // Without a detour the launches cannot be intercepted, and reporting an empty table as if
     // it were a measurement would be worse than refusing.
-    (void) &Hooked;
     const bool hooked = false;
 #endif
     if (!hooked) return false;
