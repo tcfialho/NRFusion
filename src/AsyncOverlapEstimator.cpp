@@ -7,18 +7,20 @@
 namespace nrfusion {
 namespace {
 
-double CoveredFraction(const GpuInterval& nr, GpuInterval* clipped, std::size_t count) {
-    if (count == 0) return 0.0;
+void SortInline(GpuInterval* intervals, std::size_t count) {
     for (std::size_t i = 1; i < count; ++i) {
-        const GpuInterval key = clipped[i];
+        const GpuInterval key = intervals[i];
         std::size_t j = i;
-        while (j > 0 && clipped[j - 1].beginMs > key.beginMs) {
-            clipped[j] = clipped[j - 1];
+        while (j > 0 && intervals[j - 1].beginMs > key.beginMs) {
+            intervals[j] = intervals[j - 1];
             --j;
         }
-        clipped[j] = key;
+        intervals[j] = key;
     }
+}
 
+double CoveredFractionSorted(const GpuInterval& nr, const GpuInterval* clipped, std::size_t count) {
+    if (count == 0) return 0.0;
     double covered = 0.0;
     double begin = clipped[0].beginMs;
     double end = clipped[0].endMs;
@@ -67,8 +69,13 @@ double AsyncOverlapEstimator::Instantaneous(const GpuInterval& nr, const std::ve
         overflow.push_back({b, e});
     }
 
-    if (usingOverflow) return CoveredFraction(nr, overflow.data(), overflow.size());
-    return CoveredFraction(nr, inlineClipped.data(), count);
+    if (usingOverflow) {
+        std::sort(overflow.begin(), overflow.end(),
+                  [](const auto& a, const auto& b) { return a.beginMs < b.beginMs; });
+        return CoveredFractionSorted(nr, overflow.data(), overflow.size());
+    }
+    SortInline(inlineClipped.data(), count);
+    return CoveredFractionSorted(nr, inlineClipped.data(), count);
 }
 
 double AsyncOverlapEstimator::Update(const GpuInterval& nr, const std::vector<GpuInterval>& concurrent, double dtSeconds) {

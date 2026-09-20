@@ -1159,8 +1159,13 @@ int main() {
         const double recovered = finiteSmoothing.Update(nr, {{10.0, 20.0}}, 1.0);
         assert(std::isfinite(recovered) && recovered > 0.5);
 
-        // More than the inline interval budget still preserves exact union coverage.
-        const std::vector<GpuInterval> manyIntervals(32, GpuInterval{10.0, 20.0});
+        // The overflow path must sort a large, reverse-ordered interval set correctly.
+        std::vector<GpuInterval> manyIntervals;
+        manyIntervals.reserve(32);
+        for (int i = 31; i >= 0; --i) {
+            const double begin = 10.0 + static_cast<double>(i) * 0.3125;
+            manyIntervals.push_back({begin, begin + 0.3125});
+        }
         assert(std::fabs(AsyncOverlapEstimator::Instantaneous(nr, manyIntervals) - 1.0) < 0.001);
     }
 
