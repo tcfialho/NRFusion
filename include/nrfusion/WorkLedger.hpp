@@ -2,7 +2,8 @@
 
 #include <cstddef>
 #include <cstdint>
-#include <vector>
+#include <optional>
+#include <unordered_map>
 
 namespace nrfusion {
 
@@ -23,8 +24,6 @@ struct WorkTicket {
 // on ResetSession(), so a late completion from an old device/session cannot collide with new work.
 class WorkLedger {
 public:
-    WorkLedger();
-
     WorkTicket Begin(std::uint64_t sourceFrame, std::uint64_t viewKey = 0,
                      std::uint64_t configurationGeneration = 0, float workingScale = 1.0f,
                      std::uint8_t precisionTag = 0);
@@ -44,12 +43,9 @@ private:
         WorkState state = WorkState::Started;
     };
 
-    std::size_t FindIndex(std::uint64_t workId) const noexcept;
-
-    static constexpr std::size_t kTypicalOutstanding = 16;
     std::uint64_t nextId_ = 1;
     std::uint64_t session_ = 1;
-    std::vector<Entry> entries_;
+    std::unordered_map<std::uint64_t, Entry> entries_;
 };
 
 } // namespace nrfusion
