@@ -89,6 +89,7 @@ State& Shared() {
 // The neural-rendering kernels the vendor runtime launches carry these markers in their
 // names. Everything else in the process -- the game's own compute, other libraries -- is left
 // untouched so the table describes the neural pass and nothing else.
+#if defined(NRFUSION_HAS_DETOURS)
 bool IsNeuralKernel(const char* name) {
     if (!name) return false;
     static const char* markers[] = {"swin", "ffwd", "qkv", "attn", "dlssnr", "cc_", "conv_res"};
@@ -155,6 +156,7 @@ CUresult Hooked(CUfunction function, unsigned gx, unsigned gy, unsigned gz,
     if (sample) state.driver.record(sample->stop, stream);
     return result;
 }
+#endif
 
 } // namespace
 
