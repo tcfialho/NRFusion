@@ -22,7 +22,15 @@ double MedianOf(const double* values, std::size_t count) {
     if (count == 0 || count > kMaxMedianSamples) return 0.0;
     std::array<double, kMaxMedianSamples> sorted{};
     std::copy_n(values, count, sorted.begin());
-    std::sort(sorted.begin(), sorted.begin() + static_cast<std::ptrdiff_t>(count));
+    for (std::size_t i = 1; i < count; ++i) {
+        const double value = sorted[i];
+        std::size_t j = i;
+        while (j > 0 && sorted[j - 1] > value) {
+            sorted[j] = sorted[j - 1];
+            --j;
+        }
+        sorted[j] = value;
+    }
     const std::size_t middle = count / 2;
     if ((count & 1u) != 0u) return sorted[middle];
     return (sorted[middle - 1] + sorted[middle]) * 0.5;
