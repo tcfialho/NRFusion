@@ -1024,6 +1024,19 @@ int main() {
         assert(!works.Complete(old));
         assert(works.Abandon(next));
         assert(works.Outstanding() == 0);
+
+        // Bursts above the reserved common case still preserve exact out-of-order identity.
+        std::vector<WorkTicket> burst;
+        burst.reserve(64);
+        for (std::uint64_t i = 0; i < 64; ++i) {
+            auto ticket = works.Begin(100 + i, i % 4);
+            assert(works.Submit(ticket));
+            burst.push_back(ticket);
+        }
+        assert(works.Outstanding() == burst.size());
+        for (auto it = burst.rbegin(); it != burst.rend(); ++it)
+            assert(works.Complete(*it));
+        assert(works.Outstanding() == 0);
     }
 
     {
