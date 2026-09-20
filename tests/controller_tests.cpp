@@ -1030,6 +1030,7 @@ int main() {
         burst.reserve(64);
         for (std::uint64_t i = 0; i < 64; ++i) {
             auto ticket = works.Begin(100 + i, i % 4);
+            if (!burst.empty()) assert(ticket.id == burst.back().id + 1);
             assert(works.Submit(ticket));
             burst.push_back(ticket);
         }

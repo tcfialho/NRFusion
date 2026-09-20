@@ -24,11 +24,6 @@ WorkTicket WorkLedger::Begin(std::uint64_t sourceFrame, std::uint64_t viewKey,
     // ID zero is reserved as invalid. Work IDs are runtime-instance-unique; once the 64-bit namespace is
     // exhausted, fail closed instead of reusing an ID that a very late completion could still carry.
     if (nextId_ == 0) throw std::overflow_error("NRFusion WorkId space exhausted");
-    while (Contains(nextId_)) {
-        if (nextId_ == std::numeric_limits<std::uint64_t>::max())
-            throw std::overflow_error("NRFusion WorkId space exhausted");
-        ++nextId_;
-    }
     const std::uint64_t id = nextId_;
     if (nextId_ == std::numeric_limits<std::uint64_t>::max()) nextId_ = 0;
     else ++nextId_;
