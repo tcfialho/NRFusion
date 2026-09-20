@@ -26,43 +26,59 @@ TelemetryTracker::TelemetryTracker(TelemetryTrackerConfig config) : config_(conf
 void TelemetryTracker::Reset() {
     sourceEvents_.clear(); processedEvents_.clear();
     sourceFps_ = processedFps_ = 0.0;
+    sourceEventsAfterAnchor_ = processedEventsAfterAnchor_ = 0;
     outstanding_ = 0;
 }
 
-void TelemetryTracker::RecordEvent(std::deque<EventGroup>& events, double timestampSeconds, double& rate) {
+void TelemetryTracker::RecordEvent(std::deque<EventGroup>& events, std::size_t& eventsAfterAnchor,
+                                   double timestampSeconds, double& rate) {
     if (!std::isfinite(timestampSeconds)) return;
-    // Monotonic callers are expected. Clamp tiny clock regressions instead of corrupting the window.
     if (!events.empty() && timestampSeconds < events.back().timestampSeconds)
         timestampSeconds = events.back().timestampSeconds;
 
+    const auto maxCount = std::numeric_limits<std::size_t>::max();
     if (!events.empty() && std::fabs(timestampSeconds - events.back().timestampSeconds) <= 1e-9) {
-        if (events.back().count != std::numeric_limits<std::size_t>::max()) ++events.back().count;
-    } else
+        if (events.back().count != maxCount) {
+            ++events.back().count;
+            if (events.size() >= 2 && eventsAfterAnchor != maxCount) ++eventsAfterAnchor;
+        }
+    } else {
+        const bool hadAnchor = !events.empty();
         events.push_back(EventGroup{timestampSeconds, 1});
+        if (hadAnchor && eventsAfterAnchor != maxCount) ++eventsAfterAnchor;
+    }
 
     const double cutoff = timestampSeconds - config_.rateWindowSeconds;
-    // Keep one group before the active window as a time anchor. Its events are not counted; only
-    // work that happened after that anchor contributes to the measured throughput.
-    while (events.size() > 2 && events[1].timestampSeconds < cutoff) events.pop_front();
+    bool recountAfterAnchor = false;
+    while (events.size() > 2 && events[1].timestampSeconds < cutoff) {
+        if (eventsAfterAnchor == maxCount) {
+            recountAfterAnchor = true;
+        } else {
+            eventsAfterAnchor -= events[1].count;
+        }
+        events.pop_front();
+    }
+
+    if (recountAfterAnchor) {
+        eventsAfterAnchor = 0;
+        for (std::size_t i = 1; i < events.size(); ++i) {
+            if (eventsAfterAnchor > maxCount - events[i].count) {
+                eventsAfterAnchor = maxCount;
+                break;
+            }
+            eventsAfterAnchor += events[i].count;
+        }
+    }
+
     if (events.size() >= 2) {
         const double span = events.back().timestampSeconds - events.front().timestampSeconds;
-        if (span > 1e-6) {
-            std::size_t completedAfterAnchor = 0;
-            for (std::size_t i = 1; i < events.size(); ++i) {
-                if (completedAfterAnchor > std::numeric_limits<std::size_t>::max() - events[i].count) {
-                    completedAfterAnchor = std::numeric_limits<std::size_t>::max();
-                    break;
-                }
-                completedAfterAnchor += events[i].count;
-            }
-            if (completedAfterAnchor > 0)
-                rate = static_cast<double>(completedAfterAnchor) / span;
-        }
+        if (span > 1e-6 && eventsAfterAnchor > 0)
+            rate = static_cast<double>(eventsAfterAnchor) / span;
     }
 }
 
 void TelemetryTracker::OnSourceFrame(double timestampSeconds) {
-    RecordEvent(sourceEvents_, timestampSeconds, sourceFps_);
+    RecordEvent(sourceEvents_, sourceEventsAfterAnchor_, timestampSeconds, sourceFps_);
 }
 
 void TelemetryTracker::OnNrSubmitted() {
@@ -75,7 +91,7 @@ void TelemetryTracker::OnNrCompleted(double timestampSeconds) {
     // A completion without a matching submission is stale/duplicated telemetry. Counting it would
     // inflate processed FPS and could make the governor believe an unsustainable rate is healthy.
     if (outstanding_ == 0) return;
-    RecordEvent(processedEvents_, timestampSeconds, processedFps_);
+    RecordEvent(processedEvents_, processedEventsAfterAnchor_, timestampSeconds, processedFps_);
     --outstanding_;
 }
 

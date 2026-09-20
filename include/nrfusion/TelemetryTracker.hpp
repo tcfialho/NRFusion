@@ -50,7 +50,8 @@ private:
         double timestampSeconds = 0.0;
         std::size_t count = 0;
     };
-    void RecordEvent(std::deque<EventGroup>& events, double timestampSeconds, double& rate);
+    void RecordEvent(std::deque<EventGroup>& events, std::size_t& eventsAfterAnchor,
+                     double timestampSeconds, double& rate);
     double AgedRate(double rate, const std::deque<EventGroup>& events, double nowSeconds) const;
 
     TelemetryTrackerConfig config_;
@@ -58,6 +59,8 @@ private:
     std::deque<EventGroup> processedEvents_;
     double sourceFps_ = 0.0;
     double processedFps_ = 0.0;
+    std::size_t sourceEventsAfterAnchor_ = 0;
+    std::size_t processedEventsAfterAnchor_ = 0;
     std::size_t outstanding_ = 0;
 };
 
