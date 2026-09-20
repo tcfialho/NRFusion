@@ -1145,6 +1145,10 @@ int main() {
         assert(finiteSmoothing.Update(nr, {}, 1.0) == 0.0);
         const double recovered = finiteSmoothing.Update(nr, {{10.0, 20.0}}, 1.0);
         assert(std::isfinite(recovered) && recovered > 0.5);
+
+        // More than the inline interval budget still preserves exact union coverage.
+        const std::vector<GpuInterval> manyIntervals(32, GpuInterval{10.0, 20.0});
+        assert(std::fabs(AsyncOverlapEstimator::Instantaneous(nr, manyIntervals) - 1.0) < 0.001);
     }
 
 

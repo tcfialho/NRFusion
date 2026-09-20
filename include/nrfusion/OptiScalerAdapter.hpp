@@ -166,6 +166,7 @@ private:
     PrecisionAutotuner precisionTuner_;
     CrossQueueClockCalibrator queueClocks_;
     AsyncOverlapEstimator asyncOverlap_;
+    std::vector<GpuInterval> asyncCommonIntervals_;
     AsyncQualification asyncTuner_;
     std::uint64_t freshAsyncOverlapSampleId_ = 0;
     // Precision cost is workload-size dependent. Cache the qualified result per WorkingScale
