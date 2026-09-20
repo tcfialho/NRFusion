@@ -46,18 +46,23 @@ add_library(nrfusion_core STATIC
     src/Dlss5NeuralRendering.cpp
     src/AdaptiveExposure.cpp
     src/AdaptiveExposureController.cpp
-    src/AdaW4A8Interceptor.cpp
-    src/DlssgTransfusion.cpp
-    src/SyntheticDx12Provider.cpp
-    src/NvofMotionProvider.cpp
-    src/SyntheticDx11BridgeProvider.cpp
-    src/CaptureProvider32.cpp
-    src/CaptureProvider32Export.cpp
-    src/HostServer64.cpp
-    src/HostDlssNr.cpp
-    src/SyntheticVulkanProvider.cpp
-    src/SyntheticOpenGlProvider.cpp
 )
+
+if (WIN32)
+    target_sources(nrfusion_core PRIVATE
+        src/AdaW4A8Interceptor.cpp
+        src/DlssgTransfusion.cpp
+        src/SyntheticDx12Provider.cpp
+        src/NvofMotionProvider.cpp
+        src/SyntheticDx11BridgeProvider.cpp
+        src/CaptureProvider32.cpp
+        src/CaptureProvider32Export.cpp
+        src/HostServer64.cpp
+        src/HostDlssNr.cpp
+        src/SyntheticVulkanProvider.cpp
+        src/SyntheticOpenGlProvider.cpp
+    )
+endif()
 
 # The fused grouped feed-forward has a CUDA backend when a CUDA compiler is present, and a
 # stub that reports NoDevice when it is not. Callers ask the interface either way, so no
