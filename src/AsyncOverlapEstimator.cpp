@@ -45,37 +45,30 @@ double AsyncOverlapEstimator::Instantaneous(const GpuInterval& nr, const std::ve
     if (!std::isfinite(nr.beginMs) || !std::isfinite(nr.endMs) || nr.endMs <= nr.beginMs) return 0.0;
 
     constexpr std::size_t kInlineIntervals = 16;
-    std::array<GpuInterval, kInlineIntervals> inlineClipped{};
-    std::vector<GpuInterval> overflow;
-    std::size_t count = 0;
-    bool usingOverflow = false;
+    if (concurrent.size() > kInlineIntervals) {
+        std::vector<GpuInterval> clipped;
+        clipped.reserve(concurrent.size());
+        for (const auto& i : concurrent) {
+            if (!std::isfinite(i.beginMs) || !std::isfinite(i.endMs) || i.endMs <= i.beginMs) continue;
+            const double b = std::max(nr.beginMs, i.beginMs);
+            const double e = std::min(nr.endMs, i.endMs);
+            if (e > b) clipped.push_back({b, e});
+        }
+        std::sort(clipped.begin(), clipped.end(),
+                  [](const auto& a, const auto& b) { return a.beginMs < b.beginMs; });
+        return CoveredFractionSorted(nr, clipped.data(), clipped.size());
+    }
 
+    std::array<GpuInterval, kInlineIntervals> clipped{};
+    std::size_t count = 0;
     for (const auto& i : concurrent) {
         if (!std::isfinite(i.beginMs) || !std::isfinite(i.endMs) || i.endMs <= i.beginMs) continue;
         const double b = std::max(nr.beginMs, i.beginMs);
         const double e = std::min(nr.endMs, i.endMs);
-        if (e <= b) continue;
-
-        if (!usingOverflow && count < inlineClipped.size()) {
-            inlineClipped[count++] = {b, e};
-            continue;
-        }
-        if (!usingOverflow) {
-            overflow.reserve(concurrent.size());
-            overflow.insert(overflow.end(), inlineClipped.begin(),
-                            inlineClipped.begin() + static_cast<std::ptrdiff_t>(count));
-            usingOverflow = true;
-        }
-        overflow.push_back({b, e});
+        if (e > b) clipped[count++] = {b, e};
     }
-
-    if (usingOverflow) {
-        std::sort(overflow.begin(), overflow.end(),
-                  [](const auto& a, const auto& b) { return a.beginMs < b.beginMs; });
-        return CoveredFractionSorted(nr, overflow.data(), overflow.size());
-    }
-    SortInline(inlineClipped.data(), count);
-    return CoveredFractionSorted(nr, inlineClipped.data(), count);
+    SortInline(clipped.data(), count);
+    return CoveredFractionSorted(nr, clipped.data(), count);
 }
 
 double AsyncOverlapEstimator::Update(const GpuInterval& nr, const std::vector<GpuInterval>& concurrent, double dtSeconds) {
