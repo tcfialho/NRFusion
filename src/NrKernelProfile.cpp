@@ -89,8 +89,7 @@ State& Shared() {
 // The neural-rendering kernels the vendor runtime launches carry these markers in their
 // names. Everything else in the process -- the game's own compute, other libraries -- is left
 // untouched so the table describes the neural pass and nothing else.
-#if defined(NRFUSION_HAS_DETOURS)
-bool IsNeuralKernel(const char* name) {
+[[maybe_unused]] bool IsNeuralKernel(const char* name) {
     if (!name) return false;
     static const char* markers[] = {"swin", "ffwd", "qkv", "attn", "dlssnr", "cc_", "conv_res"};
     for (const char* marker : markers) {
@@ -125,6 +124,7 @@ void Resolve(State& state) {
     }
 }
 
+#if defined(NRFUSION_HAS_DETOURS)
 CUresult Hooked(CUfunction function, unsigned gx, unsigned gy, unsigned gz,
                 unsigned bx, unsigned by, unsigned bz, unsigned shared,
                 CUstream stream, void** params, void** extra) {
