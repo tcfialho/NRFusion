@@ -100,10 +100,7 @@ bool D3D12TestHarness::Run() {
         const float angle = static_cast<float>(f) * 0.035f;
         RenderScene(f, angle, frameCtx.jitter, frameCtx.cameraCut);
 
-        // Test schedule:
-        // Frames 1..60: Async compute execution with measured cross-queue overlap
-        // Frames 61..90: Fallback simulation (low overlap < 0.12) -> triggers dynamic fallback to Serialized
-        // Frames 91..120: Return to high overlap -> triggers recovery to AsyncCompute
+        // The fallback window drives the existing scheduler degradation and recovery test.
         const bool testFallbackPhase = (config_.testAsync && f >= 61 && f <= 90);
         const SchedulerMode passMode = (config_.testAsync && !testFallbackPhase)
             ? SchedulerMode::AsyncCompute : SchedulerMode::Serialized;
