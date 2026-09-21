@@ -47,35 +47,27 @@
 
 ## Current session
 
-Start: 2026-09-21 12:53 BRT
-Code freeze: 2026-09-21 13:19 BRT
-Windows validation complete: 2026-09-21 13:30 BRT
-Branch: standalone/phase-03-development-harness-20260921
-Base phase-02: 7fa6f9617d24675bef2bb2b0c571fe58763a345d
-Phase 03: complete after second adversarial review.
+Start: 2026-09-21 14:31 BRT
+Branch: standalone/phase-04-feature-registry-20260921
+Base phase-03: a4baa81a337c623a033f59c3e09553bc0a119447
+Phase 04: in progress.
 
-Second-review findings fixed:
-- legacy CTest stopped at frame 60 before the 61..90 fallback window
-- harness provider dropped hostFrameToken/viewId/configurationGeneration
-- CLI ignored unknown/missing options and allowed conflicting modes
-- reset scenario assigned resetHistory by hand instead of exercising provider state
+Audit:
+- no first-party NGX feature registry exists
+- existing NGX create/release/evaluate calls are limited to Requiem tool and OptiScaler fixture
+- registry can stay portable and independent of vendor headers
+- release must carry context + generation token to reject stale release after handle reuse
+- same raw handle in different contexts must remain independent
+- FG/Unknown must map only to passthrough
 
-Validation:
-- Portable run 35624847763 — PASS
-- Windows run 35624847807 — PASS
-- Windows CTest 18/18 — PASS
-- legacy harness: 120 frames — PASS
-- scenario-all — PASS
-- benchmark — PASS
-- CLI unknown/conflict/zero fail-closed regressions — PASS
-- integrated OptiScaler distribution + NSIS — PASS
-- validated code head: 110244459754fda9b7fadec728b72d5e5f210f76
-- largest source touched in review: D3D12HarnessRun.cpp, 243 lines
-- no long comment blocks in changed code
-
-Blocker:
-- none
+Checklist:
+- [ ] add normalized NGX feature lifecycle types
+- [ ] add fixed-capacity registry with create/release/lookup
+- [ ] add evaluate gate with FG/Unknown fail-closed
+- [ ] add mass lifecycle/reuse/multi-context tests
+- [ ] prove steady-state lookup allocations = 0
+- [ ] integrate portable CMake test
+- [ ] run structural audit and final CI once stable
 
 Exact next action:
-- stop after Phase 03 review
-- do not start Phase 04 without explicit user instruction
+- implement fixed-capacity registry and CPU fake lifecycle tests
