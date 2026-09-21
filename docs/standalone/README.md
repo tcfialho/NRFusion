@@ -31,40 +31,38 @@ Execute -> Canonical D3D12 DLSS 5
 Compose / interop de volta ao jogo
 ```
 
-Cada carrier qualifica separadamente Acquire, Normalize, Execute e Compose. Um SyntheticProvider que aceita `ResourceRef` não prova sozinho aquisição em jogos reais.
-
-```text
-contrato DLSS/RR utilizável -> Native/Bridge
-sem contrato utilizável     -> Synthetic
-```
+Cada carrier qualifica Acquire, Normalize, Execute e Compose separadamente. Um SyntheticProvider que aceita `ResourceRef` não prova aquisição em jogos reais.
 
 ## Regra estrutural: máximo 300 linhas
 
-Todo arquivo first-party handwritten de código deve ter **no máximo 300 linhas físicas**, contando comentários e linhas em branco.
+Regra imediata para o standalone: todo arquivo first-party handwritten novo ou substantivamente modificado deve ter **<=300 linhas físicas**, contando comentários e linhas em branco. Alvo prático: <=250.
 
-Escopo: C/C++/headers, CUDA, shaders, Python, PowerShell, CMake/build logic, installer, tests, harnesses e tools. Exceções: docs, código gerado, vendor/third-party e fixtures upstream não editadas.
+Escopo: C/C++/headers, CUDA, shaders, Python, PowerShell, CMake/build logic, installer, tests, harnesses e tools.
 
-Regras:
+Transição:
 
-- alvo prático <=250 linhas para deixar margem;
-- ao se aproximar de 250, procurar boundary real de responsabilidade antes de adicionar;
-- dividir por ownership/lifetime/responsabilidade, nunca por `Part1/Part2`;
-- proibido burlar com minificação, múltiplos statements por linha, código gigante embutido em strings, `.inc` dumps ou mover implementação para header;
-- arquivo legado >300 não cresce: ao receber mudança substancial do standalone, é dividido mecanicamente primeiro ou aposentado na mesma fase;
-- o cutover final exige **zero arquivo first-party handwritten >300 linhas**.
+- legado first-party >300 pode permanecer **read-only/no-growth** até a fase dona;
+- ao precisar evoluí-lo, fazer split mecânico primeiro ou aposentá-lo na mesma fase;
+- cutover final: **zero first-party handwritten >300**.
 
-Toda fase herda esse gate mesmo quando o arquivo da fase não o repete.
+Exceções só para:
+
+- docs;
+- generated reproduzível por generator/input tracked, marcado generated e nunca editado manualmente;
+- vendor/third-party e fixtures upstream enquanto permanecerem sem modificação local.
+
+Regras anti-evasão:
+
+- dividir por ownership/lifetime/responsabilidade, nunca `Part1/Part2`;
+- não espalhar um God class pelos arquivos para cumprir número;
+- não minificar, empilhar statements, esconder código em strings/`.inc`, ou mover implementação para headers;
+- modificação handwritten em vendor/fixture deixa de ser exceção.
+
+Toda fase herda esse gate.
 
 ## Reuso antes de criar
 
-Primeiro estender:
-
-- `nrfusion_sim`;
-- `nrfusion_harness_3d`;
-- synthetic tests existentes;
-- IPC/capture32/Host64 tests existentes.
-
-Novo harness só é aceito quando extensão pequena não representa o cenário.
+Primeiro estender `nrfusion_sim`, `nrfusion_harness_3d`, synthetic tests e IPC/capture32/Host64 tests existentes.
 
 ## Contrato de performance
 
@@ -94,7 +92,7 @@ Também:
 2. **Harness gráfico** — Acquire/Normalize/Execute/Compose determinísticos.
 3. **Jogos reais** — driver, aquisição real, imagem, VRAM e performance final.
 
-Antes de jogo real, tentar reproduzir no menor harness existente. Harness não é produto: sem engine/assets/UI elaborada.
+Antes de jogo real, tentar reproduzir no menor harness existente.
 
 ## Ordem
 
@@ -130,7 +128,7 @@ Antes de jogo real, tentar reproduzir no menor harness existente. Harness não �
 - O arquivo da fase atual é a fonte de verdade.
 - Não avançar sem gate anterior ou blocker explícito.
 - Cada item deve ser pequeno e verificável.
-- Toda fase fecha somente se arquivos novos/tocados respeitam <=300 linhas.
+- Toda fase fecha somente se código novo/tocado respeita <=300 linhas.
 - Estabilizar lote antes de mover branch/rodar CI completo.
 - CI confirma integração; não substitui revisão.
 - Mudança hot-path registra antes/depois/custo/comportamento.
@@ -165,4 +163,4 @@ Antes de jogo real, tentar reproduzir no menor harness existente. Harness não �
 
 ## Critério final
 
-NRFusion só substitui OptiScaler quando as rotas anunciadas qualificarem Acquire→Normalize→Execute→Compose, o host tiver menor overhead para trabalho equivalente, não houver regressão de VRAM equivalente e nenhum código first-party handwritten exceder 300 linhas por arquivo.
+NRFusion só substitui OptiScaler quando as rotas anunciadas qualificarem Acquire→Normalize→Execute→Compose, o host tiver menor overhead equivalente, não houver regressão de VRAM equivalente e houver zero first-party handwritten code file >300 linhas.

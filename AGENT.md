@@ -26,15 +26,16 @@
 
 ## Source size
 
-- Hard cap: every first-party handwritten code file must be <=300 physical lines after formatting.
-- Blank lines and comments count. The rule is intentionally mechanical and unambiguous.
+- Immediate rule: every new or substantively modified first-party handwritten code file for standalone work must be <=300 physical lines after formatting.
+- Blank lines and comments count. The rule is intentionally mechanical.
 - Soft limit: at ~250 lines, stop adding responsibility and split before reaching 300.
 - Applies to production code, headers, CUDA, shaders, tests, harnesses, tools, scripts, CMake/build logic and installer code.
-- Excludes documentation, generated files, vendored/third-party code and fixtures copied verbatim from upstream.
+- Transition-only grandfathering: existing >300-line first-party files may remain read-only/no-growth until their owning phase splits or retires them.
+- Final cutover requires zero first-party handwritten code files above 300 lines.
+- Generated-file exemption is valid only when the file is reproducibly produced from tracked source/generator inputs, is marked generated, and is not manually edited.
+- Vendored/third-party code and upstream fixtures are exempt only while unmodified. Local handwritten modifications count as first-party code.
 - Do not evade the cap with minification, multiple statements per line, giant embedded code strings, generated-style .inc dumps, or by moving implementation into headers.
-- Split by responsibility/lifetime/ownership, never arbitrary Part1/Part2 chunks.
-- Existing >300-line first-party files may remain untouched during transition, but must not grow. If standalone work needs to modify one substantially, split it mechanically first or retire it in that phase.
-- Final standalone cutover requires zero first-party handwritten code files above 300 lines.
+- Split by responsibility/lifetime/ownership, never arbitrary Part1/Part2 chunks or one God class spread across partial files.
 
 ## Comments
 
