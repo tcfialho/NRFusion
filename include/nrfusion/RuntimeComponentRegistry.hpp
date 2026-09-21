@@ -50,6 +50,7 @@ public:
     }
 
     bool Supports(RuntimeComponent component) const noexcept {
+        if (component.capabilityMask == 0) return false;
         const auto* entry = Find(component.kind, component.api);
         return entry && (entry->capabilityMask & component.capabilityMask) == component.capabilityMask;
     }

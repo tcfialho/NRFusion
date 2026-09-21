@@ -40,6 +40,7 @@ int main() {
     const auto* d3d12 = registry.Find(RuntimeComponentKind::Provider, GraphicsApi::D3D12);
     assert(d3d12 && d3d12->capabilityMask == 3);
     assert(registry.Supports({RuntimeComponentKind::Provider, GraphicsApi::D3D12, 3}));
+    assert(!registry.Supports({RuntimeComponentKind::Provider, GraphicsApi::D3D12, 0}));
 
     RuntimeConfig sameGeneration = config;
     sameGeneration.enabled = true;
