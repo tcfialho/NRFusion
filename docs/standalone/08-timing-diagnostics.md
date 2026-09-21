@@ -11,12 +11,13 @@ Fase 07.
 ## Fora de escopo
 
 - Remover capacidade de diagnóstico
-- Adicionar query wait síncrono
+- Copiar o modelo bloqueante de timing do harness para o produto
 
 ## Implementação
 
 - [ ] Usar query heap/ring compartilhado e bounded.
 - [ ] Normal path: um intervalo total; alvo de 2 timestamps + 1 ResolveQueryData por amostra.
+- [ ] Consumir resultados aposentados sem esperar a GPU no frame atual.
 - [ ] Cachear timestamp frequency enquanto queue for a mesma.
 - [ ] Associar resultado ao WorkId/generation exatos.
 - [ ] Readback persistente ou ring reutilizado.
@@ -25,20 +26,22 @@ Fase 07.
 
 ## Revisão obrigatória
 
-- [ ] Slot não pode ser reutilizado antes do retirement.
+- [ ] Slot não é reutilizado antes do retirement.
 - [ ] Stale timing nunca é reaplicado.
 - [ ] Diagnostics off não mantém resources/comandos exclusivos.
+- [ ] Map/Unmap ou readback não introduzem sync implícita.
 - [ ] Detailed timing não muda policy.
 
 ## Validação rápida
 
-- [ ] Harness conta comandos/counters com fake/real D3D12 quando disponível.
-- [ ] Delayed retirement e dropped timing.
+- [ ] FakeTimingSource valida association/staleness sem GPU.
+- [ ] Correctness harness valida queries reais, mesmo que use wait.
+- [ ] Benchmark do host exclui waits artificiais do harness.
 - [ ] Comparar Diagnostics off/on.
 
 ## Gate
 
-- [ ] Normal path sem wait e bounded.
+- [ ] Produto normal não espera a GPU por telemetry.
 - [ ] Off não paga On.
 - [ ] Controller recebe apenas amostra fresca corretamente associada.
 

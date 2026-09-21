@@ -2,7 +2,7 @@
 
 ## Objetivo
 
-Provar por revisão e harness que o standalone é menor e mais previsível que o host atual.
+Provar por revisão e medição isolada que o standalone é menor e mais previsível que o host atual.
 
 ## Dependências
 
@@ -10,7 +10,7 @@ Rotas principais implementadas.
 
 ## Fora de escopo
 
-- Microbenchmark irrelevante ao frame path
+- Tratar o tempo total do correctness harness como overhead do NRFusion
 - Otimização especulativa do modelo
 
 ## Implementação
@@ -19,25 +19,27 @@ Rotas principais implementadas.
 - [ ] Auditar filesystem/module/PE scans.
 - [ ] Auditar mutex/shared_mutex e atomics fortes sem necessidade.
 - [ ] Auditar CreateResource/Heap/PSO e waits síncronos.
-- [ ] Auditar descriptor writes por frame separadamente de heap/resource allocations.
+- [ ] Auditar descriptor writes/frame separadamente de heap/resource allocation.
 - [ ] Auditar capability/timestamp-frequency/config conversions repetidas.
-- [ ] Revisar explicitamente locks atuais de SyntheticDx12/Dx11/OpenGL providers.
+- [ ] Revisar locks dos SyntheticDx12/Dx11/OpenGL providers.
 - [ ] Classificar cada custo como init, reconfigure ou steady-state.
-- [ ] Gerar contagem normal/frame: locks, creates, descriptor writes, queries, copies e host calls.
+- [ ] Contar por frame: locks, creates, descriptor writes, queries, copies e host calls.
 
 ## Revisão obrigatória
 
-- [ ] Todo custo steady-state restante precisa de justificativa concreta.
-- [ ] Descriptor write pode ser aceitável; descriptor heap creation/frame não é.
-- [ ] Benchmark separa warm-up e mede p50/p95/p99.
+- [ ] Todo custo steady-state restante tem justificativa concreta.
+- [ ] Descriptor write pode ser aceitável; descriptor heap creation/frame não.
+- [ ] Benchmark exclui fence waits, GPU Map/Unmap e console usados apenas pelo harness de correção.
+- [ ] Warm-up é separado; reportar p50/p95/p99.
 - [ ] Regressão de tail latency bloqueia merge até explicada.
 - [ ] Comparação OptiScaler usa trabalho equivalente.
 
 ## Validação rápida
 
-- [ ] CPU paths por milhões de frames.
-- [ ] Harness de cada carrier principal em long run.
-- [ ] Before/after para remoções relevantes.
+- [ ] CPU/fake paths por milhões de frames.
+- [ ] Benchmark mode dos carriers principais.
+- [ ] Correctness mode separado para sync/resources.
+- [ ] Before/after de cada remoção relevante.
 
 ## Gate
 
