@@ -27,6 +27,8 @@ nrfusion::FrameContext D3D12TestHarness::AcquireFrame(const nrfusion::ProviderIn
     frame.hostFrameToken = input.hostFrameToken;
     frame.viewId = input.viewId;
     frame.configurationGeneration = input.configurationGeneration;
+    frame.resetHistory = resetHistoryNextFrame_;
+    resetHistoryNextFrame_ = false;
     frame.api = GraphicsApi::D3D12;
 
     frame.color.opaqueId = reinterpret_cast<std::uintptr_t>(colorBuffer_.Get());

@@ -105,6 +105,7 @@ private:
                                   bool recoveredAsync) const;
     bool RunBenchmark();
     bool RunScenario();
+    bool ValidateResetScenario();
     bool ResizeResources(std::uint32_t width, std::uint32_t height);
     bool InitializeDevice();
     bool CreateQueues();
@@ -169,6 +170,7 @@ private:
 
     float prevViewProj_[16]{};
     bool hasPrevFrame_ = false;
+    bool resetHistoryNextFrame_ = false;
 
     nrfusion::NvofWrapper nvofWrapper_;
     std::string exeSha256_;

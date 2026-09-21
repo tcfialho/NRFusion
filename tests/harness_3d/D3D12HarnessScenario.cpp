@@ -16,13 +16,6 @@ bool ValidateSteady(D3D12TestHarness& harness) {
     return harness.IsSupported(game) && frame.ReadyForCore();
 }
 
-bool ValidateReset(D3D12TestHarness& harness) {
-    const auto cut = harness.AcquireFrame({45, 45});
-    auto reset = harness.AcquireFrame({46, 46});
-    reset.resetHistory = true;
-    return cut.cameraCut && !cut.resetHistory && !reset.cameraCut && reset.resetHistory;
-}
-
 bool ValidateMissingGuides(D3D12TestHarness& harness) {
     auto frame = harness.AcquireFrame({2, 2});
     frame.depth = {};
@@ -86,6 +79,15 @@ const char* ScenarioName(HarnessScenario scenario) {
 
 }
 
+bool D3D12TestHarness::ValidateResetScenario() {
+    const auto cut = AcquireFrame({45, 45});
+    resetHistoryNextFrame_ = true;
+    const auto reset = AcquireFrame({46, 46});
+    const auto after = AcquireFrame({47, 47});
+    return cut.cameraCut && !cut.resetHistory && !reset.cameraCut &&
+           reset.resetHistory && !after.cameraCut && !after.resetHistory;
+}
+
 bool D3D12TestHarness::RunScenario() {
     const auto selected = config_.scenario;
     const auto wants = [selected](HarnessScenario scenario) {
@@ -94,7 +96,7 @@ bool D3D12TestHarness::RunScenario() {
 
     bool ok = true;
     if (wants(HarnessScenario::Steady)) ok = ValidateSteady(*this) && ok;
-    if (wants(HarnessScenario::Reset)) ok = ValidateReset(*this) && ok;
+    if (wants(HarnessScenario::Reset)) ok = ValidateResetScenario() && ok;
     if (wants(HarnessScenario::MissingGuides)) ok = ValidateMissingGuides(*this) && ok;
     if (wants(HarnessScenario::Provenance)) ok = ValidateProvenance(*this) && ok;
     if (wants(HarnessScenario::Toggle)) ok = ValidateToggle() && ok;
