@@ -5,6 +5,7 @@
 #include <iostream>
 #include <string>
 #include <string_view>
+#include <system_error>
 
 namespace {
 
@@ -25,7 +26,7 @@ bool ParseScenario(std::string_view value, nrfusion::testing::HarnessScenario& s
 bool NextValue(int argc, char* argv[], int& index, std::string_view& value) {
     if (index + 1 >= argc) return false;
     value = argv[++index];
-    return !value.empty();
+    return !value.empty() && !value.starts_with("--");
 }
 
 bool ParsePositiveU32(std::string_view value, std::uint32_t& output) {
