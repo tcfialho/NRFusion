@@ -11,7 +11,7 @@ MotionSource ChooseMotion(const FrameContext& frame, const RuntimeCapabilities& 
         return MotionSource::DlssContract;
     if (caps.nvof)
         return MotionSource::NvidiaOpticalFlow;
-    if (caps.shaderMotion && frame.HasDepth() && frame.depthReliable)
+    if (caps.shaderMotion && frame.HasDepth() && frame.DepthReliable())
         return MotionSource::ShaderEstimated;
     return MotionSource::Zero;
 }

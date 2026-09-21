@@ -1,5 +1,6 @@
 #pragma once
-#include "nrfusion/Types.hpp"
+
+#include "nrfusion/FrameContract.hpp"
 
 #include <cstdint>
 
@@ -8,6 +9,8 @@ namespace nrfusion {
 struct ProviderInput {
     FrameId frameId = 0;
     std::uint64_t hostFrameToken = 0;
+    std::uint64_t viewId = 0;
+    std::uint64_t configurationGeneration = 0;
 };
 
 struct ProviderDiagnostics {
