@@ -2,7 +2,7 @@
 
 ## Objetivo
 
-Criar lifecycle/bootstrap/configuração sem concentrar tudo em um `Runtime.cpp` ou `GameProbe.cpp` gigante.
+Criar lifecycle/bootstrap/configuração sem concentrar tudo em um `Runtime.cpp`, `GameProbe.cpp` ou build script gigante.
 
 ## Dependências
 
@@ -17,7 +17,9 @@ Fases 00–01.
 ## Implementação
 
 - [ ] Separar bootstrap/proxy, runtime lifecycle, config snapshot e registry.
-- [ ] Se `GameProbe.cpp` for reaproveitado, separar PE/module inspection, API resolution, capability scan e install-support logic antes de expansão.
+- [ ] Se `GameProbe.cpp` for reaproveitado, separar PE/module inspection, API resolution, capability scan e install-support logic.
+- [ ] `CMakeLists.txt` já está em ~267 linhas: modularizar Core/Tests/Windows/Standalone antes de adicionar muitos targets novos.
+- [ ] Se `build_dist.ps1` precisar ser tocado antes do cutover, dividir primeiro; não fazê-lo crescer acima das 395 linhas atuais.
 - [ ] Definir init/shutdown idempotentes.
 - [ ] RuntimeConfig compacto por snapshot/generation.
 - [ ] Registrar providers/executors por capability.
@@ -32,21 +34,21 @@ Fases 00–01.
 - [ ] Partial init/shutdown limpa só o que possui.
 - [ ] Bootstrap não pressupõe API.
 - [ ] Probing não mistura filesystem parsing com frame runtime.
-- [ ] Nenhuma classe agrega bootstrap + policy + carrier.
+- [ ] Build modularization não duplica target definitions/options.
 
 ## Validação rápida
 
 - [ ] Abrir/fechar shell com fake components.
 - [ ] Falha por estágio.
 - [ ] Medir disabled path.
-- [ ] LOC checker.
+- [ ] LOC checker inclui CMake/scripts.
 
 ## Gate
 
 - [ ] Shutdown sem leak/thread.
 - [ ] Disabled não altera output.
 - [ ] Bootstrap/probe desacoplados de Acquire/Execute.
-- [ ] Nenhum arquivo novo/tocado >300.
+- [ ] Build files tocados respeitam <=300.
 
 ## Próxima fase
 

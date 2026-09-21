@@ -19,9 +19,11 @@ Fase 22.
 - [ ] Comparar VRAM e A/B real de GPU/FPS/1% low/pacing.
 - [ ] Validar menu/config/recovery.
 - [ ] Substituir build_dist/installer dependentes de OptiScaler.
-- [ ] Remover `apply_to_optiscaler.py` e `OptiScalerAdapter` em vez de desperdiçar split se já estiverem obsoletos.
-- [ ] Split `InstallerState.cpp` em **manifest/validation** e **transaction snapshot/restore** se permanecer ativo.
-- [ ] Modularizar `build_dist.ps1` por build/bootstrap/package se permanecer >300.
+- [ ] Remover `apply_to_optiscaler.py` e `OptiScalerAdapter` em vez de refatorá-los se já obsoletos.
+- [ ] Split `InstallerState.cpp`: manifest/validation e transaction snapshot/restore.
+- [ ] `installer/NRFusion.nsi` (~466 linhas) deve ser dividido por UI/config/install-uninstall usando includes pequenos.
+- [ ] `build_dist.ps1` (~395 linhas) deve ser dividido por bootstrap/build/package se ainda ativo.
+- [ ] CMake modular continua <=300 por arquivo.
 - [ ] Confirmar CUDA/shaders/tests/tools/build/install ativos <=300.
 - [ ] Manter OptiScaler apenas como referência/fallback durante preview.
 - [ ] Definir rollback objetivo.
@@ -31,6 +33,7 @@ Fase 22.
 - [ ] A/B equivalente.
 - [ ] Resultado negativo = blocker/limitação.
 - [ ] Installer não deixa proxies conflitantes.
+- [ ] Includes de NSIS/CMake não são usados como dump arbitrário para burlar o cap.
 - [ ] “Só teste/tool” não é exceção.
 - [ ] Vendor/generated/fixture são únicas exceções formais.
 
