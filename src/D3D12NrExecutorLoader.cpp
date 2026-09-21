@@ -25,11 +25,7 @@ bool FileExists(const std::wstring& path) {
     return GetFileAttributesW(path.c_str()) != INVALID_FILE_ATTRIBUTES;
 }
 
-// A game process finds the driver's nvngx.dll already loaded (something in its own module list --
-// the platform's own loader, or a DLSS proxy -- pulled it in first). A bare standalone process, like
-// this host, has nothing to do that, and the driver store is deliberately off the standard DLL
-// search path, so a plain LoadLibraryW(L"nvngx.dll") finds nothing here even though the file is on
-// disk. Enumerating the driver store and loading it by full path is the fallback for that case.
+// Standalone hosts may need DriverStore because nvngx.dll is outside the normal DLL search path.
 HMODULE LoadDriverNgxFromDriverStore() {
     wchar_t systemDir[MAX_PATH]{};
     if (GetSystemDirectoryW(systemDir, MAX_PATH) == 0) return nullptr;

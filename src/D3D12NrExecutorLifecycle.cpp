@@ -12,9 +12,7 @@ bool D3D12NrExecutor::EnsureFeature(ID3D12GraphicsCommandList* cmdList, uint32_t
         feature_ = nullptr;
     }
 
-    // The device is recovered from the command list's own allocator implicitly by the forwarder's
-    // cached snippet; passing nullptr here would only matter on the very first device the snippet
-    // sees, which Init() above already primed.
+    // Init() primes the forwarder before feature creation needs the command-list device.
     ID3D12Device* device = nullptr;
     cmdList->GetDevice(IID_PPV_ARGS(&device));
 
