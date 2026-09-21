@@ -44,6 +44,7 @@ add_library(nrfusion_core STATIC
     src/AdaptiveExposureController.cpp
     src/RuntimeShell.cpp
     src/RuntimeBootstrap.cpp
+    src/NgxFeatureRegistry.cpp
 )
 
 if (WIN32)
