@@ -36,7 +36,12 @@ bool ValidateMissingGuides(D3D12TestHarness& harness) {
 }
 
 bool ValidateProvenance(D3D12TestHarness& harness) {
-    auto frame = harness.AcquireFrame({3, 3});
+    const ProviderInput input{3, 17, 23, 29};
+    auto frame = harness.AcquireFrame(input);
+    if (frame.hostFrameToken != input.hostFrameToken || frame.viewId != input.viewId ||
+        frame.configurationGeneration != input.configurationGeneration)
+        return false;
+
     frame.color.provenance = ResourceProvenance::GameNative;
     frame.color.reliability = ResourceReliability::Reliable;
     frame.color.ownership = ResourceOwnership::Borrowed;

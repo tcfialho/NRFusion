@@ -24,6 +24,9 @@ bool D3D12TestHarness::IsSupported(const nrfusion::GameContext& game) const {
 nrfusion::FrameContext D3D12TestHarness::AcquireFrame(const nrfusion::ProviderInput& input) {
     nrfusion::FrameContext frame{};
     frame.frameId = input.frameId;
+    frame.hostFrameToken = input.hostFrameToken;
+    frame.viewId = input.viewId;
+    frame.configurationGeneration = input.configurationGeneration;
     frame.api = GraphicsApi::D3D12;
 
     frame.color.opaqueId = reinterpret_cast<std::uintptr_t>(colorBuffer_.Get());
