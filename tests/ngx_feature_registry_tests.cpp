@@ -70,6 +70,7 @@ int main() {
     assert(ClassifyNgxFeatureId(1) == NgxFeatureKind::SuperResolution);
     assert(ClassifyNgxFeatureId(11) == NgxFeatureKind::FrameGeneration);
     assert(ClassifyNgxFeatureId(13) == NgxFeatureKind::RayReconstruction);
+    assert(ClassifyNgxFeatureId(18) == NgxFeatureKind::Unknown);
     assert(ClassifyNgxFeatureId(999) == NgxFeatureKind::Unknown);
     assert(registry.Size() == 0);
 
@@ -79,9 +80,11 @@ int main() {
         {0x101, 1, 11, true});
     const auto rr = registry.RecordCreate(
         {0x102, 1, 13, true});
+    const auto privateNr = registry.RecordCreate(
+        {0x103, 1, 18, true});
     const auto unknown = registry.RecordCreate(
-        {0x103, 1, 999, true});
-    assert(sr && fg && rr && unknown);
+        {0x104, 1, 999, true});
+    assert(sr && fg && rr && privateNr && unknown);
 
     FakeNrExecutor fakeNr;
     fakeNr.Evaluate(registry, 1, sr.token.handle);
@@ -90,6 +93,7 @@ int main() {
     assert(fakeNr.calls == 1);
     fakeNr.Evaluate(registry, 1, rr.token.handle);
     assert(fakeNr.calls == 2);
+    fakeNr.Evaluate(registry, 1, privateNr.token.handle);
     fakeNr.Evaluate(registry, 1, unknown.token.handle);
     fakeNr.Evaluate(registry, 1, 0xFFFF);
     assert(fakeNr.calls == 2);
