@@ -48,34 +48,34 @@
 ## Current session
 
 Start: 2026-09-21 12:53 BRT
+Code freeze: 2026-09-21 13:19 BRT
+Windows validation complete: 2026-09-21 13:30 BRT
 Branch: standalone/phase-03-development-harness-20260921
 Base phase-02: 7fa6f9617d24675bef2bb2b0c571fe58763a345d
-Phase 03: complete.
+Phase 03: complete after second adversarial review.
 
-Completed:
-- split the 1084-line D3D12 harness by responsibility without creating another mini-game
-- preserved the legacy correctness path before adding features
-- added focused correctness scenarios and a separate benchmark mode
-- measured only AcquireFrame + ReadyForCore + ResolveAuto in the benchmark
-- added preallocated p50/p95/p99 samples, counters and before/after baseline support
-- fixed scenario short-circuit so all selected checks run and resize always restores resources
-- fixed the Halton return lost during the mechanical split
-- fixed the flattened OptiScaler host closure by adding FrameContract.hpp to the patcher manifest
-- registered legacy/scenario/benchmark flows as CTests of the same harness executable
-- Portable Core final validation passed
-- Windows integrated validation passed
-- Windows CTest passed 15/15 including legacy, scenario-all and benchmark
-- integrated OptiScaler distribution and NSIS validation passed
-- largest new/touched harness source is 248 lines
+Second-review findings fixed:
+- legacy CTest stopped at frame 60 before the 61..90 fallback window
+- harness provider dropped hostFrameToken/viewId/configurationGeneration
+- CLI ignored unknown/missing options and allowed conflicting modes
+- reset scenario assigned resetHistory by hand instead of exercising provider state
 
 Validation:
-- Portable run: 35601662949 — PASS
-- Windows run: 35601662951 — PASS
-- validated code head: 9ddf010dd16ff5691a7059ba45788ba2bc0f8338
+- Portable run 35624847763 — PASS
+- Windows run 35624847807 — PASS
+- Windows CTest 18/18 — PASS
+- legacy harness: 120 frames — PASS
+- scenario-all — PASS
+- benchmark — PASS
+- CLI unknown/conflict/zero fail-closed regressions — PASS
+- integrated OptiScaler distribution + NSIS — PASS
+- validated code head: 110244459754fda9b7fadec728b72d5e5f210f76
+- largest source touched in review: D3D12HarnessRun.cpp, 243 lines
+- no long comment blocks in changed code
 
 Blocker:
 - none
 
 Exact next action:
-- stop after Phase 03 closure
+- stop after Phase 03 review
 - do not start Phase 04 without explicit user instruction

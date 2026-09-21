@@ -17,49 +17,92 @@
 
 ## Split mecânico
 
-O monólito de 1084 linhas foi removido e substituído por arquivos por responsabilidade:
+O monólito de 1084 linhas foi removido e dividido por responsabilidade. Antes de features,
+comparação automática confirmou corpos equivalentes, HLSL idêntico e target/CTest preservados.
+
+Após as revisões, os principais sources do harness permanecem abaixo do limite:
 
 | Arquivo | Linhas |
 |---|---:|
-| `D3D12HarnessLifecycle.cpp` | 161 |
-| `D3D12HarnessResources.cpp` | 115 |
-| `D3D12HarnessShaders.cpp` | 66 |
+| `D3D12HarnessRun.cpp` | 243 |
 | `D3D12HarnessPipeline.cpp` | 188 |
-| `D3D12HarnessScene.cpp` | 65 |
-| `D3D12HarnessExecution.cpp` | 26 |
-| `D3D12HarnessProvider.cpp` | 75 |
-| `D3D12HarnessDispatch.cpp` | 11 |
-| `D3D12HarnessRun.cpp` | 248 |
-| `D3D12HarnessScenario.cpp` | 118 |
+| `D3D12TestHarness.hpp` | 181 |
+| `main.cpp` | 131 |
+| `D3D12HarnessScenario.cpp` | 129 |
+| `D3D12HarnessResources.cpp` | 115 |
 | `D3D12HarnessBenchmark.cpp` | 107 |
+| `D3D12HarnessProvider.cpp` | 80 |
+| `D3D12HarnessShaders.cpp` | 66 |
+| `D3D12HarnessScene.cpp` | 65 |
+| `D3D12HarnessCorrectness.cpp` | 40 |
 | `D3D12HarnessMetrics.cpp` | 34 |
-
-Antes de qualquer feature, comparação automática confirmou:
-
-- 15 funções originais com corpos equivalentes;
-- HLSL idêntico;
-- CMake idêntico fora da lista de fontes do mesmo target;
-- target e CTest existentes preservados.
-
-Após a separação de modos, o corpo do correctness legado permaneceu código-equivalente
-ao `Run()` original, ignorando apenas comentários e whitespace.
+| `D3D12HarnessExecution.cpp` | 26 |
+| `D3D12HarnessDispatch.cpp` | 11 |
 
 ## Correctness
 
-O modo padrão permanece o fluxo legado.
+O modo padrão permanece o fluxo legacy. Cenários opcionais:
 
-Cenários focais opcionais por `--scenario`:
+- `steady`;
+- `resize`;
+- `reset`;
+- `missing-guides`;
+- `provenance`;
+- `on-off`;
+- `failure`;
+- `all`.
 
-- `steady`: frame normal e suporte D3D12;
-- `resize`: recria recursos reais em metade da resolução e restaura o tamanho original;
-- `reset`: mantém camera cut e reset-history como sinais separados;
-- `missing-guides`: remove guias opcionais e valida fallback do contrato;
-- `provenance`: aceita evidência completa do frame correto e rejeita recurso de frame errado;
-- `on-off`: valida lifecycle Disabled → Running → Disabled;
-- `failure`: remove o color obrigatório e exige rejeição;
-- `all`: executa todos os cenários focais.
+O resize recria recursos reais e restaura as dimensões originais.
 
-Não foi criado outro executável ou mini-game.
+O reset agora é one-shot no provider: um pedido de reset marca exatamente o próximo
+`FrameContext.resetHistory`, sem confundir o sinal com `cameraCut`.
+
+O cenário provenance agora verifica que `AcquireFrame()` preserva:
+
+- `hostFrameToken`;
+- `viewId`;
+- `configurationGeneration`.
+
+Depois ele mantém a regressão N vs N+1 em `sourceFrameId`.
+
+## Fallback/recovery
+
+A revisão encontrou um falso positivo no gate original: o CTest executava apenas 60 frames,
+mas a janela artificial de fallback começava no frame 61. O teste aceitava qualquer
+`Serialized` de startup como prova do fallback.
+
+Correção:
+
+- CTest legacy passou de 60 para 120 frames;
+- o harness registra async antes do frame 61;
+- exige `Serialized` dentro de 61..90;
+- exige retorno a `AsyncCompute` após o frame 90;
+- a validação final só publica sucesso do ciclo quando os três sinais ocorreram.
+
+O relatório final foi extraído de `D3D12HarnessRun.cpp` para
+`D3D12HarnessCorrectness.cpp`, mantendo o hot source em 243 linhas.
+
+## CLI fail-closed
+
+A revisão encontrou outro falso positivo: opções desconhecidas ou sem valor eram ignoradas.
+Também era possível combinar `--benchmark --scenario all` e executar apenas benchmark.
+
+A CLI agora:
+
+- rejeita opção desconhecida;
+- rejeita valor ausente;
+- rejeita inteiros zero para frames/dimensões/iterações;
+- rejeita `--benchmark` junto com `--correctness`;
+- rejeita `--benchmark` junto com `--scenario`;
+- usa `from_chars`, sem exceção para parsing normal.
+
+Regressões CTest:
+
+- `nrfusion_harness_3d_cli_unknown`;
+- `nrfusion_harness_3d_cli_conflict`;
+- `nrfusion_harness_3d_cli_zero_frames`.
+
+Todos usam `WILL_FAIL` e terminam antes da inicialização D3D12.
 
 ## Benchmark
 
@@ -67,75 +110,52 @@ Não foi criado outro executável ou mini-game.
 
 `AcquireFrame → ReadyForCore → ResolveAuto`
 
-O trecho cronometrado não contém:
+O trecho medido não contém wait, `Map`, console, filesystem nem setup de recursos.
+Há 256 warmups e buffer pré-alocado. O relatório contém iterations, not-ready,
+unsupported, p50, p95 e p99.
 
-- wait/fence wait;
-- `Map`;
-- console;
-- filesystem;
-- setup de recursos.
+## Histórico de correções da Fase 03
 
-Há 256 iterações de warmup antes da coleta.
+Primeira revisão/validação:
 
-A coleta usa buffer pré-alocado e reporta:
+- short-circuit podia pular cenários posteriores e a restauração do resize;
+- `Halton()` perdeu `return r;` durante o split;
+- manifest flatten do OptiScaler omitia `FrameContract.hpp`.
 
-- iterations;
-- not-ready count;
-- unsupported count;
-- p50;
-- p95;
-- p99.
+Segunda revisão adversarial:
 
-`--benchmark-report <path>` controla o baseline. O padrão é
-`harness_3d_benchmark.txt`. Se o arquivo já existir, a saída mostra before/after e,
-após a medição, atualiza o baseline. Leitura/escrita ocorrem fora do trecho medido.
+- CTest legacy não alcançava a janela de fallback;
+- provider do harness descartava identidade adicional do FrameContract;
+- CLI era fail-open;
+- cenário reset escrevia manualmente o próprio resultado e não exercitava estado do provider.
 
-## Revisão do lote
+Commits da segunda revisão:
 
-A revisão adversarial do código novo encontrou um erro no runner de cenários: após a primeira falha,
-o uso de short-circuit podia pular cenários posteriores e, no resize, podia pular a restauração do
-tamanho original. O runner agora executa todas as validações selecionadas e restaura recursos
-independentemente do resultado intermediário.
+- `6cda14f9b0418f90c2dddcd1b6455316b13d679c` — frame identity;
+- `86df11f3bda93e4d7fc2c12965efd063213d8bbb` — fallback/recovery;
+- `d9e3c9f1463942177b302222e91d3f6c481b0821` — CLI fail-closed;
+- `4cda2b92f8bcd6b7b14c38fb4517411000624044` — reset one-shot;
+- `110244459754fda9b7fadec728b72d5e5f210f76` — reject missing option values.
 
-A primeira validação Windows encontrou uma regressão mecânica do split: `Halton()` perdeu
-`return r;`. O MSVC emitiu C4716 e o build falhou. O retorno foi restaurado no commit
-`8926c5afeccdd86d79282f1a095e9fa5759522cc`.
+## Validação final da segunda revisão
 
-A primeira validação Portable compilou o core e passou 5/5 testes, mas o fixture do patcher detectou
-closure flatten incompleto: `Types.hpp` e `FrameContractProvider.hpp` incluíam
-`FrameContract.hpp`, que não estava no manifest do host. O manifest passou a copiar
-`FrameContract.hpp` no commit `806262a355889f37857da0dd077413035e978692`.
+Head validado: `110244459754fda9b7fadec728b72d5e5f210f76`.
 
-Comentários que apenas repetiam operações foram removidos. O maior source do harness ficou com
-248 linhas sem compactar statements.
+Portable Core run `35624847763`: **PASS**.
 
-## Validação final
+Windows run `35624847807`: **PASS**.
 
-PR draft de validação: #4.
+CTest Windows:
 
-Head de código validado: `9ddf010dd16ff5691a7059ba45788ba2bc0f8338`.
-
-Portable Core run `35601662949`:
-
-- build: PASS;
-- testes portáveis: PASS;
-- patcher fixture/closure: PASS.
-
-Windows run `35601662951`:
-
-- MSVC build: PASS;
-- `nrfusion_harness_3d`: PASS, 5,29 s;
+- `nrfusion_harness_3d`: PASS, 120 frames, 7,20 s;
 - `nrfusion_harness_3d_scenarios`: PASS, 0,06 s;
 - `nrfusion_harness_3d_benchmark`: PASS, 0,06 s;
-- CTest total: 15/15 PASS;
-- distribuição OptiScaler integrada: PASS;
-- NSIS/public developer dist: PASS;
-- conclusão do workflow: PASS.
+- três regressões CLI: PASS, 0,01 s cada;
+- total: **18/18 PASS**.
 
-O log CTest suprime stdout de testes que passam, então os valores numéricos de p50/p95/p99
-não aparecem no log do workflow. O benchmark executou as 10.000 iterações configuradas e retornou
-sucesso; os percentis continuam disponíveis no output direto do runner e no arquivo de baseline.
+O mesmo workflow terminou com `NRFusion Windows validation passed`, incluindo build integrado,
+distribuição OptiScaler e validação NSIS.
 
 ## Gate Fase 03
 
-Fechado. Fase 04 não foi iniciada.
+Fechado após segunda revisão adversarial. Fase 04 não foi iniciada.
