@@ -47,20 +47,20 @@
 
 ## Current session
 
-Start: 2026-09-20 23:57 BRT
-Branch: standalone/phase-01-frame-contract-20260920
-Base phase-00: c76d04e1999b6306eda66d29370776cc7aed1c2f
-Phase 01: complete and code-reviewed (second pass).
+Start: 2026-09-21 00:29 BRT
+Branch: standalone/phase-02-runtime-shell-20260921
+Base phase-01: f503a6f272ce02783829fcefbf0a3d31bd2771b6
+Phase 02: complete.
 Completed:
-- extracted portable FrameContract from Types.hpp
-- added explicit resource provenance/reliability/ownership/lifetime and frame binding
-- preserved legacy aggregate/source compatibility without touching the 3900-line patcher
-- made PipelinePolicy consume the new reliability accessors
-- added fake-provider and 100k-frame contract validation
-- compiled contract tests and PipelinePolicy boundary with warnings-as-errors
-- hardened partial-evidence fail-closed semantics and explicit frame-content binding
-- removed Phase 01 CMake growth so the header-only test stays cheap
-- verified explicit sourceFrameId binds frame contents independently of GPU object lifetime
+- split GameProbe by PE inspection, detection, orchestration and support
+- modularized CMake into Core/Tests/Tools/Windows without removing existing targets
+- added standalone RuntimeConfig, fixed-size component registry, lifecycle shell and bootstrap
+- kept standalone mode vocabulary Auto/BestQuality/Performance/Custom
+- made bootstrap transactional, idempotent and owner of registry mutation
+- rejected invalid/stale config and invalid component enums fail-closed
+- validated GameProbe split function-by-function against Phase 01
+- compiled/tested runtime shell with warnings-as-errors
+- measured disabled reconfigure path at ~3.18 ns/call with 0 allocations over 5M calls
 Exact next action:
-- start Phase 02 from docs/standalone/02-runtime-shell.md
-- audit GameProbe/bootstrap/config ownership before creating standalone lifecycle objects
+- start Phase 03 from docs/standalone/03-development-harness.md
+- audit nrfusion_sim, nrfusion_harness_3d and existing synthetic/IPC tests before adding harness code
