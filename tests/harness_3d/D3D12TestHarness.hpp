@@ -57,10 +57,13 @@ struct HarnessConfig {
     bool headless = true;
     bool testAsync = true;
     std::string telemetryJsonPath = "";
+    std::string benchmarkReportPath = "harness_3d_benchmark.txt";
 };
 
 struct BenchmarkSummary {
     std::uint64_t iterations = 0;
+    std::uint64_t notReady = 0;
+    std::uint64_t unsupported = 0;
     double p50Ns = 0.0;
     double p95Ns = 0.0;
     double p99Ns = 0.0;

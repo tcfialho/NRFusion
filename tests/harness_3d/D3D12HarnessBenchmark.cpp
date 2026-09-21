@@ -2,6 +2,7 @@
 
 #include <algorithm>
 #include <chrono>
+#include <fstream>
 #include <iostream>
 #include <vector>
 
@@ -15,9 +16,28 @@ double PercentileNs(const std::vector<double>& sorted, double fraction) {
     return sorted[index];
 }
 
+bool LoadPrevious(const std::string& path, BenchmarkSummary& summary) {
+    if (path.empty()) return false;
+    std::ifstream in(path);
+    return static_cast<bool>(
+        in >> summary.iterations >> summary.notReady >> summary.unsupported >>
+        summary.p50Ns >> summary.p95Ns >> summary.p99Ns);
+}
+
+void SaveCurrent(const std::string& path, const BenchmarkSummary& summary) {
+    if (path.empty()) return;
+    std::ofstream out(path, std::ios::trunc);
+    if (!out) return;
+    out << summary.iterations << ' ' << summary.notReady << ' ' << summary.unsupported << ' '
+        << summary.p50Ns << ' ' << summary.p95Ns << ' ' << summary.p99Ns << '\n';
+}
+
 }
 
 bool D3D12TestHarness::RunBenchmark() {
+    BenchmarkSummary previous{};
+    const bool hasPrevious = LoadPrevious(config_.benchmarkReportPath, previous);
+
     GameContext game{};
     game.api = GraphicsApi::D3D12;
     game.nativeDlss = true;
@@ -46,7 +66,9 @@ bool D3D12TestHarness::RunBenchmark() {
 
     const auto iterations = std::max<std::uint32_t>(1, config_.benchmarkIterations);
     std::vector<double> samples(iterations);
-    bool supported = true;
+    benchmark_ = {};
+    benchmark_.iterations = iterations;
+
     for (std::uint32_t i = 0; i < iterations; ++i) {
         const ProviderInput input{i + kWarmupIterations + 1, i + kWarmupIterations + 1};
         const auto start = std::chrono::steady_clock::now();
@@ -54,13 +76,14 @@ bool D3D12TestHarness::RunBenchmark() {
         const bool ready = frame.ReadyForCore();
         const auto decision = runtime_.ResolveAuto(game, frame, sample, caps);
         const auto end = std::chrono::steady_clock::now();
-        supported = supported && ready && decision.supported;
+
+        if (!ready) ++benchmark_.notReady;
+        if (!decision.supported) ++benchmark_.unsupported;
         samples[i] = std::chrono::duration<double, std::nano>(end - start).count();
     }
-    if (!supported) return false;
+    if (benchmark_.notReady != 0 || benchmark_.unsupported != 0) return false;
 
     std::sort(samples.begin(), samples.end());
-    benchmark_.iterations = iterations;
     benchmark_.p50Ns = PercentileNs(samples, 0.50);
     benchmark_.p95Ns = PercentileNs(samples, 0.95);
     benchmark_.p99Ns = PercentileNs(samples, 0.99);
@@ -70,6 +93,14 @@ bool D3D12TestHarness::RunBenchmark() {
               << " p50=" << benchmark_.p50Ns << "ns"
               << " p95=" << benchmark_.p95Ns << "ns"
               << " p99=" << benchmark_.p99Ns << "ns\n";
+    if (hasPrevious) {
+        std::cout << "[Harness 3D] before/after"
+                  << " p50=" << previous.p50Ns << "->" << benchmark_.p50Ns
+                  << " p95=" << previous.p95Ns << "->" << benchmark_.p95Ns
+                  << " p99=" << previous.p99Ns << "->" << benchmark_.p99Ns << "ns\n";
+    }
+
+    SaveCurrent(config_.benchmarkReportPath, benchmark_);
     return true;
 }
 

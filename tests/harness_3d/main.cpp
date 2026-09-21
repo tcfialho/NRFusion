@@ -39,6 +39,8 @@ int main(int argc, char* argv[]) {
             config.executionMode = nrfusion::testing::HarnessExecutionMode::Correctness;
         } else if (arg == "--benchmark-iterations" && i + 1 < argc) {
             config.benchmarkIterations = static_cast<std::uint32_t>(std::stoul(argv[++i]));
+        } else if (arg == "--benchmark-report" && i + 1 < argc) {
+            config.benchmarkReportPath = argv[++i];
         } else if (arg == "--scenario" && i + 1 < argc) {
             if (!ParseScenario(argv[++i], config.scenario)) {
                 std::cerr << "ERROR: Unknown harness scenario.\n";
