@@ -2,7 +2,7 @@
 
 ## Objetivo
 
-Criar lifecycle, bootstrap e configuração do host sem ainda executar DLSS 5.
+Criar lifecycle/bootstrap/configuração sem concentrar tudo em um `Runtime.cpp` gigante.
 
 ## Dependências
 
@@ -11,39 +11,42 @@ Fases 00–01.
 ## Fora de escopo
 
 - Executor real
-- Carrier gráfico completo
+- Carrier completo
 - MFG completo
 
 ## Implementação
 
+- [ ] Separar bootstrap/proxy, runtime lifecycle, config snapshot e registry em responsabilidades distintas.
 - [ ] Definir init/shutdown idempotentes.
-- [ ] Separar bootstrap/proxy do carrier gráfico; uma DLL de entrada não deve conter policy da API.
 - [ ] RuntimeConfig compacto por snapshot/generation.
 - [ ] Registrar providers/executors por capability.
 - [ ] Logging/status mínimo com failure reason estável.
-- [ ] Eliminar OptiScaler Config/State e patcher Python como requisito de runtime.
+- [ ] Eliminar OptiScaler Config/State e patcher Python em runtime.
 - [ ] Disabled path quase pass-through.
-- [ ] Definir thread ownership e state transitions.
+- [ ] Definir thread ownership/state transitions.
+- [ ] Manter cada módulo <=300 linhas; preferir alvo <=250.
 
 ## Revisão obrigatória
 
 - [ ] COM/module/hook ownership explícito.
 - [ ] Partial init/shutdown limpa apenas o que possui.
-- [ ] Bootstrap não pressupõe que D3D12 seja a API do jogo.
+- [ ] Bootstrap não pressupõe D3D12 como API do jogo.
 - [ ] Sem filesystem/config parsing no frame path.
-- [ ] Global mutable state precisa de owner e motivo.
+- [ ] Nenhuma classe agrega bootstrap + policy + carrier.
 
 ## Validação rápida
 
-- [ ] Abrir/fechar shell repetidamente com fake components.
-- [ ] Injetar falha em cada estágio de init.
-- [ ] Medir disabled path no harness.
+- [ ] Abrir/fechar shell com fake components.
+- [ ] Injetar falha por estágio.
+- [ ] Medir disabled path.
+- [ ] Rodar checker de 300 linhas sobre arquivos novos/tocados.
 
 ## Gate
 
-- [ ] Shutdown sem leak/thread pendente.
+- [ ] Shutdown sem leak/thread.
 - [ ] Disabled não altera output.
-- [ ] Bootstrap está desacoplado de Acquire/Execute específicos.
+- [ ] Bootstrap desacoplado de Acquire/Execute.
+- [ ] Nenhum arquivo novo/tocado >300 linhas.
 
 ## Próxima fase
 

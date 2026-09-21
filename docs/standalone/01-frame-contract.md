@@ -2,7 +2,7 @@
 
 ## Objetivo
 
-Definir um contrato de frame explícito, API-independente e honesto sobre provenance.
+Definir contrato API-independente, explícito e pequeno o bastante para não virar um novo `Types.hpp` monolítico.
 
 ## Dependências
 
@@ -11,35 +11,36 @@ Fase 00.
 ## Fora de escopo
 
 - Executar NR
-- Interop específico de API
+- Interop específico
 
 ## Implementação
 
 - [ ] Auditar FrameContext/ResourceRef existentes.
-- [ ] Definir mandatory/optional resources e dimensões válidas.
-- [ ] Representar provenance e reliability de depth/motion/exposure.
+- [ ] Definir mandatory/optional resources, dimensões e provenance.
+- [ ] Representar reliability de depth/motion/exposure.
 - [ ] Definir jitter, HDR, camera-cut/reset e frame/work identity.
-- [ ] Definir lifetime/ownership sem expor tipos ID3D/Vk/GL ao core.
-- [ ] Separar capability factual de preferência/policy.
-- [ ] Definir quando mudança de provenance invalida history.
+- [ ] Definir lifetime/ownership sem ID3D/Vk/GL no core.
+- [ ] Separar capability factual de policy preference.
+- [ ] Se `Types.hpp` precisar crescer, extrair contratos por domínio antes de adicionar responsabilidade.
 
 ## Revisão obrigatória
 
 - [ ] Resource válido não implica reliable.
-- [ ] Synthetic nunca marca dado como Native por conveniência.
-- [ ] Frame N não pode consumir recurso/timing de N+1.
-- [ ] Ambiguidade de ownership ou provenance falha fechada.
+- [ ] Synthetic nunca finge Native.
+- [ ] Frame N não consome recurso/timing de N+1.
+- [ ] Headers novos/tocados ficam <=300 linhas; API pública não acumula implementação.
 
 ## Validação rápida
 
-- [ ] Fake providers válidos, incompletos e contraditórios.
-- [ ] Stress de mudanças de provenance/reset sem GPU.
-- [ ] Confirmar que o mesmo contrato serve ao IPC x86.
+- [ ] Fake providers válidos/incompletos/contraditórios.
+- [ ] Stress de provenance/reset sem GPU.
+- [ ] Confirmar uso pelo IPC x86.
 
 ## Gate
 
 - [ ] Core consome contrato sem casts de API.
-- [ ] Todos os providers conseguem representar limites/fallbacks sem mentir.
+- [ ] Providers representam limites honestamente.
+- [ ] Contrato está dividido por domínio antes de qualquer arquivo atingir 300 linhas.
 
 ## Próxima fase
 

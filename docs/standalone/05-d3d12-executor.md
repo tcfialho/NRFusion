@@ -2,7 +2,7 @@
 
 ## Objetivo
 
-Extrair o executor D3D12 maduro para ownership próprio preservando sua semântica e ABI já comprovada.
+Extrair o executor maduro preservando semântica, mas **não** recriar o monólito de ~175 KB em outro arquivo.
 
 ## Dependências
 
@@ -12,39 +12,40 @@ Fase 04.
 
 - Otimizar barriers/copies
 - Trocar algoritmo visual
-- Inventar uma segunda interface NGX
+- Segunda interface NGX
 
 ## Implementação
 
-- [ ] Definir input/output explícitos do executor.
-- [ ] Reusar `HostDlssNr` e o forwarder `nvngx.dll_dlssnr.dll` como referência da ABI/call sequence já funcional.
-- [ ] Escolher uma única boundary de chamada ao modelo; não duplicar vtable/export declarations em novos subsistemas.
+- [ ] Antes de mover código, desenhar boundaries por responsabilidade: feature lifecycle, resources, dispatch, state/barriers, residual, exposure/HDR e diagnostics.
+- [ ] Mover mecanicamente por boundary; comportamento fica idêntico durante o split.
+- [ ] Cada source/header handwritten fica <=300 linhas; alvo <=250.
+- [ ] Reusar `HostDlssNr`/forwarder como referência da ABI/call sequence.
+- [ ] Manter uma única boundary de chamada ao modelo.
 - [ ] Substituir OptiScaler Config/State por parâmetros/snapshot.
-- [ ] Preservar feature pending-submission e rebuild.
-- [ ] Preservar subrect/padding, depth/motion compatibility e resource states.
-- [ ] Preservar pre/post-SR, RR, history, scale, multipass, HDR/exposure e residual.
-- [ ] Preservar failure latches, precision rebuild e lazy allocation.
+- [ ] Preservar pending-submission/rebuild, subrect/padding, pre/post-SR/RR/history, scale, multipass, HDR/exposure/residual e failure latches.
+- [ ] Shaders handwritten também obedecem 300 linhas; código gerado é artefato separado e marcado como gerado.
 
 ## Revisão obrigatória
 
-- [ ] Para cada resource: owner/create/state/release/resize/failure.
-- [ ] Para cada barrier: estado anterior/próximo e caller guarantee.
-- [ ] Driver NGX module, forwarder e model DLL têm ownership/load policy explícita.
-- [ ] Early return não muda lifetime/state silenciosamente.
-- [ ] Workaround sem repro permanece até fase de otimização.
+- [ ] Split segue ownership/lifetime, nunca `ExecutorPart1/Part2`.
+- [ ] Cada resource tem owner/create/state/release/resize/failure.
+- [ ] Cada barrier tem estado anterior/próximo/caller guarantee.
+- [ ] Driver module/forwarder/model DLL têm load policy explícita.
+- [ ] Nenhuma otimização funcional escondida no split.
 
 ## Validação rápida
 
-- [ ] Boundary compila/executa com substitutes controlados.
-- [ ] Loop reset/resize/rebuild sem modelo real quando possível.
-- [ ] Modelo real somente no gate de hardware.
+- [ ] Revisar diff mecânico por responsabilidade.
+- [ ] Loop reset/resize/rebuild com substitutes quando possível.
+- [ ] Checker <=300 em toda árvore extraída.
+- [ ] Modelo real só no gate de hardware.
 
 ## Gate
 
-- [ ] Sem dependência direta de OptiScaler.
-- [ ] Existe uma única call boundary DLSS-NR.
-- [ ] Extração revisável por resource/state map.
-- [ ] Nenhuma otimização funcional misturada.
+- [ ] Sem OptiScaler direto.
+- [ ] Uma call boundary DLSS-NR.
+- [ ] Resource/state map completo.
+- [ ] Zero arquivo handwritten >300 no executor extraído.
 
 ## Próxima fase
 

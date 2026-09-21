@@ -2,7 +2,7 @@
 
 ## Objetivo
 
-Qualificar Acquire→Normalize→Execute→Compose para D3D12 x64.
+Qualificar Acquire→Normalize→Execute→Compose sem deixar `SyntheticDx12Provider.cpp` continuar monolítico.
 
 ## Dependências
 
@@ -10,39 +10,40 @@ Fases 04–06.
 
 ## Fora de escopo
 
-- Declarar outras APIs suportadas
+- Outras APIs
 - Universalizar MFG
 
 ## Implementação
 
-- [ ] Reusar `SyntheticDx12Provider`, testes D3D12 e harness 3D para Execute/Compose.
-- [ ] Definir separadamente o Acquire seam do jogo: onde color/depth/motion/exposure são observados e com qual lifetime.
-- [ ] Para jogo com DLSS/RR, aproveitar contrato existente quando confiável.
-- [ ] Para jogo sem DLSS, construir Synthetic FrameContract apenas com recursos realmente adquiridos.
-- [ ] Integrar feature registry e NrSession.
-- [ ] Compor resultado preservando caller state.
-- [ ] Tratar resize/device removal/guides ausentes.
-- [ ] Disabled path quase pass-through.
+- [ ] Reusar provider/testes atuais, mas dividir provider oversized antes de mudança substancial.
+- [ ] Separar acquisition, resource pool/slots, dispatch/interop e compose quando responsabilidades exigirem.
+- [ ] Definir Acquire seam e lifetime de color/depth/motion/exposure.
+- [ ] Usar contrato DLSS/RR existente quando confiável; senão Synthetic FrameContract honesto.
+- [ ] Integrar registry/NrSession e preservar caller state.
+- [ ] Resize/device removal/guides ausentes.
+- [ ] Disabled quase pass-through.
+- [ ] Cada arquivo de carrier <=300 linhas.
 
 ## Revisão obrigatória
 
-- [ ] SyntheticDx12Provider aceitar ResourceRef não conta como prova de Acquire.
+- [ ] Provider aceitar ResourceRef não prova Acquire.
 - [ ] Nenhum CPU pixel path.
-- [ ] `EnsureSlotResources` cria apenas em init/reconfigure/resolution change.
-- [ ] Locks, descriptor writes e copies entram na Fase 20.
-- [ ] Seam não executa NR duas vezes nem usa recurso pós-lifetime.
+- [ ] `EnsureSlotResources` só cria em init/reconfigure/resolution change.
+- [ ] Locks/descriptor writes/copies entram na auditoria.
+- [ ] Split segue resource ownership e não sequência textual do arquivo antigo.
 
 ## Validação rápida
 
-- [ ] Testes existentes cobrem Execute/Compose.
-- [ ] Harness exercita Acquire sintético/controlado e lifecycle.
-- [ ] Jogos reais ficam para provar Acquire em engines reais e modelo DLSS.
+- [ ] Testes atuais antes/depois do split.
+- [ ] Harness Acquire controlado/lifecycle.
+- [ ] Checker de LOC.
+- [ ] Jogos reais só para Acquire/model final.
 
 ## Gate
 
-- [ ] As quatro partes possuem owner e caminho verificável.
-- [ ] Fast path cumpre contrato steady-state.
-- [ ] Limites que só hardware/game real pode provar estão isolados.
+- [ ] Acquire/Normalize/Execute/Compose têm owner.
+- [ ] Fast path cumpre steady-state contract.
+- [ ] D3D12 carrier inteiro respeita <=300 por arquivo.
 
 ## Próxima fase
 

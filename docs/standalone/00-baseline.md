@@ -2,7 +2,7 @@
 
 ## Objetivo
 
-Congelar responsabilidades e comportamento antes de mover código.
+Congelar responsabilidades/comportamento e mapear dívida estrutural antes de mover código.
 
 ## Dependências
 
@@ -12,35 +12,40 @@ Nenhuma.
 
 - Alterar comportamento
 - Otimizar executor
-- Criar carrier novo
+- Refatorar em massa só para reduzir LOC
 
 ## Implementação
 
 - [ ] Registrar master/upstreams e artefatos atuais.
-- [ ] Mapear cada patch point de apply_to_optiscaler.py para Host/Provider/Executor/MFG/Menu/Diagnostics/Compatibility.
+- [ ] Mapear patch points do OptiScaler por Host/Provider/Executor/MFG/Menu/Diagnostics/Compatibility.
 - [ ] Inventariar hooks, recursos GPU, readbacks, query heaps e lifetimes.
 - [ ] Registrar create/rebuild/reset/history/fallback atuais.
 - [ ] Registrar rotas existentes x86/Host64, D3D11, Vulkan e OpenGL.
-- [ ] Registrar menu principal e Advanced que precisam sobreviver.
+- [ ] Registrar menu principal/Advanced que precisam sobreviver.
+- [ ] Inventariar todos os first-party handwritten files >300 linhas.
+- [ ] Classificar cada oversized file: **split na fase dona**, **aposentar**, ou **cleanup antes do cutover**.
 - [ ] Marcar infraestrutura OptiScaler sem uso direto pelo NRFusion.
 
 ## Revisão obrigatória
 
 - [ ] Toda responsabilidade necessária recebe novo owner.
-- [ ] Workaround sem causa comprovada é preservado até investigação.
-- [ ] Separar requisito funcional de conveniência do host atual.
-- [ ] Registrar limites que ainda dependem de hardware real.
+- [ ] Workaround sem causa comprovada é preservado.
+- [ ] Arquivo grande não é dividido arbitrariamente: boundary precisa seguir responsabilidade/lifetime.
+- [ ] Arquivo legado >300 não recebe crescimento durante transição.
+- [ ] Limites dependentes de hardware real ficam explícitos.
 
 ## Validação rápida
 
-- [ ] Gerar call-path estático do frame D3D12 atual.
-- [ ] Contar chamadas de adapter, locks, timers e config accesses relevantes.
-- [ ] Conferir CMake, installer e build_dist contra o inventário.
+- [ ] Gerar call-path estático D3D12.
+- [ ] Contar adapter calls, locks, timers e config accesses relevantes.
+- [ ] Gerar relatório simples de arquivos >300 por path/categoria.
+- [ ] Conferir CMake/installer/build_dist.
 
 ## Gate
 
-- [ ] Nenhuma responsabilidade crítica fica sem owner.
-- [ ] Baseline é suficiente para comparar a extração sem depender de memória informal.
+- [ ] Nenhuma responsabilidade crítica sem owner.
+- [ ] Todo oversized first-party file tem destino explícito.
+- [ ] Baseline permite comparação diferencial posterior.
 
 ## Próxima fase
 
