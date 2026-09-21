@@ -48,26 +48,36 @@
 ## Current session
 
 Start: 2026-09-21 14:31 BRT
+Code freeze: 2026-09-21 14:53 BRT
 Branch: standalone/phase-04-feature-registry-20260921
 Base phase-03: a4baa81a337c623a033f59c3e09553bc0a119447
-Phase 04: in progress.
+Phase 04: complete.
 
-Audit:
-- no first-party NGX feature registry exists
-- existing NGX create/release/evaluate calls are limited to Requiem tool and OptiScaler fixture
-- registry can stay portable and independent of vendor headers
-- release must carry context + generation token to reject stale release after handle reuse
-- same raw handle in different contexts must remain independent
-- FG/Unknown must map only to passthrough
+Completed:
+- audited NGX lifecycle callsites and phase ownership
+- added portable fixed-capacity NGX feature registry
+- classify raw NGX feature IDs: SR=1, FG=11, RR=13, other=Unknown
+- failed create/zero handle/zero context fail closed
+- create identity carries handle/context/generation
+- stale release cannot remove a recreated handle
+- generation is monotonic across Clear
+- same raw handle is independent across contexts
+- FG/Unknown/missing map only to PassThrough
+- storage is fixed std::array<64>, no heap/lock
+- added 100k lifecycle stress and 1M steady lookup allocation regression
+- Portable Core 6/6 passed
+- Windows CTest 19/19 passed
+- integrated Windows/OptiScaler/NSIS validation passed
+- largest new file is the 176-line test
 
-Checklist:
-- [ ] add normalized NGX feature lifecycle types
-- [ ] add fixed-capacity registry with create/release/lookup
-- [ ] add evaluate gate with FG/Unknown fail-closed
-- [ ] add mass lifecycle/reuse/multi-context tests
-- [ ] prove steady-state lookup allocations = 0
-- [ ] integrate portable CMake test
-- [ ] run structural audit and final CI once stable
+Validation:
+- Portable run: 35633516316 — PASS
+- Windows run: 35633516287 — PASS
+- validated code head: 3a9c037c0cecb7a598f05543019af3039d9981ea
+
+Blocker:
+- none
 
 Exact next action:
-- implement fixed-capacity registry and CPU fake lifecycle tests
+- stop after Phase 04 closure
+- do not start Phase 05 without explicit user instruction
