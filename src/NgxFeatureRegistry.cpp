@@ -43,6 +43,19 @@ std::size_t NgxFeatureRegistry::Find(
     return kNotFound;
 }
 
+std::size_t NgxFeatureRegistry::FindUnique(std::uintptr_t handle) const noexcept {
+    if (handle == 0) return kNotFound;
+
+    std::size_t found = kNotFound;
+    for (std::size_t i = 0; i < slots_.size(); ++i) {
+        const auto& slot = slots_[i];
+        if (!slot.occupied || slot.identity.token.handle != handle) continue;
+        if (found != kNotFound) return kNotFound;
+        found = i;
+    }
+    return found;
+}
+
 std::size_t NgxFeatureRegistry::FindFree() const noexcept {
     for (std::size_t i = 0; i < slots_.size(); ++i)
         if (!slots_[i].occupied) return i;
@@ -87,9 +100,18 @@ NgxFeatureIdentity NgxFeatureRegistry::Lookup(
     return index == kNotFound ? NgxFeatureIdentity{} : slots_[index].identity;
 }
 
+NgxFeatureIdentity NgxFeatureRegistry::LookupUnique(std::uintptr_t handle) const noexcept {
+    const std::size_t index = FindUnique(handle);
+    return index == kNotFound ? NgxFeatureIdentity{} : slots_[index].identity;
+}
+
 NgxEvaluateAction NgxFeatureRegistry::ActionFor(
     std::uint64_t contextId, std::uintptr_t handle) const noexcept {
     return ActionForKind(Lookup(contextId, handle).kind);
+}
+
+NgxEvaluateAction NgxFeatureRegistry::ActionFor(std::uintptr_t handle) const noexcept {
+    return ActionForKind(LookupUnique(handle).kind);
 }
 
 void NgxFeatureRegistry::Clear() noexcept {

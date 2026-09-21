@@ -93,6 +93,9 @@ int main() {
     fakeNr.Evaluate(registry, 1, unknown.token.handle);
     fakeNr.Evaluate(registry, 1, 0xFFFF);
     assert(fakeNr.calls == 2);
+    assert(registry.ActionFor(sr.token.handle) == NgxEvaluateAction::NeuralRendering);
+    assert(registry.ActionFor(fg.token.handle) == NgxEvaluateAction::PassThrough);
+    assert(registry.ActionFor(0xFFFF) == NgxEvaluateAction::PassThrough);
 
     const auto failedReuse = registry.RecordCreate(
         {sr.token.handle, sr.token.contextId, 11, false});
@@ -107,6 +110,8 @@ int main() {
     assert(viewportSr && viewportFg);
     assert(registry.Lookup(11, 0x200).kind == NgxFeatureKind::SuperResolution);
     assert(registry.Lookup(12, 0x200).kind == NgxFeatureKind::FrameGeneration);
+    assert(!registry.LookupUnique(0x200));
+    assert(registry.ActionFor(0x200) == NgxEvaluateAction::PassThrough);
 
     registry.Clear();
     const auto oldIdentity = registry.RecordCreate(

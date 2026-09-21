@@ -56,7 +56,9 @@ public:
     bool RecordRelease(NgxFeatureToken token) noexcept;
 
     NgxFeatureIdentity Lookup(std::uint64_t contextId, std::uintptr_t handle) const noexcept;
+    NgxFeatureIdentity LookupUnique(std::uintptr_t handle) const noexcept;
     NgxEvaluateAction ActionFor(std::uint64_t contextId, std::uintptr_t handle) const noexcept;
+    NgxEvaluateAction ActionFor(std::uintptr_t handle) const noexcept;
 
     void Clear() noexcept;
     std::size_t Size() const noexcept { return size_; }
@@ -68,6 +70,7 @@ private:
     };
 
     std::size_t Find(std::uint64_t contextId, std::uintptr_t handle) const noexcept;
+    std::size_t FindUnique(std::uintptr_t handle) const noexcept;
     std::size_t FindFree() const noexcept;
 
     std::array<Slot, kCapacity> slots_{};
