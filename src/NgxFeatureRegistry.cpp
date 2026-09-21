@@ -1,11 +1,12 @@
 #include "nrfusion/NgxFeatureRegistry.hpp"
 
-#include <limits>
-
 namespace nrfusion {
 namespace {
 
 constexpr std::size_t kNotFound = NgxFeatureRegistry::kCapacity;
+constexpr std::int32_t kNgxSuperSampling = 1;
+constexpr std::int32_t kNgxFrameGeneration = 11;
+constexpr std::int32_t kNgxRayReconstruction = 13;
 
 NgxEvaluateAction ActionForKind(NgxFeatureKind kind) noexcept {
     switch (kind) {
@@ -21,11 +22,13 @@ NgxEvaluateAction ActionForKind(NgxFeatureKind kind) noexcept {
 
 } // namespace
 
-bool NgxFeatureRegistry::KnownKind(NgxFeatureKind kind) noexcept {
-    return kind == NgxFeatureKind::Unknown ||
-           kind == NgxFeatureKind::SuperResolution ||
-           kind == NgxFeatureKind::RayReconstruction ||
-           kind == NgxFeatureKind::FrameGeneration;
+NgxFeatureKind ClassifyNgxFeatureId(std::int32_t featureId) noexcept {
+    switch (featureId) {
+    case kNgxSuperSampling: return NgxFeatureKind::SuperResolution;
+    case kNgxFrameGeneration: return NgxFeatureKind::FrameGeneration;
+    case kNgxRayReconstruction: return NgxFeatureKind::RayReconstruction;
+    default: return NgxFeatureKind::Unknown;
+    }
 }
 
 std::size_t NgxFeatureRegistry::Find(
@@ -48,7 +51,7 @@ std::size_t NgxFeatureRegistry::FindFree() const noexcept {
 
 NgxFeatureIdentity NgxFeatureRegistry::RecordCreate(NgxFeatureCreateEvent event) noexcept {
     if (!event.succeeded || event.handle == 0 || event.contextId == 0 ||
-        !KnownKind(event.kind) || nextGeneration_ == 0)
+        nextGeneration_ == 0)
         return {};
 
     std::size_t index = Find(event.contextId, event.handle);
@@ -60,7 +63,7 @@ NgxFeatureIdentity NgxFeatureRegistry::RecordCreate(NgxFeatureCreateEvent event)
     identity.token.handle = event.handle;
     identity.token.contextId = event.contextId;
     identity.token.generation = nextGeneration_++;
-    identity.kind = event.kind;
+    identity.kind = ClassifyNgxFeatureId(event.featureId);
 
     slots_[index].identity = identity;
     slots_[index].occupied = true;

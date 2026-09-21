@@ -39,10 +39,12 @@ struct NgxFeatureIdentity {
     }
 };
 
+NgxFeatureKind ClassifyNgxFeatureId(std::int32_t featureId) noexcept;
+
 struct NgxFeatureCreateEvent {
     std::uintptr_t handle = 0;
     std::uint64_t contextId = 0;
-    NgxFeatureKind kind = NgxFeatureKind::Unknown;
+    std::int32_t featureId = 0;
     bool succeeded = false;
 };
 
@@ -65,7 +67,6 @@ private:
         bool occupied = false;
     };
 
-    static bool KnownKind(NgxFeatureKind kind) noexcept;
     std::size_t Find(std::uint64_t contextId, std::uintptr_t handle) const noexcept;
     std::size_t FindFree() const noexcept;
 
