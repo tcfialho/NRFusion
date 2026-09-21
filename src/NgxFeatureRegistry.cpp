@@ -54,9 +54,8 @@ NgxFeatureIdentity NgxFeatureRegistry::RecordCreate(NgxFeatureCreateEvent event)
         nextGeneration_ == 0)
         return {};
 
-    std::size_t index = Find(event.contextId, event.handle);
-    const bool replacing = index != kNotFound;
-    if (!replacing) index = FindFree();
+    if (Find(event.contextId, event.handle) != kNotFound) return {};
+    const std::size_t index = FindFree();
     if (index == kNotFound) return {};
 
     NgxFeatureIdentity identity{};
@@ -67,7 +66,7 @@ NgxFeatureIdentity NgxFeatureRegistry::RecordCreate(NgxFeatureCreateEvent event)
 
     slots_[index].identity = identity;
     slots_[index].occupied = true;
-    if (!replacing) ++size_;
+    ++size_;
     return identity;
 }
 

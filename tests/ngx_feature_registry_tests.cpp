@@ -111,13 +111,20 @@ int main() {
     registry.Clear();
     const auto oldIdentity = registry.RecordCreate(
         {0x300, 21, 1, true});
+    const auto duplicateCreate = registry.RecordCreate(
+        {0x300, 21, 11, true});
+    assert(oldIdentity);
+    assert(!duplicateCreate);
+    assert(registry.Size() == 1);
+    assert(registry.Lookup(21, 0x300).kind == NgxFeatureKind::SuperResolution);
+
+    assert(registry.RecordRelease(oldIdentity.token));
     const auto reusedIdentity = registry.RecordCreate(
         {0x300, 21, 11, true});
-    assert(oldIdentity && reusedIdentity);
+    assert(reusedIdentity);
     assert(oldIdentity.token.generation != reusedIdentity.token.generation);
-    assert(registry.Size() == 1);
-    assert(!registry.RecordRelease(oldIdentity.token));
     assert(registry.Lookup(21, 0x300).kind == NgxFeatureKind::FrameGeneration);
+    assert(!registry.RecordRelease(oldIdentity.token));
     assert(registry.RecordRelease(reusedIdentity.token));
     assert(registry.Size() == 0);
     assert(!registry.RecordRelease(reusedIdentity.token));
