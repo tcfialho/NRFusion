@@ -6,6 +6,7 @@
 #include <cstring>
 #include <fstream>
 #include <system_error>
+#include <utility>
 
 namespace nrfusion::game_probe_detail {
 

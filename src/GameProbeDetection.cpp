@@ -2,7 +2,9 @@
 
 #include <algorithm>
 #include <array>
+#include <initializer_list>
 #include <system_error>
+#include <utility>
 
 namespace nrfusion::game_probe_detail {
 
