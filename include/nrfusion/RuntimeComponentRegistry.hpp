@@ -45,6 +45,11 @@ public:
         return nullptr;
     }
 
+    bool Supports(RuntimeComponent component) const noexcept {
+        const auto* entry = Find(component.kind, component.api);
+        return entry && (entry->capabilityMask & component.capabilityMask) == component.capabilityMask;
+    }
+
 private:
     std::array<RuntimeComponent, kCapacity> entries_{};
     std::size_t count_ = 0;

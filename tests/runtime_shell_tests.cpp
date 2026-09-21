@@ -25,13 +25,12 @@ int main() {
     assert(runtime.Status().state == RuntimeState::Disabled);
     assert(runtime.Status().configGeneration == 2);
 
-    assert(runtime.Registry().Register(
-        {RuntimeComponentKind::Provider, GraphicsApi::D3D12, 1}));
-    assert(runtime.Registry().Register(
-        {RuntimeComponentKind::Provider, GraphicsApi::D3D12, 2}));
-    const auto* d3d12 = runtime.Registry().Find(
-        RuntimeComponentKind::Provider, GraphicsApi::D3D12);
+    RuntimeComponentRegistry registry;
+    assert(registry.Register({RuntimeComponentKind::Provider, GraphicsApi::D3D12, 1}));
+    assert(registry.Register({RuntimeComponentKind::Provider, GraphicsApi::D3D12, 2}));
+    const auto* d3d12 = registry.Find(RuntimeComponentKind::Provider, GraphicsApi::D3D12);
     assert(d3d12 && d3d12->capabilityMask == 3);
+    assert(registry.Supports({RuntimeComponentKind::Provider, GraphicsApi::D3D12, 3}));
 
     RuntimeConfig sameGeneration = config;
     sameGeneration.enabled = true;
@@ -66,6 +65,16 @@ int main() {
     assert(started);
     assert(runtime.Status().state == RuntimeState::Running);
     assert(runtime.Registry().Size() == 2);
+    assert(RuntimeBootstrap::Start(runtime, plan));
+
+    auto differentPlan = plan;
+    differentPlan.config.generation = 4;
+    const auto duplicate = RuntimeBootstrap::Start(runtime, differentPlan);
+    assert(!duplicate);
+    assert(duplicate.failure == RuntimeBootstrapFailure::AlreadyStarted);
+    assert(runtime.Config().generation == 3);
+
+    RuntimeBootstrap::Stop(runtime);
 
     std::array<RuntimeComponent, 2> badComponents{{
         {RuntimeComponentKind::Provider, GraphicsApi::D3D12, 1},

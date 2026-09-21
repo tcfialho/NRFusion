@@ -1,16 +1,21 @@
 #pragma once
 
-#include "nrfusion/Types.hpp"
-
 #include <cmath>
 #include <cstdint>
 
 namespace nrfusion {
 
+enum class RuntimeNrMode : std::uint8_t {
+    Auto,
+    BestQuality,
+    Performance,
+    Custom
+};
+
 struct RuntimeConfig {
     std::uint64_t generation = 1;
     bool enabled = true;
-    UserMode mode = UserMode::Auto;
+    RuntimeNrMode mode = RuntimeNrMode::Auto;
     float targetFps = 60.0f;
 
     constexpr bool operator==(const RuntimeConfig&) const noexcept = default;

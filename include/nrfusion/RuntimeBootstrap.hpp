@@ -9,7 +9,8 @@ namespace nrfusion {
 enum class RuntimeBootstrapFailure : std::uint8_t {
     None,
     InvalidConfig,
-    InvalidComponent
+    InvalidComponent,
+    AlreadyStarted
 };
 
 struct RuntimeBootstrapPlan {

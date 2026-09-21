@@ -7,6 +7,8 @@
 
 namespace nrfusion {
 
+class RuntimeBootstrap;
+
 enum class RuntimeState : std::uint8_t {
     Stopped,
     Running,
@@ -32,11 +34,11 @@ public:
     bool Reconfigure(RuntimeConfig config) noexcept;
 
     RuntimeStatus Status() const noexcept { return status_; }
-    const RuntimeConfig& Config() const noexcept { return config_; }
-    RuntimeComponentRegistry& Registry() noexcept { return registry_; }
+    RuntimeConfig Config() const noexcept { return config_; }
     const RuntimeComponentRegistry& Registry() const noexcept { return registry_; }
 
 private:
+    friend class RuntimeBootstrap;
     RuntimeConfig config_{};
     RuntimeStatus status_{};
     RuntimeComponentRegistry registry_{};
