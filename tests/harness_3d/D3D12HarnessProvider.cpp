@@ -4,8 +4,6 @@ namespace nrfusion::testing {
 
 namespace {
 
-};
-
 float Halton(std::uint32_t index, std::uint32_t base) {
     float f = 1.0f;
     float r = 0.0f;
@@ -14,6 +12,8 @@ float Halton(std::uint32_t index, std::uint32_t base) {
         r += f * static_cast<float>(index % base);
         index /= base;
     }
+    return r;
+}
 
 } // namespace
 
