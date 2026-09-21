@@ -50,7 +50,7 @@
 Start: 2026-09-20 23:57 BRT
 Branch: standalone/phase-01-frame-contract-20260920
 Base phase-00: c76d04e1999b6306eda66d29370776cc7aed1c2f
-Phase 01: complete and code-reviewed.
+Phase 01: complete and code-reviewed (second pass).
 Completed:
 - extracted portable FrameContract from Types.hpp
 - added explicit resource provenance/reliability/ownership/lifetime and frame binding
@@ -60,6 +60,7 @@ Completed:
 - compiled contract tests and PipelinePolicy boundary with warnings-as-errors
 - hardened partial-evidence fail-closed semantics and explicit frame-content binding
 - removed Phase 01 CMake growth so the header-only test stays cheap
+- verified explicit sourceFrameId binds frame contents independently of GPU object lifetime
 Exact next action:
 - start Phase 02 from docs/standalone/02-runtime-shell.md
 - audit GameProbe/bootstrap/config ownership before creating standalone lifecycle objects

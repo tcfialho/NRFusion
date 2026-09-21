@@ -6,12 +6,12 @@ Os tipos de frame saíram de `Types.hpp` para `include/nrfusion/FrameContract.hp
 
 Linhas no corte final:
 
-- `FrameContract.hpp`: 222;
-- `Types.hpp`: 95;
+- `FrameContract.hpp`: 230;
+- `Types.hpp`: 94;
 - `FrameContractProvider.hpp`: 32;
-- `frame_contract_tests.cpp`: 182;
-- `PipelinePolicy.cpp`: 50;
-- `CMakeLists.txt`: 267 (inalterado pela fase após code review).
+- `frame_contract_tests.cpp`: 213;
+- `PipelinePolicy.cpp`: 49;
+- `CMakeLists.txt`: 266 (inalterado pela fase após code review).
 
 Nenhum arquivo novo/tocado excede 300 linhas. A primeira implementação acrescentava 9 linhas ao CMake
 já acima do soft target; a revisão removeu esse crescimento. A integração CTest fica para a modularização
@@ -177,6 +177,40 @@ Esta fase define o contrato; não migra todos os carriers reais.
 Providers antigos com metadata ausente continuam no modo legado e **não** contam como prova de
 provenance/lifetime qualificada. Cada carrier passa a preencher metadata explícita na sua fase de
 Acquire/Normalize.
+
+## Code review da Fase 01
+
+A revisão adversarial encontrou três problemas objetivos no primeiro corte:
+
+1. **metadata parcial vazava para policy**: `DepthReliable()` e `MotionReliable()` podiam
+   retornar usable evidence mesmo quando provenance/ownership/lifetime estavam incompletos;
+2. **frame binding era opcional para lifetime persistente**: metadata explícita com
+   `Session`/`UntilNextAcquire` podia deixar `sourceFrameId=0`, enfraquecendo o gate N vs N+1;
+3. **validação barata ficou cara/desnecessária**: a fase adicionava um target ao CMake já acima do
+   soft target e linkava o teste header-only ao `nrfusion_core`.
+
+Correções:
+
+- accessors de depth/exposure/motion agora validam resource, metadata e frame binding antes de
+  publicar reliability/provenance;
+- qualquer metadata explícita exige `sourceFrameId != 0`;
+- `sourceFrameId` representa o **frame do conteúdo**; `ResourceLifetime` representa a vida do
+  objeto/handle GPU. Um texture object pode viver a sessão inteira, mas seu conteúdo por frame
+  continua sendo associado ao frame correto;
+- o CMake voltou ao estado anterior da fase; o teste continua compilável diretamente, sem linkar
+  o core/CUDA. A integração CTest fica para a modularização da Fase 02.
+
+Regressões novas cobrem metadata parcial em depth/motion e evidence explícita sem frame binding.
+
+Validação após a revisão:
+
+```text
+g++ -std=c++20 -Wall -Wextra -Wpedantic -Werror
+frame_contract_tests: PASS
+100000-frame provenance stress: PASS
+```
+
+Nenhum arquivo first-party tocado supera 300 linhas.
 
 ## Gate Fase 01
 
