@@ -17,6 +17,10 @@ int main() {
     assert(runtime.Status().state == RuntimeState::Failed);
     assert(runtime.Registry().Size() == 0);
 
+    invalid = {};
+    invalid.mode = static_cast<RuntimeNrMode>(255);
+    assert(!runtime.Initialize(invalid));
+
     RuntimeConfig config;
     config.generation = 2;
     config.enabled = false;
@@ -26,6 +30,10 @@ int main() {
     assert(runtime.Status().configGeneration == 2);
 
     RuntimeComponentRegistry registry;
+    assert(!registry.Register(
+        {static_cast<RuntimeComponentKind>(255), GraphicsApi::D3D12, 1}));
+    assert(!registry.Register(
+        {RuntimeComponentKind::Provider, static_cast<GraphicsApi>(255), 1}));
     assert(registry.Register({RuntimeComponentKind::Provider, GraphicsApi::D3D12, 1}));
     assert(registry.Register({RuntimeComponentKind::Provider, GraphicsApi::D3D12, 2}));
     const auto* d3d12 = registry.Find(RuntimeComponentKind::Provider, GraphicsApi::D3D12);

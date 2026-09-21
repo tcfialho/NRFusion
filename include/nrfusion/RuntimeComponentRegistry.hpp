@@ -24,7 +24,11 @@ public:
     static constexpr std::size_t kCapacity = 16;
 
     bool Register(RuntimeComponent component) noexcept {
-        if (component.api == GraphicsApi::Unknown || component.capabilityMask == 0) return false;
+        const bool knownKind = component.kind == RuntimeComponentKind::Provider ||
+                               component.kind == RuntimeComponentKind::Executor;
+        const bool knownApi = component.api >= GraphicsApi::D3D9 &&
+                              component.api <= GraphicsApi::OpenGL;
+        if (!knownKind || !knownApi || component.capabilityMask == 0) return false;
         for (std::size_t i = 0; i < count_; ++i) {
             if (entries_[i].kind == component.kind && entries_[i].api == component.api) {
                 entries_[i].capabilityMask |= component.capabilityMask;

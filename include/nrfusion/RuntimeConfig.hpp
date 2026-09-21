@@ -21,7 +21,11 @@ struct RuntimeConfig {
     constexpr bool operator==(const RuntimeConfig&) const noexcept = default;
 
     bool Valid() const noexcept {
-        return generation != 0 && std::isfinite(targetFps) &&
+        const bool knownMode = mode == RuntimeNrMode::Auto ||
+                               mode == RuntimeNrMode::BestQuality ||
+                               mode == RuntimeNrMode::Performance ||
+                               mode == RuntimeNrMode::Custom;
+        return generation != 0 && knownMode && std::isfinite(targetFps) &&
                targetFps >= 1.0f && targetFps <= 1000.0f;
     }
 };
