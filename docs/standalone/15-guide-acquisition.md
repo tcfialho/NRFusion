@@ -2,7 +2,7 @@
 
 ## Objetivo
 
-Selecionar os melhores guides disponíveis sem tornar DLSS nativo requisito.
+Selecionar os melhores guides sem concentrar toda policy em um resolver gigante.
 
 ## Dependências
 
@@ -15,33 +15,36 @@ Carriers relevantes implementados.
 
 ## Implementação
 
-- [ ] Auditar/reusar `PipelinePolicy`, `MotionVectorResolver`, `GuideValidation` e NVOF existentes antes de criar nova policy.
-- [ ] Manter prioridade explícita: Native → DLSS contract → NVOF → shader → Zero.
-- [ ] Centralizar depth reliability e exposure source.
-- [ ] Definir custo/capability de NVOF e shader motion separadamente.
+- [ ] Auditar/reusar PipelinePolicy, MotionVectorResolver, GuideValidation e NVOF.
+- [ ] Preservar prioridade Native→DLSS contract→NVOF→shader→Zero.
+- [ ] Centralizar depth reliability/exposure.
+- [ ] Separar motion selection, validation e generation se responsabilidade crescer.
 - [ ] Registrar source/reliability no FrameContract.
-- [ ] Invalidar temporal history quando source muda materialmente.
-- [ ] Manter matriz API/provider→color/depth/motion/exposure/fallback.
+- [ ] Invalidar history em mudança material.
+- [ ] Manter matriz API/provider→guides.
+- [ ] Nenhum novo “GuideManager” multifunção >300 linhas.
 
 ## Revisão obrigatória
 
-- [ ] Non-null nunca implica reliable.
-- [ ] Zero motion é declarado, nunca disfarçado.
-- [ ] Não duplicar hierarquia já validada no Synthetic DX11 test.
-- [ ] Camera cut/reset prevalece sobre history.
+- [ ] Non-null != reliable.
+- [ ] Zero é explícito.
+- [ ] Não duplicar hierarquia já testada.
+- [ ] Camera cut/reset prevalece.
+- [ ] Módulos de guide <=300 linhas.
 
 ## Validação rápida
 
-- [ ] Reusar casos do MotionVectorResolver existentes.
-- [ ] Fake sources alternando provenance.
-- [ ] Carriers com guides ausentes/parciais.
-- [ ] Status reporta source real.
+- [ ] Casos MotionVectorResolver existentes.
+- [ ] Fake sources/provenance.
+- [ ] Carriers com guides parciais.
+- [ ] LOC checker.
 
 ## Gate
 
-- [ ] Game sem DLSS ainda possui estratégia explícita.
-- [ ] Fallback é observável e determinístico.
-- [ ] Carrier não contém policy duplicada de guide.
+- [ ] Game sem DLSS tem estratégia explícita.
+- [ ] Fallback observável.
+- [ ] Carrier não contém policy duplicada.
+- [ ] Arquivos tocados <=300 linhas.
 
 ## Próxima fase
 

@@ -2,7 +2,7 @@
 
 ## Objetivo
 
-Qualificar Acquire→Normalize→Execute→Compose em OpenGL sem glReadPixels.
+Qualificar OpenGL→D3D12 sem glReadPixels e sem manter `SyntheticOpenGlProvider.cpp` grande.
 
 ## Dependências
 
@@ -10,37 +10,40 @@ Fases 07–08.
 
 ## Fora de escopo
 
-- Considerar teste lógico atual como interop real
+- Teste lógico como prova de interop real
 - CPU pixel path
 
 ## Implementação
 
-- [ ] Reusar `SyntheticOpenGlProvider` e teste existente.
-- [ ] Definir hook/seam de Acquire em contexto OpenGL real.
-- [ ] Integrar ProviderPolicy apenas atrás de capability comprovada.
-- [ ] Criar contexto GL mínimo no teste para memory object/semaphore import real.
+- [ ] Reusar provider/teste existentes.
+- [ ] Antes de expansão, dividir loader/extensions, GL-D3D12 interop/sync e carrier orchestration.
+- [ ] Definir Acquire seam em contexto GL real.
+- [ ] ProviderPolicy só atrás de capability comprovada.
 - [ ] Validar extensions, size/alignment e handle ownership.
-- [ ] Capturar color GPU-side; guides somente se realmente obtíveis.
-- [ ] Executar D3D12 e compor/copy back GPU-side.
-- [ ] Tratar context recreation/resize.
+- [ ] Capturar/compose GPU-side.
+- [ ] Context recreation/resize.
+- [ ] Cada arquivo <=300 linhas.
 
 ## Revisão obrigatória
 
-- [ ] Provider.Initialize sem contexto GL não prova Acquire/interoperabilidade.
+- [ ] Initialize sem contexto GL não prova interop.
 - [ ] GL objects/HANDLEs têm lifetime pareado.
-- [ ] Sync ida/volta não usa stall CPU como normal.
-- [ ] Extension ausente = Blocked, nunca fallback CPU.
+- [ ] Sem CPU stall como normal.
+- [ ] Extension ausente = Blocked.
+- [ ] Split segue lifetime GL/D3D12, não tamanho arbitrário.
 
 ## Validação rápida
 
-- [ ] Teste lógico continua barato.
-- [ ] Teste de contexto real prova interop quando ambiente permite.
-- [ ] Context recreation/semaphore long run.
+- [ ] Teste lógico barato.
+- [ ] Contexto real quando disponível.
+- [ ] Recreate/semaphore long run.
+- [ ] LOC checker.
 
 ## Gate
 
 - [ ] ProviderPolicy só seleciona rota comprovada.
-- [ ] Acquire e interop são ambos GPU-resident.
+- [ ] Acquire/interop GPU-resident.
+- [ ] OpenGL tocado respeita <=300 linhas por arquivo.
 
 ## Próxima fase
 

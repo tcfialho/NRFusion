@@ -2,7 +2,7 @@
 
 ## Objetivo
 
-Provar Acquire e bridge D3D10 viáveis antes de investir em implementação completa.
+Provar rota mínima D3D10 sem criar código grande antes de saber se o interop é viável.
 
 ## Dependências
 
@@ -10,36 +10,37 @@ Fases 07–08.
 
 ## Fora de escopo
 
-- Executor NR próprio D3D10
+- Executor NR D3D10
 - CPU screenshot
 
 ## Implementação
 
-- [ ] Localizar seam de Acquire e ownership de resources D3D10/DXGI.
-- [ ] Produzir proof-of-route de compartilhamento no mesmo adapter.
+- [ ] Localizar Acquire seam/ownership D3D10/DXGI.
+- [ ] Criar proof-of-route GPU-resident em arquivo(s) pequenos.
 - [ ] Definir color/depth/motion realmente acessíveis.
-- [ ] Bridge para D3D12 canônico e compose back.
-- [ ] Definir sync sem blocking recorrente.
-- [ ] Tratar resize/device recreation.
-- [ ] Só após proof-of-route adicionar frontend ao harness.
+- [ ] Bridge D3D12 + compose back.
+- [ ] Sync sem blocking recorrente.
+- [ ] Só após prova, promover prototype a carrier modular.
+- [ ] Nenhum prototype vira arquivo >300 “temporariamente”.
 
 ## Revisão obrigatória
 
-- [ ] Cada full-frame copy é justificada.
-- [ ] Sem sharing seguro = Blocked, não CPU fallback.
-- [ ] Provenance de guides não é inferida.
-- [ ] Legacy API não cria policy própria no core.
+- [ ] Cada full-frame copy justificada.
+- [ ] Sem sharing seguro = Blocked.
+- [ ] Guides não inferidos.
+- [ ] Prototype descartável não duplica core policy.
 
 ## Validação rápida
 
-- [ ] Micro-harness prova Acquire+interop primeiro.
-- [ ] Depois steady/resize com fake executor.
+- [ ] Micro-harness Acquire+interop.
+- [ ] Depois steady/resize.
 - [ ] Medir copies/sync/CPU.
+- [ ] LOC checker.
 
 ## Gate
 
-- [ ] Há rota GPU-resident demonstrável ou blocker técnico documentado.
-- [ ] Nenhum código grande antes dessa decisão.
+- [ ] Rota demonstrável ou blocker técnico.
+- [ ] Nenhum arquivo >300 no proof/carrier.
 
 ## Próxima fase
 

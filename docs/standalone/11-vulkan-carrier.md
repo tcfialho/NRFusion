@@ -2,7 +2,7 @@
 
 ## Objetivo
 
-Qualificar Acquire→Normalize→Execute→Compose em Vulkan, além do provider simulado atual.
+Transformar suporte Vulkan estrutural em Acquire→Normalize→Execute→Compose real sem provider monolítico.
 
 ## Dependências
 
@@ -10,39 +10,40 @@ Fases 07–08.
 
 ## Fora de escopo
 
-- Tratar fake handles como interop real
-- Constantes Vulkan não verificadas
+- Fake handles como prova real
+- Constantes Vulkan inventadas
 
 ## Implementação
 
-- [ ] Reusar `SyntheticVulkanProvider`, distinguindo contract simulation de VkDevice real.
-- [ ] Definir hooks/seam de Acquire no jogo Vulkan e ownership de VkImage.
-- [ ] Usar headers Vulkan corretos e memoryTypeIndex real.
-- [ ] Definir external-memory compatibility, semaphore type e handle ownership.
-- [ ] Definir layouts/access/queue-family ownership.
-- [ ] Normalizar guides com provenance, executar D3D12 e compor de volta.
-- [ ] Tratar swapchain/device recreation.
-- [ ] Estender harness somente para gaps não cobertos.
+- [ ] Reusar `SyntheticVulkanProvider`; separar contract simulation de VkDevice real.
+- [ ] Se provider atual >300 for tocado, dividir loader/capabilities, interop/sync e carrier orchestration.
+- [ ] Definir Acquire seam e ownership de VkImage.
+- [ ] Usar headers Vulkan corretos/memoryTypeIndex real.
+- [ ] External memory/semaphore/handle ownership explícitos.
+- [ ] Layout/access/queue-family ownership.
+- [ ] Compose back e recreation.
+- [ ] Cada arquivo handwritten <=300 linhas.
 
 ## Revisão obrigatória
 
-- [ ] Provider que recebe image/handle não prova aquisição correta do jogo.
+- [ ] Provider recebe handle != aquisição correta.
 - [ ] Fake-handle test é só contract test.
-- [ ] Format/tiling/usage compatíveis com interop.
-- [ ] Sync/ownership completos em success/failure.
+- [ ] Format/tiling/usage compatíveis.
+- [ ] Sync completo success/failure.
 - [ ] Sem CPU readback.
 
 ## Validação rápida
 
 - [ ] Contract tests sem Vulkan real.
-- [ ] Harness com VkDevice real quando runtime/extensões existirem.
-- [ ] Resize/recreate/semaphore long run.
+- [ ] VkDevice real quando disponível.
+- [ ] Recreate/semaphore long run.
+- [ ] LOC checker.
 
 ## Gate
 
 - [ ] Harness-verified exige resources Vulkan reais.
-- [ ] Hardware-qualified exige stack Vulkan + jogo/engine real.
 - [ ] Acquire e interop têm evidência separada.
+- [ ] Vulkan tocado respeita <=300 linhas por arquivo.
 
 ## Próxima fase
 

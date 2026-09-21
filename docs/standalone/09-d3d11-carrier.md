@@ -2,7 +2,7 @@
 
 ## Objetivo
 
-Qualificar Acquire→Normalize→Execute→Compose para D3D11 x64.
+Qualificar D3D11→D3D12 sem carregar os monólitos atuais para a nova arquitetura.
 
 ## Dependências
 
@@ -15,34 +15,35 @@ Fases 07–08.
 
 ## Implementação
 
-- [ ] Partir de `SyntheticDx11BridgeProvider` e teste existente.
-- [ ] Separar o hook/acquisition D3D11 do bridge D3D11→D3D12.
-- [ ] Definir slot/fence ownership e reuse.
-- [ ] Capturar color; depth/motion apenas com provenance válida.
-- [ ] Executar no D3D12 canônico e compor de volta.
+- [ ] Partir de `SyntheticDx11BridgeProvider` e testes existentes.
+- [ ] Separar hook/acquisition D3D11 do bridge D3D11→D3D12.
+- [ ] Se `CaptureD3D11.cpp` for reutilizado, fazer split mecânico antes de evolução funcional.
+- [ ] Separar acquisition, shared-resource sync, bridge e compose por ownership.
+- [ ] Definir slot/fence reuse.
+- [ ] Capturar color; guides só com provenance válida.
 - [ ] Tratar resize/device/context destruction.
-- [ ] Evoluir o teste existente para long-run/in-flight.
+- [ ] Cada source/header <=300 linhas.
 
 ## Revisão obrigatória
 
-- [ ] Bridge funcional não prova Acquire universal.
+- [ ] Bridge funcional não prova Acquire.
 - [ ] Keyed mutex/fence ordering.
-- [ ] Allocator/slot só após retirement.
-- [ ] Cada full-frame CopyResource é identificado e justificado.
-- [ ] Lock atual do provider entra na auditoria, não é automaticamente preservado.
+- [ ] Slot só reutiliza após retirement.
+- [ ] Cada full-frame copy é identificada.
+- [ ] Split não duplica device/context ownership.
 
 ## Validação rápida
 
-- [ ] Teste atual continua passando.
-- [ ] Hook/acquisition recebe cenário controlado no harness.
+- [ ] Teste atual antes/depois do split.
+- [ ] Hook/acquisition controlado no harness.
 - [ ] Stress in-flight/resize/reset.
-- [ ] Medir copies, waits e CPU.
+- [ ] LOC checker.
 
 ## Gate
 
-- [ ] Acquire e bridge são ambos demonstrados.
+- [ ] Acquire e bridge demonstrados.
 - [ ] Transporte GPU-resident.
-- [ ] Steady-state sem resource creation/alocação do carrier.
+- [ ] Nenhum arquivo tocado do carrier >300 linhas.
 
 ## Próxima fase
 

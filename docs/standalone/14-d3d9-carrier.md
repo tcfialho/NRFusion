@@ -2,7 +2,7 @@
 
 ## Objetivo
 
-Provar Acquire/transporte para D3D9Ex e D3D9 clássico separadamente antes de construir o carrier completo.
+Provar D3D9Ex e D3D9 clássico separadamente sem crescer um legacy carrier monolítico.
 
 ## Dependências
 
@@ -15,32 +15,34 @@ Fases 07–08.
 
 ## Implementação
 
-- [ ] Mapear Present/Reset/lost-device e ownership dos recursos.
-- [ ] Fazer proof-of-route D3D9Ex primeiro.
-- [ ] Avaliar D3D9 clássico separadamente sem assumir equivalência.
-- [ ] Definir color/depth/motion realmente capturáveis.
-- [ ] Bridge para Host64/D3D12 quando GPU-resident for viável.
-- [ ] Compor de volta e tratar lost-device.
-- [ ] Só então criar frontend correspondente.
+- [ ] Mapear Present/Reset/lost-device/ownership.
+- [ ] Proof-of-route D3D9Ex primeiro.
+- [ ] Avaliar classic separadamente.
+- [ ] Definir recursos realmente capturáveis.
+- [ ] Bridge Host64/D3D12 quando GPU-resident for viável.
+- [ ] Compose back/lost-device.
+- [ ] Separar Ex/classic adapters se semântica divergir; cada arquivo <=300.
 
 ## Revisão obrigatória
 
-- [ ] D3D9Ex e classic têm estados de qualificação separados.
+- [ ] D3D9Ex/classic têm qualificação separada.
 - [ ] Provider/bridge não prova Acquire.
-- [ ] Sem transporte GPU viável = Blocked explícito.
-- [ ] Reset/lost-device libera tudo.
-- [ ] Conversion de format/colorspace é contabilizada.
+- [ ] Sem transporte GPU = Blocked.
+- [ ] Reset libera tudo.
+- [ ] Format/colorspace conversion contabilizada.
 
 ## Validação rápida
 
-- [ ] Micro-harness D3D9Ex Acquire+bridge.
+- [ ] Micro-harness Ex.
 - [ ] Reset/lost-device loops.
-- [ ] Classic somente se proof-of-route justificar.
+- [ ] Classic só com proof viável.
+- [ ] LOC checker.
 
 ## Gate
 
-- [ ] Cada variante termina Qualified ou Blocked com motivo.
-- [ ] Nenhuma rota CPU é apresentada como suporte normal.
+- [ ] Cada variante Qualified ou Blocked com motivo.
+- [ ] Nenhuma rota CPU vendida como normal.
+- [ ] Código D3D9 tocado <=300 por arquivo.
 
 ## Próxima fase
 
