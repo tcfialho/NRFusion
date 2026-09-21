@@ -102,4 +102,39 @@ bool D3D12TestHarness::CreateRenderTargets() {
 }
 
 
+bool D3D12TestHarness::ResizeResources(std::uint32_t width, std::uint32_t height) {
+    if (width == 0 || height == 0) return false;
+
+    if (directQueue_ && directFence_) {
+        const auto value = ++directFenceValue_;
+        if (FAILED(directQueue_->Signal(directFence_.Get(), value))) return false;
+        if (directFence_->GetCompletedValue() < value) {
+            if (FAILED(directFence_->SetEventOnCompletion(value, fenceEvent_))) return false;
+            if (WaitForSingleObject(fenceEvent_, 2000) != WAIT_OBJECT_0) return false;
+        }
+    }
+    if (computeQueue_ && computeFence_) {
+        const auto value = ++computeFenceValue_;
+        if (FAILED(computeQueue_->Signal(computeFence_.Get(), value))) return false;
+        if (computeFence_->GetCompletedValue() < value) {
+            if (FAILED(computeFence_->SetEventOnCompletion(value, fenceEvent_))) return false;
+            if (WaitForSingleObject(fenceEvent_, 2000) != WAIT_OBJECT_0) return false;
+        }
+    }
+
+    colorBuffer_.Reset();
+    depthBuffer_.Reset();
+    motionBuffer_.Reset();
+    exposureBuffer_.Reset();
+    reactiveBuffer_.Reset();
+    computeScratchBuffer_.Reset();
+    rtvHeap_.Reset();
+    dsvHeap_.Reset();
+
+    config_.width = width;
+    config_.height = height;
+    hasPrevFrame_ = false;
+    return CreateRenderTargets();
+}
+
 } // namespace nrfusion::testing

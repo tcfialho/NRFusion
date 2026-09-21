@@ -9,6 +9,7 @@ add_executable(nrfusion_harness_3d
         tests/harness_3d/D3D12HarnessProvider.cpp
         tests/harness_3d/D3D12HarnessDispatch.cpp
         tests/harness_3d/D3D12HarnessRun.cpp
+        tests/harness_3d/D3D12HarnessScenario.cpp
         tests/harness_3d/D3D12HarnessBenchmark.cpp
         tests/harness_3d/D3D12HarnessMetrics.cpp
         tests/harness_3d/main.cpp

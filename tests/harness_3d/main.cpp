@@ -3,6 +3,24 @@
 #include <iostream>
 #include <string>
 
+namespace {
+
+bool ParseScenario(const std::string& value, nrfusion::testing::HarnessScenario& scenario) {
+    using nrfusion::testing::HarnessScenario;
+    if (value == "all") scenario = HarnessScenario::All;
+    else if (value == "steady") scenario = HarnessScenario::Steady;
+    else if (value == "resize") scenario = HarnessScenario::Resize;
+    else if (value == "reset") scenario = HarnessScenario::Reset;
+    else if (value == "missing-guides") scenario = HarnessScenario::MissingGuides;
+    else if (value == "provenance") scenario = HarnessScenario::Provenance;
+    else if (value == "on-off") scenario = HarnessScenario::Toggle;
+    else if (value == "failure") scenario = HarnessScenario::Failure;
+    else return false;
+    return true;
+}
+
+}
+
 int main(int argc, char* argv[]) {
     nrfusion::testing::HarnessConfig config;
     config.frameCount = 120;
@@ -21,6 +39,11 @@ int main(int argc, char* argv[]) {
             config.executionMode = nrfusion::testing::HarnessExecutionMode::Correctness;
         } else if (arg == "--benchmark-iterations" && i + 1 < argc) {
             config.benchmarkIterations = static_cast<std::uint32_t>(std::stoul(argv[++i]));
+        } else if (arg == "--scenario" && i + 1 < argc) {
+            if (!ParseScenario(argv[++i], config.scenario)) {
+                std::cerr << "ERROR: Unknown harness scenario.\n";
+                return 3;
+            }
         } else if (arg == "--headless") {
             config.headless = true;
         } else if (arg == "--width" && i + 1 < argc) {
@@ -51,6 +74,8 @@ int main(int argc, char* argv[]) {
 
     if (config.executionMode == nrfusion::testing::HarnessExecutionMode::Benchmark) {
         std::cout << "SUCCESS: Harness benchmark completed." << std::endl;
+    } else if (config.scenario != nrfusion::testing::HarnessScenario::Legacy) {
+        std::cout << "SUCCESS: Harness scenario completed." << std::endl;
     } else {
         std::cout << "SUCCESS: All 3D frames rendered and verified with NRFusion Auto." << std::endl;
     }

@@ -35,12 +35,25 @@ enum class HarnessExecutionMode : std::uint8_t {
     Benchmark
 };
 
+enum class HarnessScenario : std::uint8_t {
+    Legacy,
+    All,
+    Steady,
+    Resize,
+    Reset,
+    MissingGuides,
+    Provenance,
+    Toggle,
+    Failure
+};
+
 struct HarnessConfig {
     std::uint32_t width = 1280;
     std::uint32_t height = 720;
     std::uint32_t frameCount = 120;
     std::uint32_t benchmarkIterations = 10000;
     HarnessExecutionMode executionMode = HarnessExecutionMode::Correctness;
+    HarnessScenario scenario = HarnessScenario::Legacy;
     bool headless = true;
     bool testAsync = true;
     std::string telemetryJsonPath = "";
@@ -85,6 +98,8 @@ public:
 private:
     bool RunCorrectness();
     bool RunBenchmark();
+    bool RunScenario();
+    bool ResizeResources(std::uint32_t width, std::uint32_t height);
     bool InitializeDevice();
     bool CreateQueues();
     bool CreateRenderTargets();
