@@ -30,6 +30,13 @@ add_executable(nrfusion_harness_3d
              COMMAND nrfusion_harness_3d --no-async --frames 0)
     set_tests_properties(nrfusion_harness_3d_cli_zero_frames PROPERTIES WILL_FAIL TRUE)
 
+    add_executable(nrfusion_nr_scratch_resources_tests tests/d3d12_nr_scratch_resources_tests.cpp)
+    target_link_libraries(nrfusion_nr_scratch_resources_tests PRIVATE nrfusion_core d3d12 dxgi)
+    if (MSVC)
+        target_compile_options(nrfusion_nr_scratch_resources_tests PRIVATE /UNDEBUG)
+    endif()
+    add_test(NAME nrfusion_nr_scratch_resources_tests COMMAND nrfusion_nr_scratch_resources_tests)
+
     add_executable(nrfusion_residual_gpu_test tests/residual_gpu_test.cpp)
     target_link_libraries(nrfusion_residual_gpu_test PRIVATE nrfusion_core d3d12 dxgi d3dcompiler)
     if (MSVC)
