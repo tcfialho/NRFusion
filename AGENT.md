@@ -47,32 +47,28 @@
 
 ## Current session
 
-Start: 2026-09-21 16:24 BRT
-Code freeze: 2026-09-21 16:44 BRT
+Start: 2026-09-21 19:43 BRT
 Branch: standalone/phase-05-d3d12-executor-20260921
 Base phase-04: dcb5ea54c9d36bc36a9009fd4ffebaa3c26ef1ca
-Phase 05: in progress; first mechanical subgate complete.
+Phase 05: in progress; subgates 01-02 complete.
 
 Completed:
-- audited HostDlssNr against the ~3883-line mature OptiScaler reference
-- mapped loader, lifecycle, state/resources, scale, HDR/exposure, residual and multipass boundaries
-- canonicalized HostDlssNr as D3D12NrExecutor
-- kept HostDlssNr as compatibility alias; HostServer64 remains read-only
-- split loader/lifecycle/dispatch with all six method bodies code-equivalent
-- kept each executor source <=153 lines in this subgate
-- preserved one dlssnr_call_evaluate_v2 boundary and existing load policy
-- Windows found split regression: kNgxSuccess remained TU-local to loader
-- fixed kNgxSuccess as one private class constant
-- Portable fix run 35645666859 passed
-- Windows fix run 35645666861 passed; CTest 19/19 and integrated validation passed
+- canonical D3D12NrExecutor loader/lifecycle/dispatch split
+- submission epoch gate ported as portable NrSubmissionGate
+- same/stale epoch evaluate fails closed
+- later epoch unlocks the feature
+- direct legacy Evaluate cannot bypass a pending epoch gate
+- one model evaluate boundary preserved
+- HostServer64 remains read-only
+- Portable run 35648336714 passed 7/7
+- Windows run 35648336610 passed 20/20 and integrated validation
 
-Phase 05 remains open:
-- pending-submission/epoch not ported yet
-- resource/state map not ported
-- scale/subrect/padding not ported
-- HDR/exposure/residual/multipass not ported
+Concurrent branch handling:
+- a concurrent commit advanced the branch during detached work
+- non-fast-forward update was rejected
+- concurrent implementation was inspected and preserved
+- only the missing direct-Evaluate pending guard was added
 
 Exact next action:
-- add a small testable pending-submission/epoch lifecycle boundary
-- prove same-epoch evaluate is rejected and later epoch becomes ready
-- do not touch resources/state until that lifecycle regression passes
+- audit mature D3D12 resource/state ownership and barrier map
+- extract bounded resource/state owner before HDR/residual/multipass

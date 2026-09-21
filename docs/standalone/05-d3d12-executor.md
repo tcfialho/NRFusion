@@ -2,7 +2,7 @@
 
 ## Status
 
-**Em andamento.** Primeiro subgate concluído: canonicalização/split do seed standalone.
+**Em andamento.** Subgates 01–02 concluídos: canonicalização/split e submission epoch.
 Evidência parcial: [05-d3d12-executor-evidence.md](05-d3d12-executor-evidence.md).
 
 ## Objetivo
@@ -60,7 +60,7 @@ read-only. Boundaries mapeados:
 - [x] Manter uma única boundary de chamada ao modelo.
 - [x] Preservar load policy do driver/forwarder/model.
 - [x] Preservar `JustBuilt()` durante o primeiro split.
-- [ ] Portar pending-submission/epoch maduro.
+- [x] Portar pending-submission/epoch maduro.
 - [ ] Extrair resource/state map por owner/lifetime.
 - [ ] Portar scale/subrect/padding.
 - [ ] Portar pre/post-SR/RR/history e multipass.
@@ -82,7 +82,7 @@ read-only. Boundaries mapeados:
 - [x] Host64 compila sem mudança de callsite.
 - [x] Portable Core validation PASS.
 - [x] Windows integrated validation + 19/19 CTest PASS.
-- [ ] Teste/fake do lifecycle create/rebuild/pending.
+- [x] Teste/fake do lifecycle pending por epoch.
 - [ ] Resize/rebuild com substitutes.
 - [ ] Comparar host CPU before/after quando hot helpers cruzarem TUs.
 - [ ] Checker <=300 em todo executor extraído.
@@ -95,9 +95,20 @@ read-only. Boundaries mapeados:
 - [ ] Semântica madura de pending/rebuild/multipass/HDR/residual portada.
 - [x] Zero arquivo handwritten >300 no executor extraído atual.
 
+## Subgate 02 — submission epoch
+
+- `NrSubmissionGate` portátil, sem heap/lock.
+- Create em epoch N marca pending.
+- Evaluate em epoch <= N falha fechado.
+- Primeiro epoch > N libera a feature.
+- `EvaluateForEpoch()` delega à única boundary `Evaluate()`.
+- `Evaluate()` direto também rejeita enquanto o gate estiver pending.
+- Host64 legado permanece sem epoch e sem alteração de callsite.
+- Portable 7/7 PASS; Windows 20/20 PASS.
+
 ## Próxima ação
 
-Portar pending-submission/epoch como boundary pequeno e testável antes de tocar resources/state.
+Extrair resource/state ownership por lifetime antes de portar HDR/residual/multipass.
 
 ## Próxima fase
 

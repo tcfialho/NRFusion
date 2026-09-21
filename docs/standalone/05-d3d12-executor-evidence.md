@@ -90,3 +90,48 @@ Create marca a feature como pending e registra o submission epoch. Evaluate no m
 sem executar o modelo; somente uma mudança de epoch torna a feature utilizável.
 
 Esse será o próximo boundary. Resources/state/HDR/residual não serão portados antes dele.
+
+## Subgate 02 — pending-submission / submission epoch
+
+Head validado: `594eb3395b245f08b593a6ade335dcccf9c76541`.
+
+Novo boundary portátil:
+
+- `include/nrfusion/NrSubmissionGate.hpp` — 21 linhas;
+- `src/NrSubmissionGate.cpp` — 23 linhas;
+- `tests/submission_gate_tests.cpp` — 54 linhas.
+
+Semântica:
+
+- `MarkCreated(N)` marca a feature pending;
+- `ReadyFor(epoch <= N)` retorna false;
+- primeiro `ReadyFor(epoch > N)` libera a feature;
+- depois de liberada, chamadas subsequentes ficam prontas até novo create/reset.
+
+Integração D3D12:
+
+- `EnsureFeatureForEpoch()` registra o epoch somente em build novo;
+- `EvaluateForEpoch()` usa o gate e delega à única `Evaluate()`;
+- `Evaluate()` direto rejeita enquanto o gate estiver pending, impedindo bypass;
+- `HostServer64` permanece read-only e continua no caminho legado sem epoch.
+
+Durante a sessão houve uma implementação concorrente na mesma branch. A atualização non-fast-forward foi
+rejeitada pelo GitHub; o head concorrente foi inspecionado e preservado. O único invariant ausente nele
+era o bloqueio do `Evaluate()` legado durante pending, aplicado no commit
+`594eb3395b245f08b593a6ade335dcccf9c76541`.
+
+Validação:
+
+- Portable run `35648336714`: **PASS**, 7/7;
+- `nrfusion_submission_gate_tests`: PASS, 0,01 s;
+- Windows run `35648336610`: **PASS**, 20/20;
+- Windows compilou loader/lifecycle/dispatch;
+- workflow final: `NRFusion Windows validation passed`.
+
+Auditoria:
+
+- uma única ocorrência de call boundary `evaluate_(...)`;
+- declarations/definitions de `EnsureFeatureForEpoch` e `EvaluateForEpoch`: 1:1;
+- `HostServer64` não foi tocado;
+- maior arquivo tocado no subgate: 123 linhas;
+- nenhum comentário longo novo.
