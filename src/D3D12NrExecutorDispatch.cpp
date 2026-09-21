@@ -6,6 +6,10 @@ bool D3D12NrExecutor::Evaluate(ID3D12GraphicsCommandList* cmdList, ID3D12Resourc
                           ID3D12Resource* motion, ID3D12Resource* output, uint32_t width, uint32_t height,
                           bool depthInverted, bool reset, const DlssNrTuning& tuning, uint32_t guideWidth,
                           uint32_t guideHeight, uint32_t motionWidth, uint32_t motionHeight) {
+    if (submissionGate_.Pending()) {
+        status_ = "feature pending submission";
+        return false;
+    }
     if (!feature_ || !evaluate_ || !capabilityParams_) return false;
     if (guideWidth == 0) guideWidth = width;
     if (guideHeight == 0) guideHeight = height;
