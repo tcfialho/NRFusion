@@ -1,5 +1,9 @@
 # Fase 00 — Baseline e mapa de responsabilidades
 
+## Status
+
+**Concluída.** Evidência: [00-baseline-evidence.md](00-baseline-evidence.md).
+
 ## Objetivo
 
 Congelar responsabilidades/comportamento e mapear dívida estrutural antes de mover código.
@@ -16,72 +20,45 @@ Nenhuma.
 
 ## Implementação
 
-- [ ] Registrar master/upstreams e artefatos atuais.
-- [ ] Mapear patch points do OptiScaler por Host/Provider/Executor/MFG/Menu/Diagnostics/Compatibility.
-- [ ] Inventariar hooks, recursos GPU, readbacks, query heaps e lifetimes.
-- [ ] Registrar create/rebuild/reset/history/fallback atuais.
-- [ ] Registrar rotas x86/Host64, D3D11, Vulkan e OpenGL existentes.
-- [ ] Inventariar **todos** os first-party handwritten files >300 linhas.
-- [ ] Classificar cada um: **split na fase dona**, **aposentar**, ou **cleanup antes do cutover**.
-- [ ] Criar um checker mínimo de linhas físicas para arquivos tracked; alvo <=80 linhas de script, sem framework/dependência.
-- [ ] Modo **changed**: compara contra a base da fase e falha se qualquer first-party novo/tocado exceder 300.
-- [ ] Modo **all**: lista todas as violações legadas; report-only durante a transição e hard-fail a partir da Fase 22.
-- [ ] Checker ignora somente docs, generated reproduzível, vendor/third-party e fixtures upstream explicitamente identificadas.
-- [ ] Marcar infraestrutura OptiScaler sem uso direto pelo NRFusion.
-
-## Passivo conhecido no master `410cab8`
-
-| Arquivo | Linhas | Destino inicial |
-|---|---:|---|
-| `tools/apply_to_optiscaler.py` | 3900 | aposentar no cutover |
-| `tests/controller_tests.cpp` | 2743 | split antes da RC |
-| `src/CaptureD3D11.cpp` | 1302 | Fase 09/10 |
-| `src/AdaW4A8Interceptor.cpp` | 1097 | Fase 05/21 |
-| `tests/harness_3d/D3D12TestHarness.cpp` | 1085 | Fase 03 |
-| `src/cuda/W4A8FfnSm89.cu` | 946 | Fase 05/21 |
-| `src/OptiScalerAdapter.cpp` | 843 | aposentar com NrSession |
-| `src/ProfileStore.cpp` | 666 | split se mantido |
-| `src/HostServer64.cpp` | 659 | Fase 10 |
-| `src/GameProbe.cpp` | 628 | Fase 02 |
-| `src/InstallerState.cpp` | 613 | Fase 23 |
-| `src/SyntheticDx12Provider.cpp` | 596 | Fase 07 |
-| `src/DlssgTransfusion.cpp` | 555 | Fase 16 |
-| `src/PerformanceController.cpp` | 514 | Fase 06/20 |
-| `installer/NRFusion.nsi` | 466 | Fase 23 |
-| `src/SyntheticOpenGlProvider.cpp` | 409 | Fase 12 |
-| `tools/build_dist.ps1` | 395 | Fase 23 |
-| `src/SyntheticVulkanProvider.cpp` | 377 | Fase 11 |
-| `src/CaptureProvider32.cpp` | 370 | Fase 10 |
-| `src/CompatibilityDatabase.cpp` | 350 | Fase 18 |
-| `include/nrfusion/FusionRuntime.hpp` | 329 | Fase 06 |
-
-`CMakeLists.txt` está em ~267 linhas: ainda abaixo do hard cap, mas já acima do soft target e deve ser modularizado antes de crescer.
-
-A tabela é amostra inicial; o relatório do checker é autoritativo.
+- [x] Registrar master/upstreams e artefatos atuais.
+- [x] Mapear patch points do OptiScaler por Host/Provider/Executor/MFG/Menu/Diagnostics/Compatibility.
+- [x] Inventariar hooks, recursos GPU, readbacks, query timing e lifetimes relevantes.
+- [x] Registrar create/rebuild/reset/history/fallback atuais.
+- [x] Registrar rotas x86/Host64, D3D11, Vulkan e OpenGL existentes.
+- [x] Inventariar todos os first-party handwritten files >300 linhas.
+- [x] Classificar cada oversized file por fase dona ou retirement.
+- [x] Criar checker mínimo de linhas físicas.
+- [x] Validar modos `changed`, `all` e `all --strict`.
+- [x] Marcar infraestrutura OptiScaler que será aposentada.
 
 ## Revisão obrigatória
 
-- [ ] Toda responsabilidade necessária recebe novo owner.
-- [ ] Workaround sem causa comprovada é preservado.
-- [ ] Split segue responsabilidade/lifetime, nunca tamanho arbitrário.
-- [ ] Arquivo legado >300 não cresce.
-- [ ] Checker não contém allowlist ad-hoc para evitar trabalho.
-- [ ] Limites dependentes de hardware real ficam explícitos.
+- [x] Toda responsabilidade necessária tem novo owner/fase.
+- [x] Workaround sem causa comprovada permanece preservado.
+- [x] Splits previstos seguem responsabilidade/lifetime.
+- [x] Legado >300 fica read-only/no-growth até a fase dona.
+- [x] Checker não usa allowlist ad-hoc.
+- [x] Limites dependentes de hardware real estão explícitos.
 
 ## Validação rápida
 
-- [ ] Gerar call-path D3D12.
-- [ ] Contar adapter calls, locks, timers e config accesses.
-- [ ] Rodar checker e salvar relatório completo de >300.
-- [ ] Conferir CMake/installer/build_dist.
+- [x] Call-path D3D12 atual registrado.
+- [x] Adapter calls/locks/timing/config baseline registrados.
+- [x] Inventário completo de source-size produzido pela API do GitHub.
+- [x] Checker validado em repositório Git temporário com regressões de vendor/untracked.
+- [x] CMake/installer/build_dist conferidos.
+
+O ambiente desta sessão não possui checkout executável do repositório; por isso `check_source_size.py all`
+não foi executado contra o repo real. O inventário completo foi produzido independentemente pela API,
+e o checker foi testado funcionalmente em um repositório Git temporário.
 
 ## Gate
 
-- [ ] Nenhuma responsabilidade crítica sem owner.
-- [ ] Todo oversized first-party file tem destino.
-- [ ] Checker mecânico disponível em changed/all para todas as fases seguintes.
-- [ ] Baseline permite comparação diferencial.
+- [x] Nenhuma responsabilidade crítica sem owner.
+- [x] Todo oversized first-party file tem destino.
+- [x] Checker `changed/all` disponível para as fases seguintes.
+- [x] Baseline permite comparação diferencial.
 
 ## Próxima fase
 
-Fase 01.
+Fase 01 — Universal FrameContract.
