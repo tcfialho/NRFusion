@@ -2,7 +2,7 @@
 
 ## Objetivo
 
-Qualificar Vulkan -> executor D3D12.
+Qualificar Vulkan→D3D12 com external memory/semaphore corretos.
 
 ## Dependências
 
@@ -10,46 +10,37 @@ Fases 07–08.
 
 ## Fora de escopo
 
-- Compile-only support
-- Hard-code Vulkan não verificado
+- Compile-only claim
+- Constantes Vulkan inventadas
 
-## Checklist de implementação
+## Implementação
 
-- [ ] External memory Win32.
-- [ ] Timeline semaphore import.
-- [ ] Memory type correto.
-- [ ] Image usage/layout.
-- [ ] Queue-family ownership.
-- [ ] Color/depth/motion.
-- [ ] Provenance.
-- [ ] Compose back.
-- [ ] Swapchain/device recreation.
-- [ ] Frontend Vulkan mínimo.
+- [ ] Trocar structs/constants ad-hoc por headers/contratos verificados quando necessário.
+- [ ] Definir external-memory compatibility e memoryTypeIndex corretamente.
+- [ ] Definir timeline/binary semaphore strategy e ownership.
+- [ ] Definir layouts, access masks e queue-family transfer.
+- [ ] Capturar color e guides disponíveis com provenance.
+- [ ] Compor de volta e tratar swapchain/device recreation.
+- [ ] Adicionar frontend Vulkan fino ao runner.
 
 ## Revisão obrigatória
 
-- [ ] Headers/spec sustentam structs/constants.
-- [ ] Handle ownership.
-- [ ] Layout/queue transition.
+- [ ] Handle import/export ownership.
+- [ ] Image format/tiling/usage realmente compatíveis com interop.
+- [ ] Queue/layout transitions completos em success/failure.
 - [ ] Sem CPU readback.
-- [ ] Failure limpa.
 
 ## Validação rápida
 
-- [ ] Vulkan harness steady/resize/recreate.
-- [ ] Interop failure.
-- [ ] Timeline long run.
+- [ ] Harness Vulkan com fake executor quando runtime disponível.
+- [ ] Resize/recreate e interop failure.
+- [ ] Long run de semaphore values.
 
-## Gate de conclusão
+## Gate
 
-- [ ] GPU-resident route validada.
-- [ ] Sem assumption não verificada.
-- [ ] 0 resource creation steady.
-
-## Entregáveis
-
-- Vulkan carrier
-- Vulkan harness
+- [ ] Rota GPU-resident demonstrada.
+- [ ] Nenhuma assumption Vulkan sem fonte técnica/código verificável.
+- [ ] Failure desativa rota sem corromper o jogo.
 
 ## Próxima fase
 

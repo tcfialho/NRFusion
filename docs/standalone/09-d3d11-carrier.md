@@ -2,7 +2,7 @@
 
 ## Objetivo
 
-Qualificar SyntheticDx11BridgeProvider como rota real.
+Qualificar a rota D3D11→D3D12 preservando pixels na GPU.
 
 ## Dependências
 
@@ -13,43 +13,35 @@ Fases 07–08.
 - x86
 - CPU frame transport
 
-## Checklist de implementação
+## Implementação
 
-- [ ] Revisar shared D3D12 path.
-- [ ] Remover waits evitáveis.
-- [ ] Validar slots/fences/formats.
-- [ ] Color GPU-side.
-- [ ] Depth/motion quando possível.
-- [ ] Fallback motion explícito.
-- [ ] Executor canônico.
-- [ ] Compose D3D11.
-- [ ] Resize/device/context destruction.
-- [ ] Frontend D3D11 mínimo.
+- [ ] Auditar shared-resource path existente antes de reescrever.
+- [ ] Definir slot/fence ownership e reuse.
+- [ ] Capturar color; depth/motion apenas com provenance válida.
+- [ ] Abrir/usar recursos no D3D12 canônico.
+- [ ] Compor resultado de volta no D3D11.
+- [ ] Tratar resize/device/context destruction.
+- [ ] Adicionar frontend D3D11 mínimo ao mesmo runner.
 
 ## Revisão obrigatória
 
-- [ ] Keyed mutex/fence.
-- [ ] Allocator só após retirement.
-- [ ] N/N+1 aliasing.
-- [ ] Evitar copies full-frame redundantes.
-- [ ] Guide provenance.
+- [ ] Keyed mutex/fence ordering.
+- [ ] Allocator/slot só reutilizado após retirement.
+- [ ] Evitar N/N+1 aliasing.
+- [ ] Cada full-frame copy deve ser inevitável e contada.
+- [ ] Guide fallback é policy, não truque do carrier.
 
 ## Validação rápida
 
-- [ ] D3D11 harness steady/resize/reset.
-- [ ] Long run in-flight.
-- [ ] Medir CPU/copies.
+- [ ] Harness D3D11 com fake executor.
+- [ ] Stress in-flight/resize/reset.
+- [ ] Medir copies e host CPU.
 
-## Gate de conclusão
+## Gate
 
-- [ ] GPU-only route qualificada.
-- [ ] Sem waits injustificados.
-- [ ] 0 alloc/resource create steady.
-
-## Entregáveis
-
-- D3D11 carrier
-- D3D11 harness
+- [ ] GPU-resident transport demonstrado.
+- [ ] Sem wait/copy injustificado.
+- [ ] Steady-state sem criação/alocação do carrier.
 
 ## Próxima fase
 

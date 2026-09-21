@@ -1,11 +1,7 @@
 # NRFusion Universal Standalone — Plano
 
-O plano foi dividido por fase para facilitar execução, revisão e handoff.
-
-Índice principal:
+O plano executável está dividido por fase:
 
 - [docs/standalone/README.md](standalone/README.md)
 
-Cada fase contém objetivo, dependências, fora de escopo, checklist de implementação, revisão obrigatória, validação rápida, gate de conclusão e entregáveis.
-
-O histórico da versão monolítica permanece disponível no Git.
+Cada fase define escopo, implementação, revisão, validação e gate. O arquivo da fase atual é a fonte de verdade; o histórico monolítico permanece no Git.

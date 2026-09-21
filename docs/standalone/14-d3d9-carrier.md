@@ -2,7 +2,7 @@
 
 ## Objetivo
 
-Bridge legado distinguindo D3D9Ex do D3D9 clássico.
+Separar D3D9Ex e D3D9 clássico e provar transporte viável antes de construir o carrier.
 
 ## Dependências
 
@@ -13,42 +13,33 @@ Fases 07–08.
 - CPU screenshots
 - Segundo NR runtime
 
-## Checklist de implementação
+## Implementação
 
-- [ ] Interception route.
-- [ ] Capabilities D3D9Ex/classic.
-- [ ] GPU transfer/share.
-- [ ] Color.
-- [ ] Depth strategy.
-- [ ] Motion strategy.
-- [ ] Bridge Host64/D3D12.
-- [ ] Compose back.
-- [ ] Reset/lost-device.
-- [ ] Frontend mínimo.
+- [ ] Mapear interception/reset/lost-device semantics.
+- [ ] Fazer proof-of-route D3D9Ex→shared/bridge primeiro.
+- [ ] Avaliar D3D9 clássico separadamente sem assumir equivalência.
+- [ ] Definir color/depth/motion possíveis e provenance.
+- [ ] Bridge para Host64/D3D12 quando GPU-resident for viável.
+- [ ] Compor de volta e tratar lost-device.
+- [ ] Só então criar frontend correspondente.
 
 ## Revisão obrigatória
 
-- [ ] Não fingir GPU-resident.
-- [ ] Lost-device cleanup.
-- [ ] Format/colorspace.
-- [ ] Interop ownership/sync.
+- [ ] D3D9Ex e classic têm estados de qualificação separados.
+- [ ] Sem transporte GPU viável = Blocked explícito.
+- [ ] Reset/lost-device libera tudo.
+- [ ] Colorspace/format conversions são contabilizados.
 
 ## Validação rápida
 
-- [ ] Harness D3D9Ex e classic se viável.
+- [ ] Micro-harness D3D9Ex proof-of-route.
 - [ ] Reset/lost-device loops.
-- [ ] Measure transfer.
+- [ ] Classic apenas se a rota técnica justificar implementação.
 
-## Gate de conclusão
+## Gate
 
-- [ ] Cada variante Qualified ou Blocked com razão.
-- [ ] Nenhuma rota CPU disfarçada.
-
-## Entregáveis
-
-- D3D9 carrier
-- Capability split
-- Harness
+- [ ] Cada variante termina como Qualified ou Blocked com motivo concreto.
+- [ ] Nenhuma rota CPU é vendida como suporte normal.
 
 ## Próxima fase
 

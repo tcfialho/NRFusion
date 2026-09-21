@@ -2,50 +2,45 @@
 
 ## Objetivo
 
-Fazer game sem DLSS ser caminho normal com melhor guide disponível.
+Selecionar os melhores guides disponíveis sem tornar DLSS nativo requisito.
 
 ## Dependências
 
-Carriers relevantes.
+Carriers relevantes implementados.
 
 ## Fora de escopo
 
 - Inventar provenance
 - Exigir guides nativos
 
-## Checklist de implementação
+## Implementação
 
-- [ ] Motion priority: Native -> DLSS contract -> NVOF -> shader -> Zero.
-- [ ] Depth reliability central.
-- [ ] Exposure/HDR source.
-- [ ] Provenance no FrameContract.
-- [ ] Reset histories em mudança material.
-- [ ] Policy usa capabilities reais.
-- [ ] Tabela API/provider de sources.
+- [ ] Centralizar prioridade de motion: Native → DLSS contract → NVOF → shader → Zero.
+- [ ] Centralizar depth reliability e exposure source.
+- [ ] Definir custo/capability de NVOF e shader motion separadamente.
+- [ ] Registrar source/reliability no FrameContract.
+- [ ] Invalidar temporal history quando source muda materialmente.
+- [ ] Policy/placement só usa capability realmente disponível.
+- [ ] Manter matriz API/provider→color/depth/motion/exposure/fallback.
 
 ## Revisão obrigatória
 
-- [ ] Non-null != reliable.
-- [ ] Zero nunca Native.
-- [ ] NVOF/shader têm custo/limites explícitos.
-- [ ] Camera cut invalida history.
+- [ ] Non-null nunca implica reliable.
+- [ ] Zero motion é declarado, nunca disfarçado.
+- [ ] Fallback de guide não pode causar feature enablement indevido.
+- [ ] Camera cut/reset prevalece sobre history.
 
 ## Validação rápida
 
-- [ ] Fake executor alterna provenance.
-- [ ] Carriers sem guides.
-- [ ] Status reporta fonte real.
+- [ ] Fake sources alternando provenance sem GPU.
+- [ ] Harness de carriers com guides ausentes/parciais.
+- [ ] Status/diagnostics reportam source real.
 
-## Gate de conclusão
+## Gate
 
-- [ ] Todas rotas têm estratégia.
-- [ ] Sem DLSS não implica unsupported.
-- [ ] Fallback observável.
-
-## Entregáveis
-
-- Guide policy
-- Matriz de fontes
+- [ ] Game sem DLSS ainda possui estratégia explícita.
+- [ ] Fallback é observável e determinístico.
+- [ ] Nenhum carrier contém policy duplicada de guide.
 
 ## Próxima fase
 

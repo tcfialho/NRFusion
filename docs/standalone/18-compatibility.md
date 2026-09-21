@@ -2,7 +2,7 @@
 
 ## Objetivo
 
-Compatibilidade difícil isolada, sem imposto global.
+Preservar engines difíceis através de exceções mínimas e gated.
 
 ## Dependências
 
@@ -11,39 +11,34 @@ Carriers principais.
 ## Fora de escopo
 
 - Copiar D3D12_Hooks inteiro
-- Tracking pesado default
+- Tracking global por padrão
 
-## Checklist de implementação
+## Implementação
 
-- [ ] Identificar root signature/descriptor heap/PSO restore reais.
-- [ ] Capturar mínimo.
-- [ ] Capability/profile gate.
-- [ ] Evitar maps globais default.
-- [ ] Preservar bindless.
-- [ ] Documentar exceções.
+- [ ] Identificar quais states realmente precisam restore por rota.
+- [ ] Implementar captura mínima de root signature/heaps/PSO/root params somente quando necessária.
+- [ ] Ativar por capability/profile observável, não por suposição.
+- [ ] Evitar maps/mutexes globais no fast path default.
+- [ ] Documentar game/API reason de cada exception.
+- [ ] Garantir restore também em early-return/failure.
 
 ## Revisão obrigatória
 
-- [ ] Cada state item com razão concreta.
-- [ ] Locks/maps fora do default fast path.
-- [ ] Early-return restore.
-- [ ] Profile não mascara bug geral.
+- [ ] Compatibility flag não pode esconder bug geral.
+- [ ] State capturado precisa de owner e lifetime.
+- [ ] Nenhuma exceção pode impor custo aos games que não precisam.
+- [ ] Profile desconhecido usa caminho conservador sem adivinhar internals.
 
 ## Validação rápida
 
-- [ ] Harness compatibility mode.
+- [ ] Harness com cenário que exige state restore.
 - [ ] Benchmark default vs compatibility.
-- [ ] Failure durante restore.
+- [ ] Failure injection durante pass/restore.
 
-## Gate de conclusão
+## Gate
 
-- [ ] Default sem custo desnecessário.
-- [ ] Casos conhecidos preservados.
-
-## Entregáveis
-
-- Compatibility layer
-- Profiles
+- [ ] Default não paga custo de restore ampliado.
+- [ ] Casos conhecidos continuam cobertos por gates claros.
 
 ## Próxima fase
 

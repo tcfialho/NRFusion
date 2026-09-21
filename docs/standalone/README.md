@@ -4,24 +4,20 @@
 
 Transformar o NRFusion em um host universal de DLSS 5 sem depender do OptiScaler e sem exigir DLSS nativo no jogo.
 
-Escopo-alvo:
+Alvos:
 
 - x64 e x86;
 - D3D12, D3D11, D3D10, D3D9, Vulkan e OpenGL;
 - providers Native, Bridge e Synthetic;
-- Neural Rendering universal sempre que existir uma rota tecnicamente válida;
-- MFG onde Streamline/DLSSG/presentation puderem ser integrados corretamente;
-- executor DLSS 5 D3D12 x64 canônico sempre que tecnicamente possível.
+- Neural Rendering disponível sempre que existir uma rota tecnicamente válida;
+- MFG qualificado separadamente, onde Streamline/DLSSG/presentation puderem ser integrados;
+- um executor DLSS 5 D3D12 x64 canônico sempre que possível.
+
+**Target não significa Supported.** Cada rota só vira suportada após passar seu gate de qualificação.
 
 ## Arquitetura
 
-A API do jogo determina **como** o frame chega ao NRFusion, não **se** Neural Rendering existe.
-
 ```text
-Tem contrato DLSS/RR utilizável?
-  sim -> Native/Bridge
-  não -> Synthetic
-
 Game API / bitness
       ↓
 Carrier / Provider
@@ -35,16 +31,24 @@ Canonical D3D12 DLSS 5 Executor
 Compose / interop de volta ao jogo
 ```
 
-## Contrato rígido de performance
+A API determina **como** o frame chega ao NRFusion, não **se** o NR existe.
 
-Em steady state normal:
+Seleção:
+
+```text
+contrato DLSS/RR utilizável -> Native/Bridge
+sem contrato utilizável     -> Synthetic
+```
+
+## Contrato de performance
+
+Steady state normal:
 
 ```text
 heap allocations/frame          = 0
 GPU resource creation/frame     = 0
-descriptor heap creation/frame  = 0
-filesystem access/frame         = 0
-string/config parsing/frame     = 0
+descriptor/query heap/frame     = 0
+filesystem/string parsing/frame = 0
 shader compilation/frame        = 0
 blocking GPU wait/frame         = 0
 ```
@@ -52,32 +56,33 @@ blocking GPU wait/frame         = 0
 Também é obrigatório:
 
 - evitar mutex no caminho normal; lock exige concorrência real demonstrada;
-- Diagnostics/Advanced desligados não podem consumir trabalho GPU nem VRAM exclusivo;
-- VRAM equivalente deve ser <= OptiScaler+NRFusion atual, salvo tradeoff medido e aprovado;
-- medir p50/p95/p99, não só média;
-- não afirmar ganho real de FPS/GPU sem hardware real;
-- mover código GPU maduro antes de otimizá-lo;
-- compatibilidade excepcional não pode taxar todos os jogos.
+- Diagnostics/Advanced desligados não podem consumir trabalho GPU ou VRAM exclusivo;
+- VRAM equivalente <= OptiScaler+NRFusion atual, salvo tradeoff medido e aprovado;
+- medir p50/p95/p99, não apenas média;
+- otimização que melhora média e piora p99 é regressão até análise;
+- não afirmar ganho real de FPS/GPU sem execução em hardware real;
+- compatibilidade excepcional deve ser gated e não taxar todos os jogos.
 
 ## Estratégia de validação
 
-O desenvolvimento usa três níveis:
+Três níveis, nesta ordem:
 
-1. **FakeNrExecutor**: milhões de frames de policy/state sem GPU.
-2. **MiniGame Harness**: plumbing gráfico mínimo e determinístico sem jogo real.
-3. **Jogos reais**: qualificação final de driver, imagem, VRAM e performance real.
+1. **FakeNrExecutor** — policy, state, lifecycle, IPC e failure injection sem GPU compatível.
+2. **MiniGame Harness** — plumbing gráfico mínimo e determinístico, sem jogo real.
+3. **Jogos reais** — driver, imagem, VRAM e performance final.
 
-Antes de recorrer a jogo real para diagnosticar um problema, tentar reproduzi-lo no harness mínimo.
+O harness deve suportar `--executor=fake` para que a maior parte do desenvolvimento continue testável mesmo sem GPU NVIDIA/DLSS disponível.
+
+Antes de usar jogo real para diagnosticar um bug, tentar reproduzi-lo no harness mínimo.
 
 Harnesses não são produtos:
 
-- sem engine;
-- sem assets;
-- sem física/câmera/UI elaborada;
-- sem framework gráfico genérico desnecessário;
-- preferir poucas centenas de linhas úteis por frontend;
-- cenários determinísticos por argumentos;
-- saída estruturada de métricas.
+- sem engine, assets, física ou UI elaborada;
+- sem abstraction layer gráfica genérica só para “ficar bonito”;
+- frontends finos por API;
+- cenários determinísticos por CLI;
+- saída estruturada de métricas;
+- código mínimo suficiente para exercitar o contrato.
 
 ## Ordem
 
@@ -94,12 +99,12 @@ Harnesses não são produtos:
 | 08 | Timing/Diagnostics |
 | 09 | D3D11 carrier |
 | 10 | x86 + Host64 |
-| 11 | Vulkan carrier |
-| 12 | OpenGL carrier |
-| 13 | D3D10 carrier |
-| 14 | D3D9 carrier |
+| 11 | Vulkan |
+| 12 | OpenGL |
+| 13 | D3D10 |
+| 14 | D3D9 |
 | 15 | Guide acquisition |
-| 16 | MFG standalone |
+| 16 | MFG |
 | 17 | Menu/config |
 | 18 | Compatibility |
 | 19 | VRAM/resources |
@@ -107,6 +112,16 @@ Harnesses não são produtos:
 | 21 | Executor optimization |
 | 22 | Qualification |
 | 23 | Cutover |
+
+## Regras de execução
+
+- O arquivo da fase atual é a fonte de verdade.
+- Não iniciar uma fase enquanto o gate de dependência não estiver satisfeito ou explicitamente marcado como blocker.
+- Cada item deve caber em uma interação curta e ser verificável isoladamente.
+- Stabilizar lote antes de mover branch/rodar CI completo.
+- CI confirma integração; não substitui revisão.
+- Mudança de hot path sempre responde: antes, depois, trabalho removido/adicionado, comportamento preservado.
+- Barrier, ownership, lock e fallback exigem justificativa concreta.
 
 ## Arquivos
 
@@ -121,10 +136,10 @@ Harnesses não são produtos:
 - [08 — Timing/Diagnostics](08-timing-diagnostics.md)
 - [09 — D3D11 carrier](09-d3d11-carrier.md)
 - [10 — x86 + Host64](10-x86-host64.md)
-- [11 — Vulkan carrier](11-vulkan-carrier.md)
-- [12 — OpenGL carrier](12-opengl-carrier.md)
-- [13 — D3D10 carrier](13-d3d10-carrier.md)
-- [14 — D3D9 carrier](14-d3d9-carrier.md)
+- [11 — Vulkan](11-vulkan-carrier.md)
+- [12 — OpenGL](12-opengl-carrier.md)
+- [13 — D3D10](13-d3d10-carrier.md)
+- [14 — D3D9](14-d3d9-carrier.md)
 - [15 — Guide acquisition](15-guide-acquisition.md)
 - [16 — MFG](16-mfg.md)
 - [17 — Menu/config](17-menu.md)
@@ -135,26 +150,6 @@ Harnesses não são produtos:
 - [22 — Qualification](22-qualification.md)
 - [23 — Cutover](23-cutover.md)
 
-## Regras globais de revisão
+## Critério arquitetural final
 
-Toda mudança de hot path deve responder:
-
-1. o que executava antes;
-2. o que executa depois;
-3. qual trabalho foi removido/adicionado;
-4. qual comportamento observável foi preservado.
-
-Além disso:
-
-- nenhuma abstração nova sem custo de dispatch, ownership, sync, memória e lifetime conhecido;
-- nenhum mutex sem threads concorrentes identificadas;
-- nenhuma mudança de barrier sem estados anterior/próximo provados;
-- COM/native ownership explícito;
-- error paths recebem o mesmo nível de revisão do happy path;
-- fallback nunca esconde provenance;
-- CI valida integração, não substitui revisão;
-- estabilizar lote antes de atualizar branch/rodar build completo.
-
-## Critério final
-
-O cutover só acontece quando o NRFusion puder fornecer DLSS 5 Neural Rendering independentemente de DLSS nativo no jogo, escolhendo uma rota Native/Bridge/Synthetic qualificada para API e bitness, com menor overhead de host que a arquitetura OptiScaler equivalente e sem regressão de VRAM equivalente.
+NRFusion só substitui OptiScaler quando NR funcionar por rotas qualificadas independentemente de DLSS nativo no jogo, com menor overhead de host para trabalho equivalente e sem regressão de VRAM equivalente.

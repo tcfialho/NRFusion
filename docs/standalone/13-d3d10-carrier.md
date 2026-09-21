@@ -2,7 +2,7 @@
 
 ## Objetivo
 
-Bridge D3D10 para executor canônico.
+Provar uma bridge D3D10 viável antes de investir em implementação completa.
 
 ## Dependências
 
@@ -10,44 +10,36 @@ Fases 07–08.
 
 ## Fora de escopo
 
-- Executor NR D3D10
+- Executor NR próprio D3D10
 - CPU screenshot
 
-## Checklist de implementação
+## Implementação
 
-- [ ] Identificar DXGI sharing.
-- [ ] Device/adapter identity.
-- [ ] Color GPU-side.
-- [ ] Depth disponível/provenance.
-- [ ] Motion strategy.
-- [ ] Bridge D3D12.
-- [ ] Sync sem blocking quando possível.
-- [ ] Compose back.
-- [ ] Resize/recreation.
-- [ ] Frontend D3D10.
+- [ ] Primeiro produzir proof-of-route para sharing/interoperabilidade no mesmo adapter.
+- [ ] Definir capture/compose points mínimos.
+- [ ] Capturar color GPU-side; depth/motion só se tecnicamente confiáveis.
+- [ ] Bridge para D3D12 canônico.
+- [ ] Definir sincronização sem blocking wait recorrente.
+- [ ] Tratar resize/device recreation.
+- [ ] Somente após proof-of-route, adicionar frontend D3D10 ao runner.
 
 ## Revisão obrigatória
 
-- [ ] Cada full-frame copy justificada.
-- [ ] Fail closed sem sharing.
-- [ ] Não mascarar guides ausentes.
-- [ ] Shared lifetime.
+- [ ] Cada copy full-frame tem razão e contador.
+- [ ] Sem sharing seguro = Blocked, não gambiarra CPU.
+- [ ] Provenance de guides não é inferida.
+- [ ] Legacy API não pode forçar arquitetura especial no core.
 
 ## Validação rápida
 
-- [ ] D3D10 steady/resize.
-- [ ] Com/sem guides.
-- [ ] Medir copies/CPU.
+- [ ] Micro-harness proof-of-route primeiro.
+- [ ] Depois steady/resize com fake executor.
+- [ ] Medir copies/sync/CPU.
 
-## Gate de conclusão
+## Gate
 
-- [ ] Demonstrada ou explicitamente Blocked.
-- [ ] Sem CPU pixel transport.
-
-## Entregáveis
-
-- D3D10 carrier
-- D3D10 harness
+- [ ] Há rota GPU-resident demonstrável ou blocker técnico documentado.
+- [ ] Nenhum código grande antes dessa decisão.
 
 ## Próxima fase
 

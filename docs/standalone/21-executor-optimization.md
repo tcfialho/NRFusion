@@ -2,7 +2,7 @@
 
 ## Objetivo
 
-Otimizar GPU plumbing apenas com custo concreto demonstrado.
+Reduzir custo GPU/CPU do executor somente quando existe evidência de um alvo concreto.
 
 ## Dependências
 
@@ -11,41 +11,35 @@ Fases 05,08,20.
 ## Fora de escopo
 
 - Remover barrier por aparência
-- Reescrever modelo
-- Trocar qualidade sem evidência
+- Reescrever modelo NVIDIA
+- Tradeoff visual implícito
 
-## Checklist de implementação
+## Implementação
 
-- [ ] Medir copies/barriers/descriptors/readbacks/resolve.
-- [ ] Escolher um custo por iteração.
-- [ ] Provar redundância/substituição.
-- [ ] Preservar states/lifetime/errors.
-- [ ] Alterar mínimo.
-- [ ] Harness before/after.
-- [ ] Hardware real quando dependente de GPU/driver.
+- [ ] Rankear copies/barriers/descriptors/readbacks/resolve por custo ou frequência observada.
+- [ ] Escolher um único alvo por iteração.
+- [ ] Provar redundância ou substituição segura.
+- [ ] Preservar subrect/format/state/lifetime/failure semantics.
+- [ ] Medir antes/depois no mesmo cenário.
+- [ ] Registrar quando 'não otimizar' é o resultado correto.
 
 ## Revisão obrigatória
 
-- [ ] Barrier exige state proof.
-- [ ] Copy exige subrect/padding/format preservation.
+- [ ] Barrier removido exige state proof completo.
+- [ ] Copy removida exige equivalência de conteúdo e region.
 - [ ] Não aumentar VRAM sem aprovação.
-- [ ] Não agrupar otimizações não atribuíveis.
+- [ ] Não agrupar mudanças que impedem atribuir resultado.
 
 ## Validação rápida
 
-- [ ] Scenario específico.
-- [ ] Long-run regression.
-- [ ] GPU A/B quando necessário.
+- [ ] Harness específico do caminho.
+- [ ] Long-run regressions.
+- [ ] Hardware real somente para conclusão sobre GPU time/qualidade.
 
-## Gate de conclusão
+## Gate
 
-- [ ] Ganho/simplificação mensurável.
-- [ ] Sem regressão funcional/VRAM.
-
-## Entregáveis
-
-- Optimization notes
-- Before/after
+- [ ] Mudança tem ganho/simplificação demonstrável ou é descartada.
+- [ ] Sem regressão funcional/VRAM conhecida.
 
 ## Próxima fase
 

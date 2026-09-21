@@ -2,7 +2,7 @@
 
 ## Objetivo
 
-Congelar o comportamento atual e separar NRFusion de infraestrutura OptiScaler.
+Congelar responsabilidades e comportamento antes de mover código.
 
 ## Dependências
 
@@ -12,41 +12,35 @@ Nenhuma.
 
 - Alterar comportamento
 - Otimizar executor
-- Criar novos carriers
+- Criar carrier novo
 
-## Checklist de implementação
+## Implementação
 
-- [ ] Registrar SHA/master e upstreams.
-- [ ] Inventariar patch points de apply_to_optiscaler.py.
-- [ ] Classificar Host/Provider/Executor/MFG/Menu/Diagnostics/Compatibility.
-- [ ] Inventariar recursos GPU, readbacks e query heaps.
-- [ ] Inventariar hooks de NR/MFG e hooks genéricos dispensáveis.
+- [ ] Registrar master/upstreams e artefatos atuais.
+- [ ] Mapear cada patch point de apply_to_optiscaler.py para Host/Provider/Executor/MFG/Menu/Diagnostics/Compatibility.
+- [ ] Inventariar hooks, recursos GPU, readbacks, query heaps e lifetimes.
 - [ ] Registrar create/rebuild/reset/history/fallback atuais.
-- [ ] Registrar x86/Host64, D3D11, Vulkan e OpenGL existentes.
-- [ ] Registrar menu principal e Advanced útil.
+- [ ] Registrar rotas existentes x86/Host64, D3D11, Vulkan e OpenGL.
+- [ ] Registrar menu principal e Advanced que precisam sobreviver.
+- [ ] Marcar infraestrutura OptiScaler sem uso direto pelo NRFusion.
 
 ## Revisão obrigatória
 
-- [ ] Definir novo owner para cada responsabilidade.
-- [ ] Distinguir requisito real de infraestrutura genérica.
-- [ ] Marcar semântica incerta para não reescrever por suposição.
+- [ ] Toda responsabilidade necessária recebe novo owner.
+- [ ] Workaround sem causa comprovada é preservado até investigação.
+- [ ] Separar requisito funcional de conveniência do host atual.
+- [ ] Registrar limites que ainda dependem de hardware real.
 
 ## Validação rápida
 
-- [ ] Gerar mapa de chamadas do frame path.
-- [ ] Contar locks/timers/config reads do D3D12 atual.
-- [ ] Conferir CMake/installer/build_dist.
+- [ ] Gerar call-path estático do frame D3D12 atual.
+- [ ] Contar chamadas de adapter, locks, timers e config accesses relevantes.
+- [ ] Conferir CMake, installer e build_dist contra o inventário.
 
-## Gate de conclusão
+## Gate
 
-- [ ] Nenhuma responsabilidade necessária sem owner.
-- [ ] Baseline permite comparação diferencial posterior.
-
-## Entregáveis
-
-- Mapa de responsabilidades
-- Inventário de hooks/resources
-- Baseline de hot path
+- [ ] Nenhuma responsabilidade crítica fica sem owner.
+- [ ] Baseline é suficiente para comparar a extração sem depender de memória informal.
 
 ## Próxima fase
 

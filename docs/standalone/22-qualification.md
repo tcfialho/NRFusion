@@ -2,7 +2,7 @@
 
 ## Objetivo
 
-Separar Target de Supported com evidência por rota.
+Dar um estado inequívoco e evidência reproduzível a cada rota.
 
 ## Dependências
 
@@ -10,47 +10,36 @@ Rotas candidatas implementadas.
 
 ## Fora de escopo
 
-- Claim por intenção
-- Compile/CI como única prova
+- Supported por intenção
+- Compile/CI como prova suficiente
 
-## Checklist de implementação
+## Implementação
 
-- [ ] Matriz API x bitness x Native/Bridge/Synthetic.
-- [ ] Color/Depth/Motion/HDR/NR/MFG/GPU-only por rota.
-- [ ] Acquisition real.
-- [ ] Sync correta.
-- [ ] Ownership/lifetime.
-- [ ] NR executa.
-- [ ] Compose correto.
-- [ ] Resize/recreate.
-- [ ] Failure path.
-- [ ] Sem CPU pixel transport.
-- [ ] Steady resource discipline.
-- [ ] MFG separado de NR.
+- [ ] Usar estados: Target → Implemented → Harness-verified → Hardware-qualified, ou Blocked.
+- [ ] Matriz API × bitness × Native/Bridge/Synthetic.
+- [ ] Registrar Color/Depth/Motion/HDR/NR/MFG/GPU-only transport separadamente.
+- [ ] Linkar cenário/comando do harness usado como evidência.
+- [ ] Exigir acquisition, sync, ownership, compose, resize e failure path.
+- [ ] Registrar MFG separadamente de NR.
+- [ ] Manter blocker técnico específico para rotas não qualificadas.
 
 ## Revisão obrigatória
 
-- [ ] Target != Supported.
-- [ ] Blocked com razão técnica é válido.
-- [ ] NR universal != MFG universal.
-- [ ] x86/x64 gates separados.
+- [ ] x86/x64 têm gates distintos quando arquitetura difere.
+- [ ] NR universal não implica MFG universal.
+- [ ] Uma API pode ter Synthetic qualified e Native não aplicável.
+- [ ] Nenhum 'works' sem nível de evidência.
 
 ## Validação rápida
 
-- [ ] Frontend correspondente do harness.
-- [ ] Cenários padrão por API.
-- [ ] Depois jogos reais por API/engine.
+- [ ] Executar scenario suite comum por frontend.
+- [ ] Depois amostragem em jogos reais por API/engine.
+- [ ] Reexecutar matriz após mudança estrutural de carrier/executor.
 
-## Gate de conclusão
+## Gate
 
-- [ ] Cada célula tem estado/evidência.
-- [ ] Claims inequívocas.
-- [ ] Quick repro via harness.
-
-## Entregáveis
-
-- Qualification matrix
-- Evidence per route
+- [ ] Cada célula tem estado, evidência e limitações.
+- [ ] Claims públicas podem ser derivadas diretamente da matriz.
 
 ## Próxima fase
 

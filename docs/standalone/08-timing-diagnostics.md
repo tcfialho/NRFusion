@@ -2,7 +2,7 @@
 
 ## Objetivo
 
-Manter timing do controller reduzindo instrumentação always-on.
+Manter timing suficiente para o controller e tornar detalhamento custo sob demanda.
 
 ## Dependências
 
@@ -10,43 +10,37 @@ Fase 07.
 
 ## Fora de escopo
 
-- Remover diagnóstico
-- Introduzir query wait síncrono
+- Remover capacidade de diagnóstico
+- Adicionar query wait síncrono
 
-## Checklist de implementação
+## Implementação
 
-- [ ] Query heap/ring compartilhado.
-- [ ] Normal: 2 timestamps + 1 ResolveQueryData por amostra.
-- [ ] Cache timestamp frequency.
-- [ ] WorkId exato.
-- [ ] Sem timer object/frame.
-- [ ] Model/resolve timing só Diagnostics.
-- [ ] Readback persistente/reutilizado.
+- [ ] Usar query heap/ring compartilhado e bounded.
+- [ ] Normal path: um intervalo total; alvo de 2 timestamps + 1 ResolveQueryData por amostra.
+- [ ] Cachear timestamp frequency enquanto queue for a mesma.
+- [ ] Associar resultado ao WorkId/generation exatos.
+- [ ] Readback persistente ou ring reutilizado.
+- [ ] Model/resolve timing só quando Diagnostics exigir.
+- [ ] FakeTimingSource usa a mesma interface do real.
 
 ## Revisão obrigatória
 
-- [ ] Contar GPU commands before/after.
-- [ ] Evitar slot reuse prematuro.
-- [ ] Diagnostics off sem recursos exclusivos.
+- [ ] Slot não pode ser reutilizado antes do retirement.
+- [ ] Stale timing nunca é reaplicado.
+- [ ] Diagnostics off não mantém resources/comandos exclusivos.
 - [ ] Detailed timing não muda policy.
 
 ## Validação rápida
 
-- [ ] Harness conta EndQuery/Resolve.
-- [ ] Benchmark Diagnostics off/on.
-- [ ] Delayed retirement.
+- [ ] Harness conta comandos/counters com fake/real D3D12 quando disponível.
+- [ ] Delayed retirement e dropped timing.
+- [ ] Comparar Diagnostics off/on.
 
-## Gate de conclusão
+## Gate
 
-- [ ] Normal path reduzido e sem wait.
-- [ ] Stale timing rejeitado.
+- [ ] Normal path sem wait e bounded.
 - [ ] Off não paga On.
-
-## Entregáveis
-
-- Timing ring
-- Diagnostics gate
-- Command-count report
+- [ ] Controller recebe apenas amostra fresca corretamente associada.
 
 ## Próxima fase
 

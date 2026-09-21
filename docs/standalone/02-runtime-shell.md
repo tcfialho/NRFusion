@@ -2,7 +2,7 @@
 
 ## Objetivo
 
-Criar host/runtime mínimo sem executar NR.
+Criar lifecycle, configuração e registro de componentes sem ainda executar DLSS 5.
 
 ## Dependências
 
@@ -10,45 +10,39 @@ Fases 00–01.
 
 ## Fora de escopo
 
-- Executor DLSS 5
+- Executor real
 - MFG completo
-- Advanced
+- Advanced completo
 
-## Checklist de implementação
+## Implementação
 
-- [ ] Lifecycle init/shutdown.
+- [ ] Definir init/shutdown idempotentes.
 - [ ] RuntimeConfig compacto por snapshot/generation.
-- [ ] Registro de providers/executors.
-- [ ] Logging/status mínimo.
-- [ ] Sem OptiScaler Config/State.
-- [ ] Sem patcher Python em runtime.
+- [ ] Registrar providers/executors por capability, não por preferência implícita.
+- [ ] Logging/status mínimo com failure reason estável.
+- [ ] Eliminar OptiScaler Config/State do novo shell.
+- [ ] Eliminar patcher Python como requisito de runtime.
 - [ ] Disabled path quase pass-through.
-- [ ] Thread ownership e error model explícitos.
+- [ ] Definir thread ownership e transições de estado do runtime.
 
 ## Revisão obrigatória
 
-- [ ] COM/module ownership.
-- [ ] Hook install/remove.
-- [ ] Partial init/shutdown.
-- [ ] Global mutable state.
-- [ ] Sem file/config parsing no frame path.
+- [ ] COM/module/hook ownership explícito.
+- [ ] Partial init e shutdown limpam apenas o que possuem.
+- [ ] Sem filesystem/config parsing no frame path.
+- [ ] Global mutable state precisa de owner e motivo.
 
 ## Validação rápida
 
-- [ ] Abrir/fechar shell repetidamente.
-- [ ] Forçar falhas de init e revisar cleanup.
-- [ ] Medir disabled overhead no Harness.
+- [ ] Abrir/fechar repetidamente com FakeNrExecutor.
+- [ ] Injetar falha em cada estágio de init.
+- [ ] Medir disabled path no harness.
 
-## Gate de conclusão
+## Gate
 
-- [ ] Shutdown sem leaks/threads.
-- [ ] Disabled não altera render.
-- [ ] RuntimeConfig sem parsing/frame.
-
-## Entregáveis
-
-- Standalone shell
-- Lifecycle contract
+- [ ] Shutdown sem leak/thread pendente.
+- [ ] Disabled não altera FrameContract/output.
+- [ ] Config só é recompilada quando generation muda.
 
 ## Próxima fase
 

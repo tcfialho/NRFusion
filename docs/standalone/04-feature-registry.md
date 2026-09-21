@@ -2,7 +2,7 @@
 
 ## Objetivo
 
-Distinguir SR, RR, FG e unknown estruturalmente.
+Identificar SR, RR, FG e unknown por lifecycle, nunca por heurística frágil.
 
 ## Dependências
 
@@ -11,39 +11,35 @@ Fase 03.
 ## Fora de escopo
 
 - Executar NR
-- Inferir tipo por depth+motion
+- Inferir tipo só por parâmetros
 
-## Checklist de implementação
+## Implementação
 
-- [ ] Interceptar create/release.
-- [ ] Registrar tipo/handle/context/viewport necessário.
+- [ ] Interceptar create/release relevantes.
+- [ ] Registrar handle + kind + generation/context suficiente.
 - [ ] Não registrar failed create.
-- [ ] Tratar handle reuse/recreation.
+- [ ] Remover no release e tratar pointer/handle reuse.
+- [ ] Tratar recreate/resize e múltiplos viewports.
 - [ ] Unknown passa intacto.
-- [ ] FG nunca dispara NR.
+- [ ] FG nunca autoriza NR.
 
 ## Revisão obrigatória
 
-- [ ] SR+FG e RR+FG.
-- [ ] Múltiplos viewports.
-- [ ] Late release/reuse.
-- [ ] Versões desconhecidas.
+- [ ] SR+FG e RR+FG na mesma sessão.
+- [ ] Late release e reuse não herdam kind antigo.
+- [ ] Registry lookup steady-state não aloca.
+- [ ] Unknown runtime/version não cai em heurística silenciosa.
 
 ## Validação rápida
 
-- [ ] Fake client com milhares de create/release/reuse.
-- [ ] Failure injection.
-- [ ] Assert Evaluate(FG) nunca chama NR.
+- [ ] Fake NGX client com create/release/reuse em massa.
+- [ ] Falhas e orderings incomuns.
+- [ ] Assertar que Evaluate(FG/Unknown) nunca chama NR.
 
-## Gate de conclusão
+## Gate
 
-- [ ] Impossível confundir FG com SR/RR.
-- [ ] Registry sem allocation em Evaluate steady.
-
-## Entregáveis
-
-- Feature registry
-- Regression scenarios
+- [ ] FG→NR é estruturalmente impossível.
+- [ ] Registry tem lifetime definido e custo bounded.
 
 ## Próxima fase
 

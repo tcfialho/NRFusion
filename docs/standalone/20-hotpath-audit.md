@@ -2,60 +2,48 @@
 
 ## Objetivo
 
-Provar por revisão/harness que standalone é leve by design.
+Provar por revisão e harness que o standalone é menor e mais previsível que o host atual.
 
 ## Dependências
 
-Rotas principais.
+Rotas principais implementadas.
 
 ## Fora de escopo
 
-- Microbenchmark desconectado
+- Microbenchmark irrelevante ao frame path
 - Otimização especulativa do modelo
 
-## Checklist de implementação
+## Implementação
 
-- [ ] Buscar new/delete/make_unique/shared.
-- [ ] Vector/string growth.
-- [ ] map/unordered_map insertion.
-- [ ] std::function/format/streams.
-- [ ] filesystem/module/PE scans.
-- [ ] mutex/shared_mutex.
-- [ ] CreateCommitted/PlacedResource/DescriptorHeap/QueryHeap/PSO.
-- [ ] sync waits.
-- [ ] capability/timestamp-frequency repetidos.
-- [ ] string-to-enum/config conversion.
-- [ ] Classificar init/reconfigure/steady.
-- [ ] Registrar locks/resource creates/timestamps/resolves.
+- [ ] Auditar new/delete, vector/string growth, map insertion, std::function e formatting.
+- [ ] Auditar filesystem/module/PE scans.
+- [ ] Auditar mutex/shared_mutex/atomics fortes sem necessidade.
+- [ ] Auditar CreateResource/Heap/PSO e waits síncronos.
+- [ ] Auditar capability/timestamp-frequency/config conversions repetidas.
+- [ ] Classificar cada ocorrência como init, reconfigure ou steady-state.
+- [ ] Gerar contagem normal por frame: locks, creates, queries, copies e host calls.
 
 ## Revisão obrigatória
 
-- [ ] Todo steady occurrence precisa justificativa.
-- [ ] p50/p95/p99.
-- [ ] Separar warm-up.
-- [ ] Instrumentação não distorce.
-- [ ] Comparar host OptiScaler equivalente.
+- [ ] Todo custo steady-state restante precisa de justificativa concreta.
+- [ ] Benchmark separa warm-up e mede p50/p95/p99.
+- [ ] Regressão de tail latency bloqueia merge até explicada.
+- [ ] Comparação com OptiScaler usa trabalho equivalente.
 
 ## Validação rápida
 
-- [ ] Harness steady longo.
 - [ ] Fake executor milhões de frames.
-- [ ] Before/after por remoção.
-- [ ] Reportar p99 regressão mesmo com média melhor.
+- [ ] Harness de cada carrier principal em long run.
+- [ ] Before/after de cada remoção relevante.
 
-## Gate de conclusão
+## Gate
 
-- [ ] 0 heap alloc/frame.
-- [ ] 0 GPU resource create/frame.
-- [ ] 0 parsing/filesystem/frame.
-- [ ] 0 blocking waits/frame.
+- [ ] 0 heap allocation normal.
+- [ ] 0 resource/heap/PSO creation normal.
+- [ ] 0 filesystem/string/config parsing normal.
+- [ ] 0 blocking wait normal.
 - [ ] Locks inevitáveis documentados.
-- [ ] CPU/p99 abaixo do baseline equivalente.
-
-## Entregáveis
-
-- Hot-path audit
-- Perf baseline/standalone
+- [ ] CPU e p99 abaixo do baseline equivalente ou blocker explícito.
 
 ## Próxima fase
 

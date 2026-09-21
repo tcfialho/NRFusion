@@ -2,7 +2,7 @@
 
 ## Objetivo
 
-Preservar MFG útil sem host genérico do OptiScaler.
+Preservar MFG como subsistema independente, sem fazer sua disponibilidade limitar NR.
 
 ## Dependências
 
@@ -10,48 +10,38 @@ Fases 02,04 e carrier aplicável.
 
 ## Fora de escopo
 
-- Bloquear NR se MFG não existe
-- String parsing por SetOptions
+- Prometer MFG universal antes de qualificar cada rota
+- Parsing de strings por SetOptions
 
-## Checklist de implementação
+## Implementação
 
-- [ ] Extrair DlssgTransfusion.
-- [ ] Game Controlled/2X/3X/4X/Dynamic.
-- [ ] Performance/Enhanced.
-- [ ] UI Recomposition.
-- [ ] 5X/6X experimental onde suportado.
-- [ ] Safe Transition.
-- [ ] Late module load.
-- [ ] Enums/atomics no hot path.
-- [ ] Remover mutex só com análise.
-- [ ] PE/fatbin scan apenas load.
-- [ ] Fake Streamline client.
+- [ ] Extrair DlssgTransfusion das dependências de OptiScaler.
+- [ ] Preservar Game Controlled, 2X/3X/4X/Dynamic, Performance/Enhanced e UI Recomposition.
+- [ ] Preservar 5X/6X apenas como experimental onde já suportado.
+- [ ] Preservar Safe Transition e late nvngx_dlssg.dll load.
+- [ ] Converter config para enums/atomics fora do hot path.
+- [ ] PE/fatbin scan somente em load/reload.
+- [ ] Criar Fake Streamline/DLSSG client no harness.
+- [ ] Definir capability MFG separada por rota/API.
 
 ## Revisão obrigatória
 
-- [ ] SetOptions per-frame cost.
-- [ ] GetState publication.
-- [ ] Dynamic/rapid changes.
-- [ ] Streamline versions.
-- [ ] MFG capability independente de NR.
+- [ ] SetOptions pode ser per-frame: caminho deve ser allocation-free e sem string work.
+- [ ] Mutex só permanece se concorrência real exigir.
+- [ ] GetState publica requested/effective sem mentir sobre capability.
+- [ ] NR continua funcional quando MFG é Blocked.
 
 ## Validação rápida
 
-- [ ] Fake client GetState e 2X->4X->2X/Dynamic/late load.
-- [ ] Benchmark ProcessSetOptions.
-- [ ] Module/version failure.
+- [ ] Fake client: GetState, 2X→4X→2X, Dynamic, late load, failure.
+- [ ] Benchmark ProcessSetOptions em massa.
+- [ ] Hardware real somente para patch/runtime/pace final.
 
-## Gate de conclusão
+## Gate
 
-- [ ] Sem string/allocation hot path.
+- [ ] Hot path sem alocação/string scan.
 - [ ] Safe Transition preservada.
-- [ ] NR não depende de MFG.
-
-## Entregáveis
-
-- MFG host layer
-- Fake client
-- MFG perf report
+- [ ] MFG tem matriz de qualificação própria.
 
 ## Próxima fase
 

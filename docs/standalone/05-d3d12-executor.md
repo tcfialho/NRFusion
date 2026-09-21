@@ -2,7 +2,7 @@
 
 ## Objetivo
 
-Extrair o executor maduro atual sem mudar semântica.
+Extrair o executor D3D12 maduro para ownership próprio preservando sua semântica.
 
 ## Dependências
 
@@ -10,44 +10,38 @@ Fase 04.
 
 ## Fora de escopo
 
-- Otimizar barriers
-- Redesenhar recursos
+- Otimizar barriers/copies
 - Trocar algoritmo visual
+- Redesenhar resource model
 
-## Checklist de implementação
+## Implementação
 
-- [ ] Input/output explícitos.
-- [ ] Remover Config/State do OptiScaler.
-- [ ] Preservar pending-submission.
-- [ ] Preservar subrect/padding.
-- [ ] Preservar depth/motion compatibility.
-- [ ] Preservar pre/post-SR/RR/history.
-- [ ] Preservar scale<100/>100, multipass, HDR/exposure/residual.
-- [ ] Preservar failure latches/precision rebuild/lazy allocation.
+- [ ] Definir input/output explícitos do executor.
+- [ ] Substituir OptiScaler Config/State por parâmetros/snapshot.
+- [ ] Preservar feature pending-submission e rebuild.
+- [ ] Preservar subrect/padding, depth/motion compatibility e resource states.
+- [ ] Preservar pre/post-SR, RR, history e resets.
+- [ ] Preservar scale <100/>100, multipass, HDR/exposure e residual.
+- [ ] Preservar failure latches, precision rebuild e lazy allocation.
 
 ## Revisão obrigatória
 
-- [ ] Para cada resource: owner/create/state/release/resize/failure.
-- [ ] Para cada barrier: estados conhecidos.
-- [ ] Early returns preservam cleanup.
-- [ ] Nenhum workaround removido sem evidência.
+- [ ] Para cada resource: owner, create trigger, states, release, resize, failure.
+- [ ] Para cada barrier: estado anterior/próximo e caller guarantee.
+- [ ] Early return não deixa state/lifetime diferente.
+- [ ] Workaround sem repro continua até fase de otimização.
 
 ## Validação rápida
 
-- [ ] MiniGame D3D12 before/after.
-- [ ] Create/evaluate failure.
-- [ ] Resize/reset/rebuild loops.
+- [ ] Compilar/exercitar boundary com fake executor/harness onde possível.
+- [ ] Loop de reset/resize/rebuild usando substitutos controlados.
+- [ ] Executar modelo real somente na qualificação com hardware compatível.
 
-## Gate de conclusão
+## Gate
 
-- [ ] Equivalência no harness.
-- [ ] Sem dependência direta do OptiScaler.
-- [ ] Sem otimização misturada.
-
-## Entregáveis
-
-- NrExecutorD3D12
-- Resource/state map
+- [ ] Sem dependência direta de OptiScaler.
+- [ ] Extração revisável por diff e resource-state map.
+- [ ] Nenhuma otimização funcional misturada.
 
 ## Próxima fase
 

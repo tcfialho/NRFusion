@@ -2,7 +2,7 @@
 
 ## Objetivo
 
-Formalizar o contrato API-independente consumido pelo core.
+Definir um contrato de frame explícito, API-independente e honesto sobre provenance.
 
 ## Dependências
 
@@ -10,42 +10,36 @@ Fase 00.
 
 ## Fora de escopo
 
-- Executar DLSS 5
-- Interop específico
+- Executar NR
+- Interop específico de API
 
-## Checklist de implementação
+## Implementação
 
-- [ ] Auditar FrameContext/ResourceRef.
-- [ ] Definir mandatory/optional resources.
-- [ ] Codificar provenance e confiabilidade de depth/motion.
-- [ ] Definir color/exposure/HDR/jitter/reset.
-- [ ] Definir render/output resolution.
-- [ ] Definir frame/work identity assíncrona.
-- [ ] Definir lifetime API-neutral.
-- [ ] Separar capability fact de policy preference.
+- [ ] Auditar FrameContext/ResourceRef existentes.
+- [ ] Definir mandatory/optional resources e dimensões válidas.
+- [ ] Representar provenance e reliability de depth/motion/exposure.
+- [ ] Definir jitter, HDR, camera-cut/reset e frame/work identity.
+- [ ] Definir lifetime/ownership sem expor tipos ID3D/Vk/GL ao core.
+- [ ] Separar capability factual de preferência/policy.
+- [ ] Definir quando mudança de provenance invalida history.
 
 ## Revisão obrigatória
 
-- [ ] Resource presente não implica reliability.
-- [ ] Synthetic nunca finge Native.
-- [ ] Evitar frame N/N+1 e stale resources.
-- [ ] Core não recebe ID3D/Vk/GL types.
+- [ ] Resource válido não implica reliable.
+- [ ] Synthetic nunca marca dado como Native por conveniência.
+- [ ] Frame N não pode consumir recurso/timing de N+1.
+- [ ] Ambiguidade de ownership ou provenance falha fechada.
 
 ## Validação rápida
 
-- [ ] Fake providers válidos/inválidos.
-- [ ] Milhões de transições de provenance sem GPU.
-- [ ] Revisar dados necessários no IPC x86.
+- [ ] Fake providers válidos, incompletos e contraditórios.
+- [ ] Stress de mudanças de provenance/reset sem GPU.
+- [ ] Confirmar que o mesmo contrato serve ao IPC x86.
 
-## Gate de conclusão
+## Gate
 
-- [ ] Todos os providers podem representar seus dados honestamente.
-- [ ] Contratos ambíguos falham fechados.
-
-## Entregáveis
-
-- Contrato revisado
-- Tabela provenance/reliability
+- [ ] Core consome contrato sem casts de API.
+- [ ] Todos os providers conseguem representar limites/fallbacks sem mentir.
 
 ## Próxima fase
 

@@ -2,7 +2,7 @@
 
 ## Objetivo
 
-Criar feedback rápido para a IA sem jogos reais, com o mínimo de código.
+Dar à IA feedback determinístico, barato e independente de jogos reais.
 
 ## Dependências
 
@@ -10,55 +10,43 @@ Fases 01–02.
 
 ## Fora de escopo
 
-- Engine/game real
-- Assets/câmera/física
-- UI elaborada
-- Framework de teste genérico
-- Validar FPS/qualidade de jogos reais
+- Game/engine real
+- Assets/física/câmera
+- Framework de testes pesado
+- Validar qualidade visual de jogos reais
 
-## Checklist de implementação
+## Implementação
 
-- [ ] Criar FakeNrExecutor sem GPU.
-- [ ] Criar harness runner comum por CLI.
-- [ ] Criar frontend D3D12 mínimo: device/queue/list/color/depth/motion/output.
-- [ ] Gerar gradient, moving square, depth ramp, motion constante e HDR highlight.
-- [ ] Cenários steady/resize/reset/missing-depth/missing-motion/changing-motion/HDR/on-off/scale/precision/failure.
-- [ ] Contadores externos: ns/frame, p50/p95/p99, allocations, locks, resource creates, query commands.
-- [ ] Separar warm-up da medição.
-- [ ] Failure injection determinístico.
-- [ ] Criar Harness32 na Fase 10.
-- [ ] Criar Fake Streamline client na Fase 16.
-- [ ] Adicionar frontends por API apenas quando a fase do carrier começar.
+- [ ] Criar FakeNrExecutor e FakeTimingSource.
+- [ ] Criar runner comum por CLI com seed/cenário/frames e saída JSON/texto.
+- [ ] Suportar --executor=fake|dlss; fake deve funcionar sem GPU NVIDIA.
+- [ ] Criar frontend D3D12 offscreen mínimo; swapchain só onde necessário.
+- [ ] Gerar color/depth/motion/HDR sintéticos simples e determinísticos.
+- [ ] Criar cenários steady, resize, reset, missing guides, provenance change, on/off, scale/precision change e failure injection.
+- [ ] Medir wall CPU do NRFusion, p50/p95/p99, allocations observáveis, locks e resource/query creation counters.
+- [ ] Separar warm-up da janela medida.
+- [ ] Adicionar Harness32/Fake Streamline/frontends por API somente quando suas fases iniciarem.
 
 ## Revisão obrigatória
 
-- [ ] Harness não cria arquitetura paralela.
-- [ ] Métricas fora do código medido quando possível.
-- [ ] Nenhum CPU readback como atalho de futura rota GPU.
-- [ ] Mesmo comando/seed reproduz cenário.
-- [ ] Separar custo do harness do NRFusion.
-- [ ] Instrumentação não pode distorcer hot path.
+- [ ] Harness não pode duplicar policy do produto.
+- [ ] Métrica deve envolver o código medido e excluir setup.
+- [ ] Não usar CPU readback como atalho para uma rota que será GPU-resident.
+- [ ] Mesmo comando/seed produz o mesmo evento lógico.
+- [ ] Não construir tracer genérico caro se um contador local resolve.
 
 ## Validação rápida
 
-- [ ] FakeNrExecutor por centenas de milhares/milhões de frames.
-- [ ] D3D12 steady longo com 0 allocations/resource creation após warm-up.
-- [ ] Loops resize/reset/failure.
-- [ ] Relatório before/after estruturado.
+- [ ] Fake executor por milhões de frames de policy/state.
+- [ ] D3D12 fake-executor long run com resize/reset/failure.
+- [ ] Relatório before/after consumível sem inspeção manual.
+- [ ] Quando hardware existir, mesmo runner troca fake por dlss sem mudar cenário.
 
-## Gate de conclusão
+## Gate
 
-- [ ] Loop implementar->executar->medir->revisar sem usuário.
-- [ ] Comando determinístico para benchmark.
-- [ ] Harness permanece pequeno.
+- [ ] Existe loop implementar→executar→medir→revisar sem usuário.
+- [ ] Harness permanece pequeno e reutilizável.
 - [ ] Jogos reais deixam de ser ferramenta primária de diagnóstico.
-
-## Entregáveis
-
-- Fake executor
-- MiniGame D3D12
-- Scenario runner
-- Performance report
 
 ## Próxima fase
 
