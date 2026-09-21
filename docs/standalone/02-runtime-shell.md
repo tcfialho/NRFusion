@@ -2,7 +2,7 @@
 
 ## Objetivo
 
-Criar lifecycle/bootstrap/configuração sem concentrar tudo em um `Runtime.cpp`, `GameProbe.cpp` ou build script gigante.
+Criar lifecycle/bootstrap/configuração sem concentrar tudo em runtime, probe ou build script gigante.
 
 ## Dependências
 
@@ -18,23 +18,24 @@ Fases 00–01.
 
 - [ ] Separar bootstrap/proxy, runtime lifecycle, config snapshot e registry.
 - [ ] Se `GameProbe.cpp` for reaproveitado, separar PE/module inspection, API resolution, capability scan e install-support logic.
-- [ ] `CMakeLists.txt` já está em ~267 linhas: modularizar Core/Tests/Windows/Standalone antes de adicionar muitos targets novos.
-- [ ] Se `build_dist.ps1` precisar ser tocado antes do cutover, dividir primeiro; não fazê-lo crescer acima das 395 linhas atuais.
+- [ ] `CMakeLists.txt` (~267 linhas) é dividido antes de crescer: Core, Tests, Windows e Standalone em includes CMake coesos.
+- [ ] Modularização CMake continua produzindo os mesmos targets; não criar configure/build extra.
+- [ ] Se `build_dist.ps1` precisar ser tocado cedo, dividir antes; não crescer as ~395 linhas atuais.
 - [ ] Definir init/shutdown idempotentes.
 - [ ] RuntimeConfig compacto por snapshot/generation.
 - [ ] Registrar providers/executors por capability.
 - [ ] Logging/status mínimo.
 - [ ] Eliminar OptiScaler Config/State e patcher Python em runtime.
 - [ ] Disabled quase pass-through.
-- [ ] Cada módulo <=300 linhas; alvo <=250.
+- [ ] Cada módulo <=300; alvo <=250.
 
 ## Revisão obrigatória
 
 - [ ] COM/module/hook ownership explícito.
 - [ ] Partial init/shutdown limpa só o que possui.
 - [ ] Bootstrap não pressupõe API.
-- [ ] Probing não mistura filesystem parsing com frame runtime.
-- [ ] Build modularization não duplica target definitions/options.
+- [ ] Probing não mistura filesystem com frame runtime.
+- [ ] Build split não duplica target definitions/options/jobs.
 
 ## Validação rápida
 
@@ -48,7 +49,7 @@ Fases 00–01.
 - [ ] Shutdown sem leak/thread.
 - [ ] Disabled não altera output.
 - [ ] Bootstrap/probe desacoplados de Acquire/Execute.
-- [ ] Build files tocados respeitam <=300.
+- [ ] Build files tocados <=300 sem aumentar número de builds.
 
 ## Próxima fase
 

@@ -2,7 +2,7 @@
 
 ## Objetivo
 
-Dar evidência reproduzível por rota e fechar toda dívida de arquivos >300 antes da release candidate.
+Dar evidência reproduzível por rota e chegar à RC sem dívida estrutural.
 
 ## Dependências
 
@@ -20,24 +20,25 @@ Rotas candidatas implementadas.
 - [ ] Registrar Acquire/Normalize/Execute/Compose e Color/Depth/Motion/HDR/NR/MFG.
 - [ ] Linkar scenario/comando/log.
 - [ ] MFG independente de NR.
-- [ ] Rodar checker de 300 linhas em todo first-party handwritten source/test/tool/build/installer.
-- [ ] Splitar testes grandes por subsystem/scenario.
-- [ ] Modularizar CMake/build/installer se qualquer handwritten file exceder 300.
-- [ ] Arquivo marcado para retirement precisa estar removido antes de declarar RC.
+- [ ] Rodar checker em todo source/test/tool/build/installer first-party handwritten.
+- [ ] Testes grandes são repartidos em source files do mesmo executable sempre que isso evita multiplicar jobs.
+- [ ] Modularizar CMake/build/installer sem alterar quantidade de validações pesadas.
+- [ ] Arquivo a aposentar precisa estar removido antes da RC.
 
 ## Revisão obrigatória
 
 - [ ] Implemented != Acquire real.
 - [ ] x86/x64 separados.
 - [ ] Nenhum “works” sem evidência.
-- [ ] Allowlist LOC contém só generated/vendor/fixtures verificáveis.
-- [ ] Zero first-party handwritten violation é requisito da RC.
+- [ ] Allowlist só generated/vendor/fixtures verificáveis.
+- [ ] Zero first-party violation é requisito da RC.
+- [ ] Cumprir LOC não aumentou CI caro sem benefício.
 
 ## Validação rápida
 
 - [ ] Suite comum por frontend.
 - [ ] Amostragem jogos reais.
-- [ ] LOC checker do repositório.
+- [ ] LOC checker.
 - [ ] Reexecutar após mudança estrutural.
 
 ## Gate

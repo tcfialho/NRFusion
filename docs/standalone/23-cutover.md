@@ -19,13 +19,13 @@ Fase 22.
 - [ ] Comparar VRAM e A/B real de GPU/FPS/1% low/pacing.
 - [ ] Validar menu/config/recovery.
 - [ ] Substituir build_dist/installer dependentes de OptiScaler.
-- [ ] Remover `apply_to_optiscaler.py` e `OptiScalerAdapter` em vez de refatorá-los se já obsoletos.
-- [ ] Split `InstallerState.cpp`: manifest/validation e transaction snapshot/restore.
-- [ ] `installer/NRFusion.nsi` (~466 linhas) deve ser dividido por UI/config/install-uninstall usando includes pequenos.
-- [ ] `build_dist.ps1` (~395 linhas) deve ser dividido por bootstrap/build/package se ainda ativo.
-- [ ] CMake modular continua <=300 por arquivo.
+- [ ] Remover patcher/adapter obsoletos em vez de refatorá-los.
+- [ ] `InstallerState.cpp`: separar manifest/validation de transaction snapshot/restore.
+- [ ] `NRFusion.nsi`: separar UI/config, install e uninstall/restore em includes coesos, mantendo um único installer.
+- [ ] `build_dist.ps1`: separar bootstrap, build e package mantendo um único fluxo de distribuição.
+- [ ] CMake modular continua <=300 por arquivo e sem targets/jobs duplicados.
 - [ ] Confirmar CUDA/shaders/tests/tools/build/install ativos <=300.
-- [ ] Manter OptiScaler apenas como referência/fallback durante preview.
+- [ ] Manter OptiScaler como fallback/referência durante preview.
 - [ ] Definir rollback objetivo.
 
 ## Revisão obrigatória
@@ -33,9 +33,9 @@ Fase 22.
 - [ ] A/B equivalente.
 - [ ] Resultado negativo = blocker/limitação.
 - [ ] Installer não deixa proxies conflitantes.
-- [ ] Includes de NSIS/CMake não são usados como dump arbitrário para burlar o cap.
+- [ ] Includes NSIS/CMake não são dumps para burlar cap.
 - [ ] “Só teste/tool” não é exceção.
-- [ ] Vendor/generated/fixture são únicas exceções formais.
+- [ ] Packaging modular não multiplica builds pesados.
 
 ## Validação rápida
 

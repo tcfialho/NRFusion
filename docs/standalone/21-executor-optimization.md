@@ -2,7 +2,7 @@
 
 ## Objetivo
 
-Otimizar alvos medidos após decompor qualquer unidade oversized ativa.
+Otimizar alvos medidos após decompor unidades oversized sem alterar a forma do hot path por conveniência.
 
 ## Dependências
 
@@ -18,11 +18,12 @@ Fases 05,08,20.
 
 - [ ] Rankear copies/barriers/descriptors/readbacks/resolve.
 - [ ] Um alvo por iteração.
-- [ ] Se ativos, decompor `AdaW4A8Interceptor.cpp` por cache/capability/interception/status e `W4A8FfnSm89.cu` por kernel family antes de evoluir.
-- [ ] Separar benchmark CUDA ativo se ainda >300.
+- [ ] `AdaW4A8Interceptor.cpp`: separar cache/persistence, capability/module discovery, launch interception e status/publication.
+- [ ] `W4A8FfnSm89.cu`: separar device helpers compartilhados, TensorCore family, DP4A family e host launch/selection sem duplicar layout/constants.
+- [ ] Benchmark CUDA ativo fica em unidade própria <=300.
 - [ ] Provar redundância/substituição.
 - [ ] Preservar state/lifetime/failure.
-- [ ] Medir before/after.
+- [ ] Medir before/after; split mecânico precede optimization.
 - [ ] Registrar quando não otimizar é correto.
 
 ## Revisão obrigatória
@@ -30,9 +31,9 @@ Fases 05,08,20.
 - [ ] Barrier exige state proof.
 - [ ] Copy exige equivalência.
 - [ ] Não aumentar VRAM sem aprovação.
-- [ ] Split mecânico e optimization ficam distinguíveis.
-- [ ] Split não piora p95/p99 por perda de inlining ou nova indireção; se piorar, redesenhar boundary.
-- [ ] Kernel split não duplica constants/layout logic.
+- [ ] Split não piora p95/p99 por inlining/indireção.
+- [ ] Kernel split não duplica constants, device state ou quantization layout.
+- [ ] Helper `.cuh` também respeita 300 linhas.
 
 ## Validação rápida
 
@@ -40,6 +41,7 @@ Fases 05,08,20.
 - [ ] Long-run regression.
 - [ ] Hardware real para GPU/quality.
 - [ ] LOC checker.
+- [ ] CUDA split: benchmark antes/depois mesmo sem mudança algorítmica.
 
 ## Gate
 
