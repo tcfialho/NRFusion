@@ -194,7 +194,7 @@ def main() -> None:
     dest.mkdir(exist_ok=True)
     # Host-facing portable closure. Keep this list complete for every local include reachable from
     # FusionRuntime/OptiScalerAdapter; tests verify both include closure and flattened-source syntax.
-    headers = ["Types.hpp", "PerformanceController.hpp", "NrCostModel.hpp", "WorkLedger.hpp", "TimingWorkMapper.hpp",
+    headers = ["Types.hpp", "FrameContract.hpp", "PerformanceController.hpp", "NrCostModel.hpp", "WorkLedger.hpp", "TimingWorkMapper.hpp",
                "AsyncOverlapEstimator.hpp", "CrossQueueClockCalibrator.hpp", "D3D12QueueClockBridge.hpp", "D3D12AsyncFenceBridge.hpp", "AsyncQualification.hpp", "PrecisionAutotuner.hpp",
                "AutoDecision.hpp", "AutoTuneCoordinator.hpp", "RuntimeCapabilities.hpp", "FrameContractProvider.hpp",
                "ProfileStore.hpp", "CompatibilityDatabase.hpp", "Diagnostics.hpp", "FrameLimitPolicy.hpp", "ResidualReprojection.hpp", "ResidualEngine.hpp",
