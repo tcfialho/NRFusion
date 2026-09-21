@@ -3,7 +3,10 @@ param(
     [string]$AdaRuntimePath = '',
     [switch]$EnableAdaRuntime,
     [switch]$AutoFetchRuntime,
-    [switch]$CompileEndUserInstaller
+    [switch]$CompileEndUserInstaller,
+    [switch]$Fast,
+    [string]$TargetsCsv = 'nrfusion_core',
+    [string]$TestRegex = ''
 )
 
 $ErrorActionPreference = 'Stop'
@@ -20,31 +23,48 @@ function Find-MakeNSIS {
     return $candidates | Where-Object { Test-Path -LiteralPath $_ } | Select-Object -First 1
 }
 
-# Portable core/probe first. This catches Windows compiler differences before the much larger host build.
 $build = Join-Path $root 'build-windows-validation'
 & cmake -S $root -B $build -A x64
 if ($LASTEXITCODE -ne 0) { throw 'CMake configure failed.' }
+
+if ($Fast) {
+    $targets = @($TargetsCsv.Split(',') |
+        ForEach-Object { $_.Trim() } |
+        Where-Object { $_ })
+    if ($targets.Count -eq 0) { throw '-Fast requires at least one CMake target.' }
+
+    $buildArgs = @('--build', $build, '--config', 'Release', '--parallel', '--target') + $targets
+    & cmake @buildArgs
+    if ($LASTEXITCODE -ne 0) { throw 'Fast Windows target build failed.' }
+
+    if ($TestRegex) {
+        & ctest --test-dir $build -C Release --output-on-failure -R $TestRegex
+        if ($LASTEXITCODE -ne 0) { throw 'Fast Windows targeted tests failed.' }
+    }
+
+    Write-Host 'NRFusion Windows fast validation passed.'
+    exit 0
+}
+
 & cmake --build $build --config Release --parallel
 if ($LASTEXITCODE -ne 0) { throw 'Portable Windows build failed.' }
 & ctest --test-dir $build -C Release --output-on-failure
 if ($LASTEXITCODE -ne 0) { throw 'Portable Windows tests failed.' }
 
-# Real integrated OptiScaler build from the locked upstream commit.
 $distParams = @{}
 if ($RuntimePath) { $distParams['RuntimePath'] = $RuntimePath }
 if ($AdaRuntimePath) { $distParams['AdaRuntimePath'] = $AdaRuntimePath }
 if ($EnableAdaRuntime) { $distParams['EnableAdaRuntime'] = $true }
 if ($AutoFetchRuntime) { $distParams['AutoFetchRuntime'] = $true }
 if ($CompileEndUserInstaller) {
-    if (-not $RuntimePath -and -not $AutoFetchRuntime) { throw '-CompileEndUserInstaller requires -RuntimePath or -AutoFetchRuntime.' }
+    if (-not $RuntimePath -and -not $AutoFetchRuntime) {
+        throw '-CompileEndUserInstaller requires -RuntimePath or -AutoFetchRuntime.'
+    }
     $distParams['CompileInstaller'] = $true
 }
 & (Join-Path $root 'tools\build_dist.ps1') @distParams
 if ($LASTEXITCODE -ne 0) { throw 'Integrated NRFusion distribution build failed.' }
 
-# Public CI cannot redistribute nvngx_dlssnr.dll, but NSIS can still compile the script because the
-# proprietary runtime is a /nonfatal source. This validates the installer without publishing it as
-# a self-contained end-user package.
 if (-not $CompileEndUserInstaller) {
     $makensis = Find-MakeNSIS
     if (-not $makensis) { throw 'makensis.exe not found; install NSIS 3.' }
@@ -59,7 +79,9 @@ if (-not $CompileEndUserInstaller) {
         if ($LASTEXITCODE -ne 0) { throw 'NSIS validation compile failed.' }
     }
     finally { Pop-Location }
-    if (-not (Test-Path -LiteralPath $setupTemp)) { throw 'NSIS validation did not produce NRFusionSetup.exe.' }
+    if (-not (Test-Path -LiteralPath $setupTemp)) {
+        throw 'NSIS validation did not produce NRFusionSetup.exe.'
+    }
     Move-Item -LiteralPath $setupTemp -Destination (Join-Path $validationOut 'NRFusionSetup.exe') -Force
 }
 

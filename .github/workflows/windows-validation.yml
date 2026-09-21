@@ -1,11 +1,26 @@
 name: Windows validation
 
 on:
-  push:
-    branches:
-      - master
-  pull_request:
   workflow_dispatch:
+    inputs:
+      scope:
+        description: Validation scope
+        required: true
+        default: fast
+        type: choice
+        options:
+          - fast
+          - full
+      targets:
+        description: Comma-separated CMake targets for fast mode
+        required: false
+        default: nrfusion_core
+        type: string
+      test_regex:
+        description: Optional CTest regex for fast mode
+        required: false
+        default: ''
+        type: string
 
 concurrency:
   group: ${{ github.workflow }}-${{ github.ref }}
@@ -25,14 +40,21 @@ jobs:
           python-version: '3.12'
 
       - name: Install NSIS
+        if: inputs.scope == 'full'
         shell: powershell
         run: choco install nsis --no-progress -y
 
-      - name: Validate integrated Windows build
+      - name: Validate Windows
         shell: powershell
-        run: ./tools/validate_windows.ps1
+        run: |
+          if ("${{ inputs.scope }}" -eq "fast") {
+            ./tools/validate_windows.ps1 -Fast -TargetsCsv "${{ inputs.targets }}" -TestRegex "${{ inputs.test_regex }}"
+          } else {
+            ./tools/validate_windows.ps1
+          }
 
       - name: Upload public developer dist
+        if: inputs.scope == 'full'
         uses: actions/upload-artifact@v4
         with:
           name: NRFusion-windows-developer-dist
