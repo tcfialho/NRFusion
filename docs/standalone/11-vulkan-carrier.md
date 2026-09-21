@@ -2,7 +2,7 @@
 
 ## Objetivo
 
-Transformar o suporte Vulkan atual de estrutural/simulado em interop real qualificado.
+Qualificar Acquire→Normalize→Execute→Compose em Vulkan, além do provider simulado atual.
 
 ## Dependências
 
@@ -10,38 +10,39 @@ Fases 07–08.
 
 ## Fora de escopo
 
-- Tratar o teste com fake handles como prova de interop real
-- Constantes/structs Vulkan não verificadas
+- Tratar fake handles como interop real
+- Constantes Vulkan não verificadas
 
 ## Implementação
 
-- [ ] Reusar `SyntheticVulkanProvider` e separar claramente code path simulado de path com VkDevice real.
-- [ ] Usar headers/contratos Vulkan corretos para structs/constants.
-- [ ] Selecionar memoryTypeIndex a partir de requirements/properties reais.
+- [ ] Reusar `SyntheticVulkanProvider`, distinguindo contract simulation de VkDevice real.
+- [ ] Definir hooks/seam de Acquire no jogo Vulkan e ownership de VkImage.
+- [ ] Usar headers Vulkan corretos e memoryTypeIndex real.
 - [ ] Definir external-memory compatibility, semaphore type e handle ownership.
-- [ ] Definir layouts, access masks e queue-family ownership.
-- [ ] Capturar color/guides com provenance e compor de volta.
+- [ ] Definir layouts/access/queue-family ownership.
+- [ ] Normalizar guides com provenance, executar D3D12 e compor de volta.
 - [ ] Tratar swapchain/device recreation.
-- [ ] Criar/estender harness Vulkan somente para o gap que o `ipc_host_test` atual não cobre.
+- [ ] Estender harness somente para gaps não cobertos.
 
 ## Revisão obrigatória
 
-- [ ] Fake handle test é apenas contract test.
-- [ ] Image format/tiling/usage realmente compatíveis com D3D12 external memory.
-- [ ] Sync e ownership completos em success/failure.
+- [ ] Provider que recebe image/handle não prova aquisição correta do jogo.
+- [ ] Fake-handle test é só contract test.
+- [ ] Format/tiling/usage compatíveis com interop.
+- [ ] Sync/ownership completos em success/failure.
 - [ ] Sem CPU readback.
 
 ## Validação rápida
 
-- [ ] Contract tests continuam úteis sem Vulkan real.
-- [ ] Interop real é exercitado quando VkDevice/extensões existirem.
-- [ ] Resize/recreate e semaphore long run.
+- [ ] Contract tests sem Vulkan real.
+- [ ] Harness com VkDevice real quando runtime/extensões existirem.
+- [ ] Resize/recreate/semaphore long run.
 
 ## Gate
 
-- [ ] Harness-verified só após VkImage/memory/semaphore reais.
-- [ ] Hardware-qualified exige execução no stack Vulkan real.
-- [ ] Nenhuma assumption Vulkan sem base técnica verificável.
+- [ ] Harness-verified exige resources Vulkan reais.
+- [ ] Hardware-qualified exige stack Vulkan + jogo/engine real.
+- [ ] Acquire e interop têm evidência separada.
 
 ## Próxima fase
 

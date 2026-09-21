@@ -2,7 +2,7 @@
 
 ## Objetivo
 
-Qualificar a rota D3D11→D3D12 preservando pixels na GPU.
+Qualificar Acquire→Normalize→Execute→Compose para D3D11 x64.
 
 ## Dependências
 
@@ -15,32 +15,33 @@ Fases 07–08.
 
 ## Implementação
 
-- [ ] Partir de `SyntheticDx11BridgeProvider` e `nrfusion_synthetic_dx11_bridge_test`.
-- [ ] Definir slot/fence ownership e reuse sem reescrever o que já funciona.
+- [ ] Partir de `SyntheticDx11BridgeProvider` e teste existente.
+- [ ] Separar o hook/acquisition D3D11 do bridge D3D11→D3D12.
+- [ ] Definir slot/fence ownership e reuse.
 - [ ] Capturar color; depth/motion apenas com provenance válida.
-- [ ] Abrir/usar resources no executor D3D12 canônico.
-- [ ] Compor de volta no D3D11.
+- [ ] Executar no D3D12 canônico e compor de volta.
 - [ ] Tratar resize/device/context destruction.
-- [ ] Evoluir o teste existente para cenários longos/in-flight em vez de criar novo harness.
+- [ ] Evoluir o teste existente para long-run/in-flight.
 
 ## Revisão obrigatória
 
+- [ ] Bridge funcional não prova Acquire universal.
 - [ ] Keyed mutex/fence ordering.
-- [ ] Allocator/slot só reutilizado após retirement.
-- [ ] Sem frame N/N+1 aliasing.
+- [ ] Allocator/slot só após retirement.
 - [ ] Cada full-frame CopyResource é identificado e justificado.
-- [ ] O lock atual do provider entra na auditoria de hot path, não é automaticamente preservado.
+- [ ] Lock atual do provider entra na auditoria, não é automaticamente preservado.
 
 ## Validação rápida
 
 - [ ] Teste atual continua passando.
-- [ ] Adicionar steady/resize/reset/in-flight ao mesmo executable quando simples.
-- [ ] Medir copies, waits e host CPU.
+- [ ] Hook/acquisition recebe cenário controlado no harness.
+- [ ] Stress in-flight/resize/reset.
+- [ ] Medir copies, waits e CPU.
 
 ## Gate
 
-- [ ] Transporte GPU-resident demonstrado.
-- [ ] Sem wait/copy injustificado.
+- [ ] Acquire e bridge são ambos demonstrados.
+- [ ] Transporte GPU-resident.
 - [ ] Steady-state sem resource creation/alocação do carrier.
 
 ## Próxima fase

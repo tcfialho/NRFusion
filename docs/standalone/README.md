@@ -20,18 +20,27 @@ Alvos:
 ```text
 Game API / bitness
       ↓
-Carrier / Provider
+Acquire
       ↓
-Universal FrameContract
+Normalize -> Universal FrameContract
       ↓
 NrSession
       ↓
-Canonical D3D12 DLSS 5 Executor
+Execute -> Canonical D3D12 DLSS 5
       ↓
 Compose / interop de volta ao jogo
 ```
 
-A API determina **como** o frame chega ao NRFusion, não **se** o NR existe.
+Cada carrier precisa qualificar quatro partes separadamente:
+
+1. **Acquire** — obter recursos/semântica corretos do jogo.
+2. **Normalize** — produzir FrameContract honesto.
+3. **Execute** — transportar/executar NR sem CPU pixel path.
+4. **Compose** — devolver o resultado preservando estado/lifetime.
+
+Um SyntheticProvider que processa um `ResourceRef` não prova sozinho que a API está suportada em jogos reais.
+
+Seleção:
 
 ```text
 contrato DLSS/RR utilizável -> Native/Bridge
@@ -40,16 +49,16 @@ sem contrato utilizável     -> Synthetic
 
 ## Reuso antes de criar
 
-O projeto já possui peças de validação úteis. A primeira opção é estendê-las, não criar harness paralelo:
+O projeto já possui peças de validação úteis. A primeira opção é estendê-las:
 
-- `nrfusion_sim`: simulação CPU do controller;
-- `nrfusion_harness_3d`: harness D3D12 headless com color/depth/motion/exposure e telemetry;
+- `nrfusion_sim`;
+- `nrfusion_harness_3d`;
 - `nrfusion_synthetic_dx12_test`;
 - `nrfusion_synthetic_dx11_bridge_test`;
 - `nrfusion_synthetic_opengl_test`;
-- `nrfusion_ipc_host_test` e roundtrip do capture32/Host64.
+- `nrfusion_ipc_host_test` e capture32/Host64 roundtrip.
 
-Novo código de harness só é aceito quando essas peças não conseguem representar o cenário com uma extensão pequena.
+Novo harness só é aceito quando uma extensão pequena dessas peças não representa o cenário.
 
 ## Contrato de performance
 
@@ -76,24 +85,15 @@ Também é obrigatório:
 
 ## Estratégia de validação
 
-Três níveis, nesta ordem:
+Três níveis:
 
-1. **CPU/fake path** — `nrfusion_sim`, tests existentes e FakeNrExecutor quando necessário.
-2. **Harness gráfico** — evoluir os harnesses/testes existentes para cenários determinísticos sem jogo real.
-3. **Jogos reais** — driver, imagem, VRAM e performance final.
-
-O harness deve permitir executor fake quando possível para que captura/policy/lifecycle continuem testáveis sem GPU NVIDIA/DLSS.
+1. **CPU/fake path** — simulação, policy, lifecycle, IPC e failure injection.
+2. **Harness gráfico** — Acquire/Normalize/Execute/Compose mínimos e determinísticos.
+3. **Jogos reais** — driver, aquisição real, imagem, VRAM e performance final.
 
 Antes de usar jogo real para diagnosticar um bug, tentar reproduzi-lo no menor harness existente.
 
-Harnesses não são produtos:
-
-- sem engine, assets, física ou UI elaborada;
-- sem abstraction layer gráfica genérica;
-- frontends finos por API;
-- cenários determinísticos por CLI;
-- saída estruturada de métricas;
-- menos código é melhor.
+Harnesses não são produtos: sem engine/assets/UI elaborada, frontends finos, CLI determinística e saída estruturada.
 
 ## Ordem
 
@@ -127,11 +127,11 @@ Harnesses não são produtos:
 ## Regras de execução
 
 - O arquivo da fase atual é a fonte de verdade.
-- Não iniciar fase dependente antes do gate anterior, salvo blocker explicitamente documentado.
+- Não avançar sem gate anterior ou blocker explícito.
 - Cada item deve ser pequeno e verificável isoladamente.
 - Estabilizar lote antes de mover branch/rodar CI completo.
 - CI confirma integração; não substitui revisão.
-- Mudança de hot path sempre registra: antes, depois, trabalho removido/adicionado e comportamento preservado.
+- Mudança de hot path registra antes/depois/custo/comportamento.
 - Barrier, ownership, lock e fallback exigem justificativa concreta.
 
 ## Arquivos
@@ -163,4 +163,4 @@ Harnesses não são produtos:
 
 ## Critério final
 
-NRFusion só substitui OptiScaler quando NR funcionar por rotas qualificadas independentemente de DLSS nativo no jogo, com menor overhead de host para trabalho equivalente e sem regressão de VRAM equivalente.
+NRFusion só substitui OptiScaler quando as rotas anunciadas qualificarem Acquire→Normalize→Execute→Compose, com menor overhead de host para trabalho equivalente e sem regressão de VRAM equivalente.

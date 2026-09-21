@@ -2,7 +2,7 @@
 
 ## Objetivo
 
-Trocar o host principal somente após equivalência, performance e rollback claros.
+Trocar o host e a distribuição principal somente após equivalência, performance, packaging e rollback claros.
 
 ## Dependências
 
@@ -15,36 +15,39 @@ Fase 22.
 
 ## Implementação
 
-- [ ] Comparar CPU p50/p95/p99, allocations, locks, resource creates, queries/copies.
+- [ ] Comparar CPU p50/p95/p99, allocations, locks, resource creates, queries e copies.
 - [ ] Comparar resource ledger e peak VRAM real.
 - [ ] Executar A/B real: GPU frame ms, NR ms, FPS, 1% low, p95/p99 e MFG pacing.
-- [ ] Validar menu/config/recovery e rotas publicamente anunciadas.
+- [ ] Validar menu/config/recovery e rotas anunciadas.
+- [ ] Substituir build_dist/installer que hoje empacotam OptiScaler por bootstrap/carriers/Host64 standalone.
+- [ ] Empacotar x64/x86 sem carregar módulos de APIs desnecessárias quando separáveis.
 - [ ] Manter OptiScaler como referência/fallback durante preview.
 - [ ] Definir critérios objetivos de rollback.
-- [ ] Só remover dependência primária após uma release de transição estável.
+- [ ] Remover dependência primária só após release de transição estável.
 
 ## Revisão obrigatória
 
 - [ ] A/B usa feature/configuração equivalente.
-- [ ] Warm-up/cena/carga comparáveis.
+- [ ] Warm-up/carga comparáveis.
 - [ ] Resultado negativo é blocker ou limitação explícita.
+- [ ] Installer/uninstaller não deixa proxy conflitante do OptiScaler.
 - [ ] Cutover não depende de um único jogo/API.
 
 ## Validação rápida
 
-- [ ] Harness suite completa antes de cada RC.
+- [ ] Harness suite completa antes de RC.
+- [ ] Instalação limpa, upgrade e uninstall em layout de teste.
 - [ ] Hardware real nas rotas prioritárias.
 - [ ] Stress resize/reset/reconfigure/MFG.
 
 ## Gate
 
-- [ ] D3D12 x64 Hardware-qualified.
-- [ ] FrameContract/registry/Host64 estáveis.
-- [ ] Rotas anunciadas ao usuário estão Hardware-qualified; demais aparecem como Target/Blocked.
+- [ ] Rotas anunciadas estão Hardware-qualified.
 - [ ] 0 steady-state allocation/resource creation no normal path.
 - [ ] VRAM equivalente sem regressão.
 - [ ] Host CPU abaixo do baseline equivalente.
-- [ ] Rollback testado.
+- [ ] Packaging não depende de OptiScaler.
+- [ ] Rollback/fallback testado.
 
 ## Próxima fase
 

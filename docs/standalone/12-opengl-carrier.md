@@ -2,7 +2,7 @@
 
 ## Objetivo
 
-Transformar o provider OpenGL atual em interop real qualificado, sem glReadPixels.
+Qualificar Acquire→Normalize→Execute→Compose em OpenGL sem glReadPixels.
 
 ## Dependências
 
@@ -10,36 +10,37 @@ Fases 07–08.
 
 ## Fora de escopo
 
-- Considerar o teste lógico atual como prova de GL↔D3D12 real
+- Considerar teste lógico atual como interop real
 - CPU pixel path
 
 ## Implementação
 
-- [ ] Reusar `SyntheticOpenGlProvider` e `nrfusion_synthetic_opengl_test`.
-- [ ] Integrar OpenGL no ProviderPolicy somente atrás de capability real.
-- [ ] Criar contexto GL mínimo no teste apenas para validar memory object/semaphore import de verdade.
-- [ ] Validar extensions, memory size/alignment e handle ownership.
-- [ ] Capturar color GPU-side e guides quando disponíveis.
-- [ ] Executar D3D12 canônico e compor/copy back GPU-side.
-- [ ] Tratar context recreation e resize.
+- [ ] Reusar `SyntheticOpenGlProvider` e teste existente.
+- [ ] Definir hook/seam de Acquire em contexto OpenGL real.
+- [ ] Integrar ProviderPolicy apenas atrás de capability comprovada.
+- [ ] Criar contexto GL mínimo no teste para memory object/semaphore import real.
+- [ ] Validar extensions, size/alignment e handle ownership.
+- [ ] Capturar color GPU-side; guides somente se realmente obtíveis.
+- [ ] Executar D3D12 e compor/copy back GPU-side.
+- [ ] Tratar context recreation/resize.
 
 ## Revisão obrigatória
 
-- [ ] Provider.Initialize sem contexto GL não equivale a interop qualificado.
-- [ ] GL objects e HANDLEs têm lifetime pareado.
+- [ ] Provider.Initialize sem contexto GL não prova Acquire/interoperabilidade.
+- [ ] GL objects/HANDLEs têm lifetime pareado.
 - [ ] Sync ida/volta não usa stall CPU como normal.
-- [ ] Extension ausente = Blocked explícito, nunca fallback via CPU.
+- [ ] Extension ausente = Blocked, nunca fallback CPU.
 
 ## Validação rápida
 
-- [ ] Manter teste lógico barato para lifecycle.
-- [ ] Adicionar teste com contexto/extensões reais quando ambiente permitir.
-- [ ] Context recreation e semaphore/fence long run.
+- [ ] Teste lógico continua barato.
+- [ ] Teste de contexto real prova interop quando ambiente permite.
+- [ ] Context recreation/semaphore long run.
 
 ## Gate
 
-- [ ] ProviderPolicy só seleciona OpenGL quando capability real foi comprovada.
-- [ ] Rota normal permanece GPU-resident.
+- [ ] ProviderPolicy só seleciona rota comprovada.
+- [ ] Acquire e interop são ambos GPU-resident.
 
 ## Próxima fase
 

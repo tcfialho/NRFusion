@@ -2,7 +2,7 @@
 
 ## Objetivo
 
-Dar um estado inequívoco e evidência reproduzível a cada rota.
+Dar estado inequívoco e evidência reproduzível a cada rota completa.
 
 ## Dependências
 
@@ -15,30 +15,30 @@ Rotas candidatas implementadas.
 
 ## Implementação
 
-- [ ] Usar estados: Target → Implemented → Harness-verified → Hardware-qualified, ou Blocked.
+- [ ] Estados: Target → Implemented → Harness-verified → Hardware-qualified, ou Blocked.
 - [ ] Matriz API × bitness × Native/Bridge/Synthetic.
-- [ ] Registrar Color/Depth/Motion/HDR/NR/MFG/GPU-only transport separadamente.
-- [ ] Linkar cenário/comando do harness usado como evidência.
-- [ ] Exigir acquisition, sync, ownership, compose, resize e failure path.
-- [ ] Registrar MFG separadamente de NR.
-- [ ] Manter blocker técnico específico para rotas não qualificadas.
+- [ ] Para cada célula registrar Acquire, Normalize, Execute e Compose separadamente.
+- [ ] Registrar Color/Depth/Motion/HDR/NR/MFG/GPU-only transport.
+- [ ] Linkar scenario/comando/log do harness usado como evidência.
+- [ ] MFG recebe estado independente de NR.
+- [ ] Blocker técnico é específico e reabrível.
 
 ## Revisão obrigatória
 
+- [ ] Implemented não implica que Acquire funciona em engine real.
 - [ ] x86/x64 têm gates distintos quando arquitetura difere.
-- [ ] NR universal não implica MFG universal.
-- [ ] Uma API pode ter Synthetic qualified e Native não aplicável.
-- [ ] Nenhum 'works' sem nível de evidência.
+- [ ] Synthetic qualified não implica Native.
+- [ ] Nenhum “works” sem nível de evidência.
 
 ## Validação rápida
 
-- [ ] Executar scenario suite comum por frontend.
+- [ ] Suite comum por frontend.
 - [ ] Depois amostragem em jogos reais por API/engine.
-- [ ] Reexecutar matriz após mudança estrutural de carrier/executor.
+- [ ] Reexecutar evidência após mudança estrutural.
 
 ## Gate
 
-- [ ] Cada célula tem estado, evidência e limitações.
+- [ ] Cada célula tem estado, evidência, limitações e próxima prova necessária.
 - [ ] Claims públicas podem ser derivadas diretamente da matriz.
 
 ## Próxima fase

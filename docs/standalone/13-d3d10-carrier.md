@@ -2,7 +2,7 @@
 
 ## Objetivo
 
-Provar uma bridge D3D10 viável antes de investir em implementação completa.
+Provar Acquire e bridge D3D10 viáveis antes de investir em implementação completa.
 
 ## Dependências
 
@@ -15,24 +15,24 @@ Fases 07–08.
 
 ## Implementação
 
-- [ ] Primeiro produzir proof-of-route para sharing/interoperabilidade no mesmo adapter.
-- [ ] Definir capture/compose points mínimos.
-- [ ] Capturar color GPU-side; depth/motion só se tecnicamente confiáveis.
-- [ ] Bridge para D3D12 canônico.
-- [ ] Definir sincronização sem blocking wait recorrente.
+- [ ] Localizar seam de Acquire e ownership de resources D3D10/DXGI.
+- [ ] Produzir proof-of-route de compartilhamento no mesmo adapter.
+- [ ] Definir color/depth/motion realmente acessíveis.
+- [ ] Bridge para D3D12 canônico e compose back.
+- [ ] Definir sync sem blocking recorrente.
 - [ ] Tratar resize/device recreation.
-- [ ] Somente após proof-of-route, adicionar frontend D3D10 ao runner.
+- [ ] Só após proof-of-route adicionar frontend ao harness.
 
 ## Revisão obrigatória
 
-- [ ] Cada copy full-frame tem razão e contador.
-- [ ] Sem sharing seguro = Blocked, não gambiarra CPU.
+- [ ] Cada full-frame copy é justificada.
+- [ ] Sem sharing seguro = Blocked, não CPU fallback.
 - [ ] Provenance de guides não é inferida.
-- [ ] Legacy API não pode forçar arquitetura especial no core.
+- [ ] Legacy API não cria policy própria no core.
 
 ## Validação rápida
 
-- [ ] Micro-harness proof-of-route primeiro.
+- [ ] Micro-harness prova Acquire+interop primeiro.
 - [ ] Depois steady/resize com fake executor.
 - [ ] Medir copies/sync/CPU.
 
