@@ -32,7 +32,7 @@
 - Applies to production code, headers, CUDA, shaders, tests, harnesses, tools, scripts, CMake/build logic and installer code.
 - Transition-only grandfathering: existing >300-line first-party files may remain read-only/no-growth until their owning phase splits or retires them.
 - Final cutover requires zero first-party handwritten code files above 300 lines.
-- Generated-file exemption is valid only when the file is reproducibly produced from tracked source/generator inputs, is marked generated, and is not manually edited.
+- Generated-file exemption is valid only when the file is reproducibly produced from tracked inputs, lives under a generated directory, is marked generated, and is not manually edited. The checker verifies location/marker; review verifies reproducibility.
 - Vendored/third-party code and upstream fixtures are exempt only while unmodified. Local handwritten modifications count as first-party code.
 - Do not evade the cap with minification, multiple statements per line, giant embedded code strings, generated-style .inc dumps, or by moving implementation into headers.
 - Split by responsibility/lifetime/ownership, never arbitrary Part1/Part2 chunks or one God class spread across partial files.
@@ -52,7 +52,7 @@ Stopped for freeze/handoff: 2026-09-20 23:26 BRT
 Branch: standalone/phase-00-baseline-20260920
 Base master: 410cab8ab1876b7ae7dbf0a82b1b4096b225f4f3
 Plan head: b76238022838d246f7fce5695fe321ec232a840b
-Phase 00: complete.
+Phase 00: complete and code-reviewed.
 Completed:
 - added 67-line changed/all source-size checker
 - regression-tested checker, including modified vendor and untracked oversized files
