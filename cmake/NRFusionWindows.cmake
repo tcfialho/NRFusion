@@ -1,6 +1,14 @@
 add_executable(nrfusion_harness_3d
         tests/harness_3d/D3D12TestHarness.hpp
-        tests/harness_3d/D3D12TestHarness.cpp
+        tests/harness_3d/D3D12HarnessLifecycle.cpp
+        tests/harness_3d/D3D12HarnessResources.cpp
+        tests/harness_3d/D3D12HarnessShaders.cpp
+        tests/harness_3d/D3D12HarnessPipeline.cpp
+        tests/harness_3d/D3D12HarnessScene.cpp
+        tests/harness_3d/D3D12HarnessExecution.cpp
+        tests/harness_3d/D3D12HarnessProvider.cpp
+        tests/harness_3d/D3D12HarnessRun.cpp
+        tests/harness_3d/D3D12HarnessMetrics.cpp
         tests/harness_3d/main.cpp
     )
     target_link_libraries(nrfusion_harness_3d PRIVATE nrfusion_core d3d12 dxgi d3dcompiler)
