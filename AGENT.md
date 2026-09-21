@@ -47,26 +47,21 @@
 
 ## Current session
 
-Start: 2026-09-21 08:34 BRT
-Branch: standalone/phase-02-runtime-shell-20260921
-Base phase-01: f503a6f272ce02783829fcefbf0a3d31bd2771b6
-Phase 02: complete after third adversarial review.
-Completed:
-- split GameProbe by PE inspection, detection, orchestration and support
-- modularized CMake into Core/Tests/Tools/Windows without removing existing targets
-- added standalone RuntimeConfig, fixed-size component registry, lifecycle shell and bootstrap
-- kept standalone mode vocabulary Auto/BestQuality/Performance/Custom
-- made bootstrap transactional, idempotent and owner of registry mutation
-- rejected invalid/stale config and invalid component enums fail-closed
-- fixed subset-plan idempotence false positive in RuntimeBootstrap
-- fixed zero-capability false positive in RuntimeComponentRegistry::Supports
-- changed default RuntimeConfig to disabled so default construction is fail-closed
-- added bootstrap invalid-config rollback regression
-- removed RuntimeBootstrap header dependence on transitive cstdint
-- trimmed narrative comments copied during the GameProbe/CMake split
-- reconfirmed CMake target/test/source preservation
-- remeasured disabled path at ~3.175 ns/call with 0 allocations over 5M calls
-- runtime shell regression compile/test passed with warnings-as-errors
+Start: 2026-09-21 09:09 BRT
+Branch: standalone/phase-03-development-harness-20260921
+Base phase-02: 7fa6f9617d24675bef2bb2b0c571fe58763a345d
+Phase 03: in progress.
+
+Checklist:
+- [ ] audit nrfusion_sim, nrfusion_harness_3d, synthetic and IPC tests
+- [ ] split D3D12TestHarness.cpp mechanically by responsibility
+- [ ] prove split preserves the existing harness behavior structurally
+- [ ] keep every new/touched harness file <=300 physical lines
+- [ ] separate correctness from benchmark; benchmark excludes waits/Map/console/setup
+- [ ] add only missing scenarios: steady/resize/reset/missing guides/provenance/on-off/failure
+- [ ] add preallocated p50/p95/p99 metrics and counters
+- [ ] validate CMake target/test preservation and source-size checker
+- [ ] stabilize, checkpoint ZIP and hand off before moving to Phase 04
+
 Exact next action:
-- stop after Phase 02 review
-- do not start Phase 03 without explicit user instruction
+- inventory existing harness/test responsibilities and line counts before changing code
