@@ -1,5 +1,7 @@
+#include "nrfusion/RuntimeBootstrap.hpp"
 #include "nrfusion/RuntimeShell.hpp"
 
+#include <array>
 #include <cassert>
 #include <limits>
 
@@ -53,5 +55,31 @@ int main() {
     runtime.Shutdown();
     assert(runtime.Status().state == RuntimeState::Stopped);
     assert(runtime.Registry().Size() == 0);
+    assert(runtime.Config().generation == 1);
+
+    std::array<RuntimeComponent, 2> components{{
+        {RuntimeComponentKind::Provider, GraphicsApi::D3D12, 1},
+        {RuntimeComponentKind::Executor, GraphicsApi::D3D12, 2},
+    }};
+    RuntimeBootstrapPlan plan{enabled, components};
+    const auto started = RuntimeBootstrap::Start(runtime, plan);
+    assert(started);
+    assert(runtime.Status().state == RuntimeState::Running);
+    assert(runtime.Registry().Size() == 2);
+
+    std::array<RuntimeComponent, 2> badComponents{{
+        {RuntimeComponentKind::Provider, GraphicsApi::D3D12, 1},
+        {RuntimeComponentKind::Executor, GraphicsApi::Unknown, 2},
+    }};
+    plan.components = badComponents;
+    const auto failed = RuntimeBootstrap::Start(runtime, plan);
+    assert(!failed);
+    assert(failed.failure == RuntimeBootstrapFailure::InvalidComponent);
+    assert(runtime.Status().state == RuntimeState::Stopped);
+    assert(runtime.Registry().Size() == 0);
+
+    RuntimeBootstrap::Stop(runtime);
+    RuntimeBootstrap::Stop(runtime);
+    assert(runtime.Status().state == RuntimeState::Stopped);
     return 0;
 }

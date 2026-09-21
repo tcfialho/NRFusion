@@ -24,6 +24,7 @@ bool RuntimeShell::Initialize(RuntimeConfig config) noexcept {
 
 void RuntimeShell::Shutdown() noexcept {
     registry_.Clear();
+    config_ = {};
     status_ = {};
 }
 

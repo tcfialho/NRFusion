@@ -43,6 +43,7 @@ add_library(nrfusion_core STATIC
     src/AdaptiveExposure.cpp
     src/AdaptiveExposureController.cpp
     src/RuntimeShell.cpp
+    src/RuntimeBootstrap.cpp
 )
 
 if (WIN32)
