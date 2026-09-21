@@ -171,7 +171,7 @@ Inventário completo do baseline: **34 arquivos first-party handwritten >300 lin
 
 ## Checker
 
-`tools/check_source_size.py` possui 67 linhas e nenhuma dependência externa.
+`tools/check_source_size.py` possui 95 linhas e nenhuma dependência externa.
 
 Validação em repositório Git temporário:
 

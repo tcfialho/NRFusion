@@ -54,7 +54,7 @@ Base master: 410cab8ab1876b7ae7dbf0a82b1b4096b225f4f3
 Plan head: b76238022838d246f7fce5695fe321ec232a840b
 Phase 00: complete and code-reviewed.
 Completed:
-- added 67-line changed/all source-size checker
+- added 95-line changed/all source-size checker
 - regression-tested checker, including modified vendor and untracked oversized files
 - inventoried 34 first-party handwritten files over 300 lines
 - mapped OptiScaler integration responsibilities to standalone phases
