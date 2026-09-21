@@ -1,0 +1,18 @@
+enable_testing()
+
+function(nrfusion_test target source)
+    add_executable(${target} ${source})
+    target_link_libraries(${target} PRIVATE nrfusion_core)
+    if (MSVC)
+        target_compile_options(${target} PRIVATE /UNDEBUG)
+    else()
+        target_compile_options(${target} PRIVATE -UNDEBUG)
+    endif()
+    add_test(NAME ${target} COMMAND ${target})
+endfunction()
+
+nrfusion_test(nrfusion_tests tests/controller_tests.cpp)
+nrfusion_test(nrfusion_game_probe_tests tests/game_probe_tests.cpp)
+nrfusion_test(nrfusion_telemetry_tests tests/telemetry_tracker_tests.cpp)
+nrfusion_test(nrfusion_timing_mapper_tests tests/timing_mapper_tests.cpp)
+nrfusion_test(nrfusion_runtime_shell_tests tests/runtime_shell_tests.cpp)

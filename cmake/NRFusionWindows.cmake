@@ -1,0 +1,127 @@
+add_executable(nrfusion_harness_3d
+        tests/harness_3d/D3D12TestHarness.hpp
+        tests/harness_3d/D3D12TestHarness.cpp
+        tests/harness_3d/main.cpp
+    )
+    target_link_libraries(nrfusion_harness_3d PRIVATE nrfusion_core d3d12 dxgi d3dcompiler)
+    target_include_directories(nrfusion_harness_3d PRIVATE tests/harness_3d)
+    add_test(NAME nrfusion_harness_3d COMMAND nrfusion_harness_3d --headless --frames 60)
+
+    add_executable(nrfusion_residual_gpu_test tests/residual_gpu_test.cpp)
+    target_link_libraries(nrfusion_residual_gpu_test PRIVATE nrfusion_core d3d12 dxgi d3dcompiler)
+    if (MSVC)
+        target_compile_options(nrfusion_residual_gpu_test PRIVATE /UNDEBUG)
+    else()
+        target_compile_options(nrfusion_residual_gpu_test PRIVATE -UNDEBUG)
+    endif()
+    add_test(NAME nrfusion_residual_gpu_test COMMAND nrfusion_residual_gpu_test)
+
+    add_executable(nrfusion_synthetic_dx12_test tests/synthetic_dx12_test.cpp)
+    target_link_libraries(nrfusion_synthetic_dx12_test PRIVATE nrfusion_core d3d12 dxgi d3dcompiler)
+    if (MSVC)
+        target_compile_options(nrfusion_synthetic_dx12_test PRIVATE /UNDEBUG)
+    else()
+        target_compile_options(nrfusion_synthetic_dx12_test PRIVATE -UNDEBUG)
+    endif()
+    add_test(NAME nrfusion_synthetic_dx12_test COMMAND nrfusion_synthetic_dx12_test)
+
+    add_executable(nrfusion_synthetic_dx12_scale_gate_test tests/synthetic_dx12_scale_gate_test.cpp)
+    target_link_libraries(nrfusion_synthetic_dx12_scale_gate_test PRIVATE nrfusion_core d3d12 dxgi d3dcompiler)
+    if (MSVC)
+        target_compile_options(nrfusion_synthetic_dx12_scale_gate_test PRIVATE /UNDEBUG)
+    else()
+        target_compile_options(nrfusion_synthetic_dx12_scale_gate_test PRIVATE -UNDEBUG)
+    endif()
+    if (CMAKE_SIZEOF_VOID_P EQUAL 8)
+        add_test(NAME nrfusion_synthetic_dx12_scale_gate_test COMMAND nrfusion_synthetic_dx12_scale_gate_test)
+    endif()
+
+    add_executable(nrfusion_synthetic_dx11_bridge_test tests/synthetic_dx11_bridge_test.cpp)
+    target_link_libraries(nrfusion_synthetic_dx11_bridge_test PRIVATE nrfusion_core d3d11 d3d12 dxgi d3dcompiler)
+    if (MSVC)
+        target_compile_options(nrfusion_synthetic_dx11_bridge_test PRIVATE /UNDEBUG)
+    else()
+        target_compile_options(nrfusion_synthetic_dx11_bridge_test PRIVATE -UNDEBUG)
+    endif()
+    add_test(NAME nrfusion_synthetic_dx11_bridge_test COMMAND nrfusion_synthetic_dx11_bridge_test)
+
+    add_executable(nrfusion_synthetic_opengl_test tests/synthetic_opengl_test.cpp)
+    target_link_libraries(nrfusion_synthetic_opengl_test PRIVATE nrfusion_core d3d12 dxgi d3dcompiler opengl32)
+    if (MSVC)
+        target_compile_options(nrfusion_synthetic_opengl_test PRIVATE /UNDEBUG)
+    else()
+        target_compile_options(nrfusion_synthetic_opengl_test PRIVATE -UNDEBUG)
+    endif()
+    add_test(NAME nrfusion_synthetic_opengl_test COMMAND nrfusion_synthetic_opengl_test)
+
+    add_executable(nrfusion_host64 host/NRFusionHost64.cpp)
+    target_link_libraries(nrfusion_host64 PRIVATE nrfusion_core d3d12 dxgi d3dcompiler)
+    set_target_properties(nrfusion_host64 PROPERTIES OUTPUT_NAME "NRFusionHost64")
+
+    add_executable(nrfusion_ipc_host_test tests/ipc_host_test.cpp)
+    target_link_libraries(nrfusion_ipc_host_test PRIVATE nrfusion_core d3d12 dxgi d3dcompiler)
+    if (MSVC)
+        target_compile_options(nrfusion_ipc_host_test PRIVATE /UNDEBUG)
+    else()
+        target_compile_options(nrfusion_ipc_host_test PRIVATE -UNDEBUG)
+    endif()
+    add_test(NAME nrfusion_ipc_host_test COMMAND nrfusion_ipc_host_test)
+
+    add_library(nrfusion_capture32 SHARED
+        src/CaptureProvider32.cpp
+        src/CaptureProvider32Export.cpp
+        src/CaptureD3D11.cpp
+        src/VersionDllProxy.cpp
+        src/VersionDllProxy.def
+    )
+    target_include_directories(nrfusion_capture32 PUBLIC include)
+    target_compile_definitions(nrfusion_capture32 PRIVATE NRFUSION_CAPTURE32_EXPORTS=1)
+    target_link_libraries(nrfusion_capture32 PRIVATE d3d11 dxgi d3dcompiler)
+    set_target_properties(nrfusion_capture32 PROPERTIES OUTPUT_NAME "nrfusion_capture32")
+
+    add_executable(nrfusion_capture32_roundtrip_test tests/capture32_roundtrip_test.cpp)
+    target_link_libraries(nrfusion_capture32_roundtrip_test PRIVATE nrfusion_capture32 d3d11 dxgi)
+    add_dependencies(nrfusion_capture32_roundtrip_test nrfusion_host64)
+    if (MSVC)
+        target_compile_options(nrfusion_capture32_roundtrip_test PRIVATE /UNDEBUG)
+    else()
+        target_compile_options(nrfusion_capture32_roundtrip_test PRIVATE -UNDEBUG)
+    endif()
+    # The CTest registration uses a same-architecture host binary. The Win32 executable is run
+    # explicitly against the x64 host in the Windows validation command, so it cannot accidentally
+    # report a same-bitness pass as x86-carrier coverage.
+    if (CMAKE_SIZEOF_VOID_P EQUAL 8)
+        add_test(NAME nrfusion_capture32_roundtrip_test COMMAND nrfusion_capture32_roundtrip_test)
+    endif()
+
+    add_executable(nrfusion_capture32_d3d11_hook_test tests/capture32_d3d11_hook_test.cpp)
+    target_link_libraries(nrfusion_capture32_d3d11_hook_test PRIVATE nrfusion_capture32 d3d11 dxgi)
+    if (MSVC)
+        target_compile_options(nrfusion_capture32_d3d11_hook_test PRIVATE /UNDEBUG)
+    else()
+        target_compile_options(nrfusion_capture32_d3d11_hook_test PRIVATE -UNDEBUG)
+    endif()
+
+
+
+    # requiem_game was rebuilt on 14/09/2026 after the original was lost; requiem_viewer's
+    # source is still gone. Each target is gated on its own file, so one being absent no longer
+    # takes the other down with it.
+    if (EXISTS "${CMAKE_CURRENT_SOURCE_DIR}/tools/requiem_viewer/main.cpp")
+        add_executable(nrfusion_requiem_viewer tools/requiem_viewer/main.cpp)
+        target_link_libraries(nrfusion_requiem_viewer PRIVATE d3d11 dxgi d3dcompiler windowscodecs ole32)
+    endif()
+
+    if (EXISTS "${CMAKE_CURRENT_SOURCE_DIR}/tools/requiem_game/main.cpp")
+        add_executable(nrfusion_requiem_game tools/requiem_game/main.cpp
+                                            tools/requiem_game/ngx_dlss.cpp
+                                            tools/requiem_game/image.cpp)
+        # windowscodecs and ole32 decode the reference frames, as the original linked them too.
+        target_link_libraries(nrfusion_requiem_game PRIVATE d3d12 dxgi d3dcompiler windowscodecs ole32)
+        target_include_directories(nrfusion_requiem_game PRIVATE include)
+        add_custom_command(TARGET nrfusion_requiem_game POST_BUILD
+            COMMAND ${CMAKE_COMMAND} -E copy_directory
+                    "${CMAKE_CURRENT_SOURCE_DIR}/tools/requiem_game/assets"
+                    "$<TARGET_FILE_DIR:nrfusion_requiem_game>/assets")
+        set_target_properties(nrfusion_requiem_game PROPERTIES OUTPUT_NAME "RequiemGame")
+    endif()
