@@ -4,6 +4,7 @@
 #include <array>
 #include <cassert>
 #include <limits>
+#include <span>
 
 using namespace nrfusion;
 
@@ -74,6 +75,13 @@ int main() {
     assert(runtime.Status().state == RuntimeState::Running);
     assert(runtime.Registry().Size() == 2);
     assert(RuntimeBootstrap::Start(runtime, plan));
+
+    RuntimeBootstrapPlan subsetPlan{
+        enabled, std::span<const RuntimeComponent>(components.data(), 1)};
+    const auto subset = RuntimeBootstrap::Start(runtime, subsetPlan);
+    assert(!subset);
+    assert(subset.failure == RuntimeBootstrapFailure::AlreadyStarted);
+    assert(runtime.Registry().Size() == 2);
 
     auto differentPlan = plan;
     differentPlan.config.generation = 4;

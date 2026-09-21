@@ -5,8 +5,19 @@ namespace {
 
 bool MatchesPlan(const RuntimeShell& shell, const RuntimeBootstrapPlan& plan) noexcept {
     if (!(shell.Config() == plan.config)) return false;
+
+    RuntimeComponentRegistry expected;
     for (const auto component : plan.components)
-        if (!shell.Registry().Supports(component)) return false;
+        if (!expected.Register(component)) return false;
+    if (expected.Size() != shell.Registry().Size()) return false;
+
+    for (const auto component : plan.components) {
+        const auto* expectedEntry = expected.Find(component.kind, component.api);
+        const auto* activeEntry = shell.Registry().Find(component.kind, component.api);
+        if (!expectedEntry || !activeEntry ||
+            expectedEntry->capabilityMask != activeEntry->capabilityMask)
+            return false;
+    }
     return true;
 }
 
