@@ -48,29 +48,31 @@
 ## Current session
 
 Start: 2026-09-21 16:24 BRT
+Code freeze: 2026-09-21 16:44 BRT
 Branch: standalone/phase-05-d3d12-executor-20260921
 Base phase-04: dcb5ea54c9d36bc36a9009fd4ffebaa3c26ef1ca
-Phase 05: in progress.
+Phase 05: in progress; first mechanical subgate complete.
 
-Initial audit:
-- HostDlssNr is the standalone ABI/call-sequence seed, 148-line header + 221-line source
-- mature OptiScaler fixture is ~3883 lines and stays read-only
-- Host seed covers loader, primary lifecycle and one evaluate boundary only
-- mature executor additionally owns pending epochs, per-pass features, resources/states,
-  scale/subrect, HDR/exposure, residual and pre/post-SR/RR history
-- HostServer64 is 658 lines and remains read-only during mechanical extraction
+Completed:
+- audited HostDlssNr against the ~3883-line mature OptiScaler reference
+- mapped loader, lifecycle, state/resources, scale, HDR/exposure, residual and multipass boundaries
+- canonicalized HostDlssNr as D3D12NrExecutor
+- kept HostDlssNr as compatibility alias; HostServer64 remains read-only
+- split loader/lifecycle/dispatch with all six method bodies code-equivalent
+- kept each executor source <=153 lines in this subgate
+- preserved one dlssnr_call_evaluate_v2 boundary and existing load policy
+- Windows found split regression: kNgxSuccess remained TU-local to loader
+- fixed kNgxSuccess as one private class constant
+- Portable fix run 35645666859 passed
+- Windows fix run 35645666861 passed; CTest 19/19 and integrated validation passed
 
-Checklist:
-- [ ] canonicalize HostDlssNr as D3D12NrExecutor without callsite changes
-- [ ] split loader/lifecycle/dispatch with exact behavior
-- [ ] validate Host64/Windows integration
-- [ ] add portable/fake lifecycle boundary where D3D12 types are not required
-- [ ] port mature pending-submission/epoch
-- [ ] extract resource/state ownership
-- [ ] port scale/subrect/padding
-- [ ] port HDR/exposure/residual/multipass by responsibility
-- [ ] final <=300/source audit and Windows validation
+Phase 05 remains open:
+- pending-submission/epoch not ported yet
+- resource/state map not ported
+- scale/subrect/padding not ported
+- HDR/exposure/residual/multipass not ported
 
 Exact next action:
-- mechanically split HostDlssNr into canonical executor loader/lifecycle/dispatch
-- keep HostDlssNr.hpp as compatibility alias so HostServer64 is untouched
+- add a small testable pending-submission/epoch lifecycle boundary
+- prove same-epoch evaluate is rejected and later epoch becomes ready
+- do not touch resources/state until that lifecycle regression passes

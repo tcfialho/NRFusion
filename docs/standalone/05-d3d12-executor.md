@@ -2,7 +2,8 @@
 
 ## Status
 
-**Em andamento.**
+**Em andamento.** Primeiro subgate concluído: canonicalização/split do seed standalone.
+Evidência parcial: [05-d3d12-executor-evidence.md](05-d3d12-executor-evidence.md).
 
 ## Objetivo
 
@@ -23,29 +24,13 @@ Fase 04 concluída e revisada.
 
 ### Seed standalone existente
 
-`HostDlssNr` já possui:
-
-- policy de load do driver NGX;
-- forwarder `nvngx.dll_dlssnr.dll`;
-- model DLL `nvngx_dlssnr.dll`;
-- capability params;
-- create/release da feature primária;
-- pending-submission simplificado via `JustBuilt()`;
-- uma boundary `dlssnr_call_evaluate_v2`;
-- tuning básico sem `Config/State`.
-
-Limites:
-
-- nome/ownership ainda são específicos do Host64;
-- loader, lifecycle e dispatch vivem no mesmo arquivo;
-- não possui resource/state map maduro;
-- não possui multipass por feature;
-- não possui HDR/exposure/residual equivalentes ao executor maduro.
+O antigo `HostDlssNr` já possuía load policy, capability params, feature primária,
+`JustBuilt()` e uma boundary `dlssnr_call_evaluate_v2`.
 
 ### Executor maduro de referência
 
 `tests/fixture/OptiScaler/shaders/dlssnr/DlssNr_Dx12.cpp` possui ~3883 linhas e permanece
-read-only. A revisão mapeou os seguintes boundaries:
+read-only. Boundaries mapeados:
 
 - loader/forwarder/capability params: ~521–732;
 - retirement/rebuild/resources: ~733–820 e ~1815–2200;
@@ -55,8 +40,6 @@ read-only. A revisão mapeou os seguintes boundaries:
 - resolve/HDR/residual: ~2720–3120;
 - public pre/post SR/RR seams: ~3128–3539;
 - shutdown/lifetime: ~3705–3755.
-
-O fixture não será copiado nem substantivamente modificado.
 
 ## Boundaries alvo
 
@@ -69,17 +52,15 @@ O fixture não será copiado nem substantivamente modificado.
 7. residual.
 8. multipass/history.
 
-`HostDlssNr` vira somente compatibilidade para o host existente, sem tocar `HostServer64`
-durante o split mecânico.
-
 ## Implementação
 
-- [ ] Extrair mecanicamente `HostDlssNr` para `D3D12NrExecutor`.
-- [ ] Separar loader, lifecycle e dispatch sem mudança semântica.
-- [ ] Manter uma única boundary de chamada ao modelo.
-- [ ] Preservar load policy do driver/forwarder/model.
-- [ ] Preservar `JustBuilt()` durante o primeiro split.
-- [ ] Depois portar pending-submission/epoch maduro.
+- [x] Canonicalizar `HostDlssNr` como `D3D12NrExecutor`.
+- [x] Manter `HostDlssNr` como alias de compatibilidade sem tocar `HostServer64`.
+- [x] Separar loader, lifecycle e dispatch sem mudança semântica.
+- [x] Manter uma única boundary de chamada ao modelo.
+- [x] Preservar load policy do driver/forwarder/model.
+- [x] Preservar `JustBuilt()` durante o primeiro split.
+- [ ] Portar pending-submission/epoch maduro.
 - [ ] Extrair resource/state map por owner/lifetime.
 - [ ] Portar scale/subrect/padding.
 - [ ] Portar pre/post-SR/RR/history e multipass.
@@ -88,29 +69,35 @@ durante o split mecânico.
 
 ## Revisão obrigatória
 
-- [ ] Split segue ownership/lifetime.
+- [x] Primeiro split segue ownership: loader/lifecycle/dispatch.
+- [x] Driver/forwarder/model mantêm a load policy anterior.
+- [x] Nenhuma otimização funcional escondida no primeiro split.
+- [x] Nenhuma interface virtual/heap/lock adicionada para dividir arquivos.
 - [ ] Cada resource possui owner/create/state/release/resize/failure.
 - [ ] Cada barrier possui estado anterior/próximo/caller guarantee.
-- [ ] Driver/forwarder/model têm load policy explícita.
-- [ ] Nenhuma otimização funcional escondida no split.
-- [ ] Nenhuma interface virtual/heap/lock adicionada só para dividir arquivos.
 
 ## Validação rápida
 
-- [ ] Diff mecânico do seed standalone.
-- [ ] Host64 continua compilando sem mudança de callsite.
+- [x] Seis métodos comparados corpo-a-corpo com o seed anterior.
+- [x] Host64 compila sem mudança de callsite.
+- [x] Portable Core validation PASS.
+- [x] Windows integrated validation + 19/19 CTest PASS.
 - [ ] Teste/fake do lifecycle create/rebuild/pending.
 - [ ] Resize/rebuild com substitutes.
+- [ ] Comparar host CPU before/after quando hot helpers cruzarem TUs.
 - [ ] Checker <=300 em todo executor extraído.
-- [ ] Comparar host CPU antes/depois se hot helpers cruzarem TUs.
-- [ ] Modelo real fica para gate de hardware.
 
 ## Gate
 
-- [ ] Sem OptiScaler direto.
-- [ ] Uma call boundary DLSS-NR.
+- [x] Seed standalone não depende diretamente de OptiScaler.
+- [x] Uma call boundary DLSS-NR preservada no seed.
 - [ ] Resource/state map completo.
-- [ ] Zero arquivo handwritten >300 no executor extraído.
+- [ ] Semântica madura de pending/rebuild/multipass/HDR/residual portada.
+- [x] Zero arquivo handwritten >300 no executor extraído atual.
+
+## Próxima ação
+
+Portar pending-submission/epoch como boundary pequeno e testável antes de tocar resources/state.
 
 ## Próxima fase
 
