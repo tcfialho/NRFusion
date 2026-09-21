@@ -48,36 +48,37 @@
 ## Current session
 
 Start: 2026-09-21 14:31 BRT
-Code freeze: 2026-09-21 14:53 BRT
 Branch: standalone/phase-04-feature-registry-20260921
 Base phase-03: a4baa81a337c623a033f59c3e09553bc0a119447
-Phase 04: complete.
+Phase 04: complete after adversarial review.
 
-Completed:
-- audited NGX lifecycle callsites and phase ownership
-- added portable fixed-capacity NGX feature registry
-- classify raw NGX feature IDs: SR=1, FG=11, RR=13, other=Unknown
-- failed create/zero handle/zero context fail closed
-- create identity carries handle/context/generation
-- stale release cannot remove a recreated handle
-- generation is monotonic across Clear
-- same raw handle is independent across contexts
-- FG/Unknown/missing map only to PassThrough
-- storage is fixed std::array<64>, no heap/lock
-- added 100k lifecycle stress and 1M steady lookup allocation regression
-- Portable Core 6/6 passed
-- Windows CTest 19/19 passed
-- integrated Windows/OptiScaler/NSIS validation passed
-- largest new file is the 176-line test
+Review findings fixed:
+- duplicate active create used to overwrite the current identity
+- raw NGX evaluate boundary had no fail-closed handle-only lookup
+- existing private NR feature ID 18 had no explicit passthrough regression
+- previous release evidence overstated what raw NGX ReleaseFeature can provide
+
+Current invariants:
+- active duplicate create fails closed
+- reuse requires release then create and receives a new generation
+- stale token cannot remove the new generation
+- raw unique lookup/action fail closed when handle is ambiguous
+- SR=1, FG=11, RR=13; feature 18 and other IDs remain Unknown
+- FG/Unknown/missing/ambiguous never return NeuralRendering
+- carrier must retain create token to obtain generation-safe release
+- fixed 64-slot storage, no heap/lock
 
 Validation:
-- Portable run: 35633516316 — PASS
-- Windows run: 35633516287 — PASS
-- validated code head: 3a9c037c0cecb7a598f05543019af3039d9981ea
+- Portable run 35639114955 — PASS, 6/6
+- Windows run 35639114971 — PASS, 19/19
+- registry test: 0.11 s portable, 0.15 s Windows
+- validated code head: 3f883b1ecfc39a3eb921d578b8686159e1c30be0
+- largest touched code file: 197 lines
 
 Blocker:
-- none
+- none in Phase 04
+- integration requirement for Phase 05/07: retain NgxFeatureToken from create; do not reconstruct generation at release
 
 Exact next action:
-- stop after Phase 04 closure
+- stop after Phase 04 review
 - do not start Phase 05 without explicit user instruction
