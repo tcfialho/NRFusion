@@ -26,8 +26,10 @@ public:
     bool Register(RuntimeComponent component) noexcept {
         if (component.api == GraphicsApi::Unknown || component.capabilityMask == 0) return false;
         for (std::size_t i = 0; i < count_; ++i) {
-            if (entries_[i].kind == component.kind && entries_[i].api == component.api)
-                return false;
+            if (entries_[i].kind == component.kind && entries_[i].api == component.api) {
+                entries_[i].capabilityMask |= component.capabilityMask;
+                return true;
+            }
         }
         if (count_ == entries_.size()) return false;
         entries_[count_++] = component;

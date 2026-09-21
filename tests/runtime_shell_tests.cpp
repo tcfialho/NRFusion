@@ -25,9 +25,18 @@ int main() {
 
     assert(runtime.Registry().Register(
         {RuntimeComponentKind::Provider, GraphicsApi::D3D12, 1}));
-    assert(!runtime.Registry().Register(
+    assert(runtime.Registry().Register(
         {RuntimeComponentKind::Provider, GraphicsApi::D3D12, 2}));
-    assert(runtime.Registry().Find(RuntimeComponentKind::Provider, GraphicsApi::D3D12));
+    const auto* d3d12 = runtime.Registry().Find(
+        RuntimeComponentKind::Provider, GraphicsApi::D3D12);
+    assert(d3d12 && d3d12->capabilityMask == 3);
+
+    RuntimeConfig sameGeneration = config;
+    sameGeneration.enabled = true;
+    assert(!runtime.Reconfigure(sameGeneration));
+    assert(runtime.Status().state == RuntimeState::Disabled);
+
+    assert(runtime.Reconfigure(config));
 
     RuntimeConfig stale = config;
     stale.generation = 1;

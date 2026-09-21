@@ -32,6 +32,7 @@ bool RuntimeShell::Reconfigure(RuntimeConfig config) noexcept {
         return Initialize(config);
     if (!config.Valid()) return false;
     if (config.generation < config_.generation) return false;
+    if (config.generation == config_.generation) return config == config_;
 
     config_ = config;
     status_ = {StateFor(config_), RuntimeFailure::None, config_.generation};

@@ -198,6 +198,4 @@ int EngineNameBonus(const std::filesystem::path& path, const std::filesystem::pa
     return bonus;
 }
 
-} // namespace
-
 } // namespace nrfusion::game_probe_detail
