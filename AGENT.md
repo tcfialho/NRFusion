@@ -47,18 +47,17 @@
 
 ## Current session
 
-Start: 2026-09-20 22:55 BRT
-Stopped for freeze/handoff: 2026-09-20 23:26 BRT
-Branch: standalone/phase-00-baseline-20260920
-Base master: 410cab8ab1876b7ae7dbf0a82b1b4096b225f4f3
-Plan head: b76238022838d246f7fce5695fe321ec232a840b
-Phase 00: complete and code-reviewed.
+Start: 2026-09-20 23:57 BRT
+Branch: standalone/phase-01-frame-contract-20260920
+Base phase-00: c76d04e1999b6306eda66d29370776cc7aed1c2f
+Phase 01: complete.
 Completed:
-- added 95-line changed/all source-size checker
-- regression-tested checker, including modified vendor and untracked oversized files
-- inventoried 34 first-party handwritten files over 300 lines
-- mapped OptiScaler integration responsibilities to standalone phases
-- recorded current provider/API support and D3D12 resource/timing baseline
+- extracted portable FrameContract from Types.hpp
+- added explicit resource provenance/reliability/ownership/lifetime and frame binding
+- preserved legacy aggregate/source compatibility without touching the 3900-line patcher
+- made PipelinePolicy consume the new reliability accessors
+- added fake-provider and 100k-frame contract validation
+- compiled contract tests and PipelinePolicy boundary with warnings-as-errors
 Exact next action:
-- start Phase 01 from docs/standalone/01-frame-contract.md
-- audit existing FrameContext/ResourceRef/FrameContractProvider before changing their public contract
+- start Phase 02 from docs/standalone/02-runtime-shell.md
+- audit GameProbe/bootstrap/config ownership before creating standalone lifecycle objects
