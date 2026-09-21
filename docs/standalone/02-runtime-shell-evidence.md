@@ -109,6 +109,23 @@ heap allocations: 0
 
 Esse número mede somente o shell portátil no ambiente local; não representa frametime de jogo.
 
+## Revisão independente — 2026-09-21
+
+A segunda passada encontrou e corrigiu dois casos fail-closed que os testes originais não cobriam:
+
+- um plano ativo com Provider+Executor aceitava retry contendo só Provider como se fosse o mesmo plano;
+- `RuntimeComponentRegistry::Supports()` aceitava máscara de capability zero quando a chave existia.
+
+Correções:
+
+- `MatchesPlan()` agora canonicaliza o plano em registry temporário fixo e exige mesmo conjunto/máscaras;
+- `Supports()` rejeita capability mask zero;
+- regressões adicionadas a `runtime_shell_tests`;
+- compile/test independente C++20 com `-Wall -Wextra -Wpedantic -Werror`: **PASS**.
+
+Commits da revisão: `33ca0214a2636a7db7f5279eb73df23a0b6a9fb0`,
+`0adfacbdb13642a616ae0722bb378d758ec6ff42`.
+
 ## Source-size
 
 Maior arquivo first-party novo/tocado nesta fase: `GameProbeDetection.cpp`, 203 linhas.
