@@ -6,7 +6,6 @@ namespace nrfusion {
 namespace {
 
 constexpr std::array<const wchar_t*, 3> kDriverCandidates = { L"nvngx.dll", L"_nvngx.dll", L"nvngx_dlss.dll" };
-constexpr int kNgxSuccess = 1;
 
 template <typename T>
 T Symbol(HMODULE module, const char* name) {

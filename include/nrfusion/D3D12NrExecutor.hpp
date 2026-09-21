@@ -69,6 +69,8 @@ public:
     const std::string& Status() const noexcept { return status_; }
 
 private:
+    static constexpr int kNgxSuccess = 1;
+
     using InitFn = int(__cdecl*)(unsigned long long, const wchar_t*, ID3D12Device*, const void*, unsigned int);
     using GetCapFn = int(__cdecl*)(NgxParameter**);
     using CreateFn = void*(__cdecl*)(const wchar_t*, const wchar_t*, ID3D12Device*,
