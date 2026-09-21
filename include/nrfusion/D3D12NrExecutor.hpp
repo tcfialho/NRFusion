@@ -13,6 +13,7 @@
 #include <cstdint>
 #include <string>
 
+#include "nrfusion/NrDeferredRetirementQueue.hpp"
 #include "nrfusion/NrSubmissionGate.hpp"
 
 namespace nrfusion {
@@ -97,6 +98,7 @@ private:
     using SetFloatSlotFn = void(__cdecl*)(int);
     using ProbeFloatFn = void(__cdecl*)(void*, const char*, float, int);
 
+    static void ReleaseRetired(void* context, NrRetiredObject retired) noexcept;
     void DiscoverFloatSlot();
 
     HMODULE driverModule_ = nullptr;
@@ -116,6 +118,7 @@ private:
     bool floatSlotKnown_ = false;
     bool justBuilt_ = false;
     NrSubmissionGate submissionGate_{};
+    NrDeferredRetirementQueue retirement_{};
     std::wstring snippetPath_;
     std::string status_ = "not loaded";
 };
