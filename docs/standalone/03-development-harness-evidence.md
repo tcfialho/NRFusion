@@ -21,15 +21,15 @@ O monólito de 1084 linhas foi removido e substituído por arquivos por responsa
 
 | Arquivo | Linhas |
 |---|---:|
-| `D3D12HarnessLifecycle.cpp` | 198 |
-| `D3D12HarnessResources.cpp` | 140 |
-| `D3D12HarnessShaders.cpp` | 87 |
-| `D3D12HarnessPipeline.cpp` | 238 |
-| `D3D12HarnessScene.cpp` | 92 |
-| `D3D12HarnessExecution.cpp` | 38 |
+| `D3D12HarnessLifecycle.cpp` | 161 |
+| `D3D12HarnessResources.cpp` | 115 |
+| `D3D12HarnessShaders.cpp` | 66 |
+| `D3D12HarnessPipeline.cpp` | 188 |
+| `D3D12HarnessScene.cpp` | 65 |
+| `D3D12HarnessExecution.cpp` | 26 |
 | `D3D12HarnessProvider.cpp` | 75 |
 | `D3D12HarnessDispatch.cpp` | 11 |
-| `D3D12HarnessRun.cpp` | 297 |
+| `D3D12HarnessRun.cpp` | 248 |
 | `D3D12HarnessScenario.cpp` | 118 |
 | `D3D12HarnessBenchmark.cpp` | 107 |
 | `D3D12HarnessMetrics.cpp` | 34 |
@@ -98,6 +98,16 @@ após a medição, atualiza o baseline. Leitura/escrita ocorrem fora do trecho m
 - todos os sources novos/tocados têm <=300 linhas;
 - nenhum bloco de comentário novo/tocado ultrapassa 120 caracteres;
 - todos os nomes de cenário estão ligados à CLI.
+
+## Revisão do lote
+
+A revisão adversarial do código novo encontrou um erro no runner de cenários: após a primeira falha,
+o uso de short-circuit podia pular cenários posteriores e, no resize, podia pular a restauração do
+tamanho original. O runner agora executa todas as validações selecionadas e restaura recursos
+independentemente do resultado intermediário.
+
+Comentários que apenas repetiam operações foram removidos. O maior source do harness ficou com
+248 linhas sem compactar statements.
 
 ## Limite atual
 

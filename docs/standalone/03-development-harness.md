@@ -47,7 +47,7 @@ Fases 01–02.
 - [x] Correctness possui lifecycle/config e resize real de recursos.
 - [x] Benchmark declara Acquire + Validate + ResolveAuto como trecho medido.
 - [x] Relatório before/after é automático quando existe baseline anterior.
-- [x] Auditoria equivalente ao checker: todo source novo/tocado <=300.
+- [x] Auditoria equivalente ao checker: maior source novo/tocado = 248 linhas.
 - [ ] Compilar e executar o harness Windows/D3D12.
 
 ## Gate

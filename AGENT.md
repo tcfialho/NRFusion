@@ -63,7 +63,9 @@ Completed:
 - benchmark measures AcquireFrame + ReadyForCore + ResolveAuto only
 - benchmark uses preallocated samples and reports p50/p95/p99 plus failure counters
 - benchmark baseline produces automatic before/after output outside the measured region
-- audited changed source size and comments; all <=300, no long comment blocks
+- audited changed source size and comments; largest harness source is 248 lines
+- fixed scenario short-circuit so all selected checks run and resize always restores resources
+- removed comments that only repeated implementation
 - preserved >300 legacy tests read-only
 - no PR or CI run created
 
