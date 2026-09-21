@@ -2,8 +2,8 @@
 
 - Protect work continuously with Git and small commits.
 - At session start, identify current state, last relevant commit, what works, and the exact next action.
-- Before implementation, keep a checklist of independent, verifiable items small enough for one <=25 minute interaction.
-- Measure real wall-clock session time. At 20 minutes stabilize; at 23 minutes freeze, checkpoint, and hand off.
+- Before implementation, keep a checklist of independent, verifiable items small enough for one <=20 minute interaction.
+- Session hard cap is 20 minutes. Stabilize by 15 minutes, freeze by 18, checkpoint/handoff by 20.
 - Prioritize delivery/integration blockers over refinements.
 - For bugs: reproduce -> cause -> fix -> regression test -> full-flow validation.
 - Preserve state before destructive or risky changes.
@@ -13,15 +13,17 @@
 - Generate one source checkpoint ZIP per session outside the worktree when source code changed materially.
 - End with: result | tests | commit | ZIP | blocker | exact next action.
 
-## Build discipline
+## Branch / PR / build discipline
 
-- Do not update a remote feature branch after every commit when PR synchronization triggers expensive CI.
-- Accumulate small detached/local commits while code is changing.
-- Do not repeatedly run full builds while code is changing.
-- Inspect existing CI state/logs before deciding whether another build is necessary.
-- Move the branch ref only when the current change set is stable enough for validation.
-- Prefer one final full build for the completed change set.
-- If another fix is required after that build, batch all known fixes before the next remote update.
+- Use one long-lived standalone integration branch until final cutover. Do not create a branch per phase.
+- Do not open a PR per phase. Keep phase boundaries in commits/docs; use one final PR only when cutover is ready.
+- Accumulate small detached/local commits while code is changing, then advance the integration branch at checkpoints.
+- Never use full Windows CI as the inner development loop.
+- First use structural checks, focused unit tests and targeted compilation.
+- Windows workflow is manual-only. Use fast mode with explicit targets/test regex for focused validation.
+- Full Windows distribution/NSIS validation is reserved for major integration milestones and final cutover.
+- Portable CI may run on master code pushes; docs-only master pushes are ignored.
+- If an expensive workflow exceeds the session cap, record its run id and stop; inspect it at the next session.
 - Keep CI concurrency/cancellation enabled so obsolete runs do not consume runners.
 
 ## Source size
