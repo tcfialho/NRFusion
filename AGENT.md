@@ -47,38 +47,30 @@
 
 ## Current session
 
-Start: 2026-09-21 14:31 BRT
-Branch: standalone/phase-04-feature-registry-20260921
-Base phase-03: a4baa81a337c623a033f59c3e09553bc0a119447
-Phase 04: complete after adversarial review.
+Start: 2026-09-21 16:24 BRT
+Branch: standalone/phase-05-d3d12-executor-20260921
+Base phase-04: dcb5ea54c9d36bc36a9009fd4ffebaa3c26ef1ca
+Phase 05: in progress.
 
-Review findings fixed:
-- duplicate active create used to overwrite the current identity
-- raw NGX evaluate boundary had no fail-closed handle-only lookup
-- existing private NR feature ID 18 had no explicit passthrough regression
-- previous release evidence overstated what raw NGX ReleaseFeature can provide
+Initial audit:
+- HostDlssNr is the standalone ABI/call-sequence seed, 148-line header + 221-line source
+- mature OptiScaler fixture is ~3883 lines and stays read-only
+- Host seed covers loader, primary lifecycle and one evaluate boundary only
+- mature executor additionally owns pending epochs, per-pass features, resources/states,
+  scale/subrect, HDR/exposure, residual and pre/post-SR/RR history
+- HostServer64 is 658 lines and remains read-only during mechanical extraction
 
-Current invariants:
-- active duplicate create fails closed
-- reuse requires release then create and receives a new generation
-- stale token cannot remove the new generation
-- raw unique lookup/action fail closed when handle is ambiguous
-- SR=1, FG=11, RR=13; feature 18 and other IDs remain Unknown
-- FG/Unknown/missing/ambiguous never return NeuralRendering
-- carrier must retain create token to obtain generation-safe release
-- fixed 64-slot storage, no heap/lock
-
-Validation:
-- Portable run 35639114955 — PASS, 6/6
-- Windows run 35639114971 — PASS, 19/19
-- registry test: 0.11 s portable, 0.15 s Windows
-- validated code head: 3f883b1ecfc39a3eb921d578b8686159e1c30be0
-- largest touched code file: 197 lines
-
-Blocker:
-- none in Phase 04
-- integration requirement for Phase 05/07: retain NgxFeatureToken from create; do not reconstruct generation at release
+Checklist:
+- [ ] canonicalize HostDlssNr as D3D12NrExecutor without callsite changes
+- [ ] split loader/lifecycle/dispatch with exact behavior
+- [ ] validate Host64/Windows integration
+- [ ] add portable/fake lifecycle boundary where D3D12 types are not required
+- [ ] port mature pending-submission/epoch
+- [ ] extract resource/state ownership
+- [ ] port scale/subrect/padding
+- [ ] port HDR/exposure/residual/multipass by responsibility
+- [ ] final <=300/source audit and Windows validation
 
 Exact next action:
-- stop after Phase 04 review
-- do not start Phase 05 without explicit user instruction
+- mechanically split HostDlssNr into canonical executor loader/lifecycle/dispatch
+- keep HostDlssNr.hpp as compatibility alias so HostServer64 is untouched
