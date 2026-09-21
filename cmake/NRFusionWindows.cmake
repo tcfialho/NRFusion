@@ -21,6 +21,14 @@ add_executable(nrfusion_harness_3d
     add_test(NAME nrfusion_harness_3d_scenarios COMMAND nrfusion_harness_3d --headless --scenario all)
     add_test(NAME nrfusion_harness_3d_benchmark
              COMMAND nrfusion_harness_3d --headless --benchmark --benchmark-iterations 10000)
+    add_test(NAME nrfusion_harness_3d_cli_unknown COMMAND nrfusion_harness_3d --scenaro all)
+    set_tests_properties(nrfusion_harness_3d_cli_unknown PROPERTIES WILL_FAIL TRUE)
+    add_test(NAME nrfusion_harness_3d_cli_conflict
+             COMMAND nrfusion_harness_3d --benchmark --scenario all)
+    set_tests_properties(nrfusion_harness_3d_cli_conflict PROPERTIES WILL_FAIL TRUE)
+    add_test(NAME nrfusion_harness_3d_cli_zero_frames
+             COMMAND nrfusion_harness_3d --no-async --frames 0)
+    set_tests_properties(nrfusion_harness_3d_cli_zero_frames PROPERTIES WILL_FAIL TRUE)
 
     add_executable(nrfusion_residual_gpu_test tests/residual_gpu_test.cpp)
     target_link_libraries(nrfusion_residual_gpu_test PRIVATE nrfusion_core d3d12 dxgi d3dcompiler)
