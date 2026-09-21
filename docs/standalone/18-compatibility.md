@@ -2,7 +2,7 @@
 
 ## Objetivo
 
-Preservar engines difíceis através de exceções mínimas e gated.
+Isolar compatibility exceptions em módulos pequenos por causa/estado, sem framework monolítico.
 
 ## Dependências
 
@@ -10,35 +10,38 @@ Carriers principais.
 
 ## Fora de escopo
 
-- Copiar D3D12_Hooks inteiro
-- Tracking global por padrão
+- Copiar hooks genéricos do OptiScaler
+- Tracking global default
 
 ## Implementação
 
-- [ ] Identificar quais states realmente precisam restore por rota.
-- [ ] Implementar captura mínima de root signature/heaps/PSO/root params somente quando necessária.
-- [ ] Ativar por capability/profile observável, não por suposição.
-- [ ] Evitar maps/mutexes globais no fast path default.
-- [ ] Documentar game/API reason de cada exception.
-- [ ] Garantir restore também em early-return/failure.
+- [ ] Identificar states realmente necessários por rota.
+- [ ] Separar state capture/restore de profile matching/database.
+- [ ] Capturar root signature/heaps/PSO/root params apenas quando necessário.
+- [ ] Ativar por capability/profile observável.
+- [ ] Evitar maps/mutexes globais no fast path.
+- [ ] Documentar causa observável de cada exception.
+- [ ] Se CompatibilityDatabase/ProfileStore oversized forem tocados, separar parsing/storage de policy/aplicação.
+- [ ] Cada módulo <=300 linhas.
 
 ## Revisão obrigatória
 
-- [ ] Compatibility flag não pode esconder bug geral.
-- [ ] State capturado precisa de owner e lifetime.
-- [ ] Nenhuma exceção pode impor custo aos games que não precisam.
-- [ ] Profile desconhecido usa caminho conservador sem adivinhar internals.
+- [ ] Profile não mascara bug geral.
+- [ ] Restore cobre early-return/failure.
+- [ ] Exceção não impõe custo global.
+- [ ] Split por estado/ownership, não por game arbitrariamente.
 
 ## Validação rápida
 
-- [ ] Harness com cenário que exige state restore.
+- [ ] Harness state-restore.
 - [ ] Benchmark default vs compatibility.
-- [ ] Failure injection durante pass/restore.
+- [ ] Failure during restore.
+- [ ] LOC checker.
 
 ## Gate
 
-- [ ] Default não paga custo de restore ampliado.
-- [ ] Casos conhecidos continuam cobertos por gates claros.
+- [ ] Default sem overhead ampliado.
+- [ ] Compatibility tocada respeita <=300 por arquivo.
 
 ## Próxima fase
 

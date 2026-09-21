@@ -2,7 +2,7 @@
 
 ## Objetivo
 
-Manter o menu normal mínimo e deslocar override/diagnóstico para Advanced sem custo oculto.
+Manter menu simples e impedir que UI/config virem novo arquivo gigante.
 
 ## Dependências
 
@@ -11,39 +11,39 @@ Fases 02,06,16.
 ## Fora de escopo
 
 - Replicar UI do OptiScaler
-- Construir widgets ocultos todo frame
+- Widgets ocultos por frame
 
 ## Implementação
 
-- [ ] Menu principal: Enabled.
+- [ ] Main: Enabled, NR Mode, Target FPS/Display Hz, MFG Mode/Quality e Status.
 - [ ] NR Mode: Auto / Best quality / Performance / Custom.
-- [ ] Target FPS preserva a semântica atual de alvo de FPS renderizado; `Auto (Display Hz)` mantém o comportamento atual de usar o refresh detectado.
-- [ ] Não reinterpretar Target FPS automaticamente pelo multiplicador MFG sem uma decisão de produto separada.
-- [ ] MFG Mode: Game Controlled / 2X / 3X / 4X / Dynamic; Quality: Performance / Enhanced.
-- [ ] Quando MFG não estiver qualificado, mostrar indisponibilidade/status em vez de esconder problema ou afetar NR.
-- [ ] Status: NR Scale, NR Cost, MFG, Execution, State.
-- [ ] Advanced collapsed: precision, DLSS5 appearance, HDR/exposure, placement/residual, multipass, MFG experimental e diagnostics úteis.
-- [ ] Config textual vira RuntimeConfig somente em load/change; refresh rate é consultado apenas quando necessário à UI/config.
+- [ ] Target FPS continua sendo alvo renderizado; não reinterpretar pelo multiplicador MFG.
+- [ ] Advanced collapsed com precision, appearance, HDR/exposure, placement/residual, multipass, MFG experimental e diagnostics.
+- [ ] Separar Main, NR Advanced, MFG Advanced e Diagnostics UI quando necessário; nenhum menu source >300.
+- [ ] Config parsing/storage separado do drawing.
+- [ ] Status lê snapshot sem lock do render thread.
+- [ ] UI helper só é extraído quando tem responsabilidade própria; nada de `MenuHelpers.cpp` depósito.
 
 ## Revisão obrigatória
 
-- [ ] Advanced item só existe se trouxer controle/diagnóstico real.
-- [ ] Hidden/inactive não aloca VRAM nem adiciona GPU work.
-- [ ] Status usa snapshot sem travar render thread.
-- [ ] Abrir/fechar UI não muda policy ou feature lifetime.
-- [ ] Labels não confundem rendered FPS com generated/displayed FPS.
+- [ ] Hidden/inactive não aloca VRAM/GPU work.
+- [ ] Abrir UI não muda lifetime/policy.
+- [ ] Labels distinguem rendered/generated FPS.
+- [ ] Config não cresce junto com código ImGui.
+- [ ] Arquivos de UI/config <=300 linhas.
 
 ## Validação rápida
 
-- [ ] Harness mede menu fechado/aberto sem alterar cenário.
-- [ ] Persist/reload e config inválida.
-- [ ] Confirmar 0 parsing/frame e nenhum refresh query desnecessário no hot path.
+- [ ] Harness menu closed/open.
+- [ ] Persist/reload/config inválida.
+- [ ] 0 parsing/frame.
+- [ ] LOC checker.
 
 ## Gate
 
-- [ ] Menu principal continua simples.
-- [ ] Advanced preserva poder sem taxar default.
-- [ ] Semântica Target FPS/MFG está explícita e estável.
+- [ ] Main continua pequeno.
+- [ ] Advanced não taxa default.
+- [ ] UI/config inteira respeita <=300 por arquivo.
 
 ## Próxima fase
 

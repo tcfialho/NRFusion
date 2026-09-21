@@ -1,8 +1,8 @@
-# Fase 20 — Auditoria rígida de hot path
+# Fase 20 — Auditoria de hot path e estrutura
 
 ## Objetivo
 
-Provar por revisão e medição isolada que o standalone é menor e mais previsível que o host atual.
+Provar performance e cumprir integralmente a arquitetura <=300 linhas antes de otimização final.
 
 ## Dependências
 
@@ -10,45 +10,45 @@ Rotas principais implementadas.
 
 ## Fora de escopo
 
-- Tratar o tempo total do correctness harness como overhead do NRFusion
-- Otimização especulativa do modelo
+- Tempo total do correctness harness como benchmark
+- Refatoração estética sem responsabilidade clara
 
 ## Implementação
 
-- [ ] Auditar new/delete, vector/string growth, map insertion, std::function e formatting.
-- [ ] Auditar filesystem/module/PE scans.
-- [ ] Auditar mutex/shared_mutex e atomics fortes sem necessidade.
-- [ ] Auditar CreateResource/Heap/PSO e waits síncronos.
-- [ ] Auditar descriptor writes/frame separadamente de heap/resource allocation.
-- [ ] Auditar capability/timestamp-frequency/config conversions repetidas.
-- [ ] Revisar locks dos SyntheticDx12/Dx11/OpenGL providers.
-- [ ] Classificar cada custo como init, reconfigure ou steady-state.
-- [ ] Contar por frame: locks, creates, descriptor writes, queries, copies e host calls.
+- [ ] Auditar allocation, containers, formatting, filesystem, scans, locks, resource/heap/PSO creation e waits.
+- [ ] Auditar descriptor writes, queries, copies e capability/config queries.
+- [ ] Classificar custo como init/reconfigure/steady.
+- [ ] Gerar contagem/frame de locks/creates/writes/queries/copies/host calls.
+- [ ] Rodar um checker pequeno sobre **todos** os arquivos first-party handwritten, não só touched files.
+- [ ] Checker conta linhas físicas e usa allowlist apenas para generated/vendor/upstream fixtures.
+- [ ] Classificar violações restantes: split agora ou retire antes do cutover.
+- [ ] Split de test files grandes é por subsistema/cenário; build scripts por responsabilidade/target.
+- [ ] Não criar framework complexo só para enforcement; checker deve permanecer pequeno.
 
 ## Revisão obrigatória
 
-- [ ] Todo custo steady-state restante tem justificativa concreta.
-- [ ] Descriptor write pode ser aceitável; descriptor heap creation/frame não.
-- [ ] Benchmark exclui fence waits, GPU Map/Unmap e console usados apenas pelo harness de correção.
-- [ ] Warm-up é separado; reportar p50/p95/p99.
-- [ ] Regressão de tail latency bloqueia merge até explicada.
-- [ ] Comparação OptiScaler usa trabalho equivalente.
+- [ ] Todo custo steady restante justificado.
+- [ ] Benchmark exclui waits/Map/console de correctness.
+- [ ] Warm-up separado; p50/p95/p99.
+- [ ] Tail regression bloqueia merge.
+- [ ] Nenhuma exclusão de LOC é criada só para evitar refactor.
+- [ ] Minificação/embedded code não contam como solução.
 
 ## Validação rápida
 
-- [ ] CPU/fake paths por milhões de frames.
-- [ ] Benchmark mode dos carriers principais.
-- [ ] Correctness mode separado para sync/resources.
-- [ ] Before/after de cada remoção relevante.
+- [ ] CPU/fake milhões de frames.
+- [ ] Benchmark carriers principais.
+- [ ] Correctness separado.
+- [ ] Relatório completo de LOC first-party.
 
 ## Gate
 
 - [ ] 0 heap allocation normal.
-- [ ] 0 GPU resource/heap/PSO creation normal.
+- [ ] 0 resource/heap/PSO creation normal.
 - [ ] 0 filesystem/string/config parsing normal.
 - [ ] 0 blocking wait normal.
-- [ ] Locks restantes documentados e medidos.
-- [ ] CPU/p99 abaixo do baseline equivalente ou blocker explícito.
+- [ ] Arquivos novos/tocados: zero >300.
+- [ ] Restante legado >300 tem fase de split/retirement explícita.
 
 ## Próxima fase
 

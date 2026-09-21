@@ -2,7 +2,7 @@
 
 ## Objetivo
 
-Preservar MFG como subsistema independente e distinguir override de MFG nativo de MFG em jogo sem DLSSG.
+Preservar MFG independente de NR sem levar `DlssgTransfusion.cpp` como monólito.
 
 ## Dependências
 
@@ -10,41 +10,40 @@ Fases 02,04 e carrier aplicável.
 
 ## Fora de escopo
 
-- Fazer disponibilidade de MFG bloquear NR
-- Prometer MFG universal antes de provar uma rota de apresentação
-- Parsing de strings por SetOptions
+- MFG bloquear NR
+- Prometer MFG universal sem rota de apresentação
 
 ## Implementação
 
-- [ ] Rota A: extrair `DlssgTransfusion` para jogos que já carregam Streamline/DLSSG.
-- [ ] Preservar Game Controlled, 2X/3X/4X/Dynamic, Performance/Enhanced, UI Recomposition e Safe Transition.
-- [ ] Preservar 5X/6X apenas como experimental onde já suportado.
-- [ ] Converter config para enums/atomics fora do hot path; scan/patch apenas no load/reload.
-- [ ] Rota B: para jogos sem DLSSG/Streamline, fazer primeiro proof-of-route de apresentação/frame-generation por API antes de escrever integração grande.
-- [ ] Não reutilizar o status da Rota A como prova da Rota B.
-- [ ] Criar Fake Streamline/DLSSG client para a Rota A.
-- [ ] Capability MFG é independente por API/rota e separada de NR.
+- [ ] Rota A: jogos com Streamline/DLSSG; extrair comportamento atual.
+- [ ] Antes de expandir Transfusion oversized, dividir module discovery/patching, option state, transitions e state publication.
+- [ ] Preservar Game Controlled, 2X/3X/4X/Dynamic, Quality, UI Recomposition e Safe Transition.
+- [ ] 5X/6X continuam experimentais quando suportados.
+- [ ] Config vira enums/atomics fora do hot path; scans só load/reload.
+- [ ] Rota B sem DLSSG exige proof-of-route separado por API.
+- [ ] Fake Streamline client fica em arquivos <=300.
+- [ ] Capability MFG independente de NR.
 
 ## Revisão obrigatória
 
-- [ ] SetOptions per-frame é allocation-free e sem string work.
-- [ ] Mutex só permanece se concorrência real exigir.
-- [ ] GetState publica requested/effective/capability corretamente.
-- [ ] Safe Transition continua anti-TDR.
-- [ ] Jogo sem DLSSG pode ter NR mesmo quando MFG fica Blocked.
+- [ ] SetOptions allocation-free/sem string work.
+- [ ] Mutex só com concorrência demonstrada.
+- [ ] Patch code separado do per-frame state.
+- [ ] GetState não mente capability.
+- [ ] Split segue lifecycle do módulo, não trechos arbitrários.
 
 ## Validação rápida
 
-- [ ] Fake client: GetState, 2X→4X→2X, Dynamic, late load e failure.
-- [ ] Benchmark ProcessSetOptions em massa.
-- [ ] Proof-of-route separado para qualquer MFG sintético.
-- [ ] Hardware real apenas para patch/runtime/pacing final.
+- [ ] Fake client 2X→4X→2X/Dynamic/late load/failure.
+- [ ] Benchmark ProcessSetOptions.
+- [ ] Proof separado para MFG sintético.
+- [ ] LOC checker.
 
 ## Gate
 
-- [ ] Rota A preservada sem overhead genérico.
-- [ ] Rota B tem evidência técnica ou estado Blocked explícito.
-- [ ] MFG possui matriz de qualificação própria.
+- [ ] Rota A preservada.
+- [ ] Rota B provada ou Blocked.
+- [ ] MFG inteiro tocado <=300 linhas por arquivo.
 
 ## Próxima fase
 

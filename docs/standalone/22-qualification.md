@@ -2,7 +2,7 @@
 
 ## Objetivo
 
-Dar estado inequívoco e evidência reproduzível a cada rota completa.
+Dar evidência reproduzível por rota e fechar toda dívida de arquivos >300 antes da release candidate.
 
 ## Dependências
 
@@ -11,35 +11,40 @@ Rotas candidatas implementadas.
 ## Fora de escopo
 
 - Supported por intenção
-- Compile/CI como prova suficiente
+- CI como prova suficiente
 
 ## Implementação
 
 - [ ] Estados: Target → Implemented → Harness-verified → Hardware-qualified, ou Blocked.
 - [ ] Matriz API × bitness × Native/Bridge/Synthetic.
-- [ ] Para cada célula registrar Acquire, Normalize, Execute e Compose separadamente.
-- [ ] Registrar Color/Depth/Motion/HDR/NR/MFG/GPU-only transport.
-- [ ] Linkar scenario/comando/log do harness usado como evidência.
-- [ ] MFG recebe estado independente de NR.
-- [ ] Blocker técnico é específico e reabrível.
+- [ ] Registrar Acquire/Normalize/Execute/Compose e Color/Depth/Motion/HDR/NR/MFG.
+- [ ] Linkar scenario/comando/log.
+- [ ] MFG independente de NR.
+- [ ] Rodar checker de 300 linhas em todo first-party handwritten source/test/tool/build/installer.
+- [ ] Splitar testes grandes por subsystem/scenario.
+- [ ] Modularizar CMake/build/installer se qualquer handwritten file exceder 300.
+- [ ] Arquivo marcado para retirement precisa estar removido antes de declarar RC.
 
 ## Revisão obrigatória
 
-- [ ] Implemented não implica que Acquire funciona em engine real.
-- [ ] x86/x64 têm gates distintos quando arquitetura difere.
-- [ ] Synthetic qualified não implica Native.
-- [ ] Nenhum “works” sem nível de evidência.
+- [ ] Implemented != Acquire real.
+- [ ] x86/x64 separados.
+- [ ] Nenhum “works” sem evidência.
+- [ ] Allowlist LOC contém só generated/vendor/fixtures verificáveis.
+- [ ] Zero first-party handwritten violation é requisito da RC.
 
 ## Validação rápida
 
 - [ ] Suite comum por frontend.
-- [ ] Depois amostragem em jogos reais por API/engine.
-- [ ] Reexecutar evidência após mudança estrutural.
+- [ ] Amostragem jogos reais.
+- [ ] LOC checker do repositório.
+- [ ] Reexecutar após mudança estrutural.
 
 ## Gate
 
-- [ ] Cada célula tem estado, evidência, limitações e próxima prova necessária.
-- [ ] Claims públicas podem ser derivadas diretamente da matriz.
+- [ ] Cada rota tem estado/evidência/limite.
+- [ ] **Zero first-party handwritten code file >300 linhas.**
+- [ ] Claims públicas derivam da matriz.
 
 ## Próxima fase
 

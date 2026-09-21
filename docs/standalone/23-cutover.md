@@ -2,7 +2,7 @@
 
 ## Objetivo
 
-Trocar o host e a distribuição principal somente após equivalência, performance, packaging e rollback claros.
+Trocar host/distribuição somente após equivalência, performance, packaging e regra estrutural completas.
 
 ## Dependências
 
@@ -11,42 +11,45 @@ Fase 22.
 ## Fora de escopo
 
 - Apagar fallback cedo
-- Claim de GPU sem hardware real
+- Claim GPU sem hardware
 
 ## Implementação
 
-- [ ] Comparar CPU p50/p95/p99, allocations, locks, resource creates, queries e copies.
-- [ ] Comparar resource ledger e peak VRAM real.
-- [ ] Executar A/B real: GPU frame ms, NR ms, FPS, 1% low, p95/p99 e MFG pacing.
+- [ ] Comparar CPU p50/p95/p99, allocations, locks, creates, queries e copies.
+- [ ] Comparar ledger/peak VRAM.
+- [ ] A/B real: GPU frame ms, NR ms, FPS, 1% low, p95/p99, MFG pacing.
 - [ ] Validar menu/config/recovery e rotas anunciadas.
-- [ ] Substituir build_dist/installer que hoje empacotam OptiScaler por bootstrap/carriers/Host64 standalone.
-- [ ] Empacotar x64/x86 sem carregar módulos de APIs desnecessárias quando separáveis.
-- [ ] Manter OptiScaler como referência/fallback durante preview.
-- [ ] Definir critérios objetivos de rollback.
-- [ ] Remover dependência primária só após release de transição estável.
+- [ ] Substituir build_dist/installer dependentes de OptiScaler.
+- [ ] Remover `apply_to_optiscaler.py` e outros arquivos de transição quando não forem mais necessários; não gastar refactor em código que será apagado.
+- [ ] Modularizar build/install first-party para <=300 linhas por arquivo.
+- [ ] Confirmar que CUDA/shaders/tests/tools ativos também cumprem o cap.
+- [ ] Manter OptiScaler como fallback/referência durante preview, fora do novo runtime.
+- [ ] Definir rollback objetivo.
 
 ## Revisão obrigatória
 
-- [ ] A/B usa feature/configuração equivalente.
-- [ ] Warm-up/carga comparáveis.
-- [ ] Resultado negativo é blocker ou limitação explícita.
-- [ ] Installer/uninstaller não deixa proxy conflitante do OptiScaler.
-- [ ] Cutover não depende de um único jogo/API.
+- [ ] A/B equivalente.
+- [ ] Resultado negativo vira blocker/limitação.
+- [ ] Installer não deixa proxies conflitantes.
+- [ ] Nenhum arquivo é isentado do cap por ser “só teste/tool”.
+- [ ] Vendor/generated/fixture são as únicas exceções formais.
 
 ## Validação rápida
 
-- [ ] Harness suite completa antes de RC.
-- [ ] Instalação limpa, upgrade e uninstall em layout de teste.
-- [ ] Hardware real nas rotas prioritárias.
-- [ ] Stress resize/reset/reconfigure/MFG.
+- [ ] Harness suite antes da RC.
+- [ ] Install/upgrade/uninstall.
+- [ ] Hardware real rotas prioritárias.
+- [ ] Stress reset/reconfigure/MFG.
+- [ ] LOC checker final limpo.
 
 ## Gate
 
-- [ ] Rotas anunciadas estão Hardware-qualified.
-- [ ] 0 steady-state allocation/resource creation no normal path.
+- [ ] Rotas anunciadas Hardware-qualified.
+- [ ] 0 steady-state allocation/resource creation normal.
 - [ ] VRAM equivalente sem regressão.
-- [ ] Host CPU abaixo do baseline equivalente.
-- [ ] Packaging não depende de OptiScaler.
+- [ ] Host CPU abaixo do baseline.
+- [ ] Packaging sem dependência OptiScaler.
+- [ ] **Zero first-party handwritten code file >300 linhas.**
 - [ ] Rollback/fallback testado.
 
 ## Próxima fase

@@ -2,7 +2,7 @@
 
 ## Objetivo
 
-Garantir lazy allocation, reuse previsível e orçamento de VRAM verificável.
+Garantir lazy allocation e resource ownership explícito sem criar um ResourceManager gigante.
 
 ## Dependências
 
@@ -11,34 +11,37 @@ Contínua; consolidar após features principais.
 ## Fora de escopo
 
 - Prometer economia sem medir
-- Alocar recursos por conveniência futura
+- Alocar preventivamente
 
 ## Implementação
 
-- [ ] Manter resource ledger com size formula, owner, trigger, reuse, release e resize.
-- [ ] Multipass=1 não cria extras; residual/hold/diagnostics off não retêm resources exclusivos.
-- [ ] Evitar duplicação carrier/executor quando interop permite reuse.
-- [ ] Separar persistent, transient peak e vendor/NGX-owned quando observável.
-- [ ] Liberar gerações antigas após retirement seguro.
-- [ ] Adicionar counters de bytes/resources no harness onde o projeto controla a alocação.
+- [ ] Manter resource ledger: size formula, owner, trigger, reuse, release e resize.
+- [ ] Multipass/residual/hold/diagnostics off não mantêm extras.
+- [ ] Evitar duplicação carrier/executor.
+- [ ] Separar persistent/transient/vendor-owned.
+- [ ] Liberar gerações antigas após retirement.
+- [ ] Counters de bytes/resources onde controlamos allocation.
+- [ ] Ledger/pool por domínio; nenhum `ResourceManager` multifunção >300 linhas.
 
 ## Revisão obrigatória
 
 - [ ] Resize/toggle/failure não acumulam generations.
-- [ ] Shared resources contam no orçamento total.
-- [ ] Não trocar VRAM por CPU sem tradeoff explícito.
-- [ ] Driver-reported VRAM é qualificação final, não substituto do ledger.
+- [ ] Shared resources contam no orçamento.
+- [ ] Não trocar VRAM por CPU sem tradeoff.
+- [ ] Ownership continua local ao subsistema que usa o recurso.
 
 ## Validação rápida
 
-- [ ] Loops de resize/toggle/failure no harness.
-- [ ] Comparar resource ledger por feature.
-- [ ] Hardware real mede peak VRAM no final.
+- [ ] Resize/toggle/failure loops.
+- [ ] Resource counts por feature.
+- [ ] Hardware real mede peak final.
+- [ ] LOC checker.
 
 ## Gate
 
-- [ ] Sem leaks e sem resource inativo desnecessário.
-- [ ] Meta equivalente <= baseline atual.
+- [ ] Sem leak/recurso inativo.
+- [ ] VRAM alvo <= baseline equivalente.
+- [ ] Código de resource ownership <=300 por arquivo.
 
 ## Próxima fase
 
