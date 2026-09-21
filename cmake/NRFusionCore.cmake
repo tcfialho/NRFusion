@@ -45,6 +45,7 @@ add_library(nrfusion_core STATIC
     src/RuntimeShell.cpp
     src/RuntimeBootstrap.cpp
     src/NgxFeatureRegistry.cpp
+    src/NrSubmissionGate.cpp
 )
 
 if (WIN32)
