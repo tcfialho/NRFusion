@@ -56,7 +56,9 @@ Regras anti-evasão:
 - dividir por ownership/lifetime/responsabilidade, nunca `Part1/Part2`;
 - não espalhar um God class pelos arquivos para cumprir número;
 - não minificar, empilhar statements, esconder código em strings/`.inc`, ou mover implementação para headers;
-- modificação handwritten em vendor/fixture deixa de ser exceção.
+- modificação handwritten em vendor/fixture deixa de ser exceção;
+- o split não pode introduzir virtual dispatch, heap/PImpl, shared ownership, locks ou indireção apenas para cumprir LOC;
+- split de hot path que muda translation units precisa de medição before/after por possível efeito de inlining/otimização.
 
 Toda fase herda esse gate.
 

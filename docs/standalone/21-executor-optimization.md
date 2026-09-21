@@ -31,6 +31,7 @@ Fases 05,08,20.
 - [ ] Copy exige equivalência.
 - [ ] Não aumentar VRAM sem aprovação.
 - [ ] Split mecânico e optimization ficam distinguíveis.
+- [ ] Split não piora p95/p99 por perda de inlining ou nova indireção; se piorar, redesenhar boundary.
 - [ ] Kernel split não duplica constants/layout logic.
 
 ## Validação rápida

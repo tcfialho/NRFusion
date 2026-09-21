@@ -34,6 +34,7 @@ Rotas principais implementadas.
 - [ ] Tail regression bloqueia.
 - [ ] Nenhuma exclusão criada para escapar do cap.
 - [ ] Minificação/embedded code não são solução.
+- [ ] Nenhum split estrutural introduziu virtual dispatch, heap, lock ou indireção sem benefício funcional independente.
 
 ## Validação rápida
 
@@ -41,6 +42,7 @@ Rotas principais implementadas.
 - [ ] Benchmark carriers.
 - [ ] Correctness separado.
 - [ ] Relatório LOC completo comparado ao baseline da Fase 00.
+- [ ] Para hot files que foram repartidos em translation units, benchmark before/after do split.
 
 ## Gate
 

@@ -32,10 +32,12 @@ Fase 04.
 - [ ] Cada barrier tem estado anterior/próximo/caller guarantee.
 - [ ] Driver module/forwarder/model DLL têm load policy explícita.
 - [ ] Nenhuma otimização funcional escondida no split.
+- [ ] Split não adiciona interface virtual/heap/lock só para criar boundaries; componentes internos podem permanecer static/compile-time.
 
 ## Validação rápida
 
 - [ ] Revisar diff mecânico por responsabilidade.
+- [ ] Se mover hot helpers entre translation units, comparar host CPU before/after para detectar perda de inlining.
 - [ ] Loop reset/resize/rebuild com substitutes quando possível.
 - [ ] Checker <=300 em toda árvore extraída.
 - [ ] Modelo real só no gate de hardware.
