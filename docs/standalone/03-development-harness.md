@@ -2,8 +2,7 @@
 
 ## Status
 
-**Implementação estrutural concluída; execução Windows pendente.**
-Evidência: [03-development-harness-evidence.md](03-development-harness-evidence.md).
+**Concluída.** Evidência: [03-development-harness-evidence.md](03-development-harness-evidence.md).
 
 ## Objetivo
 
@@ -32,6 +31,7 @@ Fases 01–02.
 - [x] Persistir baseline simples para relatório before/after automático.
 - [x] Manter instrumentação local mínima.
 - [x] Não tocar nos testes legados >300 que não precisavam mudar.
+- [x] Registrar legacy, `--scenario all` e `--benchmark` como CTests do mesmo executável.
 
 ## Revisão obrigatória
 
@@ -40,6 +40,8 @@ Fases 01–02.
 - [x] Métrica exclui setup/waits/`Map`/console/filesystem.
 - [x] Nenhum CPU readback foi introduzido como atalho de produto.
 - [x] Nenhum arquivo helpers genérico foi criado.
+- [x] Regressão de split em `Halton()` foi encontrada pelo MSVC e corrigida.
+- [x] Closure flatten do patcher foi corrigido com `FrameContract.hpp`.
 
 ## Validação rápida
 
@@ -48,15 +50,21 @@ Fases 01–02.
 - [x] Benchmark declara Acquire + Validate + ResolveAuto como trecho medido.
 - [x] Relatório before/after é automático quando existe baseline anterior.
 - [x] Auditoria equivalente ao checker: maior source novo/tocado = 248 linhas.
-- [ ] Compilar e executar o harness Windows/D3D12.
+- [x] Portable Core validation: PASS.
+- [x] Windows integrated validation: PASS.
+- [x] CTest Windows: 15/15 PASS.
+- [x] `nrfusion_harness_3d`: PASS.
+- [x] `nrfusion_harness_3d_scenarios`: PASS.
+- [x] `nrfusion_harness_3d_benchmark`: PASS.
+- [x] Distribuição OptiScaler + NSIS: PASS.
 
 ## Gate
 
-- [ ] Loop implementar→executar→medir→revisar fechado em Windows.
+- [x] Loop implementar→executar→medir→revisar fechado em Windows.
 - [x] Correctness/performance separados.
 - [x] Harness existente ficou modular, não duplicado.
 - [x] Nenhum arquivo da infraestrutura de harness tocada >300 linhas.
 
-## Próxima ação
+## Próxima fase
 
-Executar uma validação Windows estabilizada do lote, sem iniciar a Fase 04.
+Fase 04 — somente após instrução explícita do usuário.

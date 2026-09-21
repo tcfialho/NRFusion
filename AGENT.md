@@ -47,33 +47,35 @@
 
 ## Current session
 
-Start: 2026-09-21 09:09 BRT
+Start: 2026-09-21 12:53 BRT
 Branch: standalone/phase-03-development-harness-20260921
 Base phase-02: 7fa6f9617d24675bef2bb2b0c571fe58763a345d
-Phase 03: implementation structurally complete; Windows execution pending.
+Phase 03: complete.
 
 Completed:
-- audited sim/harness/synthetic/IPC surfaces before creating code
-- split the 1084-line D3D12 harness mechanically by responsibility
-- proved original function bodies and shader were preserved before feature changes
-- kept the existing executable/CTest; no parallel mini-game
-- added correctness/benchmark dispatch through the same CLI
-- added focused steady/resize/reset/missing-guides/provenance/on-off/failure scenarios
-- resize scenario recreates real harness resources and restores the original dimensions
-- benchmark measures AcquireFrame + ReadyForCore + ResolveAuto only
-- benchmark uses preallocated samples and reports p50/p95/p99 plus failure counters
-- benchmark baseline produces automatic before/after output outside the measured region
-- audited changed source size and comments; largest harness source is 248 lines
+- split the 1084-line D3D12 harness by responsibility without creating another mini-game
+- preserved the legacy correctness path before adding features
+- added focused correctness scenarios and a separate benchmark mode
+- measured only AcquireFrame + ReadyForCore + ResolveAuto in the benchmark
+- added preallocated p50/p95/p99 samples, counters and before/after baseline support
 - fixed scenario short-circuit so all selected checks run and resize always restores resources
-- removed comments that only repeated implementation
-- preserved >300 legacy tests read-only
-- no PR or CI run created
+- fixed the Halton return lost during the mechanical split
+- fixed the flattened OptiScaler host closure by adding FrameContract.hpp to the patcher manifest
+- registered legacy/scenario/benchmark flows as CTests of the same harness executable
+- Portable Core final validation passed
+- Windows integrated validation passed
+- Windows CTest passed 15/15 including legacy, scenario-all and benchmark
+- integrated OptiScaler distribution and NSIS validation passed
+- largest new/touched harness source is 248 lines
+
+Validation:
+- Portable run: 35601662949 — PASS
+- Windows run: 35601662951 — PASS
+- validated code head: 9ddf010dd16ff5691a7059ba45788ba2bc0f8338
 
 Blocker:
-- this environment has no Windows SDK/Mingw
-- available GitHub connector can read/rerun workflows but cannot dispatch workflow_dispatch
+- none
 
 Exact next action:
-- run one stabilized Windows validation for this Phase 03 head
-- execute nrfusion_harness_3d correctness, --scenario all and --benchmark
-- fix only observed regressions, then close Phase 03; do not start Phase 04 yet
+- stop after Phase 03 closure
+- do not start Phase 04 without explicit user instruction

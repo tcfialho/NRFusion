@@ -90,15 +90,6 @@ A coleta usa buffer pré-alocado e reporta:
 `harness_3d_benchmark.txt`. Se o arquivo já existir, a saída mostra before/after e,
 após a medição, atualiza o baseline. Leitura/escrita ocorrem fora do trecho medido.
 
-## Validação estrutural
-
-- todas as 17 definições de métodos esperadas aparecem exatamente uma vez;
-- todos os arquivos adicionados ao harness aparecem exatamente uma vez no target CMake;
-- `D3D12TestHarness.cpp` não existe nem é referenciado;
-- todos os sources novos/tocados têm <=300 linhas;
-- nenhum bloco de comentário novo/tocado ultrapassa 120 caracteres;
-- todos os nomes de cenário estão ligados à CLI.
-
 ## Revisão do lote
 
 A revisão adversarial do código novo encontrou um erro no runner de cenários: após a primeira falha,
@@ -106,13 +97,45 @@ o uso de short-circuit podia pular cenários posteriores e, no resize, podia pul
 tamanho original. O runner agora executa todas as validações selecionadas e restaura recursos
 independentemente do resultado intermediário.
 
+A primeira validação Windows encontrou uma regressão mecânica do split: `Halton()` perdeu
+`return r;`. O MSVC emitiu C4716 e o build falhou. O retorno foi restaurado no commit
+`8926c5afeccdd86d79282f1a095e9fa5759522cc`.
+
+A primeira validação Portable compilou o core e passou 5/5 testes, mas o fixture do patcher detectou
+closure flatten incompleto: `Types.hpp` e `FrameContractProvider.hpp` incluíam
+`FrameContract.hpp`, que não estava no manifest do host. O manifest passou a copiar
+`FrameContract.hpp` no commit `806262a355889f37857da0dd077413035e978692`.
+
 Comentários que apenas repetiam operações foram removidos. O maior source do harness ficou com
 248 linhas sem compactar statements.
 
-## Limite atual
+## Validação final
 
-Este ambiente não possui Windows SDK/Mingw para compilar D3D12. Os workflows possuem
-`workflow_dispatch`, mas o connector GitHub disponível nesta sessão não expõe uma ação para
-dispará-lo. Nenhum CI foi disparado artificialmente.
+PR draft de validação: #4.
 
-A Fase 03 só fecha o gate final depois de uma execução Windows estabilizada do mesmo lote.
+Head de código validado: `9ddf010dd16ff5691a7059ba45788ba2bc0f8338`.
+
+Portable Core run `35601662949`:
+
+- build: PASS;
+- testes portáveis: PASS;
+- patcher fixture/closure: PASS.
+
+Windows run `35601662951`:
+
+- MSVC build: PASS;
+- `nrfusion_harness_3d`: PASS, 5,29 s;
+- `nrfusion_harness_3d_scenarios`: PASS, 0,06 s;
+- `nrfusion_harness_3d_benchmark`: PASS, 0,06 s;
+- CTest total: 15/15 PASS;
+- distribuição OptiScaler integrada: PASS;
+- NSIS/public developer dist: PASS;
+- conclusão do workflow: PASS.
+
+O log CTest suprime stdout de testes que passam, então os valores numéricos de p50/p95/p99
+não aparecem no log do workflow. O benchmark executou as 10.000 iterações configuradas e retornou
+sucesso; os percentis continuam disponíveis no output direto do runner e no arquivo de baseline.
+
+## Gate Fase 03
+
+Fechado. Fase 04 não foi iniciada.
