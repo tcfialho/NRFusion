@@ -84,8 +84,12 @@ void TestFrameIdentityRejectsFutureResource() {
 void TestExplicitReliabilityOverridesLegacyFlags() {
     auto frame = BaseFrame();
     frame.depth = {2, {1920, 1080}, ResourceFormat::D32Float};
-    frame.depthReliable = true;
+    frame.depth.provenance = ResourceProvenance::GameNative;
     frame.depth.reliability = ResourceReliability::Unreliable;
+    frame.depth.ownership = ResourceOwnership::Borrowed;
+    frame.depth.lifetime = ResourceLifetime::Session;
+    frame.depth.sourceFrameId = frame.frameId;
+    frame.depthReliable = true;
     assert(!frame.DepthReliable());
 
     frame.depth.reliability = ResourceReliability::Reliable;
@@ -93,11 +97,29 @@ void TestExplicitReliabilityOverridesLegacyFlags() {
     assert(frame.DepthReliable());
 }
 
+void TestPartialGuideEvidenceCannotInfluencePolicy() {
+    auto frame = BaseFrame();
+    frame.depth = {2, {1920, 1080}, ResourceFormat::D32Float};
+    frame.depth.reliability = ResourceReliability::Reliable;
+    frame.depthReliable = true;
+    assert(!frame.DepthReliable());
+
+    frame.motionVectors = {3, {1920, 1080}, ResourceFormat::Rg16Float};
+    frame.motionVectors.provenance = ResourceProvenance::GameNative;
+    frame.motionVectors.reliability = ResourceReliability::Reliable;
+    frame.motionVectorsReliable = true;
+    assert(!frame.HasNativeMotion());
+    assert(!frame.MotionReliable(MotionSource::Native));
+}
+
 void TestMotionProvenanceIsAuthoritative() {
     auto frame = BaseFrame();
     frame.motionVectors = {3, {1920, 1080}, ResourceFormat::Rg16Float};
     frame.motionVectors.reliability = ResourceReliability::Reliable;
     frame.motionVectors.provenance = ResourceProvenance::Generated;
+    frame.motionVectors.ownership = ResourceOwnership::Borrowed;
+    frame.motionVectors.lifetime = ResourceLifetime::Session;
+    frame.motionVectors.sourceFrameId = frame.frameId;
     frame.motionVectorSource = MotionSource::Native;
     frame.motionVectorsReliable = true;
 
@@ -108,6 +130,13 @@ void TestMotionProvenanceIsAuthoritative() {
     frame.motionVectors.provenance = ResourceProvenance::DlssContract;
     assert(frame.HasDlssContractMotion());
     assert(frame.MotionReliable(MotionSource::DlssContract));
+}
+
+void TestExplicitEvidenceRequiresFrameBinding() {
+    auto frame = BaseFrame();
+    frame.color.sourceFrameId = 0;
+    assert(!frame.color.EvidenceWellFormed());
+    assert(!frame.ReadyForCore());
 }
 
 void TestLegacyContractRemainsCompatible() {
@@ -174,7 +203,9 @@ int main() {
     TestPartialEvidenceFailsClosed();
     TestFrameIdentityRejectsFutureResource();
     TestExplicitReliabilityOverridesLegacyFlags();
+    TestPartialGuideEvidenceCannotInfluencePolicy();
     TestMotionProvenanceIsAuthoritative();
+    TestExplicitEvidenceRequiresFrameBinding();
     TestLegacyContractRemainsCompatible();
     TestProvenanceStress();
     TestFakeProviderContracts();

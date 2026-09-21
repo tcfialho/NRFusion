@@ -107,8 +107,7 @@ struct ResourceRef {
 
     constexpr bool EvidenceWellFormed() const noexcept {
         if (EvidenceUnspecified()) return sourceFrameId == 0;
-        if (!EvidenceExplicit()) return false;
-        return lifetime != ResourceLifetime::Frame || sourceFrameId != 0;
+        return EvidenceExplicit() && sourceFrameId != 0;
     }
 
     constexpr bool BelongsToFrame(FrameId frameId) const noexcept {
@@ -158,16 +157,23 @@ struct FrameContext {
     }
 
     constexpr bool DepthReliable() const noexcept {
+        if (!depth.Valid() || !depth.EvidenceWellFormed() || !depth.BelongsToFrame(frameId))
+            return false;
         if (depth.reliability != ResourceReliability::Unknown)
             return depth.reliability == ResourceReliability::Reliable;
         return depthReliable;
     }
 
     constexpr bool ExposureReliable() const noexcept {
-        return exposure.reliability == ResourceReliability::Reliable;
+        return exposure.Valid() && exposure.EvidenceWellFormed() &&
+               exposure.BelongsToFrame(frameId) &&
+               exposure.reliability == ResourceReliability::Reliable;
     }
 
     constexpr MotionSource EffectiveMotionSource() const noexcept {
+        if (!motionVectors.Valid() || !motionVectors.EvidenceWellFormed() ||
+            !motionVectors.BelongsToFrame(frameId))
+            return MotionSource::Zero;
         switch (motionVectors.provenance) {
         case ResourceProvenance::GameNative: return MotionSource::Native;
         case ResourceProvenance::DlssContract: return MotionSource::DlssContract;
@@ -188,7 +194,9 @@ struct FrameContext {
     }
 
     constexpr bool MotionReliable(MotionSource source) const noexcept {
-        if (!motionVectors.Valid() || EffectiveMotionSource() != source) return false;
+        if (!motionVectors.Valid() || !motionVectors.EvidenceWellFormed() ||
+            !motionVectors.BelongsToFrame(frameId) || EffectiveMotionSource() != source)
+            return false;
         if (motionVectors.reliability != ResourceReliability::Unknown)
             return motionVectors.reliability == ResourceReliability::Reliable;
         return motionVectorsReliable;

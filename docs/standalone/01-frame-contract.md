@@ -2,7 +2,7 @@
 
 ## Status
 
-**Concluída.** Evidência: [01-frame-contract-evidence.md](01-frame-contract-evidence.md).
+**Concluída e revisada.** Evidência: [01-frame-contract-evidence.md](01-frame-contract-evidence.md).
 
 ## Objetivo
 
@@ -17,7 +17,7 @@ Definir contrato API-independente, explícito e pequeno sem aumentar o monólito
 - [x] Separar camera cut de `resetHistory`.
 - [x] Adicionar host token, view e configuration generation à identidade do frame.
 - [x] Fazer metadata explícita prevalecer sobre flags legados de reliability/motion.
-- [x] Rejeitar metadata parcialmente preenchida e resource de outro frame.
+- [x] Rejeitar metadata parcialmente preenchida e resource de outro frame, inclusive nos accessors de policy.
 - [x] Manter compatibilidade temporária com providers hospedados no OptiScaler.
 - [x] Manter capability factual separada de preferência/policy.
 
@@ -28,7 +28,7 @@ Definir contrato API-independente, explícito e pequeno sem aumentar o monólito
 - [x] Frame N rejeita resource explicitamente ligado a N+1.
 - [x] Core contract não contém ponteiro/API gráfico.
 - [x] `ResourceRef` e `FrameContext` permanecem trivially-copyable e standard-layout.
-- [x] Arquivos novos/tocados ficam <=300 linhas.
+- [x] Arquivos novos/tocados ficam <=300 linhas; CMake não cresce nesta fase.
 
 ## Validação rápida
 
@@ -37,6 +37,7 @@ Definir contrato API-independente, explícito e pequeno sem aumentar o monólito
 - [x] Compilação com `-Wall -Wextra -Wpedantic -Werror`.
 - [x] `PipelinePolicy` compilado consumindo reliability pelo novo contrato.
 - [x] Compatibilidade de agregados legados exercitada.
+- [x] Teste header-only permanece independente do `nrfusion_core` para feedback barato.
 - [x] IPC x86 auditado quanto a IDs fixos e ausência de tipos gráficos no contrato.
 
 ## Gate

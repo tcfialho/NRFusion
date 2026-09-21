@@ -11,10 +11,11 @@ Linhas no corte final:
 - `FrameContractProvider.hpp`: 32;
 - `frame_contract_tests.cpp`: 182;
 - `PipelinePolicy.cpp`: 50;
-- `CMakeLists.txt`: 276.
+- `CMakeLists.txt`: 267 (inalterado pela fase após code review).
 
-Nenhum arquivo novo/tocado excede 300 linhas. CMake já está acima do soft target de 250 e deve ser
-modularizado na Fase 02 antes de crescer significativamente.
+Nenhum arquivo novo/tocado excede 300 linhas. A primeira implementação acrescentava 9 linhas ao CMake
+já acima do soft target; a revisão removeu esse crescimento. A integração CTest fica para a modularização
+da Fase 02. O teste da fase é header-only e compila sem linkar `nrfusion_core`.
 
 ## Contrato de recurso
 
@@ -75,7 +76,8 @@ Metadata nova é transicionalmente binária:
 
 - tudo `Unknown` + `sourceFrameId=0`: contrato legado aceito;
 - metadata explícita: provenance/reliability/ownership/lifetime precisam estar completos;
-- lifetime `Frame` exige `sourceFrameId != 0`;
+- qualquer metadata explícita exige `sourceFrameId != 0`; `lifetime` descreve a vida do objeto GPU,
+  enquanto `sourceFrameId` descreve o frame do conteúdo;
 - combinação parcial falha fechada.
 
 ## Contrato de frame
@@ -116,6 +118,7 @@ não modificar `apply_to_optiscaler.py` de 3900 linhas nesta fase.
 Regras:
 
 - metadata explícita vence os campos legados;
+- metadata parcial nunca pode retornar reliability/motion utilizável para policy;
 - metadata ausente preserva o comportamento antigo;
 - o core `PipelinePolicy` já usa `DepthReliable()` e `MotionReliable()`, não acessa o boolean
   de depth diretamente;
@@ -149,6 +152,7 @@ Cobre:
 - metadata parcial fail-closed;
 - color/depth associados ao frame futuro;
 - reliability explícita vencendo flag legado;
+- metadata parcial não influencia `DepthReliable`/`MotionReliable`;
 - provenance explícita vencendo source legado;
 - compatibilidade do contrato legado;
 - fake provider válido/incompleto/contraditório;
@@ -176,4 +180,4 @@ Acquire/Normalize.
 
 ## Gate Fase 01
 
-Fechado. Próxima fase: standalone runtime shell.
+Fechado após code review. Próxima fase: standalone runtime shell.
