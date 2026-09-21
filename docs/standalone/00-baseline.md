@@ -49,6 +49,9 @@ Nenhuma.
 | `src/CompatibilityDatabase.cpp` | 350 | Fase 18 |
 | `include/nrfusion/FusionRuntime.hpp` | 329 | Fase 06 |
 | `tools/build_dist.ps1` | 395 | Fase 23 |
+| `installer/NRFusion.nsi` | 466 | Fase 23 |
+
+`CMakeLists.txt` está em ~267 linhas: ainda abaixo do hard cap, mas já acima do soft target e deve ser modularizado antes de crescer.
 
 A tabela é amostra inicial; o relatório do checker é autoritativo.
 
