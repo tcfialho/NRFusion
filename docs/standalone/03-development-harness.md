@@ -1,5 +1,10 @@
 # Fase 03 — Development Harness / MiniGame
 
+## Status
+
+**Implementação estrutural concluída; execução Windows pendente.**
+Evidência: [03-development-harness-evidence.md](03-development-harness-evidence.md).
+
 ## Objetivo
 
 Transformar testes existentes no loop rápido principal sem criar novo game nem novo monólito de harness.
@@ -16,39 +21,42 @@ Fases 01–02.
 
 ## Implementação
 
-- [ ] Auditar `nrfusion_sim`, `nrfusion_harness_3d`, synthetic e IPC tests.
-- [ ] Dividir mecanicamente o atual `D3D12TestHarness.cpp` por responsabilidade antes de expandi-lo.
-- [ ] Separar device/resources, scene generation, scenarios e metrics; cada arquivo <=300 linhas.
-- [ ] Evoluir o mesmo runner por CLI, não criar outro D3D12 MiniGame.
-- [ ] Separar `correctness` de `benchmark`; waits/Map do modo atual não entram no benchmark.
-- [ ] Adicionar só cenários faltantes: steady/resize/reset/missing guides/provenance/on-off/failure.
-- [ ] Padronizar saída p50/p95/p99 e counters com buffers pré-alocados.
-- [ ] Instrumentação local mínima; sem tracer/framework grande.
-- [ ] Qualquer test file >300 tocado nesta fase é dividido por cenário/subsistema.
+- [x] Auditar `nrfusion_sim`, `nrfusion_harness_3d`, synthetic e IPC tests.
+- [x] Dividir mecanicamente o atual `D3D12TestHarness.cpp` antes de expandi-lo.
+- [x] Separar lifecycle/device, resources, pipeline/shader, scene, execution, provider, scenarios e metrics.
+- [x] Evoluir o mesmo runner por CLI, sem criar outro D3D12 MiniGame.
+- [x] Separar `correctness` de `benchmark`.
+- [x] Manter waits/`Map`/console/filesystem fora do trecho medido do benchmark.
+- [x] Adicionar só cenários faltantes: steady/resize/reset/missing guides/provenance/on-off/failure.
+- [x] Padronizar benchmark em p50/p95/p99 e counters com buffer pré-alocado.
+- [x] Persistir baseline simples para relatório before/after automático.
+- [x] Manter instrumentação local mínima.
+- [x] Não tocar nos testes legados >300 que não precisavam mudar.
 
 ## Revisão obrigatória
 
-- [ ] Harness não replica policy/executor.
-- [ ] Split preserva comportamento antes de adicionar features.
-- [ ] Métrica exclui setup/waits/console.
-- [ ] Nenhum CPU readback vira atalho de produto.
-- [ ] Nenhum arquivo “helpers.cpp” vira depósito genérico.
+- [x] Harness chama policy/runtime existentes; não replica policy/executor.
+- [x] Split preserva comportamento antes de adicionar features.
+- [x] Métrica exclui setup/waits/`Map`/console/filesystem.
+- [x] Nenhum CPU readback foi introduzido como atalho de produto.
+- [x] Nenhum arquivo helpers genérico foi criado.
 
 ## Validação rápida
 
-- [ ] `nrfusion_sim` cobre loops CPU.
-- [ ] Harness correctness cobre lifecycle/resources.
-- [ ] Benchmark mede apenas trecho declarado.
-- [ ] Relatório before/after automático.
-- [ ] Checker confirma <=300 em todo código novo/tocado.
+- [x] `nrfusion_sim` continua cobrindo loop CPU do controller.
+- [x] Correctness possui lifecycle/config e resize real de recursos.
+- [x] Benchmark declara Acquire + Validate + ResolveAuto como trecho medido.
+- [x] Relatório before/after é automático quando existe baseline anterior.
+- [x] Auditoria equivalente ao checker: todo source novo/tocado <=300.
+- [ ] Compilar e executar o harness Windows/D3D12.
 
 ## Gate
 
-- [ ] Loop implementar→executar→medir→revisar sem usuário.
-- [ ] Correctness/performance separados.
-- [ ] Harness existente ficou modular, não duplicado.
-- [ ] Nenhum arquivo da infraestrutura de harness tocada >300 linhas.
+- [ ] Loop implementar→executar→medir→revisar fechado em Windows.
+- [x] Correctness/performance separados.
+- [x] Harness existente ficou modular, não duplicado.
+- [x] Nenhum arquivo da infraestrutura de harness tocada >300 linhas.
 
-## Próxima fase
+## Próxima ação
 
-Fase 04.
+Executar uma validação Windows estabilizada do lote, sem iniciar a Fase 04.

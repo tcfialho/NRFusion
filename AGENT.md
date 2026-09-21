@@ -50,18 +50,28 @@
 Start: 2026-09-21 09:09 BRT
 Branch: standalone/phase-03-development-harness-20260921
 Base phase-02: 7fa6f9617d24675bef2bb2b0c571fe58763a345d
-Phase 03: in progress.
+Phase 03: implementation structurally complete; Windows execution pending.
 
-Checklist:
-- [ ] audit nrfusion_sim, nrfusion_harness_3d, synthetic and IPC tests
-- [ ] split D3D12TestHarness.cpp mechanically by responsibility
-- [ ] prove split preserves the existing harness behavior structurally
-- [ ] keep every new/touched harness file <=300 physical lines
-- [ ] separate correctness from benchmark; benchmark excludes waits/Map/console/setup
-- [ ] add only missing scenarios: steady/resize/reset/missing guides/provenance/on-off/failure
-- [ ] add preallocated p50/p95/p99 metrics and counters
-- [ ] validate CMake target/test preservation and source-size checker
-- [ ] stabilize, checkpoint ZIP and hand off before moving to Phase 04
+Completed:
+- audited sim/harness/synthetic/IPC surfaces before creating code
+- split the 1084-line D3D12 harness mechanically by responsibility
+- proved original function bodies and shader were preserved before feature changes
+- kept the existing executable/CTest; no parallel mini-game
+- added correctness/benchmark dispatch through the same CLI
+- added focused steady/resize/reset/missing-guides/provenance/on-off/failure scenarios
+- resize scenario recreates real harness resources and restores the original dimensions
+- benchmark measures AcquireFrame + ReadyForCore + ResolveAuto only
+- benchmark uses preallocated samples and reports p50/p95/p99 plus failure counters
+- benchmark baseline produces automatic before/after output outside the measured region
+- audited changed source size and comments; all <=300, no long comment blocks
+- preserved >300 legacy tests read-only
+- no PR or CI run created
+
+Blocker:
+- this environment has no Windows SDK/Mingw
+- available GitHub connector can read/rerun workflows but cannot dispatch workflow_dispatch
 
 Exact next action:
-- inventory existing harness/test responsibilities and line counts before changing code
+- run one stabilized Windows validation for this Phase 03 head
+- execute nrfusion_harness_3d correctness, --scenario all and --benchmark
+- fix only observed regressions, then close Phase 03; do not start Phase 04 yet
