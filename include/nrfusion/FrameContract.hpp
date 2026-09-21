@@ -91,11 +91,24 @@ struct ResourceRef {
         return opaqueId != 0 && resolution.Valid() && format != ResourceFormat::Unknown;
     }
 
+    constexpr bool EvidenceUnspecified() const noexcept {
+        return provenance == ResourceProvenance::Unknown &&
+               reliability == ResourceReliability::Unknown &&
+               ownership == ResourceOwnership::Unknown &&
+               lifetime == ResourceLifetime::Unknown;
+    }
+
     constexpr bool EvidenceExplicit() const noexcept {
         return provenance != ResourceProvenance::Unknown &&
                reliability != ResourceReliability::Unknown &&
                ownership != ResourceOwnership::Unknown &&
                lifetime != ResourceLifetime::Unknown;
+    }
+
+    constexpr bool EvidenceWellFormed() const noexcept {
+        if (EvidenceUnspecified()) return sourceFrameId == 0;
+        if (!EvidenceExplicit()) return false;
+        return lifetime != ResourceLifetime::Frame || sourceFrameId != 0;
     }
 
     constexpr bool BelongsToFrame(FrameId frameId) const noexcept {
@@ -189,11 +202,19 @@ struct FrameContext {
                (!reactiveMask.Valid() || reactiveMask.BelongsToFrame(frameId));
     }
 
+    constexpr bool ResourceEvidenceWellFormed() const noexcept {
+        return (!color.Valid() || color.EvidenceWellFormed()) &&
+               (!depth.Valid() || depth.EvidenceWellFormed()) &&
+               (!motionVectors.Valid() || motionVectors.EvidenceWellFormed()) &&
+               (!exposure.Valid() || exposure.EvidenceWellFormed()) &&
+               (!reactiveMask.Valid() || reactiveMask.EvidenceWellFormed());
+    }
+
     bool ReadyForCore() const noexcept {
         const bool colorAllowed = color.reliability != ResourceReliability::Unreliable;
         return frameId != 0 && api != GraphicsApi::Unknown && HasColor() &&
                HasContractDimensions() && color.resolution == renderResolution &&
-               ResourcesBelongToFrame() && colorAllowed &&
+               ResourcesBelongToFrame() && ResourceEvidenceWellFormed() && colorAllowed &&
                std::isfinite(jitter.x) && std::isfinite(jitter.y);
     }
 };

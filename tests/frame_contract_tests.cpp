@@ -7,6 +7,30 @@ using namespace nrfusion;
 
 namespace {
 
+class FakeProvider final : public IFrameContractProvider {
+public:
+    explicit FakeProvider(FrameContext frame) : frame_(frame) {}
+
+    bool IsSupported(const GameContext&) const override { return true; }
+
+    FrameContext AcquireFrame(const ProviderInput& input) override {
+        FrameContext out = frame_;
+        out.frameId = input.frameId;
+        out.hostFrameToken = input.hostFrameToken;
+        out.viewId = input.viewId;
+        out.configurationGeneration = input.configurationGeneration;
+        return out;
+    }
+
+    ProviderDiagnostics Diagnostics() const override {
+        return {true, frame_.ReadyForCore(), frame_.HasDepth(),
+                frame_.motionVectors.Valid(), frame_.HasExposure()};
+    }
+
+private:
+    FrameContext frame_{};
+};
+
 ResourceRef Color(FrameId frameId = 0) {
     ResourceRef ref{1, {1920, 1080}, ResourceFormat::Rgba16Float};
     ref.provenance = ResourceProvenance::GameNative;
@@ -31,6 +55,13 @@ void TestReadyContract() {
     auto frame = BaseFrame();
     assert(frame.ReadyForCore());
     assert(frame.color.EvidenceExplicit());
+}
+
+void TestPartialEvidenceFailsClosed() {
+    auto frame = BaseFrame();
+    frame.color.ownership = ResourceOwnership::Unknown;
+    assert(!frame.color.EvidenceWellFormed());
+    assert(!frame.ReadyForCore());
 }
 
 void TestFrameIdentityRejectsFutureResource() {
@@ -91,22 +122,33 @@ void TestLegacyContractRemainsCompatible() {
     assert(frame.MotionReliable(MotionSource::Native));
 }
 
-void TestProviderIdentityFieldsAreIndependent() {
-    ProviderInput input{7, 1001, 42, 9};
-    assert(input.frameId == 7);
-    assert(input.hostFrameToken == 1001);
-    assert(input.viewId == 42);
-    assert(input.configurationGeneration == 9);
+void TestFakeProviderContracts() {
+    FakeProvider valid(BaseFrame());
+    ProviderInput input{10, 1001, 42, 9};
+    const auto acquired = valid.AcquireFrame(input);
+    assert(acquired.ReadyForCore());
+    assert(acquired.hostFrameToken == 1001);
+    assert(acquired.viewId == 42);
+    assert(acquired.configurationGeneration == 9);
+
+    auto incomplete = BaseFrame();
+    incomplete.color = {};
+    assert(!FakeProvider(incomplete).AcquireFrame(input).ReadyForCore());
+
+    auto contradictory = BaseFrame();
+    contradictory.color.sourceFrameId = 11;
+    assert(!FakeProvider(contradictory).AcquireFrame(input).ReadyForCore());
 }
 
 } // namespace
 
 int main() {
     TestReadyContract();
+    TestPartialEvidenceFailsClosed();
     TestFrameIdentityRejectsFutureResource();
     TestExplicitReliabilityOverridesLegacyFlags();
     TestMotionProvenanceIsAuthoritative();
     TestLegacyContractRemainsCompatible();
-    TestProviderIdentityFieldsAreIndependent();
+    TestFakeProviderContracts();
     return 0;
 }
