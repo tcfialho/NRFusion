@@ -57,7 +57,9 @@ if (WIN32)
         src/CaptureProvider32.cpp
         src/CaptureProvider32Export.cpp
         src/HostServer64.cpp
-        src/HostDlssNr.cpp
+        src/D3D12NrExecutorLoader.cpp
+        src/D3D12NrExecutorLifecycle.cpp
+        src/D3D12NrExecutorDispatch.cpp
         src/SyntheticVulkanProvider.cpp
         src/SyntheticOpenGlProvider.cpp
     )
