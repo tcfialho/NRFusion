@@ -93,8 +93,11 @@ int main() {
     fakeNr.Evaluate(registry, 1, unknown.token.handle);
     fakeNr.Evaluate(registry, 1, 0xFFFF);
     assert(fakeNr.calls == 2);
+    assert(registry.LookupUnique(sr.token.handle).kind == NgxFeatureKind::SuperResolution);
+    assert(registry.LookupUnique(fg.token.handle).kind == NgxFeatureKind::FrameGeneration);
     assert(registry.ActionFor(sr.token.handle) == NgxEvaluateAction::NeuralRendering);
     assert(registry.ActionFor(fg.token.handle) == NgxEvaluateAction::PassThrough);
+    assert(!registry.LookupUnique(0xFFFF));
     assert(registry.ActionFor(0xFFFF) == NgxEvaluateAction::PassThrough);
 
     const auto failedReuse = registry.RecordCreate(
@@ -180,6 +183,8 @@ int main() {
         const auto identity = registry.Lookup(51, handle);
         checksum += identity.token.generation;
         checksum += registry.ActionFor(51, handle) == NgxEvaluateAction::NeuralRendering ? 1u : 0u;
+        checksum += registry.LookupUnique(handle).token.generation;
+        checksum += registry.ActionFor(handle) == NgxEvaluateAction::NeuralRendering ? 1u : 0u;
     }
     assert(checksum != 0);
     assert(gAllocations == allocationsBefore);
