@@ -10,7 +10,7 @@ Alvos:
 - D3D12, D3D11, D3D10, D3D9, Vulkan e OpenGL;
 - providers Native, Bridge e Synthetic;
 - Neural Rendering sempre que existir uma rota tecnicamente válida;
-- MFG qualificado separadamente, onde Streamline/DLSSG/presentation puderem ser integrados;
+- MFG qualificado separadamente;
 - executor DLSS 5 D3D12 x64 canônico sempre que possível.
 
 **Target não significa Supported.** Cada rota só vira suportada após passar seu gate de qualificação.
@@ -31,34 +31,40 @@ Execute -> Canonical D3D12 DLSS 5
 Compose / interop de volta ao jogo
 ```
 
-Cada carrier precisa qualificar quatro partes separadamente:
-
-1. **Acquire** — obter recursos/semântica corretos do jogo.
-2. **Normalize** — produzir FrameContract honesto.
-3. **Execute** — transportar/executar NR sem CPU pixel path.
-4. **Compose** — devolver o resultado preservando estado/lifetime.
-
-Um SyntheticProvider que processa um `ResourceRef` não prova sozinho que a API está suportada em jogos reais.
-
-Seleção:
+Cada carrier qualifica separadamente Acquire, Normalize, Execute e Compose. Um SyntheticProvider que aceita `ResourceRef` não prova sozinho aquisição em jogos reais.
 
 ```text
 contrato DLSS/RR utilizável -> Native/Bridge
 sem contrato utilizável     -> Synthetic
 ```
 
+## Regra estrutural: máximo 300 linhas
+
+Todo arquivo first-party handwritten de código deve ter **no máximo 300 linhas físicas**, contando comentários e linhas em branco.
+
+Escopo: C/C++/headers, CUDA, shaders, Python, PowerShell, CMake/build logic, installer, tests, harnesses e tools. Exceções: docs, código gerado, vendor/third-party e fixtures upstream não editadas.
+
+Regras:
+
+- alvo prático <=250 linhas para deixar margem;
+- ao se aproximar de 250, procurar boundary real de responsabilidade antes de adicionar;
+- dividir por ownership/lifetime/responsabilidade, nunca por `Part1/Part2`;
+- proibido burlar com minificação, múltiplos statements por linha, código gigante embutido em strings, `.inc` dumps ou mover implementação para header;
+- arquivo legado >300 não cresce: ao receber mudança substancial do standalone, é dividido mecanicamente primeiro ou aposentado na mesma fase;
+- o cutover final exige **zero arquivo first-party handwritten >300 linhas**.
+
+Toda fase herda esse gate mesmo quando o arquivo da fase não o repete.
+
 ## Reuso antes de criar
 
-O projeto já possui peças de validação úteis. A primeira opção é estendê-las:
+Primeiro estender:
 
 - `nrfusion_sim`;
 - `nrfusion_harness_3d`;
-- `nrfusion_synthetic_dx12_test`;
-- `nrfusion_synthetic_dx11_bridge_test`;
-- `nrfusion_synthetic_opengl_test`;
-- `nrfusion_ipc_host_test` e capture32/Host64 roundtrip.
+- synthetic tests existentes;
+- IPC/capture32/Host64 tests existentes.
 
-Novo harness só é aceito quando uma extensão pequena dessas peças não representa o cenário.
+Novo harness só é aceito quando extensão pequena não representa o cenário.
 
 ## Contrato de performance
 
@@ -73,27 +79,22 @@ shader compilation/frame        = 0
 blocking GPU wait/frame         = 0
 ```
 
-Também é obrigatório:
+Também:
 
-- evitar mutex no caminho normal; lock exige concorrência real demonstrada;
-- Diagnostics/Advanced desligados não podem consumir trabalho GPU ou VRAM exclusivo;
-- VRAM equivalente <= OptiScaler+NRFusion atual, salvo tradeoff medido e aprovado;
-- medir p50/p95/p99, não apenas média;
-- otimização que melhora média e piora p99 é regressão até análise;
-- não afirmar ganho real de FPS/GPU sem hardware real;
-- compatibilidade excepcional deve ser gated e não taxar todos os jogos.
+- evitar mutex no normal path sem concorrência real;
+- Diagnostics/Advanced off não consomem GPU work/VRAM exclusivo;
+- VRAM equivalente <= baseline atual salvo tradeoff medido;
+- medir p50/p95/p99;
+- melhora de média com piora de p99 é regressão até análise;
+- ganho real de FPS/GPU só é afirmado com hardware real.
 
 ## Estratégia de validação
 
-Três níveis:
-
-1. **CPU/fake path** — simulação, policy, lifecycle, IPC e failure injection.
-2. **Harness gráfico** — Acquire/Normalize/Execute/Compose mínimos e determinísticos.
+1. **CPU/fake path** — policy, lifecycle, IPC e failure injection.
+2. **Harness gráfico** — Acquire/Normalize/Execute/Compose determinísticos.
 3. **Jogos reais** — driver, aquisição real, imagem, VRAM e performance final.
 
-Antes de usar jogo real para diagnosticar um bug, tentar reproduzi-lo no menor harness existente.
-
-Harnesses não são produtos: sem engine/assets/UI elaborada, frontends finos, CLI determinística e saída estruturada.
+Antes de jogo real, tentar reproduzir no menor harness existente. Harness não é produto: sem engine/assets/UI elaborada.
 
 ## Ordem
 
@@ -119,7 +120,7 @@ Harnesses não são produtos: sem engine/assets/UI elaborada, frontends finos, C
 | 17 | Menu/config |
 | 18 | Compatibility |
 | 19 | VRAM/resources |
-| 20 | Hot-path audit |
+| 20 | Hot-path + structural audit |
 | 21 | Executor optimization |
 | 22 | Qualification |
 | 23 | Cutover |
@@ -128,11 +129,12 @@ Harnesses não são produtos: sem engine/assets/UI elaborada, frontends finos, C
 
 - O arquivo da fase atual é a fonte de verdade.
 - Não avançar sem gate anterior ou blocker explícito.
-- Cada item deve ser pequeno e verificável isoladamente.
+- Cada item deve ser pequeno e verificável.
+- Toda fase fecha somente se arquivos novos/tocados respeitam <=300 linhas.
 - Estabilizar lote antes de mover branch/rodar CI completo.
 - CI confirma integração; não substitui revisão.
-- Mudança de hot path registra antes/depois/custo/comportamento.
-- Barrier, ownership, lock e fallback exigem justificativa concreta.
+- Mudança hot-path registra antes/depois/custo/comportamento.
+- Barrier, ownership, lock e fallback exigem justificativa.
 
 ## Arquivos
 
@@ -163,4 +165,4 @@ Harnesses não são produtos: sem engine/assets/UI elaborada, frontends finos, C
 
 ## Critério final
 
-NRFusion só substitui OptiScaler quando as rotas anunciadas qualificarem Acquire→Normalize→Execute→Compose, com menor overhead de host para trabalho equivalente e sem regressão de VRAM equivalente.
+NRFusion só substitui OptiScaler quando as rotas anunciadas qualificarem Acquire→Normalize→Execute→Compose, o host tiver menor overhead para trabalho equivalente, não houver regressão de VRAM equivalente e nenhum código first-party handwritten exceder 300 linhas por arquivo.

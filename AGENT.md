@@ -10,7 +10,7 @@
 - Use nohup + PID + persistent log for medium/long jobs when shell execution is available.
 - Before restarting interrupted work, inspect existing process/log state and do not duplicate heavy jobs.
 - Keep useful logs/checkpoints progressively. Do not depend on a final save only.
-- Generate one source checkpoint ZIP per session outside the worktree, excluding generated files, dependencies, secrets, and temporary data.
+- Generate one source checkpoint ZIP per session outside the worktree when source code changed materially.
 - End with: result | tests | commit | ZIP | blocker | exact next action.
 
 ## Build discipline
@@ -24,6 +24,18 @@
 - If another fix is required after that build, batch all known fixes before the next remote update.
 - Keep CI concurrency/cancellation enabled so obsolete runs do not consume runners.
 
+## Source size
+
+- Hard cap: every first-party handwritten code file must be <=300 physical lines after formatting.
+- Blank lines and comments count. The rule is intentionally mechanical and unambiguous.
+- Soft limit: at ~250 lines, stop adding responsibility and split before reaching 300.
+- Applies to production code, headers, CUDA, shaders, tests, harnesses, tools, scripts, CMake/build logic and installer code.
+- Excludes documentation, generated files, vendored/third-party code and fixtures copied verbatim from upstream.
+- Do not evade the cap with minification, multiple statements per line, giant embedded code strings, generated-style .inc dumps, or by moving implementation into headers.
+- Split by responsibility/lifetime/ownership, never arbitrary Part1/Part2 chunks.
+- Existing >300-line first-party files may remain untouched during transition, but must not grow. If standalone work needs to modify one substantially, split it mechanically first or retire it in that phase.
+- Final standalone cutover requires zero first-party handwritten code files above 300 lines.
+
 ## Comments
 
 - Prefer clearer names or extracted functions over comments.
@@ -32,11 +44,12 @@
 
 ## Current session
 
-Start: 2026-09-20 18:31 BRT
-Base PR head: a08e8eb2f13cb8e3313d975a0633d8a0de3f3235
-Target: remove the two identified regression risks without changing the intended hot-path behavior.
+Start: 2026-09-20 21:45 BRT
+Base plan head: 6d3209c9b6abec46ca0e6c3107ec41f81531d313
+Target: refine the standalone plan around the hard <=300-line handwritten source rule.
 Checklist:
-- use small-buffer sorting only for <=16 overlap intervals and std::sort for overflow
-- remove redundant WorkLedger Begin collision scan
-- extend regressions and review full diff
-- update PR branch once, then let CI run once
+- define exact counting/scope and anti-evasion rules
+- classify current oversized code as split/retire/final cleanup
+- refine phases that own large existing files
+- make zero >300 first-party files a qualification/cutover gate
+- update branch once after review
