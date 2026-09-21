@@ -47,12 +47,14 @@
 
 ## Current session
 
-Start: 2026-09-20 21:45 BRT
-Base plan head: 6d3209c9b6abec46ca0e6c3107ec41f81531d313
-Target: refine the standalone plan around the hard <=300-line handwritten source rule.
+Start: 2026-09-20 22:55 BRT
+Base master: 410cab8ab1876b7ae7dbf0a82b1b4096b225f4f3
+Plan head: b76238022838d246f7fce5695fe321ec232a840b
+Branch: standalone/phase-00-baseline-20260920
+Target: complete Phase 00 baseline and source-size enforcement without starting Phase 01.
 Checklist:
-- define exact counting/scope and anti-evasion rules
-- classify current oversized code as split/retire/final cleanup
-- refine phases that own large existing files
-- make zero >300 first-party files a qualification/cutover gate
-- update branch once after review
+- add minimal changed/all source-size checker
+- inventory all current first-party >300-line files and assign a destination
+- map current OptiScaler-hosted frame path and measurable host overhead sources
+- record upstream/build/install baseline
+- close Phase 00 gate and publish branch once
