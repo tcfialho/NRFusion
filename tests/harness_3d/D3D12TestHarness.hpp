@@ -30,13 +30,27 @@ namespace nrfusion::testing {
 
 using Microsoft::WRL::ComPtr;
 
+enum class HarnessExecutionMode : std::uint8_t {
+    Correctness,
+    Benchmark
+};
+
 struct HarnessConfig {
     std::uint32_t width = 1280;
     std::uint32_t height = 720;
     std::uint32_t frameCount = 120;
+    std::uint32_t benchmarkIterations = 10000;
+    HarnessExecutionMode executionMode = HarnessExecutionMode::Correctness;
     bool headless = true;
     bool testAsync = true;
     std::string telemetryJsonPath = "";
+};
+
+struct BenchmarkSummary {
+    std::uint64_t iterations = 0;
+    double p50Ns = 0.0;
+    double p95Ns = 0.0;
+    double p99Ns = 0.0;
 };
 
 struct FrameMetrics {
@@ -60,15 +74,17 @@ public:
     bool Initialize();
     bool Run();
 
-    // IFrameContractProvider implementation
     bool IsSupported(const nrfusion::GameContext& game) const override;
     nrfusion::FrameContext AcquireFrame(const nrfusion::ProviderInput& input) override;
     nrfusion::ProviderDiagnostics Diagnostics() const override;
 
     const std::vector<FrameMetrics>& Metrics() const noexcept { return metrics_; }
+    const BenchmarkSummary& Benchmark() const noexcept { return benchmark_; }
     const nrfusion::FusionRuntime& Runtime() const noexcept { return runtime_; }
 
 private:
+    bool RunCorrectness();
+    bool RunBenchmark();
     bool InitializeDevice();
     bool CreateQueues();
     bool CreateRenderTargets();
@@ -99,7 +115,6 @@ private:
     std::uint64_t computeFenceValue_ = 0;
     HANDLE fenceEvent_ = nullptr;
 
-    // Render Targets for Ground-Truth DLSS/NR Contract
     ComPtr<ID3D12Resource> colorBuffer_;
     ComPtr<ID3D12Resource> depthBuffer_;
     ComPtr<ID3D12Resource> motionBuffer_;
@@ -117,7 +132,6 @@ private:
     ComPtr<ID3D12Resource> vertexBuffer_;
     D3D12_VERTEX_BUFFER_VIEW vertexBufferView_{};
 
-    // Timestamp query heaps
     ComPtr<ID3D12QueryHeap> timestampHeapDirect_;
     ComPtr<ID3D12QueryHeap> timestampHeapCompute_;
     ComPtr<ID3D12Resource> timestampReadbackDirect_;
@@ -126,17 +140,15 @@ private:
     double computeGpuFreq_ = 1e7;
     double cpuQpcFreq_ = 1e7;
 
-    // Orchestration runtime and metrics
     nrfusion::FusionRuntime runtime_;
     std::vector<FrameMetrics> metrics_;
+    BenchmarkSummary benchmark_{};
     std::string adapterName_;
     bool isNvidiaGpu_ = false;
 
-    // Previous frame transforms for motion vector derivation
     float prevViewProj_[16]{};
     bool hasPrevFrame_ = false;
 
-    // NVOF, ProfileStore, and CompatDB components
     nrfusion::NvofWrapper nvofWrapper_;
     std::string exeSha256_;
     std::string profilePath_ = "harness_profile_store.json";

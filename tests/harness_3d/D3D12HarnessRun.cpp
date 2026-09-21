@@ -6,7 +6,7 @@
 
 namespace nrfusion::testing {
 
-bool D3D12TestHarness::Run() {
+bool D3D12TestHarness::RunCorrectness() {
     std::cout << "[Harness 3D] Running " << config_.frameCount << " frames ("
               << config_.width << "x" << config_.height << ") on " << adapterName_ << "..." << std::endl;
 
