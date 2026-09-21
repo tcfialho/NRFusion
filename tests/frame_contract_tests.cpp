@@ -2,10 +2,16 @@
 #include "nrfusion/FrameContractProvider.hpp"
 
 #include <cassert>
+#include <type_traits>
 
 using namespace nrfusion;
 
 namespace {
+
+static_assert(std::is_trivially_copyable_v<ResourceRef>);
+static_assert(std::is_standard_layout_v<ResourceRef>);
+static_assert(std::is_trivially_copyable_v<FrameContext>);
+static_assert(std::is_standard_layout_v<FrameContext>);
 
 class FakeProvider final : public IFrameContractProvider {
 public:
@@ -122,6 +128,27 @@ void TestLegacyContractRemainsCompatible() {
     assert(frame.MotionReliable(MotionSource::Native));
 }
 
+void TestProvenanceStress() {
+    for (FrameId id = 1; id <= 100000; ++id) {
+        auto frame = BaseFrame();
+        frame.frameId = id;
+        frame.color.sourceFrameId = id;
+        frame.resetHistory = (id % 97) == 0;
+
+        frame.motionVectors = {3, {1920, 1080}, ResourceFormat::Rg16Float};
+        frame.motionVectors.provenance = (id & 1) ? ResourceProvenance::GameNative
+                                                  : ResourceProvenance::DlssContract;
+        frame.motionVectors.reliability = ResourceReliability::Reliable;
+        frame.motionVectors.ownership = ResourceOwnership::Borrowed;
+        frame.motionVectors.lifetime = ResourceLifetime::Frame;
+        frame.motionVectors.sourceFrameId = id;
+
+        assert(frame.ReadyForCore());
+        const auto expected = (id & 1) ? MotionSource::Native : MotionSource::DlssContract;
+        assert(frame.MotionReliable(expected));
+    }
+}
+
 void TestFakeProviderContracts() {
     FakeProvider valid(BaseFrame());
     ProviderInput input{10, 1001, 42, 9};
@@ -149,6 +176,7 @@ int main() {
     TestExplicitReliabilityOverridesLegacyFlags();
     TestMotionProvenanceIsAuthoritative();
     TestLegacyContractRemainsCompatible();
+    TestProvenanceStress();
     TestFakeProviderContracts();
     return 0;
 }
