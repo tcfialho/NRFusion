@@ -40,18 +40,20 @@ Nenhuma.
 | `tests/harness_3d/D3D12TestHarness.cpp` | 1085 | Fase 03 |
 | `src/cuda/W4A8FfnSm89.cu` | 946 | Fase 05/21 |
 | `src/OptiScalerAdapter.cpp` | 843 | aposentar com NrSession |
-| `src/HostServer64.cpp` | 659 | Fase 10 |
 | `src/ProfileStore.cpp` | 666 | split se mantido |
+| `src/HostServer64.cpp` | 659 | Fase 10 |
+| `src/GameProbe.cpp` | 628 | Fase 02 |
+| `src/InstallerState.cpp` | 613 | Fase 23 |
 | `src/SyntheticDx12Provider.cpp` | 596 | Fase 07 |
 | `src/DlssgTransfusion.cpp` | 555 | Fase 16 |
 | `src/PerformanceController.cpp` | 514 | Fase 06/20 |
+| `installer/NRFusion.nsi` | 466 | Fase 23 |
 | `src/SyntheticOpenGlProvider.cpp` | 409 | Fase 12 |
+| `tools/build_dist.ps1` | 395 | Fase 23 |
 | `src/SyntheticVulkanProvider.cpp` | 377 | Fase 11 |
 | `src/CaptureProvider32.cpp` | 370 | Fase 10 |
 | `src/CompatibilityDatabase.cpp` | 350 | Fase 18 |
 | `include/nrfusion/FusionRuntime.hpp` | 329 | Fase 06 |
-| `tools/build_dist.ps1` | 395 | Fase 23 |
-| `installer/NRFusion.nsi` | 466 | Fase 23 |
 
 `CMakeLists.txt` está em ~267 linhas: ainda abaixo do hard cap, mas já acima do soft target e deve ser modularizado antes de crescer.
 
