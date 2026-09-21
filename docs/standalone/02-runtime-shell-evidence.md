@@ -9,6 +9,8 @@ Novos componentes:
 - `RuntimeShell`: lifecycle, status e reconfigure;
 - `RuntimeBootstrap`: startup transacional + rollback.
 
+A configuração default é disabled. Enable precisa ser explícito.
+
 O shell não contém filesystem, COM, hooks, strings de config nem tipos de API específicos.
 
 ### Ownership
@@ -49,10 +51,10 @@ O antigo `GameProbe.cpp` de ~628 linhas foi dividido em:
 
 | Arquivo | Linhas |
 |---|---:|
-| `GameProbe.cpp` | 136 |
+| `GameProbe.cpp` | 135 |
 | `GameProbeInspect.cpp` | 157 |
-| `GameProbeDetection.cpp` | 203 |
-| `GameProbeSupport.cpp` | 138 |
+| `GameProbeDetection.cpp` | 201 |
+| `GameProbeSupport.cpp` | 107 |
 | `GameProbeInternal.hpp` | 48 |
 
 Responsabilidades:
@@ -64,6 +66,9 @@ Responsabilidades:
 
 Comparação automática de corpos mostrou equivalência em todas as funções movidas. `ReadPrefix`
 teve apenas a remoção do parâmetro default interno, que nunca possuía caller com segundo argumento.
+
+Na terceira revisão, somente comentários narrativos foram reduzidos; comparação ignorando comentários
+confirmou código equivalente nos arquivos tocados.
 
 ## CMake
 
@@ -77,7 +82,7 @@ Depois:
 | `NRFusionCore.cmake` | 86 |
 | `NRFusionTests.cmake` | 18 |
 | `NRFusionTools.cmake` | 6 |
-| `NRFusionWindows.cmake` | 127 |
+| `NRFusionWindows.cmake` | 121 |
 
 Comparação de target/source sets:
 
@@ -87,7 +92,9 @@ Comparação de target/source sets:
 - novo test target: `nrfusion_runtime_shell_tests`;
 - novas fontes: split do GameProbe + RuntimeShell/RuntimeBootstrap.
 
-Configure local do CMake modular: **PASS**.
+A terceira revisão reconfirmou os mesmos sets após a limpeza de comentários.
+
+Configure local do CMake modular: **PASS** na implementação original.
 
 ## Performance / validação
 
@@ -103,33 +110,47 @@ invalid config/enum/component: PASS
 Disabled path, 5.000.000 reconfigures idempotentes, build `-O3`:
 
 ```text
-~3.18 ns/call
-heap allocations: 0
+revisão 2: ~3.18 ns/call, 0 allocations
+revisão 3: ~3.175 ns/call, 0 allocations
 ```
 
 Esse número mede somente o shell portátil no ambiente local; não representa frametime de jogo.
 
-## Revisão independente — 2026-09-21
+## Revisão independente — segunda passada
 
-A segunda passada encontrou e corrigiu dois casos fail-closed que os testes originais não cobriam:
+Foram corrigidos dois casos fail-closed que os testes originais não cobriam:
 
-- um plano ativo com Provider+Executor aceitava retry contendo só Provider como se fosse o mesmo plano;
-- `RuntimeComponentRegistry::Supports()` aceitava máscara de capability zero quando a chave existia.
+- plano ativo com Provider+Executor aceitava retry contendo só Provider como o mesmo plano;
+- `RuntimeComponentRegistry::Supports()` aceitava capability mask zero quando a chave existia.
 
 Correções:
 
-- `MatchesPlan()` agora canonicaliza o plano em registry temporário fixo e exige mesmo conjunto/máscaras;
+- `MatchesPlan()` canonicaliza o plano e exige mesmo conjunto/máscaras;
 - `Supports()` rejeita capability mask zero;
-- regressões adicionadas a `runtime_shell_tests`;
-- compile/test independente C++20 com `-Wall -Wextra -Wpedantic -Werror`: **PASS**.
+- regressões adicionadas a `runtime_shell_tests`.
 
-Commits da revisão: `33ca0214a2636a7db7f5279eb73df23a0b6a9fb0`,
+Commits: `33ca0214a2636a7db7f5279eb73df23a0b6a9fb0`,
 `0adfacbdb13642a616ae0722bb378d758ec6ff42`.
+
+## Revisão independente — terceira passada
+
+Foram encontrados três pontos adicionais:
+
+- `RuntimeConfig{}` tinha `enabled=true`, permitindo bootstrap default em estado Running sem enable explícito;
+- a evidência de rollback por config inválida não era exercitada através de `RuntimeBootstrap::Start()`;
+- `RuntimeBootstrap.hpp` usava `std::uint8_t` via include transitivo.
+
+Correções:
+
+- default alterado para `enabled=false`;
+- regressão adicionada para config inválida via bootstrap e para capability mask zero no registro;
+- `<cstdint>` incluído diretamente;
+- comentários narrativos movidos durante o split foram reduzidos sem alteração de código.
 
 ## Source-size
 
-Maior arquivo first-party novo/tocado nesta fase: `GameProbeDetection.cpp`, 203 linhas.
-Nenhum arquivo tocado >300 e nenhum comentário novo >120 caracteres.
+Maior arquivo first-party novo/tocado nesta fase: `GameProbeDetection.cpp`, 201 linhas.
+Nenhum arquivo tocado >300 e nenhum bloco de comentário restante >120 caracteres.
 
 ## Limites deliberados
 
@@ -142,4 +163,4 @@ Nenhum arquivo tocado >300 e nenhum comentário novo >120 caracteres.
 
 ## Gate Fase 02
 
-Fechado. Próxima fase: Development Harness.
+Fechado após três passadas. Fase 03 não foi iniciada por esta revisão.

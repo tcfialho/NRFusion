@@ -47,10 +47,10 @@
 
 ## Current session
 
-Start: 2026-09-21 08:09 BRT
+Start: 2026-09-21 08:34 BRT
 Branch: standalone/phase-02-runtime-shell-20260921
 Base phase-01: f503a6f272ce02783829fcefbf0a3d31bd2771b6
-Phase 02: complete after independent review.
+Phase 02: complete after third adversarial review.
 Completed:
 - split GameProbe by PE inspection, detection, orchestration and support
 - modularized CMake into Core/Tests/Tools/Windows without removing existing targets
@@ -58,12 +58,15 @@ Completed:
 - kept standalone mode vocabulary Auto/BestQuality/Performance/Custom
 - made bootstrap transactional, idempotent and owner of registry mutation
 - rejected invalid/stale config and invalid component enums fail-closed
-- validated GameProbe split function-by-function against Phase 01
-- compiled/tested runtime shell with warnings-as-errors
-- measured disabled reconfigure path at ~3.18 ns/call with 0 allocations over 5M calls
 - fixed subset-plan idempotence false positive in RuntimeBootstrap
 - fixed zero-capability false positive in RuntimeComponentRegistry::Supports
-- regression compile/test passed with warnings-as-errors
+- changed default RuntimeConfig to disabled so default construction is fail-closed
+- added bootstrap invalid-config rollback regression
+- removed RuntimeBootstrap header dependence on transitive cstdint
+- trimmed narrative comments copied during the GameProbe/CMake split
+- reconfirmed CMake target/test/source preservation
+- remeasured disabled path at ~3.175 ns/call with 0 allocations over 5M calls
+- runtime shell regression compile/test passed with warnings-as-errors
 Exact next action:
-- start Phase 03 from docs/standalone/03-development-harness.md
-- audit nrfusion_sim, nrfusion_harness_3d and existing synthetic/IPC tests before adding harness code
+- stop after Phase 02 review
+- do not start Phase 03 without explicit user instruction

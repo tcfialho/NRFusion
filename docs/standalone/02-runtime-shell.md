@@ -2,7 +2,7 @@
 
 ## Status
 
-**Concluída.** Evidência: [02-runtime-shell-evidence.md](02-runtime-shell-evidence.md).
+**Concluída após terceira revisão adversarial.** Evidência: [02-runtime-shell-evidence.md](02-runtime-shell-evidence.md).
 
 ## Objetivo
 
@@ -17,6 +17,7 @@ Criar lifecycle/bootstrap/configuração sem concentrar tudo em runtime, probe o
 - [x] Não tocar em `build_dist.ps1`.
 - [x] Definir init/shutdown idempotentes.
 - [x] Criar `RuntimeConfig` compacto com generation e modos standalone.
+- [x] Fazer a configuração default fail-closed: disabled até enable explícito.
 - [x] Registrar Provider/Executor por API + capability mask em storage fixo.
 - [x] Expor status/failure reason sem strings no hot path.
 - [x] Manter o novo shell sem dependência de OptiScaler Config/State/patcher.
@@ -30,12 +31,16 @@ Criar lifecycle/bootstrap/configuração sem concentrar tudo em runtime, probe o
 - [x] Bootstrap não pressupõe D3D12 nem outra API.
 - [x] Filesystem/probing permanece fora do runtime shell.
 - [x] Build split preserva targets/testes antigos e não cria build adicional.
+- [x] Headers standalone não dependem de `<cstdint>` transitivo para seus próprios tipos.
+- [x] Comentários movidos para arquivos novos foram reduzidos a justificativas curtas.
 
 ## Validação rápida
 
 - [x] Runtime shell compilado com warnings-as-errors.
 - [x] Init/reconfigure/shutdown e bootstrap idempotente validados.
-- [x] Falha de config e falha após registro parcial fazem rollback.
+- [x] Config inválida via `RuntimeBootstrap` faz rollback e retorna `InvalidConfig`.
+- [x] Falha após registro parcial faz rollback.
+- [x] Invalid mode/kind/API/capability mask passam fail-closed.
 - [x] Disabled path medido em 5.000.000 chamadas, 0 allocations.
 - [x] CMake modular configurado em projeto espelho sem compilar o projeto pesado.
 - [x] GameProbe dividido comparado função-a-função com o original.
@@ -44,10 +49,10 @@ Criar lifecycle/bootstrap/configuração sem concentrar tudo em runtime, probe o
 ## Gate
 
 - [x] Shutdown sem estado residual controlado pelo shell.
-- [x] Disabled não executa trabalho gráfico e não aloca em steady state.
+- [x] Disabled não altera output no escopo desta fase: o shell não participa do frame path.
 - [x] Bootstrap/probe desacoplados de Acquire/Execute.
 - [x] Build files tocados <=300 sem multiplicar targets/jobs existentes.
 
 ## Próxima fase
 
-Fase 03 — Development Harness / MiniGame.
+Fase 03 — somente após instrução explícita do usuário.
