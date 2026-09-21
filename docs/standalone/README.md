@@ -43,6 +43,8 @@ Transição:
 
 - legado first-party >300 pode permanecer **read-only/no-growth** até a fase dona;
 - ao precisar evoluí-lo, fazer split mecânico primeiro ou aposentá-lo na mesma fase;
+- o checker tem dois usos: **changed** falha imediatamente em arquivo first-party novo/tocado >300; **all** reporta a dívida legada durante a transição;
+- na Fase 22, **all** também vira hard-fail;
 - cutover final: **zero first-party handwritten >300**.
 
 Exceções só para:

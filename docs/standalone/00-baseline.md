@@ -24,7 +24,9 @@ Nenhuma.
 - [ ] Inventariar **todos** os first-party handwritten files >300 linhas.
 - [ ] Classificar cada um: **split na fase dona**, **aposentar**, ou **cleanup antes do cutover**.
 - [ ] Criar um checker mínimo de linhas físicas para arquivos tracked; alvo <=80 linhas de script, sem framework/dependência.
-- [ ] Checker ignora somente docs, generated, vendor/third-party e fixtures upstream explicitamente identificadas.
+- [ ] Modo **changed**: compara contra a base da fase e falha se qualquer first-party novo/tocado exceder 300.
+- [ ] Modo **all**: lista todas as violações legadas; report-only durante a transição e hard-fail a partir da Fase 22.
+- [ ] Checker ignora somente docs, generated reproduzível, vendor/third-party e fixtures upstream explicitamente identificadas.
 - [ ] Marcar infraestrutura OptiScaler sem uso direto pelo NRFusion.
 
 ## Passivo conhecido no master `410cab8`
@@ -75,7 +77,7 @@ A tabela é amostra inicial; o relatório do checker é autoritativo.
 
 - [ ] Nenhuma responsabilidade crítica sem owner.
 - [ ] Todo oversized first-party file tem destino.
-- [ ] Checker mecânico disponível para todas as fases seguintes.
+- [ ] Checker mecânico disponível em changed/all para todas as fases seguintes.
 - [ ] Baseline permite comparação diferencial.
 
 ## Próxima fase
