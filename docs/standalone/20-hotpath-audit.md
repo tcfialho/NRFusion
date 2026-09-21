@@ -19,12 +19,12 @@ Rotas principais implementadas.
 - [ ] Auditar descriptors, queries, copies e capability/config queries.
 - [ ] Classificar init/reconfigure/steady.
 - [ ] Contar custo/frame.
-- [ ] Rodar checker sobre **todo** first-party handwritten code.
-- [ ] Checker usa allowlist só para generated/vendor/upstream fixtures.
+- [ ] Rodar o checker criado na Fase 00 sobre **todo** first-party handwritten code.
+- [ ] Revisar a allowlist; ela continua limitada a generated/vendor/upstream fixtures.
 - [ ] Resolver dívida ativa conhecida: controller tests, PerformanceController, ProfileStore, Ada interceptor, W4A8 CUDA/tools e demais itens do relatório.
-- [ ] Testes grandes são divididos por subsystem/scenario; CUDA por kernel/responsabilidade; tools por etapa de trabalho.
-- [ ] Código marcado para retirement não é refatorado se sua remoção ocorrer antes da RC.
-- [ ] Checker permanece pequeno; enforcement não vira framework.
+- [ ] Testes grandes são divididos por subsystem/scenario; CUDA por kernel/responsabilidade; tools por etapa.
+- [ ] Código marcado para retirement não é refatorado se for removido antes da RC.
+- [ ] Checker permanece pequeno e independente de build completo.
 
 ## Revisão obrigatória
 
@@ -32,21 +32,21 @@ Rotas principais implementadas.
 - [ ] Benchmark exclui waits/Map/console.
 - [ ] Warm-up separado; p50/p95/p99.
 - [ ] Tail regression bloqueia.
-- [ ] Nenhuma allowlist criada para escapar do cap.
-- [ ] Minificação não é solução.
+- [ ] Nenhuma exclusão criada para escapar do cap.
+- [ ] Minificação/embedded code não são solução.
 
 ## Validação rápida
 
 - [ ] CPU/fake long run.
 - [ ] Benchmark carriers.
 - [ ] Correctness separado.
-- [ ] Relatório LOC completo.
+- [ ] Relatório LOC completo comparado ao baseline da Fase 00.
 
 ## Gate
 
 - [ ] Performance contract cumprido.
 - [ ] Arquivos novos/tocados: zero >300.
-- [ ] Todo legado >300 restante está explicitamente marcado para retirement antes da RC.
+- [ ] Todo legado >300 restante está marcado para retirement antes da RC.
 
 ## Próxima fase
 

@@ -23,6 +23,8 @@ Nenhuma.
 - [ ] Registrar rotas x86/Host64, D3D11, Vulkan e OpenGL existentes.
 - [ ] Inventariar **todos** os first-party handwritten files >300 linhas.
 - [ ] Classificar cada um: **split na fase dona**, **aposentar**, ou **cleanup antes do cutover**.
+- [ ] Criar um checker mínimo de linhas físicas para arquivos tracked; alvo <=80 linhas de script, sem framework/dependência.
+- [ ] Checker ignora somente docs, generated, vendor/third-party e fixtures upstream explicitamente identificadas.
 - [ ] Marcar infraestrutura OptiScaler sem uso direto pelo NRFusion.
 
 ## Passivo conhecido no master `410cab8`
@@ -48,7 +50,7 @@ Nenhuma.
 | `include/nrfusion/FusionRuntime.hpp` | 329 | Fase 06 |
 | `tools/build_dist.ps1` | 395 | Fase 23 |
 
-A tabela é amostra inicial; o inventário completo da fase é autoritativo.
+A tabela é amostra inicial; o relatório do checker é autoritativo.
 
 ## Revisão obrigatória
 
@@ -56,19 +58,21 @@ A tabela é amostra inicial; o inventário completo da fase é autoritativo.
 - [ ] Workaround sem causa comprovada é preservado.
 - [ ] Split segue responsabilidade/lifetime, nunca tamanho arbitrário.
 - [ ] Arquivo legado >300 não cresce.
+- [ ] Checker não contém allowlist ad-hoc para evitar trabalho.
 - [ ] Limites dependentes de hardware real ficam explícitos.
 
 ## Validação rápida
 
 - [ ] Gerar call-path D3D12.
 - [ ] Contar adapter calls, locks, timers e config accesses.
-- [ ] Gerar relatório completo de arquivos >300.
+- [ ] Rodar checker e salvar relatório completo de >300.
 - [ ] Conferir CMake/installer/build_dist.
 
 ## Gate
 
 - [ ] Nenhuma responsabilidade crítica sem owner.
 - [ ] Todo oversized first-party file tem destino.
+- [ ] Checker mecânico disponível para todas as fases seguintes.
 - [ ] Baseline permite comparação diferencial.
 
 ## Próxima fase
