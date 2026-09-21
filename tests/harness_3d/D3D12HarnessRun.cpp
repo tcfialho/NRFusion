@@ -68,6 +68,9 @@ bool D3D12TestHarness::RunCorrectness() {
     metrics_.reserve(config_.frameCount);
     std::uint32_t asyncCount = 0;
     std::uint32_t serialCount = 0;
+    bool preFallbackAsync = false;
+    bool fallbackSerialized = false;
+    bool recoveredAsync = false;
     for (std::uint32_t f = 1; f <= config_.frameCount; ++f) {
         ProviderInput input{f, f};
         FrameContext frameCtx = AcquireFrame(input);
@@ -141,7 +144,7 @@ bool D3D12TestHarness::RunCorrectness() {
             }
         }
         if (passMode == SchedulerMode::AsyncCompute) {
-            measuredOverlap = testFallbackPhase ? 0.05 : std::max(measuredOverlap, 0.40);
+            measuredOverlap = std::max(measuredOverlap, 0.40);
         }
         const bool asyncStable = config_.testAsync && computeQueue_ &&
             runtime_.QueueClocks().Stable(D3D12QueueClockId(computeQueue_.Get())) &&
@@ -200,8 +203,14 @@ bool D3D12TestHarness::RunCorrectness() {
                           << static_cast<int>(decision.pipeline.motion) << std::endl;
             }
         }
-        if (decision.scheduler == SchedulerMode::AsyncCompute) ++asyncCount;
-        else if (decision.scheduler == SchedulerMode::Serialized) ++serialCount;
+        if (decision.scheduler == SchedulerMode::AsyncCompute) {
+            ++asyncCount;
+            if (f <= 60) preFallbackAsync = true;
+            if (f >= 91) recoveredAsync = true;
+        } else if (decision.scheduler == SchedulerMode::Serialized) {
+            ++serialCount;
+            if (f >= 61 && f <= 90) fallbackSerialized = true;
+        }
         FrameMetrics fm{};
         fm.frameId = f;
         fm.renderGpuMs = renderMs;
@@ -228,21 +237,7 @@ bool D3D12TestHarness::RunCorrectness() {
     if (!config_.telemetryJsonPath.empty()) {
         ExportTelemetryJson(config_.telemetryJsonPath);
     }
-    std::cout << "[Harness 3D] Execution summary: "
-              << asyncCount << " AsyncCompute frames, "
-              << serialCount << " Serialized frames." << std::endl;
-    if (config_.testAsync) {
-        if (asyncCount == 0) {
-            std::cerr << "ERROR: Expected AsyncCompute frames but none were selected." << std::endl;
-            return false;
-        }
-        if (serialCount == 0) {
-            std::cerr << "ERROR: Expected Serialized dynamic fallback frames but none occurred." << std::endl;
-            return false;
-        }
-        std::cout << "[Harness 3D] Both AsyncCompute and dynamic Serialized fallback verified successfully!" << std::endl;
-    }
-    std::cout << "[Harness 3D] Completed " << config_.frameCount << " frames successfully." << std::endl;
-    return true;
+    return ReportCorrectnessSummary(asyncCount, serialCount, preFallbackAsync,
+                                    fallbackSerialized, recoveredAsync);
 }
 }

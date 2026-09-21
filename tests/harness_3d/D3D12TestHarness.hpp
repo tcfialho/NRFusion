@@ -100,6 +100,9 @@ public:
 
 private:
     bool RunCorrectness();
+    bool ReportCorrectnessSummary(std::uint32_t asyncCount, std::uint32_t serialCount,
+                                  bool preFallbackAsync, bool fallbackSerialized,
+                                  bool recoveredAsync) const;
     bool RunBenchmark();
     bool RunScenario();
     bool ResizeResources(std::uint32_t width, std::uint32_t height);

@@ -9,6 +9,7 @@ add_executable(nrfusion_harness_3d
         tests/harness_3d/D3D12HarnessProvider.cpp
         tests/harness_3d/D3D12HarnessDispatch.cpp
         tests/harness_3d/D3D12HarnessRun.cpp
+        tests/harness_3d/D3D12HarnessCorrectness.cpp
         tests/harness_3d/D3D12HarnessScenario.cpp
         tests/harness_3d/D3D12HarnessBenchmark.cpp
         tests/harness_3d/D3D12HarnessMetrics.cpp
@@ -16,7 +17,7 @@ add_executable(nrfusion_harness_3d
     )
     target_link_libraries(nrfusion_harness_3d PRIVATE nrfusion_core d3d12 dxgi d3dcompiler)
     target_include_directories(nrfusion_harness_3d PRIVATE tests/harness_3d)
-    add_test(NAME nrfusion_harness_3d COMMAND nrfusion_harness_3d --headless --frames 60)
+    add_test(NAME nrfusion_harness_3d COMMAND nrfusion_harness_3d --headless --frames 120)
     add_test(NAME nrfusion_harness_3d_scenarios COMMAND nrfusion_harness_3d --headless --scenario all)
     add_test(NAME nrfusion_harness_3d_benchmark
              COMMAND nrfusion_harness_3d --headless --benchmark --benchmark-iterations 10000)
