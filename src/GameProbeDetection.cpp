@@ -106,7 +106,6 @@ bool LooksLikeDxvkTransport(const std::filesystem::path& dir, std::filesystem::p
     return false;
 }
 
-
 void AddEvidence(GameProbeResult& result, const std::filesystem::path& path) {
     if (std::find(result.capabilityEvidence.begin(), result.capabilityEvidence.end(), path) ==
         result.capabilityEvidence.end())
@@ -164,8 +163,7 @@ void ScanCapabilities(const std::filesystem::path& dir, GameProbeResult& result)
             result.hasOptiScaler = true;
             AddEvidence(result, path);
         }
-        // Proxy DLLs often hide the implementation behind a generic filename. Inspect only the
-        // common proxy candidates to avoid turning capability discovery into a full directory scan.
+        // Inspect common proxy names only; scanning every sibling binary would make probing unnecessarily expensive.
         if (name == "dxgi.dll" || name == "version.dll" || name == "winmm.dll" ||
             name == "d3d11.dll" || name == "d3d9.dll") {
             const std::string data = ReadPrefix(path);

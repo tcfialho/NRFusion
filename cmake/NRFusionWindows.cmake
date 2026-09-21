@@ -87,9 +87,7 @@ add_executable(nrfusion_harness_3d
     else()
         target_compile_options(nrfusion_capture32_roundtrip_test PRIVATE -UNDEBUG)
     endif()
-    # The CTest registration uses a same-architecture host binary. The Win32 executable is run
-    # explicitly against the x64 host in the Windows validation command, so it cannot accidentally
-    # report a same-bitness pass as x86-carrier coverage.
+    # Register only the x64 CTest path; Win32 cross-bitness coverage is run explicitly.
     if (CMAKE_SIZEOF_VOID_P EQUAL 8)
         add_test(NAME nrfusion_capture32_roundtrip_test COMMAND nrfusion_capture32_roundtrip_test)
     endif()
@@ -102,11 +100,7 @@ add_executable(nrfusion_harness_3d
         target_compile_options(nrfusion_capture32_d3d11_hook_test PRIVATE -UNDEBUG)
     endif()
 
-
-
-    # requiem_game was rebuilt on 14/09/2026 after the original was lost; requiem_viewer's
-    # source is still gone. Each target is gated on its own file, so one being absent no longer
-    # takes the other down with it.
+    # Gate each Requiem tool independently so one missing source does not hide the other.
     if (EXISTS "${CMAKE_CURRENT_SOURCE_DIR}/tools/requiem_viewer/main.cpp")
         add_executable(nrfusion_requiem_viewer tools/requiem_viewer/main.cpp)
         target_link_libraries(nrfusion_requiem_viewer PRIVATE d3d11 dxgi d3dcompiler windowscodecs ole32)

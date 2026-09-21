@@ -14,8 +14,7 @@ GameProbeResult GameProbe::Probe(const std::filesystem::path& executable) {
     const auto peInfo = InspectPe(executable);
     result.bitness = peInfo.bitness;
 
-    // Direct PE import analysis on the target executable:
-    // When the executable explicitly links against a graphics runtime DLL, that is authoritative.
+    // Direct executable imports outrank heuristics because they name the graphics runtime explicitly.
     for (const auto& dll : peInfo.importedDlls) {
         if (dll == "d3d12.dll") {
             result.api = GraphicsApi::D3D12;
