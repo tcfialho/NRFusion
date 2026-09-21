@@ -20,6 +20,10 @@ def git(cwd, *args):
     return result
 
 
+def checker(cwd, *args):
+    return run(cwd, sys.executable, "-S", "tools/check_source_size.py", *args)
+
+
 def write_lines(path, count, first="x"):
     path.parent.mkdir(parents=True, exist_ok=True)
     lines = [first] + ["x"] * (count - 1)
@@ -45,11 +49,11 @@ def main():
         git(root, "add", ".")
         git(root, "commit", "-m", "baseline")
 
-        check(run(root, sys.executable, "tools/check_source_size.py", "all", "--strict"), 0)
+        check(checker(root, "all", "--strict"), 0)
 
         git(root, "checkout", "-b", "feature")
         write_lines(root / "installer/part.nsh", 301)
-        check(run(root, sys.executable, "tools/check_source_size.py", "changed"), 1, "part.nsh")
+        check(checker(root, "changed"), 1, "part.nsh")
         (root / "installer/part.nsh").unlink()
 
         vendor = root / "vendor/lib.cpp"
@@ -58,16 +62,16 @@ def main():
         vendor.write_text("\n".join(lines), encoding="utf-8")
         git(root, "add", "vendor/lib.cpp")
         git(root, "commit", "-m", "modify vendor")
-        check(run(root, sys.executable, "tools/check_source_size.py", "all", "--strict"), 1, "vendor/lib.cpp")
+        check(checker(root, "all", "--strict"), 1, "vendor/lib.cpp")
 
         write_lines(root / "new.cpp", 301)
-        check(run(root, sys.executable, "tools/check_source_size.py", "all", "--strict"), 1, "new.cpp")
+        check(checker(root, "all", "--strict"), 1, "new.cpp")
 
         fake = root / "fake_generated.cpp"
         write_lines(fake, 302, "// NRFUSION_GENERATED_FILE")
-        check(run(root, sys.executable, "tools/check_source_size.py", "changed"), 1, "fake_generated.cpp")
+        check(checker(root, "changed"), 1, "fake_generated.cpp")
 
-        missing = run(root, sys.executable, "tools/check_source_size.py", "changed", "--base", "missing")
+        missing = checker(root, "changed", "--base", "missing")
         check(missing, 2, "base ref not found")
         assert "Traceback" not in missing.stderr
 
