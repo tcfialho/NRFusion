@@ -48,27 +48,25 @@
 ## Current session
 
 Start: 2026-09-21 19:43 BRT
+Freeze: 2026-09-21 20:02 BRT
 Branch: standalone/phase-05-d3d12-executor-20260921
 Base phase-04: dcb5ea54c9d36bc36a9009fd4ffebaa3c26ef1ca
-Phase 05: in progress; subgates 01-02 complete.
+Phase 05: in progress; subgates 01-03a complete.
 
-Completed:
-- canonical D3D12NrExecutor loader/lifecycle/dispatch split
-- submission epoch gate ported as portable NrSubmissionGate
-- same/stale epoch evaluate fails closed
-- later epoch unlocks the feature
-- direct legacy Evaluate cannot bypass a pending epoch gate
-- one model evaluate boundary preserved
-- HostServer64 remains read-only
-- Portable run 35648336714 passed 7/7
-- Windows run 35648336610 passed 20/20 and integrated validation
-
-Concurrent branch handling:
-- a concurrent commit advanced the branch during detached work
-- non-fast-forward update was rejected
-- concurrent implementation was inspected and preserved
-- only the missing direct-Evaluate pending guard was added
+Completed this session:
+- submission epoch subgate validated: Portable 7/7, Windows 20/20
+- handled concurrent branch update without force push
+- audited mature resource/state ownership and barrier states
+- added fixed-capacity NrDeferredRetirementQueue
+- wired feature rebuild to 32-call deferred retirement
+- overflow fails closed and preserves active pointer
+- 100k retirement stress cycles with zero allocations
+- Portable run 35664783931 passed 8/8
+- Windows run 35664783982 passed 21/21 and integrated validation
+- HostServer64 remained read-only
+- all files touched in retirement subgate <=126 lines
 
 Exact next action:
-- audit mature D3D12 resource/state ownership and barrier map
-- extract bounded resource/state owner before HDR/residual/multipass
+- extract scratch/resource owner with explicit D3D12 state
+- begin with output/colorCopy/hdrCopy and retirement wiring
+- keep HDR/exposure/residual/multipass out until resource-state regression passes

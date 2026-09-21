@@ -2,7 +2,7 @@
 
 ## Status
 
-**Em andamento.** Subgates 01–02 concluídos: canonicalização/split e submission epoch.
+**Em andamento.** Subgates 01–03a concluídos: canonicalização/split, submission epoch e deferred retirement.
 Evidência parcial: [05-d3d12-executor-evidence.md](05-d3d12-executor-evidence.md).
 
 ## Objetivo
@@ -61,7 +61,7 @@ read-only. Boundaries mapeados:
 - [x] Preservar load policy do driver/forwarder/model.
 - [x] Preservar `JustBuilt()` durante o primeiro split.
 - [x] Portar pending-submission/epoch maduro.
-- [ ] Extrair resource/state map por owner/lifetime.
+- [ ] Extrair resource/state map por owner/lifetime. Deferred retirement de feature já portado.
 - [ ] Portar scale/subrect/padding.
 - [ ] Portar pre/post-SR/RR/history e multipass.
 - [ ] Portar HDR/exposure/residual.
@@ -106,9 +106,28 @@ read-only. Boundaries mapeados:
 - Host64 legado permanece sem epoch e sem alteração de callsite.
 - Portable 7/7 PASS; Windows 20/20 PASS.
 
+## Subgate 03a — deferred retirement
+
+- Queue fixa de 64 slots, sem heap/lock.
+- Delay padrão de 32 calls, igual ao executor maduro.
+- Rebuild de feature estaciona a feature anterior em vez de liberar imediatamente.
+- Overflow falha fechado e preserva o ponteiro ativo.
+- Shutdown drena o backlog sob a garantia já existente de GPU idle do caller.
+- Owner já aceita Resource; wiring de surfaces fica para o próximo subgate.
+- 100.000 ciclos no teste portátil com 0 allocations.
+- Portable 8/8 PASS; Windows 21/21 PASS.
+
+## Resource-state map auditado para o próximo subgate
+
+- `output/passScratch`: repouso UAV; NPSR apenas enquanto alimentam o próximo pass/resolve.
+- `colorCopy`: UAV → NPSR após encode; retorna UAV no final do frame.
+- `hdrCopy`: UAV → NPSR; usa COPY_SOURCE temporário; retorna UAV.
+- `colorSmall/outputNative`: UAV ↔ NPSR por uso.
+- guide clone: COPY_DEST → NPSR para evaluate; volta COPY_DEST para o próximo copy.
+
 ## Próxima ação
 
-Extrair resource/state ownership por lifetime antes de portar HDR/residual/multipass.
+Extrair scratch/resource owner com estado explícito e retirement; não portar HDR/residual/multipass ainda.
 
 ## Próxima fase
 

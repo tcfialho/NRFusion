@@ -135,3 +135,74 @@ Auditoria:
 - `HostServer64` não foi tocado;
 - maior arquivo tocado no subgate: 123 linhas;
 - nenhum comentário longo novo.
+
+## Subgate 03a — deferred retirement
+
+Head validado: `8f8be6dbf0d86f883fe0141a894bf09cb5158b4c`.
+
+O executor maduro não libera feature/surface imediatamente em rebuild: ele estaciona objetos por
+32 evaluates porque o trabalho do jogo pode continuar em voo por vários frames.
+
+Foi adicionado `NrDeferredRetirementQueue`:
+
+- capacidade fixa: 64;
+- delay padrão: 32 calls;
+- storage: `std::array`;
+- heap/lock interno: nenhum;
+- `Park()` transfere ownership somente quando existe slot;
+- overflow retorna false e deixa o ponteiro original intacto;
+- `Tick()` libera somente ao vencer o countdown;
+- `DrainAfterIdle()` existe apenas para teardown com garantia externa de GPU idle.
+
+Integração:
+
+- `D3D12NrExecutor::EnsureFeature()` chama `Tick()` a cada tentativa;
+- rebuild deixa de executar `release_(feature_)` imediatamente;
+- feature anterior é estacionada como `NrRetiredObjectKind::Feature`;
+- queue cheia falha fechado sem perder a feature ativa;
+- `ReleaseRetired()` também conhece `Resource`, mas nenhum scratch resource foi conectado ainda;
+- `HostServer64` permaneceu read-only.
+
+Teste portátil `nrfusion_nr_retirement_queue_tests` cobre:
+
+- 32 ticks antes do release;
+- feature/resource kinds;
+- callback ausente não descarta ownership;
+- drain explícito;
+- delay zero fail-closed;
+- capacity completa e overflow preservando pointer;
+- 100.000 park/tick cycles;
+- zero allocations no trecho de stress.
+
+Validação:
+
+- Portable run `35664783931`: **PASS**, 8/8;
+- retirement queue: PASS, 0,01 s;
+- Windows run `35664783982`: **PASS**, 21/21;
+- retirement queue Windows: PASS, 0,01 s;
+- loader/lifecycle/dispatch recompilados;
+- integrated Windows validation: PASS.
+
+Source sizes:
+
+- `NrDeferredRetirementQueue.hpp`: 44;
+- `NrDeferredRetirementQueue.cpp`: 48;
+- `nr_retirement_queue_tests.cpp`: 117;
+- `D3D12NrExecutor.hpp`: 126;
+- `D3D12NrExecutorLifecycle.cpp`: 73.
+
+### Resource-state audit para o próximo subgate
+
+O fixture maduro mostra estados de repouso determinísticos:
+
+| Resource | Repouso | Estados temporários |
+|---|---|---|
+| output/passScratch | UAV | NPSR |
+| colorCopy | UAV | NPSR |
+| hdrCopy | UAV | NPSR, COPY_SOURCE |
+| colorSmall | UAV | NPSR |
+| outputNative | UAV | NPSR |
+| activeColor | UAV | COPY_DEST, NPSR |
+| guide clone | COPY_DEST | NPSR |
+
+O próximo subgate deve extrair owner/state tracking desses surfaces antes de HDR/residual/multipass.
