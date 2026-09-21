@@ -13,6 +13,8 @@
 #include <cstdint>
 #include <string>
 
+#include "nrfusion/NrSubmissionGate.hpp"
+
 namespace nrfusion {
 
 struct NgxParameter {
@@ -54,13 +56,23 @@ public:
 
     bool EnsureFeature(ID3D12GraphicsCommandList* cmdList, uint32_t width, uint32_t height,
                        const DlssNrTuning& tuning = {});
+    bool EnsureFeatureForEpoch(ID3D12GraphicsCommandList* cmdList, uint32_t width, uint32_t height,
+                               std::uint64_t submissionEpoch, const DlssNrTuning& tuning = {});
     bool JustBuilt() const noexcept { return justBuilt_; }
+    bool PendingSubmission() const noexcept { return submissionGate_.Pending(); }
+    std::uint64_t FeatureCreateEpoch() const noexcept { return submissionGate_.CreateEpoch(); }
 
     bool Evaluate(ID3D12GraphicsCommandList* cmdList, ID3D12Resource* color, ID3D12Resource* depth,
-                 ID3D12Resource* motion, ID3D12Resource* output, uint32_t width, uint32_t height,
-                 bool depthInverted, bool reset, const DlssNrTuning& tuning = {},
-                 uint32_t guideWidth = 0, uint32_t guideHeight = 0, uint32_t motionWidth = 0,
-                 uint32_t motionHeight = 0);
+                  ID3D12Resource* motion, ID3D12Resource* output, uint32_t width, uint32_t height,
+                  bool depthInverted, bool reset, const DlssNrTuning& tuning = {},
+                  uint32_t guideWidth = 0, uint32_t guideHeight = 0, uint32_t motionWidth = 0,
+                  uint32_t motionHeight = 0);
+    bool EvaluateForEpoch(
+        ID3D12GraphicsCommandList* cmdList, ID3D12Resource* color, ID3D12Resource* depth,
+        ID3D12Resource* motion, ID3D12Resource* output, uint32_t width, uint32_t height,
+        std::uint64_t submissionEpoch, bool depthInverted, bool reset,
+        const DlssNrTuning& tuning = {}, uint32_t guideWidth = 0, uint32_t guideHeight = 0,
+        uint32_t motionWidth = 0, uint32_t motionHeight = 0);
 
     void Shutdown();
 
@@ -103,6 +115,7 @@ private:
     uint32_t featureHeight_ = 0;
     bool floatSlotKnown_ = false;
     bool justBuilt_ = false;
+    NrSubmissionGate submissionGate_{};
     std::wstring snippetPath_;
     std::string status_ = "not loaded";
 };

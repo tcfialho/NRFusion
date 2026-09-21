@@ -7,6 +7,7 @@ bool D3D12NrExecutor::EnsureFeature(ID3D12GraphicsCommandList* cmdList, uint32_t
     justBuilt_ = false;
     if (!capabilityParams_ || !create_) return false;
     if (feature_ && featureWidth_ == width && featureHeight_ == height) return true;
+    submissionGate_.Reset();
     if (feature_ && release_) {
         release_(feature_);
         feature_ = nullptr;
@@ -33,10 +34,19 @@ bool D3D12NrExecutor::EnsureFeature(ID3D12GraphicsCommandList* cmdList, uint32_t
     return true;
 }
 
+bool D3D12NrExecutor::EnsureFeatureForEpoch(
+    ID3D12GraphicsCommandList* cmdList, uint32_t width, uint32_t height,
+    std::uint64_t submissionEpoch, const DlssNrTuning& tuning) {
+    if (!EnsureFeature(cmdList, width, height, tuning)) return false;
+    if (justBuilt_) submissionGate_.MarkCreated(submissionEpoch);
+    return true;
+}
+
 void D3D12NrExecutor::Shutdown() {
     if (feature_ && release_) release_(feature_);
     feature_ = nullptr;
     featureWidth_ = featureHeight_ = 0;
+    submissionGate_.Reset();
     capabilityParams_ = nullptr;
     if (forwarderModule_) { FreeLibrary(forwarderModule_); forwarderModule_ = nullptr; }
     driverModule_ = nullptr;

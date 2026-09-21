@@ -22,4 +22,19 @@ bool D3D12NrExecutor::Evaluate(ID3D12GraphicsCommandList* cmdList, ID3D12Resourc
     return result == kNgxSuccess;
 }
 
+bool D3D12NrExecutor::EvaluateForEpoch(
+    ID3D12GraphicsCommandList* cmdList, ID3D12Resource* color, ID3D12Resource* depth,
+    ID3D12Resource* motion, ID3D12Resource* output, uint32_t width, uint32_t height,
+    std::uint64_t submissionEpoch, bool depthInverted, bool reset,
+    const DlssNrTuning& tuning, uint32_t guideWidth, uint32_t guideHeight,
+    uint32_t motionWidth, uint32_t motionHeight) {
+    if (!submissionGate_.ReadyFor(submissionEpoch)) {
+        status_ = "feature pending submission";
+        return false;
+    }
+
+    return Evaluate(cmdList, color, depth, motion, output, width, height, depthInverted, reset,
+                    tuning, guideWidth, guideHeight, motionWidth, motionHeight);
+}
+
 } // namespace nrfusion
