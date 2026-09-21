@@ -14,7 +14,7 @@ enum class RuntimeNrMode : std::uint8_t {
 
 struct RuntimeConfig {
     std::uint64_t generation = 1;
-    bool enabled = true;
+    bool enabled = false;
     RuntimeNrMode mode = RuntimeNrMode::Auto;
     float targetFps = 60.0f;
 

@@ -9,6 +9,10 @@
 using namespace nrfusion;
 
 int main() {
+    RuntimeConfig defaults;
+    assert(defaults.Valid());
+    assert(!defaults.enabled);
+
     RuntimeShell runtime;
     assert(runtime.Status().state == RuntimeState::Stopped);
 
@@ -31,6 +35,7 @@ int main() {
     assert(runtime.Status().configGeneration == 2);
 
     RuntimeComponentRegistry registry;
+    assert(!registry.Register({RuntimeComponentKind::Provider, GraphicsApi::D3D12, 0}));
     assert(!registry.Register(
         {static_cast<RuntimeComponentKind>(255), GraphicsApi::D3D12, 1}));
     assert(!registry.Register(
@@ -65,6 +70,7 @@ int main() {
     assert(runtime.Status().state == RuntimeState::Stopped);
     assert(runtime.Registry().Size() == 0);
     assert(runtime.Config().generation == 1);
+    assert(!runtime.Config().enabled);
 
     std::array<RuntimeComponent, 2> components{{
         {RuntimeComponentKind::Provider, GraphicsApi::D3D12, 1},
@@ -92,6 +98,14 @@ int main() {
     assert(runtime.Config().generation == 3);
 
     RuntimeBootstrap::Stop(runtime);
+
+    RuntimeBootstrapPlan invalidPlan{};
+    invalidPlan.config.generation = 0;
+    const auto invalidStart = RuntimeBootstrap::Start(runtime, invalidPlan);
+    assert(!invalidStart);
+    assert(invalidStart.failure == RuntimeBootstrapFailure::InvalidConfig);
+    assert(runtime.Status().state == RuntimeState::Stopped);
+    assert(runtime.Registry().Size() == 0);
 
     std::array<RuntimeComponent, 2> badComponents{{
         {RuntimeComponentKind::Provider, GraphicsApi::D3D12, 1},

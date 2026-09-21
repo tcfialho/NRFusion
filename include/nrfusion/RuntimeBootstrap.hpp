@@ -2,6 +2,7 @@
 
 #include "nrfusion/RuntimeShell.hpp"
 
+#include <cstdint>
 #include <span>
 
 namespace nrfusion {
