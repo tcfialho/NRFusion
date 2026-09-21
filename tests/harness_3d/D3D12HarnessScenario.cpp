@@ -88,26 +88,30 @@ bool D3D12TestHarness::RunScenario() {
     };
 
     bool ok = true;
-    if (wants(HarnessScenario::Steady)) ok = ok && ValidateSteady(*this);
-    if (wants(HarnessScenario::Reset)) ok = ok && ValidateReset(*this);
-    if (wants(HarnessScenario::MissingGuides)) ok = ok && ValidateMissingGuides(*this);
-    if (wants(HarnessScenario::Provenance)) ok = ok && ValidateProvenance(*this);
-    if (wants(HarnessScenario::Toggle)) ok = ok && ValidateToggle();
-    if (wants(HarnessScenario::Failure)) ok = ok && ValidateFailure(*this);
+    if (wants(HarnessScenario::Steady)) ok = ValidateSteady(*this) && ok;
+    if (wants(HarnessScenario::Reset)) ok = ValidateReset(*this) && ok;
+    if (wants(HarnessScenario::MissingGuides)) ok = ValidateMissingGuides(*this) && ok;
+    if (wants(HarnessScenario::Provenance)) ok = ValidateProvenance(*this) && ok;
+    if (wants(HarnessScenario::Toggle)) ok = ValidateToggle() && ok;
+    if (wants(HarnessScenario::Failure)) ok = ValidateFailure(*this) && ok;
 
     if (wants(HarnessScenario::Resize)) {
         const auto originalWidth = config_.width;
         const auto originalHeight = config_.height;
         const auto width = std::max<std::uint32_t>(1, originalWidth / 2);
         const auto height = std::max<std::uint32_t>(1, originalHeight / 2);
-        ok = ok && ResizeResources(width, height);
+
+        const bool resizedOk = ResizeResources(width, height);
         const auto resized = AcquireFrame({5, 5});
-        ok = ok && resized.ReadyForCore();
-        ok = ok && resized.renderResolution == Resolution{width, height};
-        ok = ok && ResizeResources(originalWidth, originalHeight);
+        const bool resizedFrameOk = resizedOk && resized.ReadyForCore() &&
+            resized.renderResolution == Resolution{width, height};
+
+        const bool restoredResources = ResizeResources(originalWidth, originalHeight);
         const auto restored = AcquireFrame({6, 6});
-        ok = ok && restored.ReadyForCore();
-        ok = ok && restored.renderResolution == Resolution{originalWidth, originalHeight};
+        const bool restoredFrameOk = restoredResources && restored.ReadyForCore() &&
+            restored.renderResolution == Resolution{originalWidth, originalHeight};
+
+        ok = resizedFrameOk && restoredFrameOk && ok;
     }
 
     std::cout << "[Harness 3D] scenario=" << ScenarioName(selected)
