@@ -15,33 +15,33 @@ Fases 07–08.
 
 ## Implementação
 
-- [ ] Auditar shared-resource path existente antes de reescrever.
-- [ ] Definir slot/fence ownership e reuse.
+- [ ] Partir de `SyntheticDx11BridgeProvider` e `nrfusion_synthetic_dx11_bridge_test`.
+- [ ] Definir slot/fence ownership e reuse sem reescrever o que já funciona.
 - [ ] Capturar color; depth/motion apenas com provenance válida.
-- [ ] Abrir/usar recursos no D3D12 canônico.
-- [ ] Compor resultado de volta no D3D11.
+- [ ] Abrir/usar resources no executor D3D12 canônico.
+- [ ] Compor de volta no D3D11.
 - [ ] Tratar resize/device/context destruction.
-- [ ] Adicionar frontend D3D11 mínimo ao mesmo runner.
+- [ ] Evoluir o teste existente para cenários longos/in-flight em vez de criar novo harness.
 
 ## Revisão obrigatória
 
 - [ ] Keyed mutex/fence ordering.
 - [ ] Allocator/slot só reutilizado após retirement.
-- [ ] Evitar N/N+1 aliasing.
-- [ ] Cada full-frame copy deve ser inevitável e contada.
-- [ ] Guide fallback é policy, não truque do carrier.
+- [ ] Sem frame N/N+1 aliasing.
+- [ ] Cada full-frame CopyResource é identificado e justificado.
+- [ ] O lock atual do provider entra na auditoria de hot path, não é automaticamente preservado.
 
 ## Validação rápida
 
-- [ ] Harness D3D11 com fake executor.
-- [ ] Stress in-flight/resize/reset.
-- [ ] Medir copies e host CPU.
+- [ ] Teste atual continua passando.
+- [ ] Adicionar steady/resize/reset/in-flight ao mesmo executable quando simples.
+- [ ] Medir copies, waits e host CPU.
 
 ## Gate
 
-- [ ] GPU-resident transport demonstrado.
+- [ ] Transporte GPU-resident demonstrado.
 - [ ] Sem wait/copy injustificado.
-- [ ] Steady-state sem criação/alocação do carrier.
+- [ ] Steady-state sem resource creation/alocação do carrier.
 
 ## Próxima fase
 

@@ -2,7 +2,7 @@
 
 ## Objetivo
 
-Dar à IA feedback determinístico, barato e independente de jogos reais.
+Transformar a infraestrutura de teste existente no loop rápido principal da implementação, sem construir um game novo.
 
 ## Dependências
 
@@ -10,43 +10,43 @@ Fases 01–02.
 
 ## Fora de escopo
 
-- Game/engine real
-- Assets/física/câmera
-- Framework de testes pesado
+- Nova engine/harness paralelo
+- Assets, física, câmera ou UI elaborada
+- Framework de benchmark genérico
 - Validar qualidade visual de jogos reais
 
 ## Implementação
 
-- [ ] Criar FakeNrExecutor e FakeTimingSource.
-- [ ] Criar runner comum por CLI com seed/cenário/frames e saída JSON/texto.
-- [ ] Suportar --executor=fake|dlss; fake deve funcionar sem GPU NVIDIA.
-- [ ] Criar frontend D3D12 offscreen mínimo; swapchain só onde necessário.
-- [ ] Gerar color/depth/motion/HDR sintéticos simples e determinísticos.
-- [ ] Criar cenários steady, resize, reset, missing guides, provenance change, on/off, scale/precision change e failure injection.
-- [ ] Medir wall CPU do NRFusion, p50/p95/p99, allocations observáveis, locks e resource/query creation counters.
+- [ ] Auditar `nrfusion_sim`, `nrfusion_harness_3d`, synthetic tests e IPC tests; reutilizar antes de criar arquivos.
+- [ ] Evoluir `nrfusion_harness_3d` para cenários CLI determinísticos em vez de criar outro D3D12 MiniGame.
+- [ ] Separar executor do cenário: fake/simulado por padrão; DLSS real somente quando disponível.
+- [ ] Reusar color/depth/motion/exposure que o harness 3D já produz.
+- [ ] Adicionar apenas cenários faltantes: steady, resize, reset, missing guides, provenance change, on/off, scale/precision e failure injection.
+- [ ] Padronizar saída curta JSON/texto com wall CPU, p50/p95/p99 e counters relevantes.
+- [ ] Contar allocations/locks/resource/query creation com instrumentação local; não construir tracer genérico.
 - [ ] Separar warm-up da janela medida.
-- [ ] Adicionar Harness32/Fake Streamline/frontends por API somente quando suas fases iniciarem.
+- [ ] Frontends/API extras são extensões pequenas dos testes existentes durante suas próprias fases.
 
 ## Revisão obrigatória
 
-- [ ] Harness não pode duplicar policy do produto.
-- [ ] Métrica deve envolver o código medido e excluir setup.
-- [ ] Não usar CPU readback como atalho para uma rota que será GPU-resident.
-- [ ] Mesmo comando/seed produz o mesmo evento lógico.
-- [ ] Não construir tracer genérico caro se um contador local resolve.
+- [ ] Harness não replica policy nem executor do produto.
+- [ ] Métrica exclui setup e custo conhecido do próprio harness.
+- [ ] Nenhum CPU readback vira atalho para uma rota de produto GPU-resident.
+- [ ] Mesmo cenário/seed reproduz os mesmos eventos lógicos.
+- [ ] A extensão proposta é menor que criar um novo executável equivalente.
 
 ## Validação rápida
 
-- [ ] Fake executor por milhões de frames de policy/state.
-- [ ] D3D12 fake-executor long run com resize/reset/failure.
-- [ ] Relatório before/after consumível sem inspeção manual.
-- [ ] Quando hardware existir, mesmo runner troca fake por dlss sem mudar cenário.
+- [ ] `nrfusion_sim` cobre loops longos puramente CPU.
+- [ ] Harness 3D cobre lifecycle/resources sem exigir jogo.
+- [ ] Synthetic/IPC tests continuam sendo probes focados onde já são melhores.
+- [ ] Relatório before/after pode ser comparado sem interpretação manual extensa.
 
 ## Gate
 
 - [ ] Existe loop implementar→executar→medir→revisar sem usuário.
-- [ ] Harness permanece pequeno e reutilizável.
-- [ ] Jogos reais deixam de ser ferramenta primária de diagnóstico.
+- [ ] Nenhuma nova infraestrutura duplicada sem necessidade.
+- [ ] Jogo real deixa de ser ferramenta primária de diagnóstico.
 
 ## Próxima fase
 

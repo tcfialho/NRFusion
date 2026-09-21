@@ -17,33 +17,36 @@ Rotas principais implementadas.
 
 - [ ] Auditar new/delete, vector/string growth, map insertion, std::function e formatting.
 - [ ] Auditar filesystem/module/PE scans.
-- [ ] Auditar mutex/shared_mutex/atomics fortes sem necessidade.
+- [ ] Auditar mutex/shared_mutex e atomics fortes sem necessidade.
 - [ ] Auditar CreateResource/Heap/PSO e waits síncronos.
+- [ ] Auditar descriptor writes por frame separadamente de heap/resource allocations.
 - [ ] Auditar capability/timestamp-frequency/config conversions repetidas.
-- [ ] Classificar cada ocorrência como init, reconfigure ou steady-state.
-- [ ] Gerar contagem normal por frame: locks, creates, queries, copies e host calls.
+- [ ] Revisar explicitamente locks atuais de SyntheticDx12/Dx11/OpenGL providers.
+- [ ] Classificar cada custo como init, reconfigure ou steady-state.
+- [ ] Gerar contagem normal/frame: locks, creates, descriptor writes, queries, copies e host calls.
 
 ## Revisão obrigatória
 
 - [ ] Todo custo steady-state restante precisa de justificativa concreta.
+- [ ] Descriptor write pode ser aceitável; descriptor heap creation/frame não é.
 - [ ] Benchmark separa warm-up e mede p50/p95/p99.
 - [ ] Regressão de tail latency bloqueia merge até explicada.
-- [ ] Comparação com OptiScaler usa trabalho equivalente.
+- [ ] Comparação OptiScaler usa trabalho equivalente.
 
 ## Validação rápida
 
-- [ ] Fake executor milhões de frames.
+- [ ] CPU paths por milhões de frames.
 - [ ] Harness de cada carrier principal em long run.
-- [ ] Before/after de cada remoção relevante.
+- [ ] Before/after para remoções relevantes.
 
 ## Gate
 
 - [ ] 0 heap allocation normal.
-- [ ] 0 resource/heap/PSO creation normal.
+- [ ] 0 GPU resource/heap/PSO creation normal.
 - [ ] 0 filesystem/string/config parsing normal.
 - [ ] 0 blocking wait normal.
-- [ ] Locks inevitáveis documentados.
-- [ ] CPU e p99 abaixo do baseline equivalente ou blocker explícito.
+- [ ] Locks restantes documentados e medidos.
+- [ ] CPU/p99 abaixo do baseline equivalente ou blocker explícito.
 
 ## Próxima fase
 

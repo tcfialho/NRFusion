@@ -2,7 +2,7 @@
 
 ## Objetivo
 
-Qualificar Vulkan→D3D12 com external memory/semaphore corretos.
+Transformar o suporte Vulkan atual de estrutural/simulado em interop real qualificado.
 
 ## Dependências
 
@@ -10,37 +10,38 @@ Fases 07–08.
 
 ## Fora de escopo
 
-- Compile-only claim
-- Constantes Vulkan inventadas
+- Tratar o teste com fake handles como prova de interop real
+- Constantes/structs Vulkan não verificadas
 
 ## Implementação
 
-- [ ] Trocar structs/constants ad-hoc por headers/contratos verificados quando necessário.
-- [ ] Definir external-memory compatibility e memoryTypeIndex corretamente.
-- [ ] Definir timeline/binary semaphore strategy e ownership.
-- [ ] Definir layouts, access masks e queue-family transfer.
-- [ ] Capturar color e guides disponíveis com provenance.
-- [ ] Compor de volta e tratar swapchain/device recreation.
-- [ ] Adicionar frontend Vulkan fino ao runner.
+- [ ] Reusar `SyntheticVulkanProvider` e separar claramente code path simulado de path com VkDevice real.
+- [ ] Usar headers/contratos Vulkan corretos para structs/constants.
+- [ ] Selecionar memoryTypeIndex a partir de requirements/properties reais.
+- [ ] Definir external-memory compatibility, semaphore type e handle ownership.
+- [ ] Definir layouts, access masks e queue-family ownership.
+- [ ] Capturar color/guides com provenance e compor de volta.
+- [ ] Tratar swapchain/device recreation.
+- [ ] Criar/estender harness Vulkan somente para o gap que o `ipc_host_test` atual não cobre.
 
 ## Revisão obrigatória
 
-- [ ] Handle import/export ownership.
-- [ ] Image format/tiling/usage realmente compatíveis com interop.
-- [ ] Queue/layout transitions completos em success/failure.
+- [ ] Fake handle test é apenas contract test.
+- [ ] Image format/tiling/usage realmente compatíveis com D3D12 external memory.
+- [ ] Sync e ownership completos em success/failure.
 - [ ] Sem CPU readback.
 
 ## Validação rápida
 
-- [ ] Harness Vulkan com fake executor quando runtime disponível.
-- [ ] Resize/recreate e interop failure.
-- [ ] Long run de semaphore values.
+- [ ] Contract tests continuam úteis sem Vulkan real.
+- [ ] Interop real é exercitado quando VkDevice/extensões existirem.
+- [ ] Resize/recreate e semaphore long run.
 
 ## Gate
 
-- [ ] Rota GPU-resident demonstrada.
-- [ ] Nenhuma assumption Vulkan sem fonte técnica/código verificável.
-- [ ] Failure desativa rota sem corromper o jogo.
+- [ ] Harness-verified só após VkImage/memory/semaphore reais.
+- [ ] Hardware-qualified exige execução no stack Vulkan real.
+- [ ] Nenhuma assumption Vulkan sem base técnica verificável.
 
 ## Próxima fase
 

@@ -9,9 +9,9 @@ Alvos:
 - x64 e x86;
 - D3D12, D3D11, D3D10, D3D9, Vulkan e OpenGL;
 - providers Native, Bridge e Synthetic;
-- Neural Rendering disponível sempre que existir uma rota tecnicamente válida;
+- Neural Rendering sempre que existir uma rota tecnicamente válida;
 - MFG qualificado separadamente, onde Streamline/DLSSG/presentation puderem ser integrados;
-- um executor DLSS 5 D3D12 x64 canônico sempre que possível.
+- executor DLSS 5 D3D12 x64 canônico sempre que possível.
 
 **Target não significa Supported.** Cada rota só vira suportada após passar seu gate de qualificação.
 
@@ -33,12 +33,23 @@ Compose / interop de volta ao jogo
 
 A API determina **como** o frame chega ao NRFusion, não **se** o NR existe.
 
-Seleção:
-
 ```text
 contrato DLSS/RR utilizável -> Native/Bridge
 sem contrato utilizável     -> Synthetic
 ```
+
+## Reuso antes de criar
+
+O projeto já possui peças de validação úteis. A primeira opção é estendê-las, não criar harness paralelo:
+
+- `nrfusion_sim`: simulação CPU do controller;
+- `nrfusion_harness_3d`: harness D3D12 headless com color/depth/motion/exposure e telemetry;
+- `nrfusion_synthetic_dx12_test`;
+- `nrfusion_synthetic_dx11_bridge_test`;
+- `nrfusion_synthetic_opengl_test`;
+- `nrfusion_ipc_host_test` e roundtrip do capture32/Host64.
+
+Novo código de harness só é aceito quando essas peças não conseguem representar o cenário com uma extensão pequena.
 
 ## Contrato de performance
 
@@ -60,29 +71,29 @@ Também é obrigatório:
 - VRAM equivalente <= OptiScaler+NRFusion atual, salvo tradeoff medido e aprovado;
 - medir p50/p95/p99, não apenas média;
 - otimização que melhora média e piora p99 é regressão até análise;
-- não afirmar ganho real de FPS/GPU sem execução em hardware real;
+- não afirmar ganho real de FPS/GPU sem hardware real;
 - compatibilidade excepcional deve ser gated e não taxar todos os jogos.
 
 ## Estratégia de validação
 
 Três níveis, nesta ordem:
 
-1. **FakeNrExecutor** — policy, state, lifecycle, IPC e failure injection sem GPU compatível.
-2. **MiniGame Harness** — plumbing gráfico mínimo e determinístico, sem jogo real.
+1. **CPU/fake path** — `nrfusion_sim`, tests existentes e FakeNrExecutor quando necessário.
+2. **Harness gráfico** — evoluir os harnesses/testes existentes para cenários determinísticos sem jogo real.
 3. **Jogos reais** — driver, imagem, VRAM e performance final.
 
-O harness deve suportar `--executor=fake` para que a maior parte do desenvolvimento continue testável mesmo sem GPU NVIDIA/DLSS disponível.
+O harness deve permitir executor fake quando possível para que captura/policy/lifecycle continuem testáveis sem GPU NVIDIA/DLSS.
 
-Antes de usar jogo real para diagnosticar um bug, tentar reproduzi-lo no harness mínimo.
+Antes de usar jogo real para diagnosticar um bug, tentar reproduzi-lo no menor harness existente.
 
 Harnesses não são produtos:
 
 - sem engine, assets, física ou UI elaborada;
-- sem abstraction layer gráfica genérica só para “ficar bonito”;
+- sem abstraction layer gráfica genérica;
 - frontends finos por API;
 - cenários determinísticos por CLI;
 - saída estruturada de métricas;
-- código mínimo suficiente para exercitar o contrato.
+- menos código é melhor.
 
 ## Ordem
 
@@ -116,11 +127,11 @@ Harnesses não são produtos:
 ## Regras de execução
 
 - O arquivo da fase atual é a fonte de verdade.
-- Não iniciar uma fase enquanto o gate de dependência não estiver satisfeito ou explicitamente marcado como blocker.
-- Cada item deve caber em uma interação curta e ser verificável isoladamente.
-- Stabilizar lote antes de mover branch/rodar CI completo.
+- Não iniciar fase dependente antes do gate anterior, salvo blocker explicitamente documentado.
+- Cada item deve ser pequeno e verificável isoladamente.
+- Estabilizar lote antes de mover branch/rodar CI completo.
 - CI confirma integração; não substitui revisão.
-- Mudança de hot path sempre responde: antes, depois, trabalho removido/adicionado, comportamento preservado.
+- Mudança de hot path sempre registra: antes, depois, trabalho removido/adicionado e comportamento preservado.
 - Barrier, ownership, lock e fallback exigem justificativa concreta.
 
 ## Arquivos
@@ -150,6 +161,6 @@ Harnesses não são produtos:
 - [22 — Qualification](22-qualification.md)
 - [23 — Cutover](23-cutover.md)
 
-## Critério arquitetural final
+## Critério final
 
 NRFusion só substitui OptiScaler quando NR funcionar por rotas qualificadas independentemente de DLSS nativo no jogo, com menor overhead de host para trabalho equivalente e sem regressão de VRAM equivalente.
