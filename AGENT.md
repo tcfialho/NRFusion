@@ -48,13 +48,17 @@
 ## Current session
 
 Start: 2026-09-20 22:55 BRT
+Stopped for freeze/handoff: 2026-09-20 23:26 BRT
+Branch: standalone/phase-00-baseline-20260920
 Base master: 410cab8ab1876b7ae7dbf0a82b1b4096b225f4f3
 Plan head: b76238022838d246f7fce5695fe321ec232a840b
-Branch: standalone/phase-00-baseline-20260920
-Target: complete Phase 00 baseline and source-size enforcement without starting Phase 01.
-Checklist:
-- add minimal changed/all source-size checker
-- inventory all current first-party >300-line files and assign a destination
-- map current OptiScaler-hosted frame path and measurable host overhead sources
-- record upstream/build/install baseline
-- close Phase 00 gate and publish branch once
+Phase 00: complete.
+Completed:
+- added 67-line changed/all source-size checker
+- regression-tested checker, including modified vendor and untracked oversized files
+- inventoried 34 first-party handwritten files over 300 lines
+- mapped OptiScaler integration responsibilities to standalone phases
+- recorded current provider/API support and D3D12 resource/timing baseline
+Exact next action:
+- start Phase 01 from docs/standalone/01-frame-contract.md
+- audit existing FrameContext/ResourceRef/FrameContractProvider before changing their public contract
