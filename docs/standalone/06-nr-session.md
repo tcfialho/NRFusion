@@ -2,7 +2,7 @@
 
 ## Objetivo
 
-Consolidar policy/runtime/telemetry sem criar um novo God Object.
+Consolidar policy/runtime/telemetry sem criar novo God Object e reduzir dívida existente do core.
 
 ## Dependências
 
@@ -18,34 +18,35 @@ Fase 05.
 - [ ] Definir FramePacket/FrameResult mínimos.
 - [ ] Resolver scale/precision/placement/scheduler em uma transação.
 - [ ] Integrar work identity/timing retirement.
-- [ ] Remover getters/adapters repetidos.
-- [ ] Separar RuntimeConfig snapshot de state mutável.
+- [ ] Remover OptiScalerAdapter e getters repetidos.
+- [ ] Separar RuntimeConfig de state mutável.
 - [ ] Preservar stale timing/generation/reconfigure quarantine.
-- [ ] Definir owner thread de cada state.
-- [ ] `NrSession` orquestra; policy helpers permanecem módulos pequenos e focados.
-- [ ] Header contém contrato, não implementação para “economizar” linhas do .cpp.
+- [ ] `NrSession` orquestra; helpers permanecem focados.
+- [ ] Antes de mudanças substanciais, decompor `FusionRuntime.hpp` (>300) em contratos/facades pequenos.
+- [ ] Se `PerformanceController.cpp` for evoluído, separar estimativa/cost learning da state machine de escala.
+- [ ] `ProfileStore.cpp` só é tocado após separar codec/validation de persistence, se ainda fizer parte do standalone.
 
 ## Revisão obrigatória
 
 - [ ] Old vs new call graph.
 - [ ] Cada lock tem concorrência demonstrada.
 - [ ] Nenhum state tem dois owners.
-- [ ] Nenhum helper é extraído só para burlar LOC.
-- [ ] Cada arquivo <=300 linhas.
+- [ ] Header contém contrato, não implementação escondida.
+- [ ] Split não duplica policy.
 
 ## Validação rápida
 
-- [ ] Fake executor por milhões de frames.
-- [ ] Differential de decisões.
-- [ ] Timing atrasado/reset/overload/config generation.
-- [ ] Checker de tamanho.
+- [ ] Fake executor milhões de frames.
+- [ ] Differential decisions.
+- [ ] Timing/reset/overload/config changes.
+- [ ] LOC checker.
 
 ## Gate
 
 - [ ] 0 heap allocations steady.
-- [ ] Menos locks/chamadas.
-- [ ] Mesmas decisões para entradas equivalentes.
-- [ ] NrSession e helpers <=300 linhas por arquivo.
+- [ ] Menos locks/calls.
+- [ ] Mesmas decisões equivalentes.
+- [ ] Core tocado <=300 linhas por arquivo.
 
 ## Próxima fase
 

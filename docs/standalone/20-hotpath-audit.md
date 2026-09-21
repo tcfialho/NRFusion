@@ -2,7 +2,7 @@
 
 ## Objetivo
 
-Provar performance e cumprir integralmente a arquitetura <=300 linhas antes de otimização final.
+Provar performance e eliminar toda dívida estrutural que não será aposentada.
 
 ## Dependências
 
@@ -10,45 +10,43 @@ Rotas principais implementadas.
 
 ## Fora de escopo
 
-- Tempo total do correctness harness como benchmark
-- Refatoração estética sem responsabilidade clara
+- Correctness harness como benchmark
+- Split estético sem boundary
 
 ## Implementação
 
-- [ ] Auditar allocation, containers, formatting, filesystem, scans, locks, resource/heap/PSO creation e waits.
-- [ ] Auditar descriptor writes, queries, copies e capability/config queries.
-- [ ] Classificar custo como init/reconfigure/steady.
-- [ ] Gerar contagem/frame de locks/creates/writes/queries/copies/host calls.
-- [ ] Rodar um checker pequeno sobre **todos** os arquivos first-party handwritten, não só touched files.
-- [ ] Checker conta linhas físicas e usa allowlist apenas para generated/vendor/upstream fixtures.
-- [ ] Classificar violações restantes: split agora ou retire antes do cutover.
-- [ ] Split de test files grandes é por subsistema/cenário; build scripts por responsabilidade/target.
-- [ ] Não criar framework complexo só para enforcement; checker deve permanecer pequeno.
+- [ ] Auditar allocations, containers, formatting, filesystem, scans, locks, creates e waits.
+- [ ] Auditar descriptors, queries, copies e capability/config queries.
+- [ ] Classificar init/reconfigure/steady.
+- [ ] Contar custo/frame.
+- [ ] Rodar checker sobre **todo** first-party handwritten code.
+- [ ] Checker usa allowlist só para generated/vendor/upstream fixtures.
+- [ ] Resolver dívida ativa conhecida: controller tests, PerformanceController, ProfileStore, Ada interceptor, W4A8 CUDA/tools e demais itens do relatório.
+- [ ] Testes grandes são divididos por subsystem/scenario; CUDA por kernel/responsabilidade; tools por etapa de trabalho.
+- [ ] Código marcado para retirement não é refatorado se sua remoção ocorrer antes da RC.
+- [ ] Checker permanece pequeno; enforcement não vira framework.
 
 ## Revisão obrigatória
 
-- [ ] Todo custo steady restante justificado.
-- [ ] Benchmark exclui waits/Map/console de correctness.
+- [ ] Todo steady cost justificado.
+- [ ] Benchmark exclui waits/Map/console.
 - [ ] Warm-up separado; p50/p95/p99.
-- [ ] Tail regression bloqueia merge.
-- [ ] Nenhuma exclusão de LOC é criada só para evitar refactor.
-- [ ] Minificação/embedded code não contam como solução.
+- [ ] Tail regression bloqueia.
+- [ ] Nenhuma allowlist criada para escapar do cap.
+- [ ] Minificação não é solução.
 
 ## Validação rápida
 
-- [ ] CPU/fake milhões de frames.
-- [ ] Benchmark carriers principais.
+- [ ] CPU/fake long run.
+- [ ] Benchmark carriers.
 - [ ] Correctness separado.
-- [ ] Relatório completo de LOC first-party.
+- [ ] Relatório LOC completo.
 
 ## Gate
 
-- [ ] 0 heap allocation normal.
-- [ ] 0 resource/heap/PSO creation normal.
-- [ ] 0 filesystem/string/config parsing normal.
-- [ ] 0 blocking wait normal.
+- [ ] Performance contract cumprido.
 - [ ] Arquivos novos/tocados: zero >300.
-- [ ] Restante legado >300 tem fase de split/retirement explícita.
+- [ ] Todo legado >300 restante está explicitamente marcado para retirement antes da RC.
 
 ## Próxima fase
 

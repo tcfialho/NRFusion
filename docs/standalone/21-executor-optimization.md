@@ -2,7 +2,7 @@
 
 ## Objetivo
 
-Otimizar somente alvos medidos mantendo cada unidade pequena e revisável.
+Otimizar alvos medidos após decompor qualquer unidade oversized ativa.
 
 ## Dependências
 
@@ -10,41 +10,41 @@ Fases 05,08,20.
 
 ## Fora de escopo
 
-- Remover barrier por aparência
-- Reescrever modelo NVIDIA
-- Usar performance como desculpa para monólito
+- Barrier por aparência
+- Reescrever modelo
+- Performance como desculpa para monólito
 
 ## Implementação
 
-- [ ] Rankear copies/barriers/descriptors/readbacks/resolve por custo/frequência.
+- [ ] Rankear copies/barriers/descriptors/readbacks/resolve.
 - [ ] Um alvo por iteração.
-- [ ] Se o arquivo alvo legado ainda >300, fazer split mecânico e validar antes da otimização.
-- [ ] Provar redundância/substituição segura.
-- [ ] Preservar subrect/format/state/lifetime/failure.
-- [ ] Medir before/after no mesmo cenário.
-- [ ] Registrar quando não otimizar é a decisão correta.
-- [ ] Nenhuma otimização pode ultrapassar cap de 300; extrair boundary real antes.
+- [ ] Se ativos, decompor `AdaW4A8Interceptor.cpp` por cache/capability/interception/status e `W4A8FfnSm89.cu` por kernel family antes de evoluir.
+- [ ] Separar benchmark CUDA ativo se ainda >300.
+- [ ] Provar redundância/substituição.
+- [ ] Preservar state/lifetime/failure.
+- [ ] Medir before/after.
+- [ ] Registrar quando não otimizar é correto.
 
 ## Revisão obrigatória
 
 - [ ] Barrier exige state proof.
 - [ ] Copy exige equivalência.
 - [ ] Não aumentar VRAM sem aprovação.
-- [ ] Não agrupar mudanças não atribuíveis.
-- [ ] Split e optimization ficam em commits distinguíveis quando possível.
+- [ ] Split mecânico e optimization ficam distinguíveis.
+- [ ] Kernel split não duplica constants/layout logic.
 
 ## Validação rápida
 
 - [ ] Scenario específico.
 - [ ] Long-run regression.
-- [ ] Hardware real para GPU/qualidade.
+- [ ] Hardware real para GPU/quality.
 - [ ] LOC checker.
 
 ## Gate
 
-- [ ] Ganho/simplificação demonstrável ou mudança descartada.
-- [ ] Sem regressão funcional/VRAM.
-- [ ] Todos arquivos alterados <=300 linhas.
+- [ ] Ganho demonstrável ou mudança descartada.
+- [ ] Sem regressão.
+- [ ] Todos arquivos ativos <=300.
 
 ## Próxima fase
 

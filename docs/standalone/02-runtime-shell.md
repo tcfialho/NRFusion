@@ -2,7 +2,7 @@
 
 ## Objetivo
 
-Criar lifecycle/bootstrap/configuração sem concentrar tudo em um `Runtime.cpp` gigante.
+Criar lifecycle/bootstrap/configuração sem concentrar tudo em um `Runtime.cpp` ou `GameProbe.cpp` gigante.
 
 ## Dependências
 
@@ -16,37 +16,37 @@ Fases 00–01.
 
 ## Implementação
 
-- [ ] Separar bootstrap/proxy, runtime lifecycle, config snapshot e registry em responsabilidades distintas.
+- [ ] Separar bootstrap/proxy, runtime lifecycle, config snapshot e registry.
+- [ ] Se `GameProbe.cpp` for reaproveitado, separar PE/module inspection, API resolution, capability scan e install-support logic antes de expansão.
 - [ ] Definir init/shutdown idempotentes.
 - [ ] RuntimeConfig compacto por snapshot/generation.
 - [ ] Registrar providers/executors por capability.
-- [ ] Logging/status mínimo com failure reason estável.
+- [ ] Logging/status mínimo.
 - [ ] Eliminar OptiScaler Config/State e patcher Python em runtime.
-- [ ] Disabled path quase pass-through.
-- [ ] Definir thread ownership/state transitions.
-- [ ] Manter cada módulo <=300 linhas; preferir alvo <=250.
+- [ ] Disabled quase pass-through.
+- [ ] Cada módulo <=300 linhas; alvo <=250.
 
 ## Revisão obrigatória
 
 - [ ] COM/module/hook ownership explícito.
-- [ ] Partial init/shutdown limpa apenas o que possui.
-- [ ] Bootstrap não pressupõe D3D12 como API do jogo.
-- [ ] Sem filesystem/config parsing no frame path.
+- [ ] Partial init/shutdown limpa só o que possui.
+- [ ] Bootstrap não pressupõe API.
+- [ ] Probing não mistura filesystem parsing com frame runtime.
 - [ ] Nenhuma classe agrega bootstrap + policy + carrier.
 
 ## Validação rápida
 
 - [ ] Abrir/fechar shell com fake components.
-- [ ] Injetar falha por estágio.
+- [ ] Falha por estágio.
 - [ ] Medir disabled path.
-- [ ] Rodar checker de 300 linhas sobre arquivos novos/tocados.
+- [ ] LOC checker.
 
 ## Gate
 
 - [ ] Shutdown sem leak/thread.
 - [ ] Disabled não altera output.
-- [ ] Bootstrap desacoplado de Acquire/Execute.
-- [ ] Nenhum arquivo novo/tocado >300 linhas.
+- [ ] Bootstrap/probe desacoplados de Acquire/Execute.
+- [ ] Nenhum arquivo novo/tocado >300.
 
 ## Próxima fase
 
