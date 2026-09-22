@@ -4,6 +4,9 @@
 #include <cassert>
 #include <cstdlib>
 #include <new>
+#ifdef _MSC_VER
+#include <malloc.h>
+#endif
 
 using namespace nrfusion;
 
@@ -56,6 +59,7 @@ bool Step(NrSession& session, FakeExecutor& executor,
 void* operator new(std::size_t size) {
     if (gMeasure.load(std::memory_order_relaxed))
         gAllocations.fetch_add(1, std::memory_order_relaxed);
+    if (size == 0) size = 1;
     if (void* memory = std::malloc(size)) return memory;
     throw std::bad_alloc();
 }
@@ -78,6 +82,46 @@ void operator delete(void* memory, std::size_t) noexcept {
 
 void operator delete[](void* memory, std::size_t) noexcept {
     std::free(memory);
+}
+
+void* operator new(std::size_t size, std::align_val_t alignment) {
+    if (gMeasure.load(std::memory_order_relaxed))
+        gAllocations.fetch_add(1, std::memory_order_relaxed);
+    const std::size_t align = static_cast<std::size_t>(alignment);
+    if (size == 0) size = align;
+#ifdef _MSC_VER
+    if (void* memory = _aligned_malloc(size, align)) return memory;
+#else
+    const std::size_t rounded = ((size + align - 1) / align) * align;
+    if (void* memory = std::aligned_alloc(align, rounded)) return memory;
+#endif
+    throw std::bad_alloc();
+}
+
+void* operator new[](std::size_t size, std::align_val_t alignment) {
+    return ::operator new(size, alignment);
+}
+
+void operator delete(void* memory, std::align_val_t) noexcept {
+#ifdef _MSC_VER
+    _aligned_free(memory);
+#else
+    std::free(memory);
+#endif
+}
+
+void operator delete[](void* memory, std::align_val_t alignment) noexcept {
+    ::operator delete(memory, alignment);
+}
+
+void operator delete(
+    void* memory, std::size_t, std::align_val_t alignment) noexcept {
+    ::operator delete(memory, alignment);
+}
+
+void operator delete[](
+    void* memory, std::size_t, std::align_val_t alignment) noexcept {
+    ::operator delete(memory, alignment);
 }
 
 int main() {

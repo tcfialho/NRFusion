@@ -320,3 +320,10 @@ movidos para `FusionRuntimeLifecycle.cpp`.
 
 O hot path permanece inline onde já estava; nenhum virtual/PImpl/lock/heap/indirect dispatch foi
 adicionado para satisfazer o limite estrutural.
+
+
+### 06f allocation-counter coverage
+
+O stress agora intercepta também aligned `new/new[]` e respectivas formas de delete.
+O caso `operator new(0)` também segue o contrato de allocation e não produz falso `bad_alloc`.
+Assim o gate não ignora allocations apenas por serem over-aligned.
