@@ -1,3 +1,3 @@
-phase06-review-20260922
-base=ebf0a0aba45ae41fbb649ba04de5ae4813cd0e53
-request=validate-one-shot-timing-map
+phase06-final-audit-20260922
+base=916190b95f50b9f54d1af320db30495ede87c317
+request=validate-transition-coverage-ring-pressure-controller-regressions
