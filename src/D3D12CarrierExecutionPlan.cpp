@@ -21,8 +21,13 @@ D3D12CarrierExecutionPlanResult BuildD3D12CarrierExecutionPlan(
     const D3D12CarrierExecutionConfig& config) noexcept {
     D3D12CarrierExecutionPlanResult result{};
 
-    if (!frame || frame.acquire.frame.api != GraphicsApi::D3D12 ||
-        frame.session.decision.pipeline.api != GraphicsApi::D3D12) {
+    if (!frame || !frame.session.decision.supported ||
+        !frame.session.decision.pipeline.supported ||
+        frame.acquire.frame.api != GraphicsApi::D3D12 ||
+        frame.session.decision.pipeline.api != GraphicsApi::D3D12 ||
+        frame.acquire.frame.frameId != frame.session.frameId ||
+        frame.acquire.frame.configurationGeneration !=
+            frame.session.configurationGeneration) {
         result.failure = D3D12CarrierExecutionFailure::InvalidFrame;
         return result;
     }
