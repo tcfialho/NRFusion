@@ -217,6 +217,10 @@ public:
     void Reconfigure(const PerformanceConfig& config) { performance_ = PerformanceController(config); }
     void Reset(float initialScale) { performance_.Reset(initialScale); }
     void ObserveScaleCost(float scale, double gpuMs) { performance_.ObserveScaleCost(scale, gpuMs); }
+    void ObservePrecisionCost(
+        NrPrecision precision, std::uint64_t generation, double gpuMs) {
+        precisionTuner_.Observe(precision, generation, gpuMs);
+    }
     void ClearLearnedCostModel() { performance_.ClearLearnedCostModel(); }
     std::optional<float> ReportScaleBuildFailure(float failedScale) {
         return performance_.ReportScaleBuildFailure(failedScale);

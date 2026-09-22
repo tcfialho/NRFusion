@@ -90,3 +90,19 @@ O slice `nrfusion_nr_session_portable` agora é opt-in:
 Build normal continua ligando os testes ao `nrfusion_core`, sem recompilar production units em
 duplicidade. O modo focado recompila apenas a closure portátil necessária quando o objetivo explícito
 é validar NrSession sem CUDA/host/Windows.
+
+
+### 06e precision-timing closure
+
+A revisão do adapter legado mostrou que completion de work também qualificava precision pelo ticket.
+O primeiro `NrSession` só chamava `ObserveScaleCost`, então o `PrecisionAutotuner` central nunca
+recebia timings e Auto ficaria preso no baseline.
+
+Agora `RetireTimedInterval` alimenta:
+- precision exata derivada de `WorkTicket.precisionTag`;
+- runtime generation exata do ticket;
+- GPU timing validado;
+- cost model da working scale.
+
+Regressão adicionada percorre baseline warmup/measure, candidate warmup/measure e exige que uma
+candidate HybridNvfp4 25% mais rápida seja efetivamente selecionada após qualificação.

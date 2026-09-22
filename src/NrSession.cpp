@@ -128,6 +128,10 @@ bool NrSession::RetireTimedInterval(double gpuMs) {
     if (ticket.configurationGeneration != state_.runtimeGeneration ||
         !std::isfinite(gpuMs) || gpuMs <= 0.0 || gpuMs >= 1000.0)
         return false;
+    const NrPrecision precision = ticket.precisionTag == 4u
+        ? NrPrecision::HybridNvfp4 : NrPrecision::Fp8;
+    runtime_.ObservePrecisionCost(
+        precision, ticket.configurationGeneration, gpuMs);
     runtime_.ObserveScaleCost(ticket.workingScale, gpuMs);
     return true;
 }

@@ -129,6 +129,32 @@ int main() {
                sequenceBaseline.AutoConfigurationGeneration());
     }
 
+    RuntimeConfig precisionConfig = config;
+    precisionConfig.generation = 20;
+    NrSession precisionSession;
+    assert(precisionSession.Configure(precisionConfig, performance));
+    auto precisionPacket = Packet(precisionConfig.generation, 300);
+    precisionPacket.capabilities.hybridNvfp4 = true;
+    bool sawHybrid = false;
+    for (std::size_t i = 0; i < 110; ++i) {
+        const auto precisionFrame = precisionSession.Resolve(precisionPacket);
+        assert(precisionFrame);
+        sawHybrid = sawHybrid ||
+            precisionFrame.decision.precision == NrPrecision::HybridNvfp4;
+        const auto precisionWork = precisionSession.BeginWork(precisionFrame);
+        assert(precisionWork && precisionSession.SubmitWork(*precisionWork));
+        assert(precisionSession.MapTimedWork(*precisionWork));
+        const double gpuMs =
+            precisionFrame.decision.precision == NrPrecision::HybridNvfp4
+                ? 1.5 : 2.0;
+        assert(precisionSession.RetireTimedInterval(gpuMs));
+        ++precisionPacket.frame.frameId;
+    }
+    assert(sawHybrid);
+    const auto qualifiedPrecision = precisionSession.Resolve(precisionPacket);
+    assert(qualifiedPrecision);
+    assert(qualifiedPrecision.decision.precision == NrPrecision::HybridNvfp4);
+
     RuntimeConfig disabled = config;
     ++disabled.generation;
     disabled.enabled = false;
