@@ -1,3 +1,3 @@
-phase06-final-audit-rerun-20260922
-base=916190b95f50b9f54d1af320db30495ede87c317
-request=validate-transition-coverage-ring-pressure-controller-regressions
+phase07-checkpoint-20260922
+base=6fcdec5f53244d6912837f37f8b60c969d173425
+request=validate-phase06-and-package-source-checkpoint
