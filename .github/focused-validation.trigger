@@ -1,3 +1,3 @@
-phase06-06f
-code-head=4b19b4273fd0da1b798b3538c16df80c33bad8aa
-request=compile-and-run-focused-nr-session
+phase06-06f-localize-alloc
+base=9cd699c9cb46c20f27f64461be54dc2448afa0dc
+request=localize-focused-nr-session-allocation

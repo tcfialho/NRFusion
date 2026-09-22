@@ -1,7 +1,9 @@
 #include "nrfusion/NrSession.hpp"
 
+#include <array>
 #include <atomic>
 #include <cassert>
+#include <cstdio>
 #include <cstdlib>
 #include <new>
 #ifdef _MSC_VER
@@ -13,14 +15,35 @@ using namespace nrfusion;
 namespace {
 
 std::atomic<std::size_t> gAllocations{0};
+std::array<std::atomic<std::size_t>, 6> gPhaseAllocations{};
+std::atomic<std::size_t> gPhase{0};
+std::atomic<std::uint64_t> gMeasuredFrame{0};
+std::atomic<std::uint64_t> gFirstAllocationFrame{0};
 std::atomic<bool> gMeasure{false};
+
+void RecordAllocation() noexcept {
+    if (!gMeasure.load(std::memory_order_relaxed)) return;
+    gAllocations.fetch_add(1, std::memory_order_relaxed);
+    const std::size_t phase = gPhase.load(std::memory_order_relaxed);
+    if (phase < gPhaseAllocations.size())
+        gPhaseAllocations[phase].fetch_add(1, std::memory_order_relaxed);
+    std::uint64_t expected = 0;
+    gFirstAllocationFrame.compare_exchange_strong(
+        expected, gMeasuredFrame.load(std::memory_order_relaxed),
+        std::memory_order_relaxed);
+}
 
 struct FakeExecutor {
     bool Execute(
         NrSession& session, const NrSessionFrameResult& frame, double gpuMs) noexcept {
+        gPhase.store(2, std::memory_order_relaxed);
         const auto work = session.BeginWork(frame);
-        if (!work || !session.SubmitWork(*work) || !session.MapTimedWork(*work))
-            return false;
+        if (!work) return false;
+        gPhase.store(3, std::memory_order_relaxed);
+        if (!session.SubmitWork(*work)) return false;
+        gPhase.store(4, std::memory_order_relaxed);
+        if (!session.MapTimedWork(*work)) return false;
+        gPhase.store(5, std::memory_order_relaxed);
         return session.RetireTimedInterval(gpuMs);
     }
 };
@@ -49,6 +72,8 @@ NrSessionFramePacket Packet(std::uint64_t generation, FrameId frameId) {
 
 bool Step(NrSession& session, FakeExecutor& executor,
           NrSessionFramePacket& packet) noexcept {
+    gMeasuredFrame.store(packet.frame.frameId, std::memory_order_relaxed);
+    gPhase.store(1, std::memory_order_relaxed);
     const NrSessionFrameResult result = session.Resolve(packet);
     if (!result) return false;
     const double gpuMs = result.decision.precision == NrPrecision::HybridNvfp4
@@ -62,8 +87,7 @@ bool Step(NrSession& session, FakeExecutor& executor,
 } // namespace
 
 void* operator new(std::size_t size) {
-    if (gMeasure.load(std::memory_order_relaxed))
-        gAllocations.fetch_add(1, std::memory_order_relaxed);
+    RecordAllocation();
     if (size == 0) size = 1;
     if (void* memory = std::malloc(size)) return memory;
     throw std::bad_alloc();
@@ -90,8 +114,7 @@ void operator delete[](void* memory, std::size_t) noexcept {
 }
 
 void* operator new(std::size_t size, std::align_val_t alignment) {
-    if (gMeasure.load(std::memory_order_relaxed))
-        gAllocations.fetch_add(1, std::memory_order_relaxed);
+    RecordAllocation();
     const std::size_t align = static_cast<std::size_t>(alignment);
     if (size == 0) size = align;
 #ifdef _MSC_VER
@@ -161,11 +184,29 @@ int main() {
     packet.telemetry.frameGpuMs = 6.0;
 
     gAllocations.store(0, std::memory_order_relaxed);
+    for (auto& count : gPhaseAllocations)
+        count.store(0, std::memory_order_relaxed);
+    gFirstAllocationFrame.store(0, std::memory_order_relaxed);
     gMeasure.store(true, std::memory_order_relaxed);
     for (std::size_t i = 0; i < 1'000'000; ++i)
         assert(Step(session, executor, packet));
     gMeasure.store(false, std::memory_order_relaxed);
 
-    assert(gAllocations.load(std::memory_order_relaxed) == 0);
+    const auto allocations = gAllocations.load(std::memory_order_relaxed);
+    if (allocations != 0) {
+        std::fprintf(stderr,
+            "allocations=%zu first_frame=%llu "
+            "other=%zu resolve=%zu begin=%zu submit=%zu map=%zu retire=%zu\n",
+            allocations,
+            static_cast<unsigned long long>(
+                gFirstAllocationFrame.load(std::memory_order_relaxed)),
+            gPhaseAllocations[0].load(std::memory_order_relaxed),
+            gPhaseAllocations[1].load(std::memory_order_relaxed),
+            gPhaseAllocations[2].load(std::memory_order_relaxed),
+            gPhaseAllocations[3].load(std::memory_order_relaxed),
+            gPhaseAllocations[4].load(std::memory_order_relaxed),
+            gPhaseAllocations[5].load(std::memory_order_relaxed));
+    }
+    assert(allocations == 0);
     return 0;
 }
