@@ -53,6 +53,7 @@ add_library(nrfusion_core STATIC
     src/NrSubmissionGate.cpp
     src/NrDeferredRetirementQueue.cpp
     src/D3D12NrFramePlan.cpp
+    src/D3D12CarrierContract.cpp
 )
 
 if (WIN32)
