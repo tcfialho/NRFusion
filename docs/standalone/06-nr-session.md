@@ -68,6 +68,8 @@ Fase 07.
 - decisão válida é diferencialmente comparada com um `FusionRuntime` independente no teste portátil.
 - `FusionRuntime.hpp` deixa de possuir helpers/identity de Auto; eles passam ao contrato focado
   `AutoDecision.hpp`, mantendo funções inline e sem custo de chamada adicional.
+- o overlap calibrado, que é timing/diagnóstico e não policy central, foi movido para
+  `FusionRuntimeTiming.cpp`; o header volta a ficar abaixo do limite estrutural.
 
 Próximo subgate: 06b — work identity/timing retirement com storage fixo e fake executor, removendo
 o caminho por-frame de `OptiScalerAdapter` sem introduzir locks ou allocations steady.

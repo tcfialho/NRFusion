@@ -1,5 +1,6 @@
 add_library(nrfusion_core STATIC
     src/PerformanceController.cpp
+    src/FusionRuntimeTiming.cpp
     src/NrCostModel.cpp
     src/WorkLedger.cpp
     src/TimingWorkMapper.cpp

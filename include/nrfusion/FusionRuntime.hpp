@@ -205,21 +205,10 @@ public:
     TimingWorkMapper& TimingMap() noexcept { return timingMap_; }
     AsyncOverlapEstimator& Overlap() noexcept { return overlap_; }
 
-    std::optional<double> ObserveCalibratedOverlap(const QueueGpuIntervalTicks& nr,
-                                                   const std::vector<QueueGpuIntervalTicks>& concurrent,
-                                                   double dtSeconds) {
-        const auto nrCommon = queueClocks_.ToCommonInterval(nr.queue, nr.startGpuTimestamp, nr.endGpuTimestamp);
-        if (!nrCommon) return std::nullopt;
-        std::vector<GpuInterval> common;
-        common.reserve(concurrent.size());
-        for (const auto& interval : concurrent) {
-            const auto mapped = queueClocks_.ToCommonInterval(interval.queue, interval.startGpuTimestamp,
-                                                               interval.endGpuTimestamp);
-            if (mapped) common.push_back(*mapped);
-        }
-        if (common.empty()) return std::nullopt;
-        return overlap_.Update(*nrCommon, common, dtSeconds);
-    }
+    std::optional<double> ObserveCalibratedOverlap(
+        const QueueGpuIntervalTicks& nr,
+        const std::vector<QueueGpuIntervalTicks>& concurrent,
+        double dtSeconds);
     CrossQueueClockCalibrator& QueueClocks() noexcept { return queueClocks_; }
     const CrossQueueClockCalibrator& QueueClocks() const noexcept { return queueClocks_; }
     AsyncQualification& AsyncTuner() noexcept { return asyncTuner_; }
