@@ -50,6 +50,7 @@ int main() {
 
     const auto base = BaseSnapshot();
     const auto acquired = BuildD3D12FrameContract(base);
+    assert(acquired.attempted);
     assert(acquired);
     assert(acquired.frame.api == GraphicsApi::D3D12);
     assert(acquired.frame.frameId == base.identity.frameId);
