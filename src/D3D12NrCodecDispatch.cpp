@@ -82,6 +82,8 @@ bool D3D12NrCodec::Dispatch(
     ID3D12GraphicsCommandList* commandList,
     const D3D12NrCodecConstants& constants,
     const D3D12NrCodecResources& resources) noexcept {
+    if (constants.mode > static_cast<std::uint32_t>(D3D12NrCodecMode::ZeroMotion))
+        return false;
     return DispatchWithPipeline(commandList, pipelineState_, constants, resources);
 }
 
