@@ -17,8 +17,6 @@ set(NRFUSION_NR_SESSION_PORTABLE_SOURCES
     src/TemporalHistoryRegistry.cpp
     src/TelemetryTracker.cpp
     src/PipelinedExecutorState.cpp
-    src/WorkLedger.cpp
-    src/TimingWorkMapper.cpp
     src/CrossQueueClockCalibrator.cpp
     src/ResidualPolicy.cpp
     src/TemporalConfidence.cpp

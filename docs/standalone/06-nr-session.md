@@ -203,3 +203,18 @@ Se `PerformanceController` rejeita o novo config (por exemplo, nenhum scale step
 - a sessão anterior continua resolvendo frames válidos.
 
 Isso remove um partial-reconfigure path sem adicionar custo ao steady frame path.
+
+
+### 06e ownership cleanup
+
+`FusionRuntime` ainda carregava `WorkLedger` e `TimingWorkMapper` legados mesmo depois de
+`NrSession` assumir work/timing fixos. O adapter legado já possui trackers próprios e nenhum callsite
+usa `FusionRuntime::Works()/TimingMap()`.
+
+Removidos do runtime central:
+- os dois getters;
+- os dois members;
+- includes correspondentes.
+
+Efeito: um único owner de work/timing no standalone e remoção da allocation de construção do
+`TimingWorkMapper{16}` que era inútil em cada `NrSession`.

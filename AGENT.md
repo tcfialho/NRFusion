@@ -135,6 +135,7 @@ Open PRs: 0
 - Configure is transactional for invalid PerformanceConfig and generation exhaustion
 - focused NrSession tests link a portable production-source slice instead of nrfusion_core
 - differential regression spans 180 adaptive decisions
+- removed duplicate WorkLedger/TimingWorkMapper ownership from FusionRuntime
 
 Outstanding Phase 06 runtime gates:
 - execute nrfusion_nr_session_tests

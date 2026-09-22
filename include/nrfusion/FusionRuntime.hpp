@@ -22,8 +22,6 @@
 #include "nrfusion/TelemetryTracker.hpp"
 #include "nrfusion/TemporalConfidence.hpp"
 #include "nrfusion/TemporalHistoryRegistry.hpp"
-#include "nrfusion/TimingWorkMapper.hpp"
-#include "nrfusion/WorkLedger.hpp"
 
 #include <algorithm>
 #include <cmath>
@@ -201,8 +199,6 @@ public:
     const TelemetryTracker& Telemetry() const noexcept { return telemetry_; }
     PipelinedExecutorState& Pipeline() noexcept { return pipeline_; }
     const PipelinedExecutorState& Pipeline() const noexcept { return pipeline_; }
-    WorkLedger& Works() noexcept { return works_; }
-    TimingWorkMapper& TimingMap() noexcept { return timingMap_; }
     AsyncOverlapEstimator& Overlap() noexcept { return overlap_; }
 
     std::optional<double> ObserveCalibratedOverlap(
@@ -264,8 +260,6 @@ private:
     TemporalHistoryRegistry histories_;
     TelemetryTracker telemetry_;
     PipelinedExecutorState pipeline_{2};
-    WorkLedger works_;
-    TimingWorkMapper timingMap_{16};
     AsyncOverlapEstimator overlap_;
     CrossQueueClockCalibrator queueClocks_;
     AsyncQualification asyncTuner_;
