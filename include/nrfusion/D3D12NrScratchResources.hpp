@@ -51,8 +51,8 @@ private:
     static void Release(Surface& surface) noexcept;
     static bool Park(Surface& surface, NrDeferredRetirementQueue& retirement) noexcept;
 
-    Surface& Slot(D3D12NrScratchKind kind) noexcept;
-    const Surface& Slot(D3D12NrScratchKind kind) const noexcept;
+    Surface* Slot(D3D12NrScratchKind kind) noexcept;
+    const Surface* Slot(D3D12NrScratchKind kind) const noexcept;
     std::size_t ActiveCount() const noexcept;
 
     Surface output_{};

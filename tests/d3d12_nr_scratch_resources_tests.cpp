@@ -12,14 +12,17 @@ int main() {
         DXGI_FORMAT_R16G16B16A16_FLOAT, 1920, 1080, 1280, 720};
     const D3D12NrScratchDesc invalid{
         DXGI_FORMAT_UNKNOWN, 1920, 1080, 1280, 720};
+    const auto invalidKind = static_cast<D3D12NrScratchKind>(0xff);
 
     assert(!scratch.Complete());
     assert(!scratch.Matches(valid));
     assert(scratch.Get(D3D12NrScratchKind::Output) == nullptr);
     assert(scratch.Get(D3D12NrScratchKind::ColorCopy) == nullptr);
     assert(scratch.Get(D3D12NrScratchKind::HdrCopy) == nullptr);
+    assert(scratch.Get(invalidKind) == nullptr);
     assert(scratch.State(D3D12NrScratchKind::Output) ==
            D3D12_RESOURCE_STATE_UNORDERED_ACCESS);
+    assert(scratch.State(invalidKind) == D3D12_RESOURCE_STATE_COMMON);
 
     assert(!scratch.Ensure(nullptr, valid, retirement));
     assert(!scratch.Ensure(nullptr, invalid, retirement));
@@ -27,6 +30,10 @@ int main() {
 
     assert(!scratch.Transition(
         nullptr, D3D12NrScratchKind::Output,
+        D3D12_RESOURCE_STATE_UNORDERED_ACCESS,
+        D3D12_RESOURCE_STATE_NON_PIXEL_SHADER_RESOURCE));
+    assert(!scratch.Transition(
+        nullptr, invalidKind,
         D3D12_RESOURCE_STATE_UNORDERED_ACCESS,
         D3D12_RESOURCE_STATE_NON_PIXEL_SHADER_RESOURCE));
 

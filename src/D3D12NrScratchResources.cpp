@@ -53,18 +53,30 @@ bool D3D12NrScratchResources::Park(
     return true;
 }
 
-D3D12NrScratchResources::Surface& D3D12NrScratchResources::Slot(
+D3D12NrScratchResources::Surface* D3D12NrScratchResources::Slot(
     D3D12NrScratchKind kind) noexcept {
-    if (kind == D3D12NrScratchKind::Output) return output_;
-    if (kind == D3D12NrScratchKind::ColorCopy) return colorCopy_;
-    return hdrCopy_;
+    switch (kind) {
+    case D3D12NrScratchKind::Output:
+        return &output_;
+    case D3D12NrScratchKind::ColorCopy:
+        return &colorCopy_;
+    case D3D12NrScratchKind::HdrCopy:
+        return &hdrCopy_;
+    }
+    return nullptr;
 }
 
-const D3D12NrScratchResources::Surface& D3D12NrScratchResources::Slot(
+const D3D12NrScratchResources::Surface* D3D12NrScratchResources::Slot(
     D3D12NrScratchKind kind) const noexcept {
-    if (kind == D3D12NrScratchKind::Output) return output_;
-    if (kind == D3D12NrScratchKind::ColorCopy) return colorCopy_;
-    return hdrCopy_;
+    switch (kind) {
+    case D3D12NrScratchKind::Output:
+        return &output_;
+    case D3D12NrScratchKind::ColorCopy:
+        return &colorCopy_;
+    case D3D12NrScratchKind::HdrCopy:
+        return &hdrCopy_;
+    }
+    return nullptr;
 }
 
 std::size_t D3D12NrScratchResources::ActiveCount() const noexcept {
@@ -134,18 +146,20 @@ bool D3D12NrScratchResources::Retire(NrDeferredRetirementQueue& retirement) noex
 bool D3D12NrScratchResources::Transition(
     ID3D12GraphicsCommandList* cmdList, D3D12NrScratchKind kind,
     D3D12_RESOURCE_STATES expected, D3D12_RESOURCE_STATES next) noexcept {
-    Surface& surface = Slot(kind);
-    if (cmdList == nullptr || surface.resource == nullptr || surface.state != expected) return false;
+    Surface* surface = Slot(kind);
+    if (cmdList == nullptr || surface == nullptr ||
+        surface->resource == nullptr || surface->state != expected)
+        return false;
     if (expected == next) return true;
 
     D3D12_RESOURCE_BARRIER barrier{};
     barrier.Type = D3D12_RESOURCE_BARRIER_TYPE_TRANSITION;
-    barrier.Transition.pResource = surface.resource;
+    barrier.Transition.pResource = surface->resource;
     barrier.Transition.Subresource = D3D12_RESOURCE_BARRIER_ALL_SUBRESOURCES;
     barrier.Transition.StateBefore = expected;
     barrier.Transition.StateAfter = next;
     cmdList->ResourceBarrier(1, &barrier);
-    surface.state = next;
+    surface->state = next;
     return true;
 }
 
@@ -157,11 +171,13 @@ void D3D12NrScratchResources::ReleaseAfterIdle() noexcept {
 }
 
 ID3D12Resource* D3D12NrScratchResources::Get(D3D12NrScratchKind kind) const noexcept {
-    return Slot(kind).resource;
+    const Surface* surface = Slot(kind);
+    return surface == nullptr ? nullptr : surface->resource;
 }
 
 D3D12_RESOURCE_STATES D3D12NrScratchResources::State(D3D12NrScratchKind kind) const noexcept {
-    return Slot(kind).state;
+    const Surface* surface = Slot(kind);
+    return surface == nullptr ? D3D12_RESOURCE_STATE_COMMON : surface->state;
 }
 
 } // namespace nrfusion
