@@ -83,6 +83,7 @@ if (WIN32)
         src/D3D12NrCodecInit.cpp
         src/D3D12NrCodecDispatch.cpp
         src/D3D12CarrierNativeAcquire.cpp
+        src/D3D12CarrierExecutor.cpp
         src/SyntheticVulkanProvider.cpp
         src/SyntheticOpenGlProvider.cpp
     )
