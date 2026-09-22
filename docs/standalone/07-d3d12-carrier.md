@@ -77,3 +77,16 @@ implementação do carrier.
 
 Definir uma migração que permita ao standalone sair do monólito sem quebrar o fallback legado e sem
 modificar o patcher >300. Só depois executar o split mecânico e comparar os testes atuais antes/depois.
+
+
+### Couplings adicionais do audit
+
+- `src/HostServer64.cpp`: 659 linhas; trocar o tipo de provider diretamente exigiria tocar outro
+  arquivo grandfathered cuja decomposição pertence à Fase 10.
+- `tests/synthetic_dx12_test.cpp`: 418 linhas; não deve ser expandido nesta fase sem split.
+- `tests/synthetic_dx12_scale_gate_test.cpp`: 269 linhas e pode servir como primeiro gate Windows
+  quando o novo carrier tiver uma boundary testável.
+
+A rota segura para a próxima sessão é tratar o novo carrier standalone como substituição progressiva,
+mantendo `SyntheticDx12Provider`, Host64 e patcher legados read-only enquanto o novo ownership é
+estabelecido. Nenhum wrapper que apenas delegue ao monólito conta como fechamento da Fase 07.
