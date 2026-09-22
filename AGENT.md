@@ -133,15 +133,22 @@ Phase 06: IN PROGRESS; subgates 06a-06c implemented.
 - allocation counter is enabled only after 512-frame warmup and requires exactly zero new/new[]
 
 Outstanding Phase 06:
-- execute the new portable stress target in an available C++ environment
+- execute nrfusion_nr_session_tests and nrfusion_nr_session_stress_tests once a source checkout can be materialized locally
 - remove OptiScalerAdapter from standalone call graph/getter path
 - old-vs-new call graph review
 - lock ownership review
 - final LOC/performance gate
 
-Validated code head before closure docs: 6aa5b69e940c9cc9538b8c970f599ca7eed09a52
+Validated structural code head before closure docs: ccd4c9fc8cb3be1e807171dc763bdeaf801efa63
 
 Exact next action:
 - run/compile the focused portable NrSession tests if an execution path is available
 - then remove OptiScalerAdapter from the standalone call graph without touching legacy patcher behavior
 - keep PerformanceController/ProfileStore untouched unless their owning responsibility must change
+
+
+06c validation note:
+- stress target is implemented but not claimed PASS
+- local g++/clang++/cmake exist, but no repository checkout is present
+- available GitHub connector has no workflow-dispatch action
+- Windows remains deliberately unused

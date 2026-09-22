@@ -40,7 +40,7 @@ Fase 05.
 
 ## Validação rápida
 
-- [x] Fake executor: teste de 1.000.000 frames adicionado com allocation counter.
+- [ ] Fake executor: teste de 1.000.000 frames implementado; execução portátil pendente.
 - [ ] Differential decisions.
 - [ ] Timing/reset/overload/config changes.
 - [ ] LOC checker.
@@ -123,3 +123,14 @@ Regressão portátil adicionada:
 - fake executor percorre Resolve -> Begin -> Submit -> MapTiming -> Retire;
 - `operator new/new[]` do executável contam allocations somente na janela medida;
 - gate: exatamente 0 heap allocations no milhão de frames.
+
+
+### Estado de validação 06c
+
+O teste de stress está versionado, mas **não foi executado nesta sessão**:
+- o ambiente local possui C++ compiler/CMake, porém não possui checkout do repositório;
+- o conector GitHub disponível não expõe workflow dispatch;
+- nenhum Windows gate foi usado.
+
+Portanto o gate de 0 allocations permanece aberto até a execução efetiva do target
+`nrfusion_nr_session_stress_tests`.
