@@ -415,3 +415,28 @@ committed. O `docs/CREDITS.md` do mesmo commit (blob
 
 O snapshot travado, porém, não contém o `Licenses/RenoDX_ATTRIBUTION.txt` que ambos referenciam.
 Esse é o único blocker de provenance antes de vendorizar/reimplementar o codec source.
+
+
+## Subgate 04a — provenance resolvido e codegen reproduzível
+
+Licenças verificadas:
+- NRFusion root `LICENSE`: GPL-3.0;
+- OptiScaler fork travado: GPL-3.0;
+- RenoDX root `LICENSE`: MIT, copyright 2025 Carlos Lopez Jr.
+
+A attribution ausente no snapshot travado foi localizada no upstream atual como blob
+`bb5b38afe756589c9eab79e1008444ca3ac56d61` e preservada localmente. O arquivo foi criado
+upstream no commit `e3f98f5c88802c07c0fdf66c20d311586107e8c1` e atualizado no
+`893aabf2d68270955071405e65cda6fc2579b3cb`.
+
+Source vendorizado:
+- locked HLSL blob: `4a6102820f736e9349ffed370259d094f2a7f4ae`.
+
+Codegen:
+- expected CSO Git blob: `d6eaab373d6f07142af5c283c1acc4b49edba351`;
+- expected generated header Git blob: `23429d34833b5f4ad761f83446998d518217183d`;
+- header upstream confirmado LF, não CRLF;
+- generator reproduz exatamente o algoritmo de `create_header.py`;
+- target CMake é opt-in e não entra no build normal.
+
+Nenhum CSO/header gerado foi commitado.

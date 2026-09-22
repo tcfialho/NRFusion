@@ -134,6 +134,6 @@ Outstanding Phase 05:
 
 Exact next action:
 - when workflow dispatch is available, run one fast validation with the three focused targets/tests
-- resolve the missing RenoDX licence/attribution text referenced by the locked upstream
-- add reproducible fxc cs_5_0 HLSL -> CSO -> header generation and byte-compare against locked blobs
-- only then extract D3D12NrCodec
+- provenance resolved: vendor source + RenoDX MIT attribution are now explicit
+- run nrfusion_dlssnr_shader_codegen on Windows and verify locked CSO/header blob IDs
+- then extract D3D12NrCodec around the generated header

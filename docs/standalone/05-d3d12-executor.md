@@ -242,3 +242,23 @@ contra os blobs travados antes de integrar o codec.
 Credits/README identificam RenoDX/clshortfuse como origem da composição, mas o arquivo de licença
 referenciado está ausente naquele snapshot. Implementação do codec fica congelada até resolver o
 texto de attribution/licença; ownership/state já concluído não depende disso.
+
+
+### Subgate 04a — shader source/provenance/codegen
+
+Provenance está fechado:
+
+- NRFusion: GPL-3.0;
+- upstream travado: GPL-3.0;
+- composição derivada de RenoDX: MIT, attribution preservada em
+  `licenses/RenoDX_ATTRIBUTION.txt`.
+
+`dlssnr.hlsl` foi importado verbatim para
+`shaders/vendor/optiscaler_dlssnr/dlssnr.hlsl`; seu Git blob deve permanecer
+`4a6102820f736e9349ffed370259d094f2a7f4ae`.
+
+`tools/generate_dlssnr_shader.py` reproduz o contrato upstream com `fxc cs_5_0 / CSMain / O3`
+e rejeita qualquer source, CSO ou header cujo Git blob não seja exatamente o travado. O CMake expõe
+somente o target opt-in `nrfusion_dlssnr_shader_codegen`; build normal permanece inalterado.
+
+O próximo subgate é extrair `D3D12NrCodec` usando o header gerado, não um blob handwritten.
