@@ -12,11 +12,13 @@ std::vector<NrPrecision> SupportedPrecisions(bool fp8, bool hybridNvfp4) {
     return out;
 }
 
-std::optional<NrPrecision> CheaperPrecision(NrPrecision current, bool fp8, bool hybridNvfp4) {
-    const auto supported = SupportedPrecisions(fp8, hybridNvfp4);
-    const auto at = std::find(supported.begin(), supported.end(), current);
-    if (at == supported.end() || at + 1 == supported.end()) return std::nullopt;
-    return *(at + 1);
+std::optional<NrPrecision> CheaperPrecision(
+    NrPrecision current, bool fp8, bool hybridNvfp4) {
+    if (current == NrPrecision::Fp8)
+        return fp8 && hybridNvfp4
+            ? std::optional<NrPrecision>{NrPrecision::HybridNvfp4}
+            : std::nullopt;
+    return std::nullopt;
 }
 
 namespace {

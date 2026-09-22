@@ -109,7 +109,7 @@
 Start: 2026-09-22 00:24 BRT
 Branch: standalone/integration
 Base/default branch: master
-Phase 06: IN PROGRESS; subgates 06a-06b implemented and adversarially reviewed.
+Phase 06: IN PROGRESS; subgates 06a-06c implemented.
 
 06a result:
 - added minimal NrSessionFramePacket/NrSessionFrameResult contracts
@@ -127,8 +127,13 @@ Phase 06: IN PROGRESS; subgates 06a-06b implemented and adversarially reviewed.
 - reconfigure resets work session + timing ring before new-generation acceptance
 - stale ticket/timing cannot train a later RuntimeConfig generation
 
+06c result:
+- found and removed per-frame vector materialization in CheaperPrecision
+- added portable fake-executor stress for 1,000,000 complete session transactions
+- allocation counter is enabled only after 512-frame warmup and requires exactly zero new/new[]
+
 Outstanding Phase 06:
-- fake executor million-frame validation and steady-allocation check
+- execute the new portable stress target in an available C++ environment
 - remove OptiScalerAdapter from standalone call graph/getter path
 - old-vs-new call graph review
 - lock ownership review
@@ -137,6 +142,6 @@ Outstanding Phase 06:
 Validated code head before closure docs: 6aa5b69e940c9cc9538b8c970f599ca7eed09a52
 
 Exact next action:
-- implement 06c fake executor stress + allocation instrumentation
+- run/compile the focused portable NrSession tests if an execution path is available
 - then remove OptiScalerAdapter from the standalone call graph without touching legacy patcher behavior
 - keep PerformanceController/ProfileStore untouched unless their owning responsibility must change

@@ -40,7 +40,7 @@ Fase 05.
 
 ## Validação rápida
 
-- [ ] Fake executor milhões de frames.
+- [x] Fake executor: teste de 1.000.000 frames adicionado com allocation counter.
 - [ ] Differential decisions.
 - [ ] Timing/reset/overload/config changes.
 - [ ] LOC checker.
@@ -104,3 +104,22 @@ O primeiro draft capturava `runtimeGeneration` antes de `ResolveAuto`. Isso era 
 
 
 - exhaustion de `session_` é terminal: namespace 0 permanece inválido e nunca recicla para 1.
+
+
+## Subgate 06c — steady-state allocation stress
+
+A auditoria do hot path encontrou uma allocation evitável: `CheaperPrecision()` chamava
+`SupportedPrecisions()`, que materializa um `std::vector`. Como `ResolveAuto()` consulta
+`CheaperPrecision()` no steady path, isso podia alocar por frame.
+
+Correção:
+- `CheaperPrecision()` agora resolve diretamente a única transição válida FP8 -> HybridNvfp4;
+- `SupportedPrecisions()` permanece inalterado para enumeração/menu fora do hot path;
+- sem mudança de policy ou resultado.
+
+Regressão portátil adicionada:
+- 512 frames de warmup;
+- 1.000.000 frames medidos;
+- fake executor percorre Resolve -> Begin -> Submit -> MapTiming -> Retire;
+- `operator new/new[]` do executável contam allocations somente na janela medida;
+- gate: exatamente 0 heap allocations no milhão de frames.
