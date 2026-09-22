@@ -440,3 +440,27 @@ Codegen:
 - target CMake é opt-in e não entra no build normal.
 
 Nenhum CSO/header gerado foi commitado.
+
+
+## Subgate 04b — D3D12NrCodec extraído
+
+Arquivos:
+- `include/nrfusion/D3D12NrCodec.hpp`;
+- `src/D3D12NrCodecInit.cpp`;
+- `src/D3D12NrCodecDispatch.cpp`;
+- `tests/d3d12_nr_codec_tests.cpp`.
+
+O split segue responsabilidade: init/lifetime e descriptor/dispatch. Não herda `Shader_Dx12` e
+não adiciona virtual dispatch, heap C++ ou locks.
+
+Semântica portada:
+- 5 SRV / 2 UAV / 1 CBV em uma descriptor table;
+- sampler linear clamp;
+- 48 slots round-robin;
+- constants alignadas a 256 bytes;
+- generated DXBC travado;
+- fallback de descriptor para inputs opcionais;
+- dispatch `ceil(width/8) x ceil(height/8)`.
+
+O target WARP é isolado de `nrfusion_core` e depende apenas de D3D12/DXGI + shader codegen.
+Ainda não foi executado porque o conector não oferece workflow_dispatch.

@@ -136,4 +136,6 @@ Exact next action:
 - when workflow dispatch is available, run one fast validation with the three focused targets/tests
 - provenance resolved: vendor source + RenoDX MIT attribution are now explicit
 - run nrfusion_dlssnr_shader_codegen on Windows and verify locked CSO/header blob IDs
-- then extract D3D12NrCodec around the generated header
+- D3D12NrCodec is now extracted behind an isolated WARP target
+- run shader codegen + codec/scratch/guide/frame-plan focused Windows validation
+- only after green, wire D3D12NrCodec into the executor frame path

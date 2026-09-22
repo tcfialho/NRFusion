@@ -262,3 +262,18 @@ e rejeita qualquer source, CSO ou header cujo Git blob não seja exatamente o tr
 somente o target opt-in `nrfusion_dlssnr_shader_codegen`; build normal permanece inalterado.
 
 O próximo subgate é extrair `D3D12NrCodec` usando o header gerado, não um blob handwritten.
+
+
+### Subgate 04b — codec D3D12 standalone
+
+`D3D12NrCodec` foi extraído sem `Shader_Dx12`, `Config` ou `State`:
+
+- root signature: 5 SRV + 2 UAV + 1 CBV + sampler linear clamp;
+- PSO usa somente o header gerado pelo target reproduzível;
+- ring fixo de 48 slots, cada um com descriptor heap + constant buffer de 256 bytes;
+- optional inputs recebem o mesmo stand-in do upstream;
+- views aceitam apenas Texture2D não-MSAA e falham fechado em resource incompatível;
+- dispatch group size permanece 8x8;
+- teste WARP executa um Encode 8x8 e verifica ausência de device removal.
+
+O codec permanece isolado do executor até esse target passar no Windows fast.

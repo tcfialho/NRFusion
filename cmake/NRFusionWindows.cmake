@@ -54,6 +54,22 @@ add_executable(nrfusion_harness_3d
     endif()
     add_test(NAME nrfusion_nr_guide_clones_tests COMMAND nrfusion_nr_guide_clones_tests)
 
+    add_executable(nrfusion_d3d12_nr_codec_tests
+        tests/d3d12_nr_codec_tests.cpp
+        src/D3D12NrCodecInit.cpp
+        src/D3D12NrCodecDispatch.cpp
+    )
+    add_dependencies(nrfusion_d3d12_nr_codec_tests nrfusion_dlssnr_shader_codegen)
+    target_include_directories(nrfusion_d3d12_nr_codec_tests PRIVATE
+        include
+        "${NRFUSION_DLSSNR_GENERATED_DIR}"
+    )
+    target_link_libraries(nrfusion_d3d12_nr_codec_tests PRIVATE d3d12 dxgi)
+    if (MSVC)
+        target_compile_options(nrfusion_d3d12_nr_codec_tests PRIVATE /W4 /permissive- /UNDEBUG)
+    endif()
+    add_test(NAME nrfusion_d3d12_nr_codec_tests COMMAND nrfusion_d3d12_nr_codec_tests)
+
     add_executable(nrfusion_residual_gpu_test tests/residual_gpu_test.cpp)
     target_link_libraries(nrfusion_residual_gpu_test PRIVATE nrfusion_core d3d12 dxgi d3dcompiler)
     if (MSVC)
