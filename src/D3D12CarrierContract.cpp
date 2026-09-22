@@ -53,6 +53,10 @@ D3D12AcquireResult BuildD3D12FrameContract(
         result.failure = D3D12AcquireFailure::InvalidDimensions;
         return result;
     }
+    if (snapshot.outputOpaqueId == 0) {
+        result.failure = D3D12AcquireFailure::MissingOutput;
+        return result;
+    }
     if (!std::isfinite(snapshot.jitter.x) || !std::isfinite(snapshot.jitter.y)) {
         result.failure = D3D12AcquireFailure::InvalidJitter;
         return result;
