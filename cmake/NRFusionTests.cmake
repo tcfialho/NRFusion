@@ -17,6 +17,8 @@ option(NRFUSION_FOCUSED_NR_SESSION_VALIDATION
 if (NRFUSION_FOCUSED_NR_SESSION_VALIDATION)
     set(NRFUSION_NR_SESSION_PORTABLE_SOURCES
         src/PerformanceController.cpp
+        src/PerformanceControllerLifecycle.cpp
+        src/PerformanceControllerScale.cpp
         src/NrCostModel.cpp
         src/PrecisionAutotuner.cpp
         src/SchedulerPolicy.cpp
