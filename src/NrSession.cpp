@@ -15,9 +15,7 @@ bool NrSession::Configure(
             return config == config_ && performance == performanceConfig_;
     }
 
-    if (runtime_.AutoConfigurationGeneration() ==
-        (std::numeric_limits<std::uint64_t>::max)())
-        return false;
+    if (!runtime_.CanBeginConfigurationEpoch()) return false;
 
     try {
         runtime_.Reconfigure(performance);

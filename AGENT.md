@@ -125,6 +125,7 @@ Completed in the current continuation:
 - removed percentile-copy allocations from PrecisionAutotuner by reusing reserved scratch storage
 - reserved NrCostModel scale storage from configured rungs before steady execution without modifying the grandfathered >300-line PerformanceController.cpp
 - expanded the million-frame measured window to exercise Hybrid qualification and scale transitions
+- separated execution generation from PrecisionAutotuner generation so FP8/Hybrid transitions quarantine stale work
 - recovered AGENT.md and Phase 06 docs after detecting connector-result misassociation; code files were unaffected
 
 Current structural code head before 06f: 93f7993523f0418a80e89a1723f10bb11d851461

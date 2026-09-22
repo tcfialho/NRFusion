@@ -288,3 +288,25 @@ Correção:
   abaixo de 300 linhas;
 - a capacidade usa o tamanho original de `config_.scaleSteps`, que é >= ao conjunto normalizado,
   portanto cobre todos os rungs que o controller pode selecionar sem hipótese de tamanho fixo.
+
+
+### 06f execution-generation separation
+
+A revisão final detectou que a mesma generation estava sendo usada para duas responsabilidades:
+- configuração interna do `PrecisionAutotuner`;
+- quarantine de work da execução real.
+
+Isso falhava especificamente em FP8 -> HybridNvfp4: o qualifier mudava a precision, mas o work epoch
+não necessariamente mudava, permitindo timing de FP8 antigo contaminar o cost model da execução Hybrid.
+
+Correção:
+- `autoExecutionGeneration_` agora identifica shape/scheduler/scale/precision/support da execução;
+- `autoPrecisionGeneration_` continua exclusivamente como generation interna do qualifier;
+- mudança de precision avança execution generation sem resetar o qualifier já treinado;
+- mudança estrutural/scale/scheduler avança as duas quando a precision config muda;
+- supported -> unsupported também invalida imediatamente work antigo;
+- `ObservePrecisionCost` primeiro valida execution generation e só então alimenta o qualifier com
+  sua própria generation interna.
+
+A regressão mantém um ticket FP8 pendente durante a qualificação e exige que ele seja rejeitado após
+a primeira decisão Hybrid, provando a quarantine entre executions.

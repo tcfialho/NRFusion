@@ -38,7 +38,13 @@ public:
     PerformanceDecision OnTelemetry(const TelemetrySample& sample) { return performance_.Update(sample); }
     // Changes whenever the central Auto path starts measuring a different structural or execution
     // configuration. Adapters use this epoch to reject late work from the previous configuration.
-    std::uint64_t AutoConfigurationGeneration() const noexcept { return autoPrecisionGeneration_; }
+    std::uint64_t AutoConfigurationGeneration() const noexcept {
+        return autoExecutionGeneration_;
+    }
+    bool CanBeginConfigurationEpoch() const noexcept {
+        const auto max = (std::numeric_limits<std::uint64_t>::max)();
+        return autoExecutionGeneration_ != max && autoPrecisionGeneration_ != max;
+    }
     PipelineDecision ResolvePipeline(const GameContext& game, const FrameContext& frame,
                                      const RuntimeCapabilities& capabilities,
                                      const CompatibilityOverride* compatibility = nullptr) const {
@@ -67,7 +73,11 @@ public:
         const bool frameContractReady = frame.ReadyForCore() && apiConsistent;
         out.supported = out.pipeline.supported && effectiveCaps.fp8 && frameContractReady;
         if (!out.supported) {
-            if (haveAutoDecision_) ResetAutoAdaptiveState(performance_.WorkingScale());
+            if (haveAutoDecision_) {
+                autoExecutionGeneration_ = NextAutoConfigurationGeneration(
+                    autoExecutionGeneration_, "Auto execution generation");
+                ResetAutoAdaptiveState(performance_.WorkingScale());
+            }
             haveAutoDecision_ = false;
             haveAutoStructure_ = false;
             out.workingScale = performance_.WorkingScale();
@@ -127,6 +137,8 @@ public:
         if (precisionConfigChanged) {
             autoPrecisionGeneration_ = NextAutoConfigurationGeneration(
                 autoPrecisionGeneration_, "Auto precision generation");
+            autoExecutionGeneration_ = NextAutoConfigurationGeneration(
+                autoExecutionGeneration_, "Auto execution generation");
             precisionTuner_.Reset(autoPrecisionGeneration_);
             autoPrecisionScale_ = perf.workingScale;
             autoPrecisionProvider_ = out.pipeline.provider;
@@ -161,8 +173,14 @@ public:
                                                              : PresentationMode::FrameGeneration;
         }
 
+        const bool precisionChanged =
+            haveAutoDecision_ && autoPrecision_ != out.precision;
+        if (precisionChanged && !precisionConfigChanged) {
+            autoExecutionGeneration_ = NextAutoConfigurationGeneration(
+                autoExecutionGeneration_, "Auto execution generation");
+        }
         const bool executionChanged = structuralChanged || !haveAutoDecision_ ||
-                                      autoScheduler_ != out.scheduler || autoPrecision_ != out.precision;
+                                      autoScheduler_ != out.scheduler || precisionChanged;
         if (haveAutoDecision_ && executionChanged) {
             // The decision above is still valid for the next frame, but its measurements must start a
             // fresh adaptive epoch. Preserve the selected rung while discarding old EMA/cost history.
@@ -218,8 +236,10 @@ public:
     void Reset(float initialScale) { performance_.Reset(initialScale); }
     void ObserveScaleCost(float scale, double gpuMs) { performance_.ObserveScaleCost(scale, gpuMs); }
     void ObservePrecisionCost(
-        NrPrecision precision, std::uint64_t generation, double gpuMs) {
-        precisionTuner_.Observe(precision, generation, gpuMs);
+        NrPrecision precision, std::uint64_t executionGeneration, double gpuMs) {
+        if (executionGeneration != autoExecutionGeneration_) return;
+        precisionTuner_.Observe(
+            precision, precisionTuner_.ConfigurationGeneration(), gpuMs);
     }
     void ClearLearnedCostModel() { performance_.ClearLearnedCostModel(); }
     std::optional<float> ReportScaleBuildFailure(float failedScale) {
@@ -228,6 +248,8 @@ public:
     void ClearScaleBuildFailures() { performance_.ClearScaleBuildFailures(); }
     const PerformanceConfig& PerformanceCfg() const noexcept { return performance_.Config(); }
     void BeginConfigurationEpoch(float initialScale) {
+        autoExecutionGeneration_ = NextAutoConfigurationGeneration(
+            autoExecutionGeneration_, "Auto execution generation");
         autoPrecisionGeneration_ = NextAutoConfigurationGeneration(
             autoPrecisionGeneration_, "Auto precision generation");
         ResetAutoAdaptiveState(initialScale);
@@ -262,6 +284,7 @@ private:
     PrecisionAutotuner precisionTuner_;
     AutoTuneCoordinator autoTune_;
     bool haveAutoPrecisionConfig_ = false;
+    std::uint64_t autoExecutionGeneration_ = 1;
     std::uint64_t autoPrecisionGeneration_ = 1;
     float autoPrecisionScale_ = 1.0f;
     FrameProvider autoPrecisionProvider_ = FrameProvider::Unsupported;

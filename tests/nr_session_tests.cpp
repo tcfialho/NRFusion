@@ -136,21 +136,38 @@ int main() {
     auto precisionPacket = Packet(precisionConfig.generation, 300);
     precisionPacket.capabilities.hybridNvfp4 = true;
     bool sawHybrid = false;
+    std::uint64_t fp8Generation = 0;
+    std::optional<WorkTicket> pendingFp8;
     for (std::size_t i = 0; i < 110; ++i) {
         const auto precisionFrame = precisionSession.Resolve(precisionPacket);
         assert(precisionFrame);
-        sawHybrid = sawHybrid ||
-            precisionFrame.decision.precision == NrPrecision::HybridNvfp4;
+        if (!sawHybrid &&
+            precisionFrame.decision.precision == NrPrecision::HybridNvfp4) {
+            sawHybrid = true;
+            assert(fp8Generation != 0);
+            assert(precisionFrame.runtimeGeneration != fp8Generation);
+            assert(pendingFp8);
+            assert(!precisionSession.MapTimedWork(*pendingFp8));
+            assert(precisionSession.AbandonWork(*pendingFp8));
+            pendingFp8.reset();
+        }
         const auto precisionWork = precisionSession.BeginWork(precisionFrame);
         assert(precisionWork && precisionSession.SubmitWork(*precisionWork));
-        assert(precisionSession.MapTimedWork(*precisionWork));
+        if (!sawHybrid && !pendingFp8) {
+            fp8Generation = precisionFrame.runtimeGeneration;
+            pendingFp8 = *precisionWork;
+        } else {
+            assert(precisionSession.MapTimedWork(*precisionWork));
+        }
         const double gpuMs =
             precisionFrame.decision.precision == NrPrecision::HybridNvfp4
                 ? 1.5 : 2.0;
-        assert(precisionSession.RetireTimedInterval(gpuMs));
+        if (!pendingFp8 || precisionWork->id != pendingFp8->id)
+            assert(precisionSession.RetireTimedInterval(gpuMs));
         ++precisionPacket.frame.frameId;
     }
     assert(sawHybrid);
+    assert(!pendingFp8);
     const auto qualifiedPrecision = precisionSession.Resolve(precisionPacket);
     assert(qualifiedPrecision);
     assert(qualifiedPrecision.decision.precision == NrPrecision::HybridNvfp4);
