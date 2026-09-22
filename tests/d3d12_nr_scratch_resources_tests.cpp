@@ -94,6 +94,26 @@ int main() {
     assert(retirement.Size() == 0);
 
     assert(scratch.EnsureOptional(
+        gpu.device.Get(), D3D12NrScratchKind::ResidualEdited,
+        native.format, native.frameWidth, native.frameHeight, retirement));
+    assert(scratch.EnsureOptional(
+        gpu.device.Get(), D3D12NrScratchKind::ResidualHistory0,
+        DXGI_FORMAT_R16G16B16A16_FLOAT, native.frameWidth, native.frameHeight, retirement));
+    assert(scratch.EnsureOptional(
+        gpu.device.Get(), D3D12NrScratchKind::ResidualHistory1,
+        DXGI_FORMAT_R16G16B16A16_FLOAT, native.frameWidth, native.frameHeight, retirement));
+    assert(scratch.EnsureOptional(
+        gpu.device.Get(), D3D12NrScratchKind::ResidualComposed,
+        native.format, native.frameWidth, native.frameHeight, retirement));
+    assert(scratch.Transition(
+        gpu.list.Get(), D3D12NrScratchKind::ResidualEdited,
+        D3D12_RESOURCE_STATE_UNORDERED_ACCESS,
+        D3D12_RESOURCE_STATE_NON_PIXEL_SHADER_RESOURCE));
+    assert(scratch.State(D3D12NrScratchKind::ResidualEdited) ==
+           D3D12_RESOURCE_STATE_NON_PIXEL_SHADER_RESOURCE);
+    assert(retirement.Size() == 0);
+
+    assert(scratch.EnsureOptional(
         gpu.device.Get(), D3D12NrScratchKind::PassScratch,
         native.format, native.workWidth, native.workHeight, retirement));
     assert(retirement.Size() == 0);
@@ -125,16 +145,16 @@ int main() {
     assert(scratch.Get(D3D12NrScratchKind::PassScratch) == nullptr);
     assert(scratch.Get(D3D12NrScratchKind::ColorSmall) == nullptr);
     assert(scratch.Get(D3D12NrScratchKind::OutputNative) == nullptr);
-    assert(retirement.Size() == 8);
+    assert(retirement.Size() == 12);
 
     assert(scratch.Retire(retirement));
     assert(!scratch.Complete());
-    assert(retirement.Size() == 11);
+    assert(retirement.Size() == 15);
 
     assert(SUCCEEDED(gpu.list->Close()));
     unsigned released = 0;
     retirement.DrainAfterIdle(&released, &ReleaseRetired);
-    assert(released == 11);
+    assert(released == 15);
     assert(retirement.Size() == 0);
 
     scratch.ReleaseAfterIdle();

@@ -17,7 +17,11 @@ enum class D3D12NrScratchKind : std::uint8_t {
     PassScratch,
     ColorSmall,
     OutputNative,
-    ActiveColor
+    ActiveColor,
+    ResidualEdited,
+    ResidualHistory0,
+    ResidualHistory1,
+    ResidualComposed
 };
 
 struct D3D12NrScratchDesc {
@@ -59,6 +63,8 @@ private:
 
     static ID3D12Resource* Create(ID3D12Device* device, DXGI_FORMAT format,
                                   std::uint32_t width, std::uint32_t height) noexcept;
+    static Surface MakeSurface(ID3D12Resource* resource, DXGI_FORMAT format,
+                               std::uint32_t width, std::uint32_t height) noexcept;
     static void Release(Surface& surface) noexcept;
     static bool Park(Surface& surface, NrDeferredRetirementQueue& retirement) noexcept;
     static bool IsCoreKind(D3D12NrScratchKind kind) noexcept;
@@ -75,6 +81,10 @@ private:
     Surface colorSmall_{};
     Surface outputNative_{};
     Surface activeColor_{};
+    Surface residualEdited_{};
+    Surface residualHistory0_{};
+    Surface residualHistory1_{};
+    Surface residualComposed_{};
     D3D12NrScratchDesc desc_{};
 };
 

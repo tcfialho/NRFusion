@@ -339,3 +339,14 @@ idempotência, transitions, retire seletivo e invalidação de optionals em geom
 
 Windows fast continua pendente porque o conector desta sessão não expõe `workflow_dispatch`;
 o workflow permaneceu manual-only e não foi adulterado para contornar essa limitação.
+
+
+### 03d-a review correction + residual carriers
+
+A revisão estática encontrou e corrigiu um erro antes de qualquer Windows run: o helper
+`MakeSurface` estava fora da classe e nomeava o tipo privado `Surface`. Ele passou a ser método
+privado estático da classe.
+
+O mesmo owner agora inclui `residualEdited`, `residualHistory[0/1]` e `residualComposed`.
+As carriers continuam criadas em UAV e o teste explicita a primeira transição para NPSR, preservando
+o lifecycle do executor maduro em vez de esconder a transição na criação.

@@ -12,18 +12,18 @@ bool Valid(const D3D12NrScratchDesc& desc) noexcept {
            desc.workWidth != 0 && desc.workHeight != 0;
 }
 
-D3D12NrScratchResources::Surface MakeSurface(
+} // namespace
+
+D3D12NrScratchResources::Surface D3D12NrScratchResources::MakeSurface(
     ID3D12Resource* resource, DXGI_FORMAT format,
     std::uint32_t width, std::uint32_t height) noexcept {
-    D3D12NrScratchResources::Surface surface{};
+    Surface surface{};
     surface.resource = resource;
     surface.format = format;
     surface.width = width;
     surface.height = height;
     return surface;
 }
-
-} // namespace
 
 ID3D12Resource* D3D12NrScratchResources::Create(
     ID3D12Device* device, DXGI_FORMAT format,
@@ -82,6 +82,10 @@ D3D12NrScratchResources::Surface* D3D12NrScratchResources::Slot(
     case D3D12NrScratchKind::ColorSmall: return &colorSmall_;
     case D3D12NrScratchKind::OutputNative: return &outputNative_;
     case D3D12NrScratchKind::ActiveColor: return &activeColor_;
+    case D3D12NrScratchKind::ResidualEdited: return &residualEdited_;
+    case D3D12NrScratchKind::ResidualHistory0: return &residualHistory0_;
+    case D3D12NrScratchKind::ResidualHistory1: return &residualHistory1_;
+    case D3D12NrScratchKind::ResidualComposed: return &residualComposed_;
     }
     return nullptr;
 }
@@ -98,7 +102,11 @@ std::size_t D3D12NrScratchResources::ActiveCount() const noexcept {
            static_cast<std::size_t>(passScratch_.resource != nullptr) +
            static_cast<std::size_t>(colorSmall_.resource != nullptr) +
            static_cast<std::size_t>(outputNative_.resource != nullptr) +
-           static_cast<std::size_t>(activeColor_.resource != nullptr);
+           static_cast<std::size_t>(activeColor_.resource != nullptr) +
+           static_cast<std::size_t>(residualEdited_.resource != nullptr) +
+           static_cast<std::size_t>(residualHistory0_.resource != nullptr) +
+           static_cast<std::size_t>(residualHistory1_.resource != nullptr) +
+           static_cast<std::size_t>(residualComposed_.resource != nullptr);
 }
 
 bool D3D12NrScratchResources::ParkAll(NrDeferredRetirementQueue& retirement) noexcept {
@@ -109,7 +117,11 @@ bool D3D12NrScratchResources::ParkAll(NrDeferredRetirementQueue& retirement) noe
            Park(passScratch_, retirement) &&
            Park(colorSmall_, retirement) &&
            Park(outputNative_, retirement) &&
-           Park(activeColor_, retirement);
+           Park(activeColor_, retirement) &&
+           Park(residualEdited_, retirement) &&
+           Park(residualHistory0_, retirement) &&
+           Park(residualHistory1_, retirement) &&
+           Park(residualComposed_, retirement);
 }
 
 bool D3D12NrScratchResources::Complete() const noexcept {
@@ -230,6 +242,10 @@ void D3D12NrScratchResources::ReleaseAfterIdle() noexcept {
     Release(colorSmall_);
     Release(outputNative_);
     Release(activeColor_);
+    Release(residualEdited_);
+    Release(residualHistory0_);
+    Release(residualHistory1_);
+    Release(residualComposed_);
     desc_ = {};
 }
 
