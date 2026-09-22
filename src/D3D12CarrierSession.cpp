@@ -42,4 +42,28 @@ D3D12CarrierFrameResult D3D12CarrierSession::Resolve(
     return result;
 }
 
+std::optional<D3D12CarrierWork> D3D12CarrierSession::BeginWork(
+    const D3D12CarrierFrameResult& frame, std::uint64_t viewKey) noexcept {
+    if (!frame) return std::nullopt;
+    const auto ticket = session_.BeginWork(frame.session, viewKey);
+    if (!ticket) return std::nullopt;
+    return D3D12CarrierWork{*ticket, ticket->id};
+}
+
+bool D3D12CarrierSession::SubmitWork(const D3D12CarrierWork& work) noexcept {
+    return work && session_.SubmitWork(work.ticket);
+}
+
+bool D3D12CarrierSession::AbandonWork(const D3D12CarrierWork& work) noexcept {
+    return work && session_.AbandonWork(work.ticket);
+}
+
+bool D3D12CarrierSession::MapTimedWork(const D3D12CarrierWork& work) noexcept {
+    return work && session_.MapTimedWork(work.ticket);
+}
+
+bool D3D12CarrierSession::RetireTimedInterval(double gpuMs) {
+    return session_.RetireTimedInterval(gpuMs);
+}
+
 } // namespace nrfusion
