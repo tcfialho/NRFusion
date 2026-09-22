@@ -224,3 +224,21 @@ no commit travado e a busca no repositório não o localizou.
 
 Próximo passo do subgate 04: resolver attribution e criar um shader build step reproduzível a partir
 do HLSL travado; só depois extrair o D3D12 codec/root-signature/descriptor boundary.
+
+
+### Codec build contract confirmado no upstream travado
+
+`OptiScaler/dlssnr/README.md` do mesmo commit fixa a geração D3D12:
+
+```text
+fxc.exe -T cs_5_0 -E CSMain -O3 dlssnr.hlsl -Fo DlssNr_Shader.cso
+create_header.py DlssNr_Shader.cso DlssNr_Shader.h DlssNr_cso
+```
+
+O upstream registra que `dxc` não é equivalente: gera DXIL e muda o shader executado. O standalone
+deve portanto reproduzir esse pipeline com source HLSL fixada e comparar o CSO/header resultante
+contra os blobs travados antes de integrar o codec.
+
+Credits/README identificam RenoDX/clshortfuse como origem da composição, mas o arquivo de licença
+referenciado está ausente naquele snapshot. Implementação do codec fica congelada até resolver o
+texto de attribution/licença; ownership/state já concluído não depende disso.

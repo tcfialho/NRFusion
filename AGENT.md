@@ -134,5 +134,6 @@ Outstanding Phase 05:
 
 Exact next action:
 - when workflow dispatch is available, run one fast validation with the three focused targets/tests
-- resolve RenoDX attribution for the locked upstream shader
-- add reproducible HLSL -> CSO generation before extracting D3D12NrCodec
+- resolve the missing RenoDX licence/attribution text referenced by the locked upstream
+- add reproducible fxc cs_5_0 HLSL -> CSO -> header generation and byte-compare against locked blobs
+- only then extract D3D12NrCodec

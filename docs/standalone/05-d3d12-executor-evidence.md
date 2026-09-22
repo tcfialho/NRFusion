@@ -395,3 +395,23 @@ A busca por `RenoDX_ATTRIBUTION` no upstream retornou 4 resultado(s).
 
 Conclusão: subgate 04 não deve vendorizar shader/CSO ainda. Primeiro precisa fechar attribution e
 reprodução do CSO a partir do HLSL fixado.
+
+
+### Build contract do shader
+
+No commit de upstream travado, `OptiScaler/dlssnr/README.md` (blob
+`ea6722a5474ec5c46f94767feaa18a6f540ea81b`) documenta reprodução byte-for-byte:
+
+- compiler: `fxc.exe`;
+- target: `cs_5_0`;
+- entry: `CSMain`;
+- optimization: `-O3`;
+- output: `DlssNr_Shader.cso`;
+- header: `create_header.py ... DlssNr_cso`.
+
+O README explicitamente rejeita `dxc` para esse artefato porque ele gera DXIL em vez do DXBC
+committed. O `docs/CREDITS.md` do mesmo commit (blob
+`fe2cd3fb00f2e56cbf6aca8f6d2fb332a68e41b0`) atribui o colour processing a RenoDX/clshortfuse.
+
+O snapshot travado, porém, não contém o `Licenses/RenoDX_ATTRIBUTION.txt` que ambos referenciam.
+Esse é o único blocker de provenance antes de vendorizar/reimplementar o codec source.
