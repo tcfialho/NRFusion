@@ -30,6 +30,8 @@ D3D12CarrierFrameResult Frame(NrPlacement placement) {
     frame.acquire.frame.api = GraphicsApi::D3D12;
     frame.acquire.frame.renderResolution = {1920, 1080};
     frame.acquire.frame.outputResolution = {3840, 2160};
+    frame.acquire.frame.hdr = true;
+    frame.acquire.outputOpaqueId = 4;
     frame.acquire.frame.color = Resource(
         1, 77, {1920, 1080}, ResourceFormat::Rgba16Float);
     frame.acquire.frame.depth = Resource(
@@ -80,6 +82,7 @@ int main() {
     assert(pre.plan.resolvedPlan.work == preWork);
     assert(pre.plan.resolvedPlan.requestedPasses == 2);
     assert(pre.plan.submissionEpoch == Work().ticket.id);
+    assert(pre.plan.colourIsLinearHdr);
     assert(pre.plan.motionScaleX == 2.0f);
     assert(pre.plan.motionScaleY == 2.0f);
 
