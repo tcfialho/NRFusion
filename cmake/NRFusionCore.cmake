@@ -47,6 +47,7 @@ add_library(nrfusion_core STATIC
     src/NgxFeatureRegistry.cpp
     src/NrSubmissionGate.cpp
     src/NrDeferredRetirementQueue.cpp
+    src/D3D12NrFramePlan.cpp
 )
 
 if (WIN32)

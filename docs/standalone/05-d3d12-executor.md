@@ -2,7 +2,7 @@
 
 ## Status
 
-**Em andamento.** Subgates 01–03a concluídos; 03b scratch/state inicial implementado e aguardando validação Windows focada.
+**Em andamento.** Auditoria confirmou que o gate ainda não fecha. Subgates 01–03b preservados; 03c frame planning standalone concluído.
 Evidência parcial: [05-d3d12-executor-evidence.md](05-d3d12-executor-evidence.md).
 
 ## Objetivo
@@ -143,3 +143,21 @@ Validar o target focado de scratch no Windows; depois ligar output/colorCopy/hdr
 ## Próxima fase
 
 Fase 06 somente após fechamento e revisão da Fase 05.
+
+
+## Subgate 03c — frame planning standalone
+
+- Snapshot puro para working scale, passes/unlock e proxy backend.
+- Working scale preserva a semântica madura: NaN -> 1.0, clamp 0.25..2.0 e arredondamento +0.5.
+- Passes preservam 1..3 por padrão, 1..30 destravado e proxy backend força 1.
+- Subrects de color/depth/motion são validados contra as surfaces antes de qualquer uso.
+- Padding/crop pre-SR é explícito no plan; motion scale acompanha work/native.
+- Boundary é portátil e não depende de Config/State/OptiScaler.
+- Teste isolado C++20 com -Wall -Wextra -Wpedantic -Werror: PASS.
+
+### Auditoria do gate após 03c
+
+A Fase 05 ainda não pode ser marcada concluída. Faltam integração GPU real de encode/resolve,
+expansão completa do resource/state owner, features multipass por epoch, HDR/exposure/residual e
+os seams pre/post SR/RR. Esses itens existem hoje somente no fixture maduro e não devem ser
+copiados com dependências de Config/State.

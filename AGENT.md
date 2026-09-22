@@ -107,7 +107,7 @@
 Start: 2026-09-21 21:13 BRT
 Branch: standalone/phase-05-d3d12-executor-20260921
 Base: master 548349b740e6fdfec7b0a9f6dacc17ebcdf9b160
-Phase 05: in progress; subgates 01-03a complete; 03b implementation staged.
+Phase 05: in progress; audit confirms gate incomplete; subgates 01-03c implemented.
 
 Completed this session:
 - reanchored the integration history as master + two scratch WIP commits
@@ -119,8 +119,11 @@ Completed this session:
 - confirmed master Portable run 35669420707 passed
 - no full Windows build or new PR
 - consolidated session, Git, tool-call, build and CI-polling discipline in this file
+- audited Phase 05 gate against implementation and mature fixture
+- added portable standalone frame planner for scale/passes/subrect/padding
+- isolated frame-plan compile/test passed with -Werror
 
 Exact next action:
-- run only nrfusion_nr_scratch_resources_tests on Windows fast validation
-- if it passes, wire output/colorCopy/hdrCopy into the first real encode/copy seam
-- keep HDR/exposure/residual/multipass out until this resource-state subgate is validated
+- validate scratch + frame-plan focused targets on Windows fast validation
+- expand scratch owner to passScratch/colorSmall/outputNative/activeColor with explicit resting states
+- then extract the encode/resolve seam before HDR/residual/multipass

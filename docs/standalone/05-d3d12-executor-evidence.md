@@ -247,3 +247,26 @@ Source sizes deste lote:
 
 Validação deste head: revisão estrutural concluída; nenhum full build/CI foi disparado.
 O próximo build deve ser somente o target focado de scratch + seu CTest.
+
+
+## Subgate 03c — frame planning standalone
+
+Extraído do executor maduro sem dependência de OptiScaler:
+
+- working scale: clamp 0.25..2.0, NaN -> 1.0, tamanho arredondado com +0.5;
+- pass limit: 3 normal, 30 destravado;
+- proxy backend: exatamente 1 pass;
+- subrects de color/depth/motion validados contra suas surfaces;
+- crop/padding pre-SR explícito;
+- motion-to-work scale calculado por eixo.
+
+Arquivos:
+- `include/nrfusion/D3D12NrFramePlan.hpp`: 49 linhas;
+- `src/D3D12NrFramePlan.cpp`: 66 linhas;
+- `tests/d3d12_nr_frame_plan_tests.cpp`: 76 linhas.
+
+Validação isolada Linux:
+`g++ -std=c++20 -Wall -Wextra -Wpedantic -Werror`: PASS.
+
+A auditoria deste ponto confirma que a Fase 05 continua aberta: o fixture ainda é o único owner
+da semântica GPU de codec/encode/resolve, multipass real, HDR/exposure/residual e seams SR/RR.
