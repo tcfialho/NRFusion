@@ -1,3 +1,3 @@
-phase07-carrier-session-20260922
-base=c8a3c555b403b2e36575c991f093256358b47dfc
-request=validate-acquire-to-nrsession-boundary
+phase07-inactive-bypass-20260922
+base=fbc50ef85c35f7c066b6285e037e6e5387ae18e2
+request=validate-disabled-notconfigured-acquire-bypass
