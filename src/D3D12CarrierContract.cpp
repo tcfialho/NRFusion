@@ -42,6 +42,7 @@ ResourceRef PresentResource(const D3D12AcquiredResource& acquired) noexcept {
 D3D12AcquireResult BuildD3D12FrameContract(
     const D3D12AcquireSnapshot& snapshot) noexcept {
     D3D12AcquireResult result{};
+    result.attempted = true;
 
     if (snapshot.identity.frameId == 0 ||
         snapshot.identity.configurationGeneration == 0) {
