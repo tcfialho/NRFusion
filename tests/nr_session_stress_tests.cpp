@@ -19,9 +19,11 @@ std::array<std::atomic<std::size_t>, 6> gPhaseAllocations{};
 std::atomic<std::size_t> gPhase{0};
 std::atomic<std::uint64_t> gMeasuredFrame{0};
 std::atomic<std::uint64_t> gFirstAllocationFrame{0};
+std::array<std::atomic<std::size_t>, 4> gFirstAllocationSizes{};
+std::atomic<std::size_t> gRecordedAllocationSizes{0};
 std::atomic<bool> gMeasure{false};
 
-void RecordAllocation() noexcept {
+void RecordAllocation(std::size_t size) noexcept {
     if (!gMeasure.load(std::memory_order_relaxed)) return;
     gAllocations.fetch_add(1, std::memory_order_relaxed);
     const std::size_t phase = gPhase.load(std::memory_order_relaxed);
@@ -31,6 +33,10 @@ void RecordAllocation() noexcept {
     gFirstAllocationFrame.compare_exchange_strong(
         expected, gMeasuredFrame.load(std::memory_order_relaxed),
         std::memory_order_relaxed);
+    const std::size_t index =
+        gRecordedAllocationSizes.fetch_add(1, std::memory_order_relaxed);
+    if (index < gFirstAllocationSizes.size())
+        gFirstAllocationSizes[index].store(size, std::memory_order_relaxed);
 }
 
 struct FakeExecutor {
@@ -87,7 +93,7 @@ bool Step(NrSession& session, FakeExecutor& executor,
 } // namespace
 
 void* operator new(std::size_t size) {
-    RecordAllocation();
+    RecordAllocation(size);
     if (size == 0) size = 1;
     if (void* memory = std::malloc(size)) return memory;
     throw std::bad_alloc();
@@ -114,7 +120,7 @@ void operator delete[](void* memory, std::size_t) noexcept {
 }
 
 void* operator new(std::size_t size, std::align_val_t alignment) {
-    RecordAllocation();
+    RecordAllocation(size);
     const std::size_t align = static_cast<std::size_t>(alignment);
     if (size == 0) size = align;
 #ifdef _MSC_VER
@@ -187,6 +193,9 @@ int main() {
     for (auto& count : gPhaseAllocations)
         count.store(0, std::memory_order_relaxed);
     gFirstAllocationFrame.store(0, std::memory_order_relaxed);
+    gRecordedAllocationSizes.store(0, std::memory_order_relaxed);
+    for (auto& size : gFirstAllocationSizes)
+        size.store(0, std::memory_order_relaxed);
     gMeasure.store(true, std::memory_order_relaxed);
     for (std::size_t i = 0; i < 1'000'000; ++i)
         assert(Step(session, executor, packet));
@@ -196,7 +205,8 @@ int main() {
     if (allocations != 0) {
         std::fprintf(stderr,
             "allocations=%zu first_frame=%llu "
-            "other=%zu resolve=%zu begin=%zu submit=%zu map=%zu retire=%zu\n",
+            "other=%zu resolve=%zu begin=%zu submit=%zu map=%zu retire=%zu "
+            "sizes=%zu,%zu,%zu,%zu\n",
             allocations,
             static_cast<unsigned long long>(
                 gFirstAllocationFrame.load(std::memory_order_relaxed)),
@@ -205,7 +215,11 @@ int main() {
             gPhaseAllocations[2].load(std::memory_order_relaxed),
             gPhaseAllocations[3].load(std::memory_order_relaxed),
             gPhaseAllocations[4].load(std::memory_order_relaxed),
-            gPhaseAllocations[5].load(std::memory_order_relaxed));
+            gPhaseAllocations[5].load(std::memory_order_relaxed),
+            gFirstAllocationSizes[0].load(std::memory_order_relaxed),
+            gFirstAllocationSizes[1].load(std::memory_order_relaxed),
+            gFirstAllocationSizes[2].load(std::memory_order_relaxed),
+            gFirstAllocationSizes[3].load(std::memory_order_relaxed));
     }
     assert(allocations == 0);
     return 0;
