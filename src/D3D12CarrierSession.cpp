@@ -15,7 +15,10 @@ D3D12CarrierFrameResult D3D12CarrierSession::Resolve(
     const D3D12CarrierFramePacket& packet) {
     D3D12CarrierFrameResult result{};
     NrSessionFramePacket sessionPacket{};
-    if (session_.State().configurationGeneration == 0 || !session_.Config().enabled) {
+    const std::uint64_t activeGeneration = session_.State().configurationGeneration;
+    if (activeGeneration == 0 ||
+        packet.acquire.identity.configurationGeneration != activeGeneration ||
+        !session_.Config().enabled) {
         sessionPacket.game = packet.game;
         sessionPacket.frame.frameId = packet.acquire.identity.frameId;
         sessionPacket.frame.configurationGeneration =
