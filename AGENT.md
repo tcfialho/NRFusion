@@ -107,7 +107,7 @@
 Start: 2026-09-21 21:32 BRT
 Branch: standalone/phase-05-d3d12-executor-20260921
 Base: master 548349b740e6fdfec7b0a9f6dacc17ebcdf9b160
-Phase 05: OPEN; audited against the plan and mature fixture.
+Phase 05: OPEN; 03d-a transient surface ownership implemented; 03d-b residual/guide ownership pending.
 
 Completed:
 - confirmed Phase 05 is not complete and did not falsify the gate
@@ -134,4 +134,5 @@ Outstanding Phase 05 subgates:
 Exact next action:
 - run Windows fast only for nrfusion_nr_scratch_resources_tests and nrfusion_d3d12_nr_frame_plan_tests
 - if green, expand resource owner to passScratch/colorSmall/outputNative/activeColor first
-- do not start HDR/residual/multipass until encode/resolve has a state regression
+- complete 03d-b residual surfaces + guide clone ownership next
+- do not start HDR/residual/multipass behavior until encode/resolve has a state regression

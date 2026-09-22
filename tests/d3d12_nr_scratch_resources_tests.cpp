@@ -45,6 +45,13 @@ TestGpu CreateWarpGpu() {
     return gpu;
 }
 
+void ExpectSize(ID3D12Resource* resource, UINT64 width, UINT height) {
+    assert(resource != nullptr);
+    const D3D12_RESOURCE_DESC desc = resource->GetDesc();
+    assert(desc.Width == width);
+    assert(desc.Height == height);
+}
+
 } // namespace
 
 int main() {
@@ -52,67 +59,82 @@ int main() {
 
     D3D12NrScratchResources scratch;
     NrDeferredRetirementQueue retirement;
-
-    const D3D12NrScratchDesc valid{
+    const auto invalidKind = static_cast<D3D12NrScratchKind>(0xff);
+    const D3D12NrScratchDesc native{
         DXGI_FORMAT_R16G16B16A16_FLOAT, 1920, 1080, 1280, 720};
     const D3D12NrScratchDesc resized{
         DXGI_FORMAT_R16G16B16A16_FLOAT, 1600, 900, 1200, 675};
-    const D3D12NrScratchDesc invalid{
-        DXGI_FORMAT_UNKNOWN, 1920, 1080, 1280, 720};
-    const auto invalidKind = static_cast<D3D12NrScratchKind>(0xff);
 
-    assert(!scratch.Complete());
-    assert(!scratch.Matches(valid));
-    assert(scratch.Get(D3D12NrScratchKind::Output) == nullptr);
-    assert(scratch.Get(D3D12NrScratchKind::ColorCopy) == nullptr);
-    assert(scratch.Get(D3D12NrScratchKind::HdrCopy) == nullptr);
+    assert(!scratch.Ensure(nullptr, native, retirement));
     assert(scratch.Get(invalidKind) == nullptr);
-    assert(scratch.State(D3D12NrScratchKind::Output) ==
-           D3D12_RESOURCE_STATE_UNORDERED_ACCESS);
     assert(scratch.State(invalidKind) == D3D12_RESOURCE_STATE_COMMON);
-
-    assert(!scratch.Ensure(nullptr, valid, retirement));
-    assert(!scratch.Ensure(nullptr, invalid, retirement));
-    assert(retirement.Size() == 0);
-    assert(!scratch.Transition(
-        nullptr, invalidKind,
-        D3D12_RESOURCE_STATE_UNORDERED_ACCESS,
-        D3D12_RESOURCE_STATE_NON_PIXEL_SHADER_RESOURCE));
+    assert(!scratch.Retire(invalidKind, retirement));
 
     TestGpu gpu = CreateWarpGpu();
-    assert(scratch.Ensure(gpu.device.Get(), valid, retirement));
+    assert(scratch.Ensure(gpu.device.Get(), native, retirement));
     assert(scratch.Complete());
-    assert(scratch.Matches(valid));
-    assert(retirement.Size() == 0);
-    assert(scratch.Ensure(gpu.device.Get(), valid, retirement));
+    ExpectSize(scratch.Get(D3D12NrScratchKind::Output), 1280, 720);
+    ExpectSize(scratch.Get(D3D12NrScratchKind::ColorCopy), 1920, 1080);
+
+    assert(scratch.EnsureOptional(
+        gpu.device.Get(), D3D12NrScratchKind::PassScratch,
+        native.format, native.workWidth, native.workHeight, retirement));
+    assert(scratch.EnsureOptional(
+        gpu.device.Get(), D3D12NrScratchKind::ColorSmall,
+        native.format, native.workWidth, native.workHeight, retirement));
+    assert(scratch.EnsureOptional(
+        gpu.device.Get(), D3D12NrScratchKind::OutputNative,
+        native.format, native.frameWidth, native.frameHeight, retirement));
+    assert(scratch.EnsureOptional(
+        gpu.device.Get(), D3D12NrScratchKind::ActiveColor,
+        native.format, native.frameWidth, native.frameHeight, retirement));
+    assert(!scratch.EnsureOptional(
+        gpu.device.Get(), D3D12NrScratchKind::Output,
+        native.format, native.workWidth, native.workHeight, retirement));
     assert(retirement.Size() == 0);
 
+    assert(scratch.EnsureOptional(
+        gpu.device.Get(), D3D12NrScratchKind::PassScratch,
+        native.format, native.workWidth, native.workHeight, retirement));
+    assert(retirement.Size() == 0);
+    assert(scratch.EnsureOptional(
+        gpu.device.Get(), D3D12NrScratchKind::PassScratch,
+        native.format, 640, 360, retirement));
+    assert(retirement.Size() == 1);
+    ExpectSize(scratch.Get(D3D12NrScratchKind::PassScratch), 640, 360);
+
     assert(scratch.Transition(
-        gpu.list.Get(), D3D12NrScratchKind::Output,
+        gpu.list.Get(), D3D12NrScratchKind::PassScratch,
         D3D12_RESOURCE_STATE_UNORDERED_ACCESS,
         D3D12_RESOURCE_STATE_NON_PIXEL_SHADER_RESOURCE));
-    assert(scratch.State(D3D12NrScratchKind::Output) ==
-           D3D12_RESOURCE_STATE_NON_PIXEL_SHADER_RESOURCE);
     assert(!scratch.Transition(
-        gpu.list.Get(), D3D12NrScratchKind::Output,
+        gpu.list.Get(), D3D12NrScratchKind::PassScratch,
         D3D12_RESOURCE_STATE_UNORDERED_ACCESS,
         D3D12_RESOURCE_STATE_NON_PIXEL_SHADER_RESOURCE));
     assert(scratch.Transition(
-        gpu.list.Get(), D3D12NrScratchKind::Output,
+        gpu.list.Get(), D3D12NrScratchKind::PassScratch,
         D3D12_RESOURCE_STATE_NON_PIXEL_SHADER_RESOURCE,
         D3D12_RESOURCE_STATE_UNORDERED_ACCESS));
 
+    assert(scratch.Retire(D3D12NrScratchKind::ActiveColor, retirement));
+    assert(scratch.Get(D3D12NrScratchKind::ActiveColor) == nullptr);
+    assert(retirement.Size() == 2);
+
     assert(scratch.Ensure(gpu.device.Get(), resized, retirement));
     assert(scratch.Matches(resized));
-    assert(retirement.Size() == 3);
+    assert(scratch.Get(D3D12NrScratchKind::PassScratch) == nullptr);
+    assert(scratch.Get(D3D12NrScratchKind::ColorSmall) == nullptr);
+    assert(scratch.Get(D3D12NrScratchKind::OutputNative) == nullptr);
+    assert(retirement.Size() == 8);
+
     assert(scratch.Retire(retirement));
     assert(!scratch.Complete());
-    assert(retirement.Size() == 6);
+    assert(retirement.Size() == 11);
 
     assert(SUCCEEDED(gpu.list->Close()));
     unsigned released = 0;
     retirement.DrainAfterIdle(&released, &ReleaseRetired);
-    assert(released == 6);
+    assert(released == 11);
     assert(retirement.Size() == 0);
 
     scratch.ReleaseAfterIdle();

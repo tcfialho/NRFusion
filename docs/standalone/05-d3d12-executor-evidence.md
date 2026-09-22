@@ -320,3 +320,22 @@ Head verificado: `e45247bbdd597d7f755e9f7d443747b96f85f21a` antes do handoff doc
 
 A auditoria confirma que `scratch_` e o frame planner ainda não formam o frame path completo.
 Existência do owner/planner não é contada como integração GPU.
+
+
+## Subgate 03d-a — transient surface ownership
+
+`D3D12NrScratchResources` foi expandido para:
+- `passScratch` em work size;
+- `colorSmall` em work size;
+- `outputNative` em frame size;
+- `activeColor` em frame size.
+
+A API separa o trio obrigatório de optional surfaces para não realocar `output/colorCopy/hdrCopy`
+quando apenas passes/crop/scale mudarem. Em troca, uma mudança real de frame/work geometry aposenta
+todas as surfaces dependentes, igual ao lifecycle maduro.
+
+A regressão WARP foi expandida para verificar tamanho real do resource, resize individual,
+idempotência, transitions, retire seletivo e invalidação de optionals em geometry rebuild.
+
+Windows fast continua pendente porque o conector desta sessão não expõe `workflow_dispatch`;
+o workflow permaneceu manual-only e não foi adulterado para contornar essa limitação.

@@ -3,10 +3,24 @@
 namespace nrfusion {
 namespace {
 
+bool Valid(DXGI_FORMAT format, std::uint32_t width, std::uint32_t height) noexcept {
+    return format != DXGI_FORMAT_UNKNOWN && width != 0 && height != 0;
+}
+
 bool Valid(const D3D12NrScratchDesc& desc) noexcept {
-    return desc.format != DXGI_FORMAT_UNKNOWN &&
-           desc.frameWidth != 0 && desc.frameHeight != 0 &&
+    return Valid(desc.format, desc.frameWidth, desc.frameHeight) &&
            desc.workWidth != 0 && desc.workHeight != 0;
+}
+
+D3D12NrScratchResources::Surface MakeSurface(
+    ID3D12Resource* resource, DXGI_FORMAT format,
+    std::uint32_t width, std::uint32_t height) noexcept {
+    D3D12NrScratchResources::Surface surface{};
+    surface.resource = resource;
+    surface.format = format;
+    surface.width = width;
+    surface.height = height;
+    return surface;
 }
 
 } // namespace
@@ -14,8 +28,7 @@ bool Valid(const D3D12NrScratchDesc& desc) noexcept {
 ID3D12Resource* D3D12NrScratchResources::Create(
     ID3D12Device* device, DXGI_FORMAT format,
     std::uint32_t width, std::uint32_t height) noexcept {
-    if (device == nullptr || format == DXGI_FORMAT_UNKNOWN || width == 0 || height == 0)
-        return nullptr;
+    if (device == nullptr || !Valid(format, width, height)) return nullptr;
 
     D3D12_HEAP_PROPERTIES heap{};
     heap.Type = D3D12_HEAP_TYPE_DEFAULT;
@@ -53,36 +66,50 @@ bool D3D12NrScratchResources::Park(
     return true;
 }
 
+bool D3D12NrScratchResources::IsCoreKind(D3D12NrScratchKind kind) noexcept {
+    return kind == D3D12NrScratchKind::Output ||
+           kind == D3D12NrScratchKind::ColorCopy ||
+           kind == D3D12NrScratchKind::HdrCopy;
+}
+
 D3D12NrScratchResources::Surface* D3D12NrScratchResources::Slot(
     D3D12NrScratchKind kind) noexcept {
     switch (kind) {
-    case D3D12NrScratchKind::Output:
-        return &output_;
-    case D3D12NrScratchKind::ColorCopy:
-        return &colorCopy_;
-    case D3D12NrScratchKind::HdrCopy:
-        return &hdrCopy_;
+    case D3D12NrScratchKind::Output: return &output_;
+    case D3D12NrScratchKind::ColorCopy: return &colorCopy_;
+    case D3D12NrScratchKind::HdrCopy: return &hdrCopy_;
+    case D3D12NrScratchKind::PassScratch: return &passScratch_;
+    case D3D12NrScratchKind::ColorSmall: return &colorSmall_;
+    case D3D12NrScratchKind::OutputNative: return &outputNative_;
+    case D3D12NrScratchKind::ActiveColor: return &activeColor_;
     }
     return nullptr;
 }
 
 const D3D12NrScratchResources::Surface* D3D12NrScratchResources::Slot(
     D3D12NrScratchKind kind) const noexcept {
-    switch (kind) {
-    case D3D12NrScratchKind::Output:
-        return &output_;
-    case D3D12NrScratchKind::ColorCopy:
-        return &colorCopy_;
-    case D3D12NrScratchKind::HdrCopy:
-        return &hdrCopy_;
-    }
-    return nullptr;
+    return const_cast<D3D12NrScratchResources*>(this)->Slot(kind);
 }
 
 std::size_t D3D12NrScratchResources::ActiveCount() const noexcept {
     return static_cast<std::size_t>(output_.resource != nullptr) +
            static_cast<std::size_t>(colorCopy_.resource != nullptr) +
-           static_cast<std::size_t>(hdrCopy_.resource != nullptr);
+           static_cast<std::size_t>(hdrCopy_.resource != nullptr) +
+           static_cast<std::size_t>(passScratch_.resource != nullptr) +
+           static_cast<std::size_t>(colorSmall_.resource != nullptr) +
+           static_cast<std::size_t>(outputNative_.resource != nullptr) +
+           static_cast<std::size_t>(activeColor_.resource != nullptr);
+}
+
+bool D3D12NrScratchResources::ParkAll(NrDeferredRetirementQueue& retirement) noexcept {
+    if (ActiveCount() > NrDeferredRetirementQueue::kCapacity - retirement.Size()) return false;
+    return Park(output_, retirement) &&
+           Park(colorCopy_, retirement) &&
+           Park(hdrCopy_, retirement) &&
+           Park(passScratch_, retirement) &&
+           Park(colorSmall_, retirement) &&
+           Park(outputNative_, retirement) &&
+           Park(activeColor_, retirement);
 }
 
 bool D3D12NrScratchResources::Complete() const noexcept {
@@ -100,13 +127,18 @@ bool D3D12NrScratchResources::Ensure(
     NrDeferredRetirementQueue& retirement) noexcept {
     if (!Valid(desc)) return false;
     if (Matches(desc)) return true;
+    if (ActiveCount() > NrDeferredRetirementQueue::kCapacity - retirement.Size()) return false;
 
-    const std::size_t active = ActiveCount();
-    if (active > NrDeferredRetirementQueue::kCapacity - retirement.Size()) return false;
+    Surface nextOutput = MakeSurface(
+        Create(device, desc.format, desc.workWidth, desc.workHeight),
+        desc.format, desc.workWidth, desc.workHeight);
+    Surface nextColor = MakeSurface(
+        Create(device, desc.format, desc.frameWidth, desc.frameHeight),
+        desc.format, desc.frameWidth, desc.frameHeight);
+    Surface nextHdr = MakeSurface(
+        Create(device, desc.format, desc.frameWidth, desc.frameHeight),
+        desc.format, desc.frameWidth, desc.frameHeight);
 
-    Surface nextOutput{Create(device, desc.format, desc.workWidth, desc.workHeight)};
-    Surface nextColor{Create(device, desc.format, desc.frameWidth, desc.frameHeight)};
-    Surface nextHdr{Create(device, desc.format, desc.frameWidth, desc.frameHeight)};
     if (nextOutput.resource == nullptr ||
         nextColor.resource == nullptr ||
         nextHdr.resource == nullptr) {
@@ -116,9 +148,7 @@ bool D3D12NrScratchResources::Ensure(
         return false;
     }
 
-    if (!Park(output_, retirement) ||
-        !Park(colorCopy_, retirement) ||
-        !Park(hdrCopy_, retirement)) {
+    if (!ParkAll(retirement)) {
         Release(nextOutput);
         Release(nextColor);
         Release(nextHdr);
@@ -132,13 +162,42 @@ bool D3D12NrScratchResources::Ensure(
     return true;
 }
 
-bool D3D12NrScratchResources::Retire(NrDeferredRetirementQueue& retirement) noexcept {
-    const std::size_t active = ActiveCount();
-    if (active > NrDeferredRetirementQueue::kCapacity - retirement.Size()) return false;
-    if (!Park(output_, retirement) ||
-        !Park(colorCopy_, retirement) ||
-        !Park(hdrCopy_, retirement))
+bool D3D12NrScratchResources::EnsureOptional(
+    ID3D12Device* device, D3D12NrScratchKind kind,
+    DXGI_FORMAT format, std::uint32_t width, std::uint32_t height,
+    NrDeferredRetirementQueue& retirement) noexcept {
+    if (device == nullptr || IsCoreKind(kind) || !Valid(format, width, height)) return false;
+    Surface* surface = Slot(kind);
+    if (surface == nullptr) return false;
+    if (surface->resource != nullptr && surface->format == format &&
+        surface->width == width && surface->height == height)
+        return true;
+    if (surface->resource != nullptr &&
+        retirement.Size() == NrDeferredRetirementQueue::kCapacity)
         return false;
+
+    Surface next = MakeSurface(Create(device, format, width, height), format, width, height);
+    if (next.resource == nullptr) return false;
+    if (!Park(*surface, retirement)) {
+        Release(next);
+        return false;
+    }
+    *surface = next;
+    return true;
+}
+
+bool D3D12NrScratchResources::Retire(
+    D3D12NrScratchKind kind, NrDeferredRetirementQueue& retirement) noexcept {
+    Surface* surface = Slot(kind);
+    if (surface == nullptr) return false;
+    if (surface->resource != nullptr &&
+        retirement.Size() == NrDeferredRetirementQueue::kCapacity)
+        return false;
+    return Park(*surface, retirement);
+}
+
+bool D3D12NrScratchResources::Retire(NrDeferredRetirementQueue& retirement) noexcept {
+    if (!ParkAll(retirement)) return false;
     desc_ = {};
     return true;
 }
@@ -167,6 +226,10 @@ void D3D12NrScratchResources::ReleaseAfterIdle() noexcept {
     Release(output_);
     Release(colorCopy_);
     Release(hdrCopy_);
+    Release(passScratch_);
+    Release(colorSmall_);
+    Release(outputNative_);
+    Release(activeColor_);
     desc_ = {};
 }
 

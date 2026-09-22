@@ -174,3 +174,17 @@ copiados com dependências de Config/State.
 5. **07 seams + snapshot final** — pre/post SR/RR, snapshot operacional completo e revisão adversarial final.
 
 A Fase 06 do plano global continua bloqueada até esses cinco subgates fecharem.
+
+
+## Subgate 03d-a — transient surfaces no owner
+
+O owner agora também controla `passScratch`, `colorSmall`, `outputNative` e `activeColor`.
+
+- optional surfaces são criadas/resize individualmente sem reconstruir o trio principal;
+- mudança de frame/work geometry no trio principal aposenta todas as surfaces dependentes;
+- removal explícito usa a mesma deferred retirement queue;
+- estados continuam explícitos e começam em UAV;
+- enum/core misuse em `EnsureOptional()` falha fechado;
+- o teste WARP cobre add/idempotência/resize/state/retire/geometry invalidation.
+
+03d ainda permanece aberto para residual surfaces e guide clones.
