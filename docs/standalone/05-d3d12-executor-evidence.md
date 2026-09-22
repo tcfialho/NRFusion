@@ -288,3 +288,10 @@ Correção:
 - retired-kind inválido deixa de cair implicitamente no cast de Resource.
 
 Nenhum full build foi disparado; este patch requer o próximo Windows fast junto do scratch/frame-plan.
+
+
+### Build isolation do frame planner
+
+O primeiro registro do teste usava `nrfusion_test()`, que linka `nrfusion_core` e faria um target
+focado depender do core inteiro. Foi corrigido: `nrfusion_d3d12_nr_frame_plan_tests` agora compila
+somente `D3D12NrFramePlan.cpp` + o teste, com warnings-as-errors no target.

@@ -123,6 +123,7 @@ Completed this session:
 - added portable standalone frame planner for scale/passes/subrect/padding
 - isolated frame-plan compile/test passed with -Werror
 - fixed executor failure ordering and null-input fail-closed boundaries
+- isolated frame-plan validation from nrfusion_core to keep targeted builds small
 
 Exact next action:
 - validate scratch + frame-plan focused targets on Windows fast validation

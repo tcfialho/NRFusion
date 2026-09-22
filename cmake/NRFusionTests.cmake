@@ -20,4 +20,14 @@ nrfusion_test(nrfusion_ngx_feature_registry_tests tests/ngx_feature_registry_tes
 nrfusion_test(nrfusion_submission_gate_tests tests/submission_gate_tests.cpp)
 nrfusion_test(nrfusion_nr_retirement_queue_tests tests/nr_retirement_queue_tests.cpp)
 
-nrfusion_test(nrfusion_d3d12_nr_frame_plan_tests tests/d3d12_nr_frame_plan_tests.cpp)
+add_executable(nrfusion_d3d12_nr_frame_plan_tests
+    tests/d3d12_nr_frame_plan_tests.cpp
+    src/D3D12NrFramePlan.cpp
+)
+target_include_directories(nrfusion_d3d12_nr_frame_plan_tests PRIVATE include)
+if (MSVC)
+    target_compile_options(nrfusion_d3d12_nr_frame_plan_tests PRIVATE /W4 /permissive- /UNDEBUG)
+else()
+    target_compile_options(nrfusion_d3d12_nr_frame_plan_tests PRIVATE -Wall -Wextra -Wpedantic -Werror -UNDEBUG)
+endif()
+add_test(NAME nrfusion_d3d12_nr_frame_plan_tests COMMAND nrfusion_d3d12_nr_frame_plan_tests)
