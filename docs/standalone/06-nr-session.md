@@ -253,3 +253,25 @@ Execução ainda pendente neste ambiente:
 
 O container possui compiladores e CMake, mas DNS para github.com continua indisponível e o conector
 GitHub não expõe workflow dispatch. Nenhum Windows gate foi usado.
+
+
+### 06f — allocation hardening beyond steady plateau
+
+A revisão do milhão de frames encontrou duas allocations de transição que o primeiro stress não
+exercitava:
+- `PrecisionAutotuner::Percentile` copiava vectors ao concluir a qualificação;
+- `NrCostModel` podia crescer `points_` ao encontrar uma nova escala.
+
+Correções sem alteração de algoritmo:
+- o autotuner agora reutiliza um scratch vector reservado no reset/configure cold path;
+- o cost model reserva no construtor do controller capacidade para todos os scale steps configurados;
+- `Reset()` preserva essas capacidades.
+
+O stress medido agora reconfigura antes da janela para:
+- habilitar HybridNvfp4;
+- usar target de 240 FPS;
+- remover sustain/cooldown para forçar precision qualification e mudanças de escala dentro do
+  intervalo de 1.000.000 frames.
+
+Assim o contador de allocations cobre também candidate qualification e novos rungs, não apenas um
+plateau FP8/scale fixa.

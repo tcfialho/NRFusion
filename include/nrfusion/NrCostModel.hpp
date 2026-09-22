@@ -20,6 +20,7 @@ struct NrCostFit {
 class NrCostModel {
 public:
     void Reset();
+    void ReserveScales(std::size_t count);
     void Observe(float scale, double gpuMs);
 
     std::optional<NrCostFit> Fit() const;

@@ -109,7 +109,7 @@
 Start: 2026-09-22 00:47 BRT
 Branch: standalone/integration
 Base/default branch: master
-Phase 06: IN PROGRESS; subgates 06a-06e implemented and adversarially reviewed.
+Phase 06: IN PROGRESS; subgates 06a-06f implemented and adversarially reviewed.
 
 Completed in the current continuation:
 - added 1,000,000-frame allocation stress and removed the steady CheaperPrecision vector allocation
@@ -122,9 +122,12 @@ Completed in the current continuation:
 - routed exact retired-work timings into the central PrecisionAutotuner and scale cost model
 - expanded differential regression to 180 adaptive decisions
 - added precision qualification regression through baseline/candidate stages
+- removed percentile-copy allocations from PrecisionAutotuner by reusing reserved scratch storage
+- reserved NrCostModel scale storage from configured rungs before steady execution
+- expanded the million-frame measured window to exercise Hybrid qualification and scale transitions
 - recovered AGENT.md and Phase 06 docs after detecting connector-result misassociation; code files were unaffected
 
-Current structural code head: 93f7993523f0418a80e89a1723f10bb11d851461
+Current structural code head before 06f: 93f7993523f0418a80e89a1723f10bb11d851461
 Open implementation WIP: none
 Windows validation: intentionally not used.
 

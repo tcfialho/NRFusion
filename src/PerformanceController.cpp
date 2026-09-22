@@ -97,6 +97,7 @@ PerformanceController::PerformanceController(PerformanceConfig config) : config_
     config_.maxPredictiveStepDrop = std::clamp<std::size_t>(config_.maxPredictiveStepDrop, 1,
                                                             config_.scaleSteps.size());
     failedScaleSteps_.assign(config_.scaleSteps.size(), false);
+    costModel_.ReserveScales(config_.scaleSteps.size());
     nrWarmupSamples_.reserve(config_.nrWarmupSamples);
     nrRecentSamples_.reserve(std::max(config_.nrWarmupSamples, kNrControlWindow));
     frameRecentSamples_.reserve(kNrControlWindow);

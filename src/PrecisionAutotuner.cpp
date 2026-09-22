@@ -45,8 +45,10 @@ void PrecisionAutotuner::Reset(std::uint64_t configurationGeneration) {
     qualityRejected_ = false;
     baseline_.clear();
     candidate_.clear();
+    percentileScratch_.clear();
     baseline_.reserve(config_.measureSamples);
     candidate_.reserve(config_.measureSamples);
+    percentileScratch_.reserve(config_.measureSamples);
 }
 
 NrPrecision PrecisionAutotuner::Desired(bool automaticEnabled, bool candidateAvailable,
@@ -67,16 +69,19 @@ NrPrecision PrecisionAutotuner::Desired(bool automaticEnabled, bool candidateAva
     }
 }
 
-double PrecisionAutotuner::Percentile(std::vector<double> values, double q) {
+double PrecisionAutotuner::Percentile(
+    const std::vector<double>& values, double q) {
     if (values.empty()) return 0.0;
-    std::sort(values.begin(), values.end());
+    percentileScratch_.assign(values.begin(), values.end());
+    std::sort(percentileScratch_.begin(), percentileScratch_.end());
     q = std::clamp(q, 0.0, 1.0);
-    const double pos = q * static_cast<double>(values.size() - 1);
+    const double pos = q * static_cast<double>(percentileScratch_.size() - 1);
     const auto lo = static_cast<std::size_t>(std::floor(pos));
     const auto hi = static_cast<std::size_t>(std::ceil(pos));
-    if (lo == hi) return values[lo];
+    if (lo == hi) return percentileScratch_[lo];
     const double f = pos - static_cast<double>(lo);
-    return values[lo] * (1.0 - f) + values[hi] * f;
+    return percentileScratch_[lo] * (1.0 - f) +
+           percentileScratch_[hi] * f;
 }
 
 void PrecisionAutotuner::FinishCandidate() {

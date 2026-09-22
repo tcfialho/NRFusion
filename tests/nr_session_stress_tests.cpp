@@ -98,6 +98,18 @@ int main() {
     for (std::size_t i = 0; i < 512; ++i)
         assert(Step(session, executor, packet));
 
+    RuntimeConfig measuredConfig = config;
+    ++measuredConfig.generation;
+    PerformanceConfig measuredPerformance = performance;
+    measuredPerformance.targetFps = 240.0;
+    measuredPerformance.scaleDownSustainSeconds = 0.0;
+    measuredPerformance.cooldownSeconds = 0.0;
+    assert(session.Configure(measuredConfig, measuredPerformance));
+    packet = Packet(measuredConfig.generation, packet.frame.frameId);
+    packet.capabilities.hybridNvfp4 = true;
+    packet.telemetry.nrGpuMs = 4.0;
+    packet.telemetry.frameGpuMs = 6.0;
+
     gAllocations.store(0, std::memory_order_relaxed);
     gMeasure.store(true, std::memory_order_relaxed);
     for (std::size_t i = 0; i < 1'000'000; ++i)

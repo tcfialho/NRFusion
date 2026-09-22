@@ -13,6 +13,10 @@ constexpr std::size_t kMaxSampleAge = 240;
 constexpr std::size_t kMinSamplesPerScale = 3;
 }
 
+void NrCostModel::ReserveScales(std::size_t count) {
+    points_.reserve(count);
+}
+
 void NrCostModel::Reset() {
     points_.clear();
     totalSamples_ = 0;
