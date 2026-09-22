@@ -32,6 +32,7 @@ private:
         const NrSessionFramePacket& packet, NrSessionDisposition disposition) noexcept;
 
     RuntimeConfig config_{};
+    PerformanceConfig performanceConfig_{};
     NrSessionState state_{};
     FusionRuntime runtime_{};
     NrSessionWorkTracker works_{};

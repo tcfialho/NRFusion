@@ -176,3 +176,16 @@ Gates ainda abertos por execução, não por implementação:
 - timing/reset/overload/config-change tests;
 - fake executor de 1.000.000 frames;
 - prova runtime de 0 allocations steady.
+
+
+## Subgate 06e — config identity + portable validation slice
+
+A configuração da sessão agora considera `RuntimeConfig` **e** `PerformanceConfig` na mesma generation.
+Uma tentativa de mudar performance mantendo a generation antiga falha fechada em vez de ser ignorada.
+
+O CMake ganhou `nrfusion_nr_session_portable`, composto apenas pelas production units portáteis
+necessárias ao `FusionRuntime/NrSession`. Os dois testes de sessão deixam de linkar `nrfusion_core`,
+portanto não puxam CUDA, hosts, carriers Windows, codecs D3D12 ou OptiScalerAdapter.
+
+O teste diferencial foi ampliado de um frame para 180 decisões adaptativas consecutivas, comparando
+`NrSession` e um `FusionRuntime` independente inclusive durante mudança de pressão GPU.

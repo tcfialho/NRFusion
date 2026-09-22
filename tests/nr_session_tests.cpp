@@ -92,6 +92,31 @@ int main() {
     assert(!session.Configure(older, performance));
     assert(session.Config() == config);
 
+    PerformanceConfig changedPerformance = performance;
+    changedPerformance.targetFps = 120.0;
+    assert(!session.Configure(config, changedPerformance));
+    assert(session.Config() == config);
+
+    FusionRuntime sequenceBaseline(performance);
+    sequenceBaseline.BeginConfigurationEpoch(sequenceBaseline.PerformanceCfg().maxScale);
+    NrSession sequenceSession;
+    assert(sequenceSession.Configure(config, performance));
+    for (FrameId frameId = 10; frameId < 190; ++frameId) {
+        auto sequencePacket = Packet(config.generation, frameId);
+        sequencePacket.telemetry.nrGpuMs = frameId < 100 ? 1.5 : 5.0;
+        sequencePacket.telemetry.frameGpuMs = frameId < 100 ? 8.0 : 12.0;
+        sequencePacket.telemetry.sourceFps = 60.0;
+        sequencePacket.telemetry.processedFps = 60.0;
+        const AutoDecision expectedSequence = sequenceBaseline.ResolveAuto(
+            sequencePacket.game, sequencePacket.frame, sequencePacket.telemetry,
+            sequencePacket.capabilities);
+        const NrSessionFrameResult actualSequence = sequenceSession.Resolve(sequencePacket);
+        assert(actualSequence);
+        AssertEquivalent(actualSequence.decision, expectedSequence);
+        assert(actualSequence.runtimeGeneration ==
+               sequenceBaseline.AutoConfigurationGeneration());
+    }
+
     RuntimeConfig disabled = config;
     ++disabled.generation;
     disabled.enabled = false;

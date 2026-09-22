@@ -1,5 +1,55 @@
 enable_testing()
 
+set(NRFUSION_NR_SESSION_PORTABLE_SOURCES
+    src/PerformanceController.cpp
+    src/NrCostModel.cpp
+    src/PrecisionAutotuner.cpp
+    src/SchedulerPolicy.cpp
+    src/ProviderPolicy.cpp
+    src/TransportPolicy.cpp
+    src/PipelinePolicy.cpp
+    src/CompatibilityDatabase.cpp
+    src/AsyncOverlapEstimator.cpp
+    src/AsyncQualification.cpp
+    src/AutoTuneCoordinator.cpp
+    src/GuideValidation.cpp
+    src/MotionConfidence.cpp
+    src/TemporalHistoryRegistry.cpp
+    src/TelemetryTracker.cpp
+    src/PipelinedExecutorState.cpp
+    src/WorkLedger.cpp
+    src/TimingWorkMapper.cpp
+    src/CrossQueueClockCalibrator.cpp
+    src/ResidualPolicy.cpp
+    src/TemporalConfidence.cpp
+    src/MgpuPlanner.cpp
+    src/NvofPolicy.cpp
+    src/ResidualReprojection.cpp
+    src/ResidualEngine.cpp
+    src/NrSession.cpp
+    src/NrSessionWorkState.cpp
+    src/FusionRuntimeTiming.cpp
+)
+
+add_library(nrfusion_nr_session_portable STATIC ${NRFUSION_NR_SESSION_PORTABLE_SOURCES})
+target_include_directories(nrfusion_nr_session_portable PUBLIC include)
+if (MSVC)
+    target_compile_options(nrfusion_nr_session_portable PRIVATE /W4 /permissive-)
+else()
+    target_compile_options(nrfusion_nr_session_portable PRIVATE -Wall -Wextra -Wpedantic -Werror)
+endif()
+
+function(nrfusion_nr_session_test target source)
+    add_executable(${target} ${source})
+    target_link_libraries(${target} PRIVATE nrfusion_nr_session_portable)
+    if (MSVC)
+        target_compile_options(${target} PRIVATE /UNDEBUG)
+    else()
+        target_compile_options(${target} PRIVATE -UNDEBUG)
+    endif()
+    add_test(NAME ${target} COMMAND ${target})
+endfunction()
+
 function(nrfusion_test target source)
     add_executable(${target} ${source})
     target_link_libraries(${target} PRIVATE nrfusion_core)
@@ -17,8 +67,8 @@ nrfusion_test(nrfusion_game_probe_tests tests/game_probe_tests.cpp)
 nrfusion_test(nrfusion_telemetry_tests tests/telemetry_tracker_tests.cpp)
 nrfusion_test(nrfusion_timing_mapper_tests tests/timing_mapper_tests.cpp)
 nrfusion_test(nrfusion_runtime_shell_tests tests/runtime_shell_tests.cpp)
-nrfusion_test(nrfusion_nr_session_tests tests/nr_session_tests.cpp)
-nrfusion_test(nrfusion_nr_session_stress_tests tests/nr_session_stress_tests.cpp)
+nrfusion_nr_session_test(nrfusion_nr_session_tests tests/nr_session_tests.cpp)
+nrfusion_nr_session_test(nrfusion_nr_session_stress_tests tests/nr_session_stress_tests.cpp)
 nrfusion_test(nrfusion_ngx_feature_registry_tests tests/ngx_feature_registry_tests.cpp)
 nrfusion_test(nrfusion_submission_gate_tests tests/submission_gate_tests.cpp)
 nrfusion_test(nrfusion_nr_retirement_queue_tests tests/nr_retirement_queue_tests.cpp)

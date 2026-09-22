@@ -9,7 +9,8 @@ bool NrSession::Configure(
     if (!config.Valid()) return false;
     if (configured_) {
         if (config.generation < config_.generation) return false;
-        if (config.generation == config_.generation) return config == config_;
+        if (config.generation == config_.generation)
+            return config == config_ && performance == performanceConfig_;
     }
 
     if (configured_) {
@@ -19,6 +20,7 @@ bool NrSession::Configure(
     runtime_.Reconfigure(performance);
     runtime_.BeginConfigurationEpoch(runtime_.PerformanceCfg().maxScale);
     config_ = config;
+    performanceConfig_ = performance;
     configured_ = true;
     state_.configurationGeneration = config_.generation;
     state_.runtimeGeneration = runtime_.AutoConfigurationGeneration();
@@ -30,6 +32,7 @@ void NrSession::Reset() noexcept {
     works_.ResetSession();
     timings_.Reset();
     config_ = {};
+    performanceConfig_ = {};
     state_ = {};
     configured_ = false;
 }

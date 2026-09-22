@@ -109,7 +109,7 @@
 Start: 2026-09-22 00:41 BRT
 Branch: standalone/integration
 Base/default branch: master
-Phase 06: IN PROGRESS; subgates 06a-06d implemented.
+Phase 06: IN PROGRESS; subgates 06a-06e implemented.
 
 Completed this session:
 - found and removed a steady-path vector allocation from CheaperPrecision
@@ -130,6 +130,11 @@ Validated structural code head: b98309b9e1c81a58293c3fae918ca99eb9859db3
 Branch vs master at verification: +54 / -0
 Open PRs: 0
 
+06e result:
+- RuntimeConfig generation now protects PerformanceConfig identity too
+- focused NrSession tests link a portable production-source slice instead of nrfusion_core
+- differential regression now spans 180 adaptive decisions
+
 Outstanding Phase 06 runtime gates:
 - execute nrfusion_nr_session_tests
 - execute nrfusion_nr_session_stress_tests
@@ -137,6 +142,6 @@ Outstanding Phase 06 runtime gates:
 - prove 0 steady-state allocations during the measured million-frame interval
 
 Exact next action:
-- at the next available portable execution path, run only the two focused NrSession targets
+- run only the isolated nrfusion_nr_session_tests and nrfusion_nr_session_stress_tests targets
 - fix only an actually measured failure/allocation
 - when both pass, close Phase 06 and proceed to Phase 07
