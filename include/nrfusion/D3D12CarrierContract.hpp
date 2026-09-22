@@ -35,6 +35,7 @@ struct D3D12AcquireSnapshot {
     D3D12AcquiredResource motionVectors{};
     D3D12AcquiredResource exposure{};
     D3D12AcquiredResource reactiveMask{};
+    std::uint64_t outputOpaqueId = 0;
 
     bool hdr = false;
     bool cameraCut = false;
