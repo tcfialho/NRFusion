@@ -101,3 +101,6 @@ O primeiro draft capturava `runtimeGeneration` antes de `ResolveAuto`. Isso era 
 - submit/map/retire validam contra a generation atual;
 - timing de work anterior a resize/precision/scheduler epoch é completado/descartado sem treinar custo;
 - exhaustion do namespace de session deixa `Begin` fail-closed.
+
+
+- exhaustion de `session_` é terminal: namespace 0 permanece inválido e nunca recicla para 1.

@@ -109,7 +109,7 @@
 Start: 2026-09-22 00:24 BRT
 Branch: standalone/integration
 Base/default branch: master
-Phase 06: IN PROGRESS; subgates 06a-06b implemented.
+Phase 06: IN PROGRESS; subgates 06a-06b implemented and adversarially reviewed.
 
 06a result:
 - added minimal NrSessionFramePacket/NrSessionFrameResult contracts

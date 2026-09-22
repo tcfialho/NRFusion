@@ -79,6 +79,7 @@ bool NrSessionWorkTracker::IsSubmitted(const WorkTicket& ticket) const noexcept 
 void NrSessionWorkTracker::ResetSession() noexcept {
     for (Entry& entry : entries_) entry = {};
     size_ = 0;
+    if (session_ == 0) return;
     if (session_ == (std::numeric_limits<std::uint64_t>::max)()) session_ = 0;
     else ++session_;
 }
