@@ -54,6 +54,10 @@ D3D12CarrierExecutionPlanResult BuildD3D12CarrierExecutionPlan(
         result.failure = D3D12CarrierExecutionFailure::MissingMotion;
         return result;
     }
+    if (config.useGameExposure && !acquired.exposure.Valid()) {
+        result.failure = D3D12CarrierExecutionFailure::MissingExposure;
+        return result;
+    }
     if (!ValidMotionScale(config.motionScaleX) ||
         !ValidMotionScale(config.motionScaleY)) {
         result.failure = D3D12CarrierExecutionFailure::InvalidMotionScale;
