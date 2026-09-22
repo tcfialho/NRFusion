@@ -1,3 +1,3 @@
-phase07-work-identity-final-20260922
-base=5206038d447d24dfc7badc65e98446b4cc8d1012
-request=validate-native-acquire-registry-and-work-identity
+phase07-execution-plan-20260922
+base=819df22d571cc2cb0f233d5631b3d296162f04be
+request=validate-portable-execution-plan-and-windows-boundary-structure
