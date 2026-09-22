@@ -1,6 +1,7 @@
 #include "nrfusion/D3D12NrCodec.hpp"
 
 #include "DlssNr_Shader.h"
+#include "dlssnr_residual_Shader.h"
 
 namespace nrfusion {
 
@@ -17,7 +18,7 @@ bool D3D12NrCodec::Init(ID3D12Device* device) noexcept {
     descriptorSize_ =
         device_->GetDescriptorHandleIncrementSize(D3D12_DESCRIPTOR_HEAP_TYPE_CBV_SRV_UAV);
 
-    if (!CreateRootSignature() || !CreatePipeline() || !CreateSlots()) {
+    if (!CreateRootSignature() || !CreatePipelines() || !CreateSlots()) {
         Shutdown();
         return false;
     }
@@ -77,14 +78,20 @@ bool D3D12NrCodec::CreateRootSignature() noexcept {
     return SUCCEEDED(created) && rootSignature_ != nullptr;
 }
 
-bool D3D12NrCodec::CreatePipeline() noexcept {
+bool D3D12NrCodec::CreatePipelines() noexcept {
     D3D12_COMPUTE_PIPELINE_STATE_DESC desc{};
     desc.pRootSignature = rootSignature_;
     desc.CS.pShaderBytecode = DlssNr_cso;
     desc.CS.BytecodeLength = sizeof(DlssNr_cso);
+    if (FAILED(device_->CreateComputePipelineState(
+            &desc, IID_PPV_ARGS(&pipelineState_))) || pipelineState_ == nullptr)
+        return false;
+
+    desc.CS.pShaderBytecode = dlssnr_residual_cso;
+    desc.CS.BytecodeLength = sizeof(dlssnr_residual_cso);
     return SUCCEEDED(device_->CreateComputePipelineState(
-        &desc, IID_PPV_ARGS(&pipelineState_))) &&
-        pipelineState_ != nullptr;
+        &desc, IID_PPV_ARGS(&residualPipelineState_))) &&
+        residualPipelineState_ != nullptr;
 }
 
 bool D3D12NrCodec::CreateSlots() noexcept {
@@ -123,9 +130,11 @@ void D3D12NrCodec::Shutdown() noexcept {
         if (slot.heap != nullptr) slot.heap->Release();
         slot = {};
     }
+    if (residualPipelineState_ != nullptr) residualPipelineState_->Release();
     if (pipelineState_ != nullptr) pipelineState_->Release();
     if (rootSignature_ != nullptr) rootSignature_->Release();
     if (device_ != nullptr) device_->Release();
+    residualPipelineState_ = nullptr;
     pipelineState_ = nullptr;
     rootSignature_ = nullptr;
     device_ = nullptr;

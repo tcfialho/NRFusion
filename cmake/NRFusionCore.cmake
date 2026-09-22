@@ -65,6 +65,8 @@ if (WIN32)
         src/D3D12NrExecutorDispatch.cpp
         src/D3D12NrScratchResources.cpp
         src/D3D12NrGuideClones.cpp
+        src/D3D12NrCodecInit.cpp
+        src/D3D12NrCodecDispatch.cpp
         src/SyntheticVulkanProvider.cpp
         src/SyntheticOpenGlProvider.cpp
     )
@@ -91,4 +93,9 @@ if (MSVC)
     target_compile_options(nrfusion_core PRIVATE $<$<COMPILE_LANGUAGE:CXX>:/W4 /permissive->)
 else()
     target_compile_options(nrfusion_core PRIVATE $<$<COMPILE_LANGUAGE:CXX>:-Wall -Wextra -Wpedantic -Werror>)
+endif()
+
+if (WIN32)
+    add_dependencies(nrfusion_core nrfusion_dlssnr_shader_codegen)
+    target_include_directories(nrfusion_core PRIVATE "${NRFUSION_DLSSNR_GENERATED_DIR}")
 endif()

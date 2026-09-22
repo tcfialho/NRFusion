@@ -86,10 +86,14 @@ public:
     bool Dispatch(ID3D12GraphicsCommandList* commandList,
                   const D3D12NrCodecConstants& constants,
                   const D3D12NrCodecResources& resources) noexcept;
+    bool DispatchResidual(ID3D12GraphicsCommandList* commandList,
+                          const D3D12NrCodecConstants& constants,
+                          const D3D12NrCodecResources& resources) noexcept;
     void Shutdown() noexcept;
 
     bool Ready() const noexcept {
-        return device_ != nullptr && rootSignature_ != nullptr && pipelineState_ != nullptr;
+        return device_ != nullptr && rootSignature_ != nullptr &&
+               pipelineState_ != nullptr && residualPipelineState_ != nullptr;
     }
 
 private:
@@ -105,18 +109,23 @@ private:
     };
 
     bool CreateRootSignature() noexcept;
-    bool CreatePipeline() noexcept;
+    bool CreatePipelines() noexcept;
     bool CreateSlots() noexcept;
     bool WriteSrv(ID3D12Resource* resource, D3D12_CPU_DESCRIPTOR_HANDLE handle) noexcept;
     bool WriteUav(ID3D12Resource* resource, D3D12_CPU_DESCRIPTOR_HANDLE handle) noexcept;
     bool WriteConstants(Slot& slot, const D3D12NrCodecConstants& constants,
                         D3D12_CPU_DESCRIPTOR_HANDLE handle) noexcept;
+    bool DispatchWithPipeline(ID3D12GraphicsCommandList* commandList,
+                              ID3D12PipelineState* pipeline,
+                              const D3D12NrCodecConstants& constants,
+                              const D3D12NrCodecResources& resources) noexcept;
     D3D12_CPU_DESCRIPTOR_HANDLE Handle(const Slot& slot, std::uint32_t index) const noexcept;
     static DXGI_FORMAT TypedFormat(DXGI_FORMAT format) noexcept;
 
     ID3D12Device* device_ = nullptr;
     ID3D12RootSignature* rootSignature_ = nullptr;
     ID3D12PipelineState* pipelineState_ = nullptr;
+    ID3D12PipelineState* residualPipelineState_ = nullptr;
     std::array<Slot, kSlotCount> slots_{};
     std::uint32_t slotIndex_ = 0;
     std::uint32_t descriptorSize_ = 0;

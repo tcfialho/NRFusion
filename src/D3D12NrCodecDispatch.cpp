@@ -82,9 +82,24 @@ bool D3D12NrCodec::Dispatch(
     ID3D12GraphicsCommandList* commandList,
     const D3D12NrCodecConstants& constants,
     const D3D12NrCodecResources& resources) noexcept {
-    if (!Ready() || commandList == nullptr || resources.source == nullptr ||
-        resources.target == nullptr || constants.width == 0 || constants.height == 0 ||
-        constants.mode > static_cast<std::uint32_t>(D3D12NrCodecMode::ZeroMotion))
+    return DispatchWithPipeline(commandList, pipelineState_, constants, resources);
+}
+
+bool D3D12NrCodec::DispatchResidual(
+    ID3D12GraphicsCommandList* commandList,
+    const D3D12NrCodecConstants& constants,
+    const D3D12NrCodecResources& resources) noexcept {
+    if (constants.mode > 1u) return false;
+    return DispatchWithPipeline(commandList, residualPipelineState_, constants, resources);
+}
+
+bool D3D12NrCodec::DispatchWithPipeline(
+    ID3D12GraphicsCommandList* commandList, ID3D12PipelineState* pipeline,
+    const D3D12NrCodecConstants& constants,
+    const D3D12NrCodecResources& resources) noexcept {
+    if (!Ready() || pipeline == nullptr || commandList == nullptr ||
+        resources.source == nullptr || resources.target == nullptr ||
+        constants.width == 0 || constants.height == 0)
         return false;
 
     const D3D12_RESOURCE_DESC targetDesc = resources.target->GetDesc();
@@ -119,7 +134,7 @@ bool D3D12NrCodec::Dispatch(
     ID3D12DescriptorHeap* heaps[] = {slot.heap};
     commandList->SetDescriptorHeaps(1, heaps);
     commandList->SetComputeRootSignature(rootSignature_);
-    commandList->SetPipelineState(pipelineState_);
+    commandList->SetPipelineState(pipeline);
     commandList->SetComputeRootDescriptorTable(
         0, slot.heap->GetGPUDescriptorHandleForHeapStart());
     const UINT groupsX = constants.width / 8u + static_cast<UINT>(constants.width % 8u != 0);
