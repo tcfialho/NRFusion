@@ -1,3 +1,3 @@
-phase07-inactive-bypass-20260922
-base=fbc50ef85c35f7c066b6285e037e6e5387ae18e2
-request=validate-disabled-notconfigured-acquire-bypass
+phase07-stale-acquire-quarantine-20260922
+base=4e827755aa0511912a245da737910b1ecd748cb2
+request=validate-stale-generation-before-d3d12-acquire
