@@ -83,6 +83,7 @@ nrfusion_test(nrfusion_runtime_shell_tests tests/runtime_shell_tests.cpp)
 nrfusion_test(nrfusion_ngx_feature_registry_tests tests/ngx_feature_registry_tests.cpp)
 nrfusion_test(nrfusion_submission_gate_tests tests/submission_gate_tests.cpp)
 nrfusion_test(nrfusion_nr_retirement_queue_tests tests/nr_retirement_queue_tests.cpp)
+nrfusion_test(nrfusion_d3d12_carrier_contract_tests tests/d3d12_carrier_contract_tests.cpp)
 
 add_executable(nrfusion_d3d12_nr_frame_plan_tests
     tests/d3d12_nr_frame_plan_tests.cpp
