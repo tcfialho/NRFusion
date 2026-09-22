@@ -1,4 +1,5 @@
 #include "nrfusion/D3D12CarrierSession.hpp"
+#include "nrfusion/D3D12CarrierNativeFacts.hpp"
 
 #include <cassert>
 
@@ -8,23 +9,20 @@ namespace {
 
 D3D12AcquireSnapshot Snapshot(
     std::uint64_t generation, FrameId frameId) {
-    D3D12AcquireSnapshot snapshot{};
-    snapshot.identity.frameId = frameId;
-    snapshot.identity.configurationGeneration = generation;
-    snapshot.renderResolution = {1920, 1080};
-    snapshot.outputResolution = {1920, 1080};
-
-    ResourceRef color{};
-    color.opaqueId = 1;
-    color.resolution = snapshot.renderResolution;
-    color.format = ResourceFormat::Rgba16Float;
-    color.provenance = ResourceProvenance::GameNative;
-    color.reliability = ResourceReliability::Reliable;
-    color.ownership = ResourceOwnership::Borrowed;
-    color.lifetime = ResourceLifetime::Frame;
-    color.sourceFrameId = frameId;
-    snapshot.color = {color, true};
-    return snapshot;
+    D3D12NativeAcquireInput input{};
+    input.identity.frameId = frameId;
+    input.identity.configurationGeneration = generation;
+    input.color.texture = {
+        1, {1920, 1080}, ResourceFormat::Rgba16Float, 1, 1, 1, true
+    };
+    input.color.provenance = ResourceProvenance::GameNative;
+    input.color.reliability = ResourceReliability::Reliable;
+    input.output = {
+        2, {1920, 1080}, ResourceFormat::Unknown, 1, 1, 1, true
+    };
+    const auto acquired = BuildD3D12NativeAcquireSnapshot(input);
+    assert(acquired);
+    return acquired.snapshot;
 }
 
 D3D12CarrierFramePacket Packet(
