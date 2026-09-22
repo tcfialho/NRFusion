@@ -5,6 +5,8 @@ namespace nrfusion {
 bool NrDeferredRetirementQueue::Park(
     void*& object, NrRetiredObjectKind kind, std::uint32_t delay) noexcept {
     if (object == nullptr || delay == 0) return false;
+    if (kind != NrRetiredObjectKind::Feature && kind != NrRetiredObjectKind::Resource)
+        return false;
 
     for (auto& entry : entries_) {
         if (entry.occupied) continue;

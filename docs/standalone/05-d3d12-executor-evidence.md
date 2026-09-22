@@ -541,3 +541,10 @@ só então publicados no executor. Falhas não deixam handles ou function pointe
 O loader agora diferencia handle borrowed por `GetModuleHandleW` de handle owned por
 `LoadLibraryW`/DriverStore. `Shutdown()` só chama `FreeLibrary` no driver quando o executor
 realmente adquiriu essa referência. `Init(nullptr)` também falha fechado.
+
+
+### Fail-closed review
+
+- retirement queue agora rejeita `NrRetiredObjectKind` inválido sem transferir ownership;
+- teste portátil cobre enum inválido e preservação do pointer;
+- codec valida que o target Texture2D cobre `constants.width/height` antes de gravar dispatch.

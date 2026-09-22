@@ -87,6 +87,11 @@ bool D3D12NrCodec::Dispatch(
         constants.mode > static_cast<std::uint32_t>(D3D12NrCodecMode::ZeroMotion))
         return false;
 
+    const D3D12_RESOURCE_DESC targetDesc = resources.target->GetDesc();
+    if (targetDesc.Dimension != D3D12_RESOURCE_DIMENSION_TEXTURE2D ||
+        targetDesc.Width < constants.width || targetDesc.Height < constants.height)
+        return false;
+
     Slot& slot = slots_[slotIndex_];
     slotIndex_ = (slotIndex_ + 1) % kSlotCount;
 
