@@ -45,9 +45,10 @@ struct D3D12AcquireResult {
     FrameContext frame{};
     ProviderDiagnostics diagnostics{};
     D3D12AcquireFailure failure = D3D12AcquireFailure::None;
+    bool attempted = false;
 
     constexpr explicit operator bool() const noexcept {
-        return failure == D3D12AcquireFailure::None;
+        return attempted && failure == D3D12AcquireFailure::None;
     }
 };
 
