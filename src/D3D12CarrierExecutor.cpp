@@ -35,8 +35,10 @@ D3D12CarrierExecuteResult D3D12CarrierExecutor::Execute(
     const D3D12CarrierExecuteOptions& options) {
     D3D12CarrierExecuteResult result{};
 
+    D3D12CarrierExecutionConfig execution = options.execution;
+    execution.useGameExposure = options.composition.useGameExposure;
     const auto planned = BuildD3D12CarrierExecutionPlan(
-        frame, work, options.execution);
+        frame, work, execution);
     if (!planned) {
         result.failure = D3D12CarrierExecuteFailure::Planning;
         result.planningFailure = planned.failure;
@@ -59,7 +61,8 @@ D3D12CarrierExecuteResult D3D12CarrierExecutor::Execute(
         return result;
     }
     if (options.composition.useGameExposure &&
-        !Matches(resources.exposure, normalized.exposure)) {
+        (resources.exposure.resource == nullptr ||
+         !Matches(resources.exposure, normalized.exposure))) {
         result.failure = D3D12CarrierExecuteFailure::MissingExposure;
         return result;
     }
