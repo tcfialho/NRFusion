@@ -40,7 +40,7 @@ bool D3D12NrExecutor::EnsureFeature(ID3D12GraphicsCommandList* cmdList, uint32_t
     }
 
     if (feature_ != nullptr) {
-        if (release_ == nullptr ||
+        if (release_ == nullptr || !RetirePassFeatures(1) ||
             !retirement_.Park(feature_, NrRetiredObjectKind::Feature)) {
             device->Release();
             status_ = "NR retirement queue full";
@@ -80,9 +80,23 @@ bool D3D12NrExecutor::EnsureFeatureForEpoch(
 void D3D12NrExecutor::Shutdown() {
     if (feature_ && release_) release_(feature_);
     feature_ = nullptr;
+    for (std::uint32_t pass = 1; pass < kD3D12NrMaxPassCount; ++pass) {
+        if (passFeatures_[pass] != nullptr && release_ != nullptr)
+            release_(passFeatures_[pass]);
+        passFeatures_[pass] = nullptr;
+        passGates_[pass].Reset();
+        passTuningValid_[pass] = false;
+        passNeedsReset_[pass] = false;
+        passCreateFailed_[pass] = false;
+    }
     retirement_.DrainAfterIdle(this, &D3D12NrExecutor::ReleaseRetired);
     scratch_.ReleaseAfterIdle();
     guideClones_.ReleaseAfterIdle();
+    codec_.Shutdown();
+    residualHistoryIndex_ = 0;
+    residualHistoryPrimed_ = false;
+    residualStoreValid_ = false;
+    residualEpoch_ = 0;
     featureWidth_ = featureHeight_ = 0;
     featureTuning_ = {};
     featureTuningValid_ = false;

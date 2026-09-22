@@ -63,6 +63,8 @@ if (WIN32)
         src/D3D12NrExecutorLoader.cpp
         src/D3D12NrExecutorLifecycle.cpp
         src/D3D12NrExecutorDispatch.cpp
+        src/D3D12NrExecutorPasses.cpp
+        src/D3D12NrExecutorFrame.cpp
         src/D3D12NrScratchResources.cpp
         src/D3D12NrGuideClones.cpp
         src/D3D12NrCodecInit.cpp

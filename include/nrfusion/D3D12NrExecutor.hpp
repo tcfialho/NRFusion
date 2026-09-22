@@ -10,9 +10,12 @@
 #include <d3d11.h>
 #include <d3d12.h>
 
+#include <array>
 #include <cstdint>
 #include <string>
 
+#include "nrfusion/D3D12NrCodec.hpp"
+#include "nrfusion/D3D12NrFramePlan.hpp"
 #include "nrfusion/D3D12NrGuideClones.hpp"
 #include "nrfusion/D3D12NrScratchResources.hpp"
 #include "nrfusion/NrDeferredRetirementQueue.hpp"
@@ -53,6 +56,63 @@ struct DlssNrTuning {
     bool operator==(const DlssNrTuning&) const noexcept = default;
 };
 
+
+constexpr std::uint32_t kD3D12NrMaxPassCount = 30;
+
+struct D3D12NrComposition {
+    bool runBeforeUpscale = false;
+    bool rayReconstruction = false;
+    bool residualAcrossRr = false;
+    bool colourIsLinearHdr = true;
+    bool useGameExposure = false;
+    float whitePoint = 1.0f;
+    float exposurePreMul = 1.0f;
+    float transferStrength = 1.0f;
+    float colourStrength = 1.0f;
+    float maxRatio = 4.0f;
+    std::uint32_t debugView = 0;
+    std::uint32_t transfer = 0;
+    std::uint32_t reversibleMode = 0;
+    bool applyModel = true;
+    std::uint32_t skinProtection = 0;
+    std::uint32_t showSkinMask = 0;
+    float skinDetail = 1.0f;
+    float skinColour = 1.0f;
+    float environmentDetail = 1.0f;
+    float environmentColour = 1.0f;
+    float residualBlend = 1.0f;
+};
+
+struct D3D12NrFrameResources {
+    ID3D12Resource* color = nullptr;
+    ID3D12Resource* depth = nullptr;
+    ID3D12Resource* motion = nullptr;
+    ID3D12Resource* output = nullptr;
+    ID3D12Resource* exposure = nullptr;
+};
+
+struct D3D12NrFrameRequest {
+    D3D12NrFramePlanInput plan{};
+    std::array<DlssNrTuning, kD3D12NrMaxPassCount> tuning{};
+    D3D12NrComposition composition{};
+    std::uint64_t submissionEpoch = 0;
+    bool reset = false;
+    bool depthInverted = false;
+    float motionScaleX = 1.0f;
+    float motionScaleY = 1.0f;
+    D3D12_RESOURCE_STATES colorState = D3D12_RESOURCE_STATE_NON_PIXEL_SHADER_RESOURCE;
+    D3D12_RESOURCE_STATES outputState = D3D12_RESOURCE_STATE_UNORDERED_ACCESS;
+    D3D12_RESOURCE_STATES depthState = D3D12_RESOURCE_STATE_NON_PIXEL_SHADER_RESOURCE;
+    D3D12_RESOURCE_STATES motionState = D3D12_RESOURCE_STATE_NON_PIXEL_SHADER_RESOURCE;
+};
+
+enum class D3D12NrFrameResult : std::uint8_t {
+    Applied,
+    SkippedPlacement,
+    PendingFeature,
+    Failed
+};
+
 class D3D12NrExecutor {
 public:
     D3D12NrExecutor() = default;
@@ -87,6 +147,11 @@ public:
         uint32_t motionWidth = 0, uint32_t motionHeight = 0,
         float motionScaleX = 1.0f, float motionScaleY = 1.0f);
 
+    D3D12NrFrameResult ExecuteFrame(
+        ID3D12GraphicsCommandList* cmdList,
+        const D3D12NrFrameResources& resources,
+        const D3D12NrFrameRequest& request);
+
     void Shutdown();
 
     bool Ready() const noexcept { return feature_ != nullptr; }
@@ -112,6 +177,22 @@ private:
 
     static void ReleaseRetired(void* context, NrRetiredObject retired) noexcept;
     void DiscoverFloatSlot();
+    bool RetirePassFeatures(std::uint32_t first) noexcept;
+    std::uint32_t PreparePassFeatures(
+        ID3D12GraphicsCommandList* cmdList, std::uint32_t width, std::uint32_t height,
+        std::uint32_t requested, std::uint64_t epoch,
+        const std::array<DlssNrTuning, kD3D12NrMaxPassCount>& tuning,
+        bool& pending) noexcept;
+    bool EvaluateFeature(
+        void* feature, ID3D12GraphicsCommandList* cmdList,
+        ID3D12Resource* color, ID3D12Resource* depth, ID3D12Resource* motion,
+        ID3D12Resource* output, std::uint32_t width, std::uint32_t height,
+        std::uint32_t guideWidth, std::uint32_t guideHeight,
+        std::uint32_t motionWidth, std::uint32_t motionHeight,
+        std::uint32_t depthBaseX, std::uint32_t depthBaseY,
+        std::uint32_t motionBaseX, std::uint32_t motionBaseY,
+        bool depthInverted, bool reset, const DlssNrTuning& tuning,
+        float motionScaleX, float motionScaleY) noexcept;
 
     HMODULE driverModule_ = nullptr;
     bool driverModuleOwned_ = false;
@@ -136,6 +217,17 @@ private:
     NrDeferredRetirementQueue retirement_{};
     D3D12NrScratchResources scratch_{};
     D3D12NrGuideClones guideClones_{};
+    D3D12NrCodec codec_{};
+    std::array<void*, kD3D12NrMaxPassCount> passFeatures_{};
+    std::array<NrSubmissionGate, kD3D12NrMaxPassCount> passGates_{};
+    std::array<DlssNrTuning, kD3D12NrMaxPassCount> passTunings_{};
+    std::array<bool, kD3D12NrMaxPassCount> passTuningValid_{};
+    std::array<bool, kD3D12NrMaxPassCount> passNeedsReset_{};
+    std::array<bool, kD3D12NrMaxPassCount> passCreateFailed_{};
+    std::uint32_t residualHistoryIndex_ = 0;
+    bool residualHistoryPrimed_ = false;
+    bool residualStoreValid_ = false;
+    std::uint64_t residualEpoch_ = 0;
     std::wstring snippetPath_;
     std::string status_ = "not loaded";
 };
