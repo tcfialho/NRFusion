@@ -31,13 +31,14 @@ jobs:
           cmake --build build-focused
           --target nrfusion_nr_session_tests nrfusion_nr_session_stress_tests nrfusion_tests
           nrfusion_d3d12_carrier_contract_tests nrfusion_d3d12_carrier_session_tests
+          nrfusion_d3d12_carrier_native_facts_tests
           --parallel 2
 
       - name: Run focused regression tests
         run: >
           ctest --test-dir build-focused
           --output-on-failure
-          -R '^(nrfusion_tests|nrfusion_nr_session_(tests|stress_tests)|nrfusion_d3d12_carrier_(contract|session)_tests)$'
+          -R '^(nrfusion_tests|nrfusion_nr_session_(tests|stress_tests)|nrfusion_d3d12_carrier_(contract|session|native_facts)_tests)$'
 
       - name: Package source checkpoint
         run: git archive --format=zip --output=nrfusion-source-${GITHUB_SHA}.zip HEAD
