@@ -138,7 +138,7 @@ read-only. Boundaries mapeados:
 
 ## Próxima ação
 
-Validar o target focado de scratch no Windows; depois ligar output/colorCopy/hdrCopy ao primeiro seam real de encode/copy, sem HDR/residual/multipass.
+Validar scratch + frame-plan em Windows fast; depois expandir o owner de surfaces e extrair o seam encode/resolve.
 
 ## Próxima fase
 
@@ -147,7 +147,7 @@ Fase 06 somente após fechamento e revisão da Fase 05.
 
 ## Subgate 03c — frame planning standalone
 
-- Snapshot puro para working scale, passes/unlock e proxy backend.
+- Config puro de frame planning para working scale, passes/unlock e proxy backend.
 - Working scale preserva a semântica madura: NaN -> 1.0, clamp 0.25..2.0 e arredondamento +0.5.
 - Passes preservam 1..3 por padrão, 1..30 destravado e proxy backend força 1.
 - Subrects de color/depth/motion são validados contra as surfaces antes de qualquer uso.
@@ -161,3 +161,16 @@ A Fase 05 ainda não pode ser marcada concluída. Faltam integração GPU real d
 expansão completa do resource/state owner, features multipass por epoch, HDR/exposure/residual e
 os seams pre/post SR/RR. Esses itens existem hoje somente no fixture maduro e não devem ser
 copiados com dependências de Config/State.
+
+
+## Subgates restantes para fechar a Fase 05
+
+1. **03d resources/state completos** — integrar `passScratch`, `colorSmall`, `outputNative`,
+   `activeColor`, residual surfaces e guide clones com owner/state/resize/failure explícitos.
+2. **04 encode/resolve + scale real** — ligar o frame plan aos resources e portar codec/copy/resample
+   sem dependência de `Config`/`State`.
+3. **05 multipass/history** — features extras, create epoch por pass, ping-pong e reset/history.
+4. **06 HDR/exposure/residual** — exposure source, HDR encode/resolve e Across-RR residual standalone.
+5. **07 seams + snapshot final** — pre/post SR/RR, snapshot operacional completo e revisão adversarial final.
+
+A Fase 06 do plano global continua bloqueada até esses cinco subgates fecharem.

@@ -261,9 +261,9 @@ Extraído do executor maduro sem dependência de OptiScaler:
 - motion-to-work scale calculado por eixo.
 
 Arquivos:
-- `include/nrfusion/D3D12NrFramePlan.hpp`: 49 linhas;
-- `src/D3D12NrFramePlan.cpp`: 66 linhas;
-- `tests/d3d12_nr_frame_plan_tests.cpp`: 76 linhas.
+- `include/nrfusion/D3D12NrFramePlan.hpp`: 52 linhas;
+- `src/D3D12NrFramePlan.cpp`: 69 linhas;
+- `tests/d3d12_nr_frame_plan_tests.cpp`: 78 linhas.
 
 Validação isolada Linux:
 `g++ -std=c++20 -Wall -Wextra -Wpedantic -Werror`: PASS.
@@ -305,3 +305,18 @@ PASS com `-Wall -Wextra -Wpedantic -Werror`.
 Naming review: o bloco parcial foi renomeado de `D3D12NrExecutionSnapshot` para
 `D3D12NrFramePlanConfig`; ele configura apenas planejamento de frame e não deve ser confundido
 com o snapshot operacional completo ainda pendente no gate da Fase 05.
+
+
+## Verificação de estabilização da sessão
+
+Head verificado: `e45247bbdd597d7f755e9f7d443747b96f85f21a` antes do handoff documental.
+
+- branch de integração: 13 commits à frente de `master`, 0 atrás;
+- PRs abertos: 0;
+- arquivos de código tocados neste lote permanecem abaixo de 300 linhas;
+- frame planner: compile/test isolado C++20 com warnings-as-errors PASS;
+- scratch WARP e hardening do executor ainda requerem Windows fast;
+- nenhum full Windows build foi disparado.
+
+A auditoria confirma que `scratch_` e o frame planner ainda não formam o frame path completo.
+Existência do owner/planner não é contada como integração GPU.

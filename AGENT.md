@@ -104,28 +104,34 @@
 
 ## Current session
 
-Start: 2026-09-21 21:13 BRT
+Start: 2026-09-21 21:32 BRT
 Branch: standalone/phase-05-d3d12-executor-20260921
 Base: master 548349b740e6fdfec7b0a9f6dacc17ebcdf9b160
-Phase 05: in progress; audit confirms gate incomplete; subgates 01-03c implemented.
+Phase 05: OPEN; audited against the plan and mature fixture.
 
-Completed this session:
-- reanchored the integration history as master + two scratch WIP commits
-- proved old/new integration trees identical before moving the branch
-- fixed invalid scratch kind incorrectly selecting HdrCopy
-- added fail-closed regression
-- isolated scratch validation from nrfusion_core
-- added WARP lifecycle/state/resize/retirement regression
-- confirmed master Portable run 35669420707 passed
-- no full Windows build or new PR
-- consolidated session, Git, tool-call, build and CI-polling discipline in this file
-- audited Phase 05 gate against implementation and mature fixture
-- added portable standalone frame planner for scale/passes/subrect/padding
-- isolated frame-plan compile/test passed with -Werror
-- fixed executor failure ordering and null-input fail-closed boundaries
-- isolated frame-plan validation from nrfusion_core to keep targeted builds small
+Completed:
+- confirmed Phase 05 is not complete and did not falsify the gate
+- extracted standalone frame planning for scale/pass/subrect/padding semantics
+- preserved validated color/depth/motion subrects in the frame plan
+- isolated frame-plan validation from nrfusion_core
+- isolated compile/test passed with C++20 warnings-as-errors
+- fixed executor failure ordering before active feature mutation
+- made evaluate fail closed on null resources/command list/zero dimensions
+- current integration remains one long-lived branch; no PR opened
+- no full Windows build triggered
+
+Current head before final handoff docs: e45247bbdd597d7f755e9f7d443747b96f85f21a
+Portable-validated boundary: frame-plan code at e45247bb... via isolated compile/test.
+Windows validation pending: scratch WARP target + executor hardening on current integration.
+
+Outstanding Phase 05 subgates:
+- 03d complete resource/state ownership and wiring
+- 04 encode/resolve plus real scale path
+- 05 multipass/history and per-pass epochs
+- 06 HDR/exposure/residual
+- 07 pre/post SR/RR seams plus complete standalone operational snapshot
 
 Exact next action:
-- validate scratch + frame-plan focused targets on Windows fast validation
-- expand scratch owner to passScratch/colorSmall/outputNative/activeColor with explicit resting states
-- then extract the encode/resolve seam before HDR/residual/multipass
+- run Windows fast only for nrfusion_nr_scratch_resources_tests and nrfusion_d3d12_nr_frame_plan_tests
+- if green, expand resource owner to passScratch/colorSmall/outputNative/activeColor first
+- do not start HDR/residual/multipass until encode/resolve has a state regression
