@@ -12,6 +12,7 @@ struct D3D12CarrierExecutionConfig {
     bool unlockPasses = false;
     bool proxyBackend = false;
     bool depthInverted = false;
+    bool colourIsLinearHdr = false;
     float motionScaleX = 1.0f;
     float motionScaleY = 1.0f;
 };
