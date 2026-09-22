@@ -77,11 +77,15 @@ D3D12NrFrameResult D3D12NrExecutor::ApplyStoredResidual(
         scratch_.State(D3D12NrScratchKind::ResidualComposed);
     if (!TransitionExternal(
             cmd, resources.output, outputState,
-            D3D12_RESOURCE_STATE_NON_PIXEL_SHADER_RESOURCE) ||
-        (carrierState != D3D12_RESOURCE_STATE_UNORDERED_ACCESS &&
-         !scratch_.Transition(
-             cmd, D3D12NrScratchKind::ResidualComposed, carrierState,
-             D3D12_RESOURCE_STATE_UNORDERED_ACCESS))) {
+            D3D12_RESOURCE_STATE_NON_PIXEL_SHADER_RESOURCE)) {
+        residualHistoryPrimed_ = false;
+        return D3D12NrFrameResult::Failed;
+    }
+    if (carrierState != D3D12_RESOURCE_STATE_UNORDERED_ACCESS &&
+        !scratch_.Transition(
+            cmd, D3D12NrScratchKind::ResidualComposed, carrierState,
+            D3D12_RESOURCE_STATE_UNORDERED_ACCESS)) {
+        TransitionExternal(cmd, resources.output, outputState, request.outputState);
         residualHistoryPrimed_ = false;
         return D3D12NrFrameResult::Failed;
     }

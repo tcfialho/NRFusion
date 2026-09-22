@@ -5,8 +5,7 @@ namespace nrfusion {
 D3D12NrFrameResult D3D12NrExecutor::ExecuteFrame(
     ID3D12GraphicsCommandList* cmdList, const D3D12NrFrameResources& resources,
     const D3D12NrFrameRequest& request) {
-    if (cmdList == nullptr || resources.color == nullptr || resources.depth == nullptr ||
-        resources.motion == nullptr || resources.output == nullptr)
+    if (cmdList == nullptr || resources.output == nullptr)
         return D3D12NrFrameResult::Failed;
 
     const bool before = request.plan.beforeUpscale;
@@ -30,6 +29,9 @@ D3D12NrFrameResult D3D12NrExecutor::ExecuteFrame(
         return ApplyStoredResidual(cmdList, resources, request);
     if (request.composition.runBeforeUpscale != before)
         return D3D12NrFrameResult::SkippedPlacement;
+    if ((before && resources.color == nullptr) ||
+        resources.depth == nullptr || resources.motion == nullptr)
+        return D3D12NrFrameResult::Failed;
     return ExecuteMainFrame(cmdList, resources, request);
 }
 
@@ -37,9 +39,6 @@ D3D12NrFrameResult D3D12NrExecutor::ExecuteMainFrame(
     ID3D12GraphicsCommandList* cmdList, const D3D12NrFrameResources& resources,
     const D3D12NrFrameRequest& request) {
     FrameContext context{};
-    if (!BuildD3D12NrFramePlan(request.plan, context.plan))
-        return D3D12NrFrameResult::Failed;
-
     context.target = request.plan.beforeUpscale ? resources.color : resources.output;
     context.targetState = request.plan.beforeUpscale ? request.colorState : request.outputState;
     context.targetArrival = context.targetState;
@@ -50,15 +49,65 @@ D3D12NrFrameResult D3D12NrExecutor::ExecuteMainFrame(
                        request.composition.runBeforeUpscale &&
                        request.composition.rayReconstruction;
 
-    ID3D12Device* device = nullptr;
-    if (FAILED(context.target->GetDevice(IID_PPV_ARGS(&device))) || device == nullptr)
-        return D3D12NrFrameResult::Failed;
     const D3D12_RESOURCE_DESC targetDesc = context.target->GetDesc();
+    const D3D12_RESOURCE_DESC depthDesc = resources.depth->GetDesc();
+    const D3D12_RESOURCE_DESC motionDesc = resources.motion->GetDesc();
+    if (targetDesc.Dimension != D3D12_RESOURCE_DIMENSION_TEXTURE2D ||
+        targetDesc.SampleDesc.Count != 1 || targetDesc.DepthOrArraySize != 1 ||
+        targetDesc.MipLevels != 1 ||
+        depthDesc.Dimension != D3D12_RESOURCE_DIMENSION_TEXTURE2D ||
+        motionDesc.Dimension != D3D12_RESOURCE_DIMENSION_TEXTURE2D)
+        return D3D12NrFrameResult::Failed;
+
+    D3D12NrFramePlanInput planInput = request.plan;
+    planInput.colorSurface = {
+        static_cast<std::uint32_t>(targetDesc.Width), targetDesc.Height};
+    planInput.depthSurface = {
+        static_cast<std::uint32_t>(depthDesc.Width), depthDesc.Height};
+    planInput.motionSurface = {
+        static_cast<std::uint32_t>(motionDesc.Width), motionDesc.Height};
+    if (!BuildD3D12NrFramePlan(planInput, context.plan))
+        return D3D12NrFrameResult::Failed;
+
     context.targetFormat = targetDesc.Format;
     context.cropColor = context.plan.cropColor;
     context.targetSupportsUav = context.cropColor ||
         (targetDesc.Flags & D3D12_RESOURCE_FLAG_ALLOW_UNORDERED_ACCESS) != 0;
 
+    bool generationChanged = feature_ != nullptr &&
+        (!featurePlacementValid_ ||
+         featureBeforeUpscale_ != request.plan.beforeUpscale ||
+         featureRayReconstruction_ != request.composition.rayReconstruction);
+    for (std::uint32_t pass = 1;
+         !generationChanged && pass < context.plan.requestedPasses; ++pass) {
+        generationChanged = passFeatures_[pass] != nullptr &&
+            (!passTuningValid_[pass] || !(passTunings_[pass] == request.tuning[pass]));
+    }
+    if (generationChanged && !RetireFeatureGeneration())
+        return D3D12NrFrameResult::Failed;
+
+    if (!EnsureFeatureForEpoch(
+            cmdList, context.plan.work.width, context.plan.work.height,
+            request.submissionEpoch, request.tuning[0]))
+        return D3D12NrFrameResult::Failed;
+    if (justBuilt_) {
+        featureBeforeUpscale_ = request.plan.beforeUpscale;
+        featureRayReconstruction_ = request.composition.rayReconstruction;
+        featurePlacementValid_ = true;
+    }
+    if (!submissionGate_.ReadyFor(request.submissionEpoch))
+        return D3D12NrFrameResult::PendingFeature;
+
+    bool pending = false;
+    const std::uint32_t effectivePasses = PreparePassFeatures(
+        cmdList, context.plan.work.width, context.plan.work.height,
+        context.plan.requestedPasses, request.submissionEpoch, request.tuning, pending);
+    if (pending) return D3D12NrFrameResult::PendingFeature;
+    if (effectivePasses == 0) return D3D12NrFrameResult::Failed;
+
+    ID3D12Device* device = nullptr;
+    if (FAILED(context.target->GetDevice(IID_PPV_ARGS(&device))) || device == nullptr)
+        return D3D12NrFrameResult::Failed;
     D3D12NrScratchDesc scratchDesc{
         targetDesc.Format, context.plan.activeColor.width, context.plan.activeColor.height,
         context.plan.work.width, context.plan.work.height};
@@ -99,37 +148,6 @@ D3D12NrFrameResult D3D12NrExecutor::ExecuteMainFrame(
     }
     device->Release();
     if (!ok) return D3D12NrFrameResult::Failed;
-
-    bool generationChanged = feature_ != nullptr &&
-        (!featurePlacementValid_ ||
-         featureBeforeUpscale_ != request.plan.beforeUpscale ||
-         featureRayReconstruction_ != request.composition.rayReconstruction);
-    for (std::uint32_t pass = 1;
-         !generationChanged && pass < context.plan.requestedPasses; ++pass) {
-        generationChanged = passFeatures_[pass] != nullptr &&
-            (!passTuningValid_[pass] || !(passTunings_[pass] == request.tuning[pass]));
-    }
-    if (generationChanged && !RetireFeatureGeneration())
-        return D3D12NrFrameResult::Failed;
-
-    if (!EnsureFeatureForEpoch(
-            cmdList, context.plan.work.width, context.plan.work.height,
-            request.submissionEpoch, request.tuning[0]))
-        return D3D12NrFrameResult::Failed;
-    if (justBuilt_) {
-        featureBeforeUpscale_ = request.plan.beforeUpscale;
-        featureRayReconstruction_ = request.composition.rayReconstruction;
-        featurePlacementValid_ = true;
-    }
-    if (!submissionGate_.ReadyFor(request.submissionEpoch))
-        return D3D12NrFrameResult::PendingFeature;
-
-    bool pending = false;
-    const std::uint32_t effectivePasses = PreparePassFeatures(
-        cmdList, context.plan.work.width, context.plan.work.height,
-        context.plan.requestedPasses, request.submissionEpoch, request.tuning, pending);
-    if (pending) return D3D12NrFrameResult::PendingFeature;
-    if (effectivePasses == 0) return D3D12NrFrameResult::Failed;
 
     if (!PrepareFrameResources(cmdList, resources, request, context)) {
         RestoreFrameResources(cmdList, resources, request, context);

@@ -604,3 +604,13 @@ Correções adicionais:
 - mudanças de placement SR/RR ou tuning de pass extra aposentam a geração inteira de features;
 - compare mode/split/zoom/swap e debugScale agora fazem parte do snapshot standalone;
 - static sampler define MaxAnisotropy/ComparisonFunc explicitamente.
+
+
+### Segunda revisão — descriptor/lifetime ordering
+
+- post-seam residual não exige color/depth/motion que não usa;
+- o frame-plan agora deriva allocation extents de `GetDesc()`, não aceita surface sizes inventados pelo caller;
+- target de composição é validado como Texture2D single-sample antes de qualquer feature/GPU work;
+- submission/retirement tick e feature epochs ocorrem antes de scratch resize, evitando deadlock quando a
+  retirement queue está cheia;
+- falha ao preparar o carrier residual restaura o Output ao state de chegada.
