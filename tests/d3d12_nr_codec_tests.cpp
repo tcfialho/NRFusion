@@ -77,6 +77,9 @@ int main() {
     auto target = Texture(
         device.Get(), D3D12_RESOURCE_FLAG_ALLOW_UNORDERED_ACCESS,
         D3D12_RESOURCE_STATE_UNORDERED_ACCESS);
+    auto keep = Texture(
+        device.Get(), D3D12_RESOURCE_FLAG_ALLOW_UNORDERED_ACCESS,
+        D3D12_RESOURCE_STATE_UNORDERED_ACCESS);
 
     D3D12NrCodecConstants constants{};
     constants.mode = static_cast<std::uint32_t>(D3D12NrCodecMode::Encode);
@@ -89,6 +92,7 @@ int main() {
     D3D12NrCodecResources resources{};
     resources.source = source.Get();
     resources.target = target.Get();
+    resources.keep = keep.Get();
 
     assert(codec.Dispatch(list.Get(), constants, resources));
     assert(SUCCEEDED(list->Close()));

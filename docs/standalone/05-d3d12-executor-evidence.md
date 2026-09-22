@@ -464,3 +464,12 @@ Semântica portada:
 
 O target WARP é isolado de `nrfusion_core` e depende apenas de D3D12/DXGI + shader codegen.
 Ainda não foi executado porque o conector não oferece workflow_dispatch.
+
+
+### Revisão adversarial do codec antes do primeiro Windows run
+
+Corrigido antes de validação:
+- copy/assignment do owner COM foi desabilitado;
+- offsets críticos do constant buffer receberam `static_assert`;
+- `SizeInBytes` do CBV usa cast explícito para `UINT`;
+- teste Encode usa UAV separado para `target` e `keep`, como o caminho real.

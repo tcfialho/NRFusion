@@ -73,7 +73,7 @@ bool D3D12NrCodec::WriteConstants(
 
     D3D12_CONSTANT_BUFFER_VIEW_DESC desc{};
     desc.BufferLocation = slot.constants->GetGPUVirtualAddress();
-    desc.SizeInBytes = sizeof(constants);
+    desc.SizeInBytes = static_cast<UINT>(sizeof(constants));
     device_->CreateConstantBufferView(&desc, handle);
     return true;
 }

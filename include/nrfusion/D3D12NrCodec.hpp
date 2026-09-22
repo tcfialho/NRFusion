@@ -1,6 +1,7 @@
 #pragma once
 
 #include <array>
+#include <cstddef>
 #include <cstdint>
 
 #include <d3d12.h>
@@ -59,6 +60,10 @@ struct alignas(256) D3D12NrCodecConstants {
     std::uint32_t residualMotionBaseY = 0;
 };
 static_assert(sizeof(D3D12NrCodecConstants) == 256);
+static_assert(offsetof(D3D12NrCodecConstants, mode) == 0);
+static_assert(offsetof(D3D12NrCodecConstants, useGameExposure) == 84);
+static_assert(offsetof(D3D12NrCodecConstants, environmentColour) == 112);
+static_assert(offsetof(D3D12NrCodecConstants, residualBlend) == 116);
 
 struct D3D12NrCodecResources {
     ID3D12Resource* source = nullptr;
@@ -72,6 +77,10 @@ struct D3D12NrCodecResources {
 
 class D3D12NrCodec {
 public:
+    D3D12NrCodec() = default;
+    D3D12NrCodec(const D3D12NrCodec&) = delete;
+    D3D12NrCodec& operator=(const D3D12NrCodec&) = delete;
+
     bool Init(ID3D12Device* device) noexcept;
     bool Dispatch(ID3D12GraphicsCommandList* commandList,
                   const D3D12NrCodecConstants& constants,
