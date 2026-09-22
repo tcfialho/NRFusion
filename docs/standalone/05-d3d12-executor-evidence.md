@@ -270,3 +270,21 @@ Validação isolada Linux:
 
 A auditoria deste ponto confirma que a Fase 05 continua aberta: o fixture ainda é o único owner
 da semântica GPU de codec/encode/resolve, multipass real, HDR/exposure/residual e seams SR/RR.
+
+
+## Revisão adversarial do seed após 03c
+
+Encontrado um defeito de failure ordering em `EnsureFeature()`:
+
+- a feature ativa era estacionada antes de validar `cmdList`/adquirir o device;
+- uma falha de `GetDevice()` portanto podia destruir o active path sem sequer tentar create;
+- `Evaluate()` também deixava ponteiros nulos e dimensão zero chegarem à boundary externa.
+
+Correção:
+- valida width/height antes de mutação;
+- exige command list somente quando create/rebuild é realmente necessário;
+- adquire e valida o device antes de estacionar a feature antiga;
+- evaluate rejeita command list/resources nulos e dimensões zero;
+- retired-kind inválido deixa de cair implicitamente no cast de Resource.
+
+Nenhum full build foi disparado; este patch requer o próximo Windows fast junto do scratch/frame-plan.

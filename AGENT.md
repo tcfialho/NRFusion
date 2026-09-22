@@ -122,6 +122,7 @@ Completed this session:
 - audited Phase 05 gate against implementation and mature fixture
 - added portable standalone frame planner for scale/passes/subrect/padding
 - isolated frame-plan compile/test passed with -Werror
+- fixed executor failure ordering and null-input fail-closed boundaries
 
 Exact next action:
 - validate scratch + frame-plan focused targets on Windows fast validation

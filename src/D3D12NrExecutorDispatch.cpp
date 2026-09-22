@@ -2,15 +2,22 @@
 
 namespace nrfusion {
 
-bool D3D12NrExecutor::Evaluate(ID3D12GraphicsCommandList* cmdList, ID3D12Resource* color, ID3D12Resource* depth,
-                          ID3D12Resource* motion, ID3D12Resource* output, uint32_t width, uint32_t height,
-                          bool depthInverted, bool reset, const DlssNrTuning& tuning, uint32_t guideWidth,
-                          uint32_t guideHeight, uint32_t motionWidth, uint32_t motionHeight) {
+bool D3D12NrExecutor::Evaluate(ID3D12GraphicsCommandList* cmdList, ID3D12Resource* color,
+                               ID3D12Resource* depth, ID3D12Resource* motion,
+                               ID3D12Resource* output, uint32_t width, uint32_t height,
+                               bool depthInverted, bool reset, const DlssNrTuning& tuning,
+                               uint32_t guideWidth, uint32_t guideHeight,
+                               uint32_t motionWidth, uint32_t motionHeight) {
     if (submissionGate_.Pending()) {
         status_ = "feature pending submission";
         return false;
     }
     if (!feature_ || !evaluate_ || !capabilityParams_) return false;
+    if (cmdList == nullptr || color == nullptr || depth == nullptr || motion == nullptr ||
+        output == nullptr || width == 0 || height == 0) {
+        status_ = "invalid NR evaluate request";
+        return false;
+    }
     if (guideWidth == 0) guideWidth = width;
     if (guideHeight == 0) guideHeight = height;
     if (motionWidth == 0) motionWidth = width;
