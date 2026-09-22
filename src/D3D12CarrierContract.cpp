@@ -1,6 +1,7 @@
 #include "nrfusion/D3D12CarrierContract.hpp"
 
 #include <cmath>
+#include <iterator>
 
 namespace nrfusion {
 namespace {
