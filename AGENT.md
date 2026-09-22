@@ -106,42 +106,25 @@
 
 ## Current session
 
-Start: 2026-09-22 08:32 BRT
+Start: 2026-09-22 17:49 BRT
 Branch: standalone/integration
 Base/default branch: master
-Phase 06: CLOSED AFTER POST-CLOSE ADVERSARIAL REVIEW.
+Phase 06: CLOSED after final validation audit.
 
-Validated code commit:
-916190b95f50b9f54d1af320db30495ede87c317
+Validated Phase 06 head:
+6fcdec5f53244d6912837f37f8b60c969d173425
 
-Focused portable validation:
-- original closure run: 35723235377 -> PASS
-- post-review run: 35724258682 -> PASS
-- configure/build/nrfusion_nr_session_tests/nrfusion_nr_session_stress_tests: PASS
-- measured stress: 1,000,000 frames, exactly 0 heap allocations
+Final portable validation:
+- run 35783094348: PASS
+- nrfusion_nr_session_tests: PASS
+- nrfusion_nr_session_stress_tests: PASS
+- nrfusion_tests/controller_tests.cpp: PASS
+- stress: 1,000,000 frames, exactly 0 heap allocations
+- stress asserts Hybrid, scale and execution-generation transitions
+- timing ring 16->17 pressure regression: PASS
 - Windows: not used
 
-Post-close defect found and fixed:
-- MapTimedWork accepted the same submitted WorkTicket more than once
-- duplicate entries could consume the 16-slot timing ring and displace valid work
-- NrSessionWorkTracker now marks timing mapping one-shot with fixed per-entry state
-- duplicate MapTimedWork fails before touching the ring
-- regression added and validated
-- removed one duplicate nrRecentSamples_.clear() and emaNrMs_=0 assignment in the downshift hot path
-
-Current source-size state:
-- src/PerformanceController.cpp: 282 lines
-- src/PerformanceControllerLifecycle.cpp: 209 lines
-- src/PerformanceControllerScale.cpp: 56 lines
-- include/nrfusion/FusionRuntime.hpp: 296 lines
-- include/nrfusion/NrSessionWorkState.hpp: 73 lines
-- src/NrSessionWorkState.cpp: 130 lines
-- src/NrSession.cpp: 138 lines
-- tests/nr_session_tests.cpp: 204 lines
-
-Outstanding Phase 06 work: none.
-
 Exact next action:
-- read docs/standalone/07-*.md and start Phase 07 on standalone/integration
-- preserve 916190b95f50b9f54d1af320db30495ede87c317 as the Phase 06 validated code baseline
-- do not open a new branch or PR
+- start Phase 07 on standalone/integration
+- first subgate is a mechanical ownership split of SyntheticDx12Provider.cpp before functional evolution
+- preserve public behavior and existing tests; no new branch or intermediate PR
