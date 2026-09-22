@@ -1,5 +1,6 @@
 #include "nrfusion/NrSession.hpp"
 
+#include <array>
 #include <cassert>
 #include <cmath>
 #include <limits>
@@ -172,6 +173,24 @@ int main() {
     const auto qualifiedPrecision = precisionSession.Resolve(precisionPacket);
     assert(qualifiedPrecision);
     assert(qualifiedPrecision.decision.precision == NrPrecision::HybridNvfp4);
+
+    {
+        NrSession ringSession;
+        assert(ringSession.Configure(config, performance));
+        const auto ringFrame = ringSession.Resolve(Packet(config.generation, 500));
+        assert(ringFrame);
+        std::array<WorkTicket, NrSessionTimingQueue::kCapacity + 1> ringTickets{};
+        for (std::size_t i = 0; i < ringTickets.size(); ++i) {
+            const auto ticket = ringSession.BeginWork(ringFrame, i + 1);
+            assert(ticket);
+            ringTickets[i] = *ticket;
+            assert(ringSession.SubmitWork(ringTickets[i]));
+            assert(ringSession.MapTimedWork(ringTickets[i]));
+        }
+        assert(!ringSession.AbandonWork(ringTickets.front()));
+        assert(ringSession.RetireTimedInterval(2.0));
+        assert(!ringSession.AbandonWork(ringTickets[1]));
+    }
 
     RuntimeConfig disabled = config;
     ++disabled.generation;
