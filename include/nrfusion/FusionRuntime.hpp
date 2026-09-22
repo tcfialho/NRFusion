@@ -27,9 +27,6 @@
 
 #include <algorithm>
 #include <cmath>
-#include <limits>
-#include <stdexcept>
-#include <string>
 #include <optional>
 #include <utility>
 #include <vector>
@@ -116,7 +113,7 @@ public:
             perf.workingScale = performance_.WorkingScale();
         } else {
             TelemetrySample controllerSample = constrained;
-            NormalizeForScheduler(controllerSample, autoScheduler_);
+            NormalizeTelemetryForScheduler(controllerSample, autoScheduler_);
             // Offer the precision trade only while a cheaper format exists on this GPU and the run
             // is not already on it. On hardware with a single supported format there is nothing to
             // trade and the controller keeps moving resolution, exactly as before.
@@ -132,7 +129,8 @@ public:
             autoPrecisionPlacement_ != out.pipeline.placement || autoPrecisionScheduler_ != out.scheduler ||
             autoPrecisionRenderSize_ != renderSize || autoPrecisionOutputSize_ != outputSize;
         if (precisionConfigChanged) {
-            autoPrecisionGeneration_ = NextGeneration(autoPrecisionGeneration_, "Auto precision generation");
+            autoPrecisionGeneration_ = NextAutoConfigurationGeneration(
+                autoPrecisionGeneration_, "Auto precision generation");
             precisionTuner_.Reset(autoPrecisionGeneration_);
             autoPrecisionScale_ = perf.workingScale;
             autoPrecisionProvider_ = out.pipeline.provider;
@@ -246,37 +244,14 @@ public:
     }
     void ClearScaleBuildFailures() { performance_.ClearScaleBuildFailures(); }
     const PerformanceConfig& PerformanceCfg() const noexcept { return performance_.Config(); }
+    void BeginConfigurationEpoch(float initialScale) {
+        autoPrecisionGeneration_ = NextAutoConfigurationGeneration(
+            autoPrecisionGeneration_, "Auto precision generation");
+        ResetAutoAdaptiveState(initialScale);
+        haveAutoDecision_ = false;
+    }
 
 private:
-    static std::uint64_t NextGeneration(std::uint64_t current, const char* label) {
-        if (current == (std::numeric_limits<std::uint64_t>::max)())
-            throw std::overflow_error(std::string(label) + " namespace exhausted");
-        return current + 1;
-    }
-
-    struct AutoStructuralIdentity {
-        FrameProvider provider = FrameProvider::Unsupported;
-        ProcessTransport transport = ProcessTransport::InProcess;
-        GraphicsApi api = GraphicsApi::Unknown;
-        NrPlacement placement = NrPlacement::Auto;
-        MotionSource motion = MotionSource::Zero;
-        Resolution render{};
-        Resolution output{};
-        bool operator==(const AutoStructuralIdentity&) const noexcept = default;
-    };
-
-    static void NormalizeForScheduler(TelemetrySample& sample, SchedulerMode scheduler) noexcept {
-        if (scheduler == SchedulerMode::AsyncCompute) return;
-        sample.asyncOverlap = 0.0;
-        if (scheduler != SchedulerMode::SecondaryGpu) return;
-        const double nr = std::isfinite(sample.secondaryNrGpuMs) && sample.secondaryNrGpuMs > 0.0
-                            ? sample.secondaryNrGpuMs : 0.0;
-        const double transport = std::isfinite(sample.crossAdapterMs) && sample.crossAdapterMs >= 0.0
-                                   ? sample.crossAdapterMs : 0.0;
-        const double critical = nr + transport;
-        sample.nrGpuMs = std::isfinite(critical) ? critical : 0.0;
-    }
-
     void ResetAutoAdaptiveState(float initialScale) {
         performance_.ClearLearnedCostModel();
         performance_.Reset(initialScale);

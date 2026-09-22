@@ -44,6 +44,7 @@ add_library(nrfusion_core STATIC
     src/AdaptiveExposureController.cpp
     src/RuntimeShell.cpp
     src/RuntimeBootstrap.cpp
+    src/NrSession.cpp
     src/NgxFeatureRegistry.cpp
     src/NrSubmissionGate.cpp
     src/NrDeferredRetirementQueue.cpp

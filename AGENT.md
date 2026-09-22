@@ -106,35 +106,31 @@
 
 ## Current session
 
-Start: 2026-09-22 00:02 BRT
+Start: 2026-09-22 00:24 BRT
 Branch: standalone/integration
 Base/default branch: master
-Performance review policy: only changes with no semantic/maintenance trade-off.
+Phase 06: IN PROGRESS; subgate 06a implemented.
 
-Repository topology confirmed:
-- no main branch exists
-- phases 00-04 heads are ancestors of master and of the long integration branch
-- phase 05 exists only on the long integration branch
-- the long integration branch contains phases 00-05 cumulatively
+06a result:
+- added minimal NrSessionFramePacket/NrSessionFrameResult contracts
+- RuntimeConfig and mutable NrSessionState are separate owners
+- stale configuration generation is quarantined before policy mutation
+- new configuration opens a fresh FusionRuntime adaptive generation
+- NrSession resolves scale/precision/placement/scheduler through existing FusionRuntime policy
+- no policy duplication and no executor virtual/heap boundary introduced
+- FusionRuntime.hpp decomposed by moving Auto structural helpers into AutoDecision.hpp
+- differential portable test compares NrSession decision with independent FusionRuntime
 
-Accepted performance changes:
-- remove duplicate D3D12 GetDesc call in guide preparation
-- cache fixed multipass ping-pong resource pointers outside the pass loop
-- cache frame-local scratch resource pointers reused within prepare/resolve paths
-- avoid temporary identity copies in NGX ActionFor lookup
-
-Rejected by policy:
-- registry hashing/index tables
-- retirement queue data-structure changes
-- barrier/copy coalescing
-- persistent caches or new synchronization
-- any visual/algorithmic change
-
-Branch naming:
-- canonical long-lived branch is standalone/integration
-- old standalone/phase-05-d3d12-executor-20260921 ref is frozen as a historical alias because the connector has no branch-delete operation
+Outstanding Phase 06:
+- fixed-capacity work identity + timing retirement
+- stale timing quarantine
+- fake executor million-frame validation and steady-allocation check
+- remove OptiScalerAdapter from standalone call graph/getter path
+- old-vs-new call graph review
+- lock ownership review
+- final LOC/performance gate
 
 Exact next action:
-- verify diff/LOC and ancestry after this performance-only commit
-- continue future phases on standalone/integration
-- merge/cut over to master only at the planned final integration point
+- implement 06b fixed-capacity work/timing state owned by NrSession
+- differential-test stale completion/reconfigure behavior
+- keep PerformanceController/ProfileStore untouched unless their owning responsibility must change
