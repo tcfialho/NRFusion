@@ -25,6 +25,7 @@ enum class D3D12CarrierExecutionFailure : std::uint8_t {
     WorkGenerationMismatch,
     MissingDepth,
     MissingMotion,
+    MissingExposure,
     UnsupportedPlacement,
     InvalidMotionScale,
     InvalidPlan
@@ -36,6 +37,7 @@ struct D3D12CarrierExecutionPlan {
     std::uint64_t submissionEpoch = 0;
     bool reset = false;
     bool depthInverted = false;
+    bool useGameExposure = false;
     float motionScaleX = 1.0f;
     float motionScaleY = 1.0f;
 };
