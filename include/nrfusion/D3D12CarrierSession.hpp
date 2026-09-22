@@ -3,6 +3,8 @@
 #include "nrfusion/D3D12CarrierContract.hpp"
 #include "nrfusion/NrSession.hpp"
 
+#include <optional>
+
 namespace nrfusion {
 
 struct D3D12CarrierFramePacket {
@@ -13,6 +15,15 @@ struct D3D12CarrierFramePacket {
     SchedulerMode requestedScheduler = SchedulerMode::Auto;
     unsigned generationMultiplier = 1;
     const CompatibilityOverride* compatibility = nullptr;
+};
+
+struct D3D12CarrierWork {
+    WorkTicket ticket{};
+    std::uint64_t submissionEpoch = 0;
+
+    constexpr explicit operator bool() const noexcept {
+        return ticket.id != 0 && submissionEpoch == ticket.id;
+    }
 };
 
 struct D3D12CarrierFrameResult {
@@ -30,6 +41,12 @@ public:
         const RuntimeConfig& config, const PerformanceConfig& performance);
     void Reset() noexcept;
     D3D12CarrierFrameResult Resolve(const D3D12CarrierFramePacket& packet);
+    std::optional<D3D12CarrierWork> BeginWork(
+        const D3D12CarrierFrameResult& frame, std::uint64_t viewKey = 0) noexcept;
+    bool SubmitWork(const D3D12CarrierWork& work) noexcept;
+    bool AbandonWork(const D3D12CarrierWork& work) noexcept;
+    bool MapTimedWork(const D3D12CarrierWork& work) noexcept;
+    bool RetireTimedInterval(double gpuMs);
 
     const RuntimeConfig& Config() const noexcept { return session_.Config(); }
     const NrSessionState& State() const noexcept { return session_.State(); }
