@@ -189,3 +189,17 @@ portanto não puxam CUDA, hosts, carriers Windows, codecs D3D12 ou OptiScalerAda
 
 O teste diferencial foi ampliado de um frame para 180 decisões adaptativas consecutivas, comparando
 `NrSession` e um `FusionRuntime` independente inclusive durante mudança de pressão GPU.
+
+
+### 06e adversarial correction — transactional Configure
+
+`NrSession::Configure()` agora preflighta exhaustion da runtime generation e valida
+`PerformanceConfig` antes de invalidar work/timing da configuração corrente.
+
+Se `PerformanceController` rejeita o novo config (por exemplo, nenhum scale step finito):
+- `Configure` retorna false;
+- RuntimeConfig anterior permanece;
+- work/timing anteriores não são resetados;
+- a sessão anterior continua resolvendo frames válidos.
+
+Isso remove um partial-reconfigure path sem adicionar custo ao steady frame path.

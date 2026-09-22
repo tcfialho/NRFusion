@@ -2,6 +2,7 @@
 
 #include <cassert>
 #include <cmath>
+#include <limits>
 
 using namespace nrfusion;
 
@@ -96,6 +97,17 @@ int main() {
     changedPerformance.targetFps = 120.0;
     assert(!session.Configure(config, changedPerformance));
     assert(session.Config() == config);
+
+    PerformanceConfig invalidPerformance = performance;
+    invalidPerformance.scaleSteps = {
+        std::numeric_limits<float>::quiet_NaN()
+    };
+    RuntimeConfig invalidGeneration = config;
+    ++invalidGeneration.generation;
+    assert(!session.Configure(invalidGeneration, invalidPerformance));
+    assert(session.Config() == config);
+    const auto stillCurrent = session.Resolve(Packet(config.generation, 9));
+    assert(stillCurrent);
 
     FusionRuntime sequenceBaseline(performance);
     sequenceBaseline.BeginConfigurationEpoch(sequenceBaseline.PerformanceCfg().maxScale);

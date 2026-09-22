@@ -131,9 +131,10 @@ Branch vs master at verification: +54 / -0
 Open PRs: 0
 
 06e result:
-- RuntimeConfig generation now protects PerformanceConfig identity too
+- RuntimeConfig generation protects PerformanceConfig identity too
+- Configure is transactional for invalid PerformanceConfig and generation exhaustion
 - focused NrSession tests link a portable production-source slice instead of nrfusion_core
-- differential regression now spans 180 adaptive decisions
+- differential regression spans 180 adaptive decisions
 
 Outstanding Phase 06 runtime gates:
 - execute nrfusion_nr_session_tests

@@ -1,6 +1,8 @@
 #include "nrfusion/NrSession.hpp"
 
 #include <cmath>
+#include <limits>
+#include <stdexcept>
 
 namespace nrfusion {
 
@@ -13,12 +15,21 @@ bool NrSession::Configure(
             return config == config_ && performance == performanceConfig_;
     }
 
+    if (runtime_.AutoConfigurationGeneration() ==
+        (std::numeric_limits<std::uint64_t>::max)())
+        return false;
+
+    try {
+        runtime_.Reconfigure(performance);
+    } catch (const std::invalid_argument&) {
+        return false;
+    }
+    runtime_.BeginConfigurationEpoch(runtime_.PerformanceCfg().maxScale);
+
     if (configured_) {
         works_.ResetSession();
         timings_.Reset();
     }
-    runtime_.Reconfigure(performance);
-    runtime_.BeginConfigurationEpoch(runtime_.PerformanceCfg().maxScale);
     config_ = config;
     performanceConfig_ = performance;
     configured_ = true;
