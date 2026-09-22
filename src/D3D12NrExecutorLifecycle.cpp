@@ -62,6 +62,7 @@ void D3D12NrExecutor::Shutdown() {
     if (feature_ && release_) release_(feature_);
     feature_ = nullptr;
     retirement_.DrainAfterIdle(this, &D3D12NrExecutor::ReleaseRetired);
+    scratch_.ReleaseAfterIdle();
     featureWidth_ = featureHeight_ = 0;
     submissionGate_.Reset();
     capabilityParams_ = nullptr;

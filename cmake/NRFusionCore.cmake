@@ -62,6 +62,7 @@ if (WIN32)
         src/D3D12NrExecutorLoader.cpp
         src/D3D12NrExecutorLifecycle.cpp
         src/D3D12NrExecutorDispatch.cpp
+        src/D3D12NrScratchResources.cpp
         src/SyntheticVulkanProvider.cpp
         src/SyntheticOpenGlProvider.cpp
     )

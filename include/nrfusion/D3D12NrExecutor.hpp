@@ -13,6 +13,7 @@
 #include <cstdint>
 #include <string>
 
+#include "nrfusion/D3D12NrScratchResources.hpp"
 #include "nrfusion/NrDeferredRetirementQueue.hpp"
 #include "nrfusion/NrSubmissionGate.hpp"
 
@@ -119,6 +120,7 @@ private:
     bool justBuilt_ = false;
     NrSubmissionGate submissionGate_{};
     NrDeferredRetirementQueue retirement_{};
+    D3D12NrScratchResources scratch_{};
     std::wstring snippetPath_;
     std::string status_ = "not loaded";
 };
