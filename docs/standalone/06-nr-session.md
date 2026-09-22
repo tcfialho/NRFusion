@@ -310,3 +310,13 @@ Correção:
 
 A regressão mantém um ticket FP8 pendente durante a qualificação e exige que ele seja rejeitado após
 a primeira decisão Hybrid, provando a quarantine entre executions.
+
+
+### 06f lifecycle split
+
+A separação de execution/precision generations elevou `FusionRuntime.hpp` acima de 300 linhas.
+Os métodos frios de lifecycle (`CanBeginConfigurationEpoch` e `BeginConfigurationEpoch`) foram
+movidos para `FusionRuntimeLifecycle.cpp`.
+
+O hot path permanece inline onde já estava; nenhum virtual/PImpl/lock/heap/indirect dispatch foi
+adicionado para satisfazer o limite estrutural.

@@ -40,6 +40,7 @@ if (NRFUSION_FOCUSED_NR_SESSION_VALIDATION)
         src/NrSession.cpp
         src/NrSessionWorkState.cpp
         src/FusionRuntimeTiming.cpp
+        src/FusionRuntimeLifecycle.cpp
     )
     add_library(nrfusion_nr_session_portable STATIC
         ${NRFUSION_NR_SESSION_PORTABLE_SOURCES})

@@ -41,10 +41,7 @@ public:
     std::uint64_t AutoConfigurationGeneration() const noexcept {
         return autoExecutionGeneration_;
     }
-    bool CanBeginConfigurationEpoch() const noexcept {
-        const auto max = (std::numeric_limits<std::uint64_t>::max)();
-        return autoExecutionGeneration_ != max && autoPrecisionGeneration_ != max;
-    }
+    bool CanBeginConfigurationEpoch() const noexcept;
     PipelineDecision ResolvePipeline(const GameContext& game, const FrameContext& frame,
                                      const RuntimeCapabilities& capabilities,
                                      const CompatibilityOverride* compatibility = nullptr) const {
@@ -247,14 +244,7 @@ public:
     }
     void ClearScaleBuildFailures() { performance_.ClearScaleBuildFailures(); }
     const PerformanceConfig& PerformanceCfg() const noexcept { return performance_.Config(); }
-    void BeginConfigurationEpoch(float initialScale) {
-        autoExecutionGeneration_ = NextAutoConfigurationGeneration(
-            autoExecutionGeneration_, "Auto execution generation");
-        autoPrecisionGeneration_ = NextAutoConfigurationGeneration(
-            autoPrecisionGeneration_, "Auto precision generation");
-        ResetAutoAdaptiveState(initialScale);
-        haveAutoDecision_ = false;
-    }
+    void BeginConfigurationEpoch(float initialScale);
 
 private:
     void ResetAutoAdaptiveState(float initialScale) {
