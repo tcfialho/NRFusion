@@ -300,3 +300,8 @@ somente `D3D12NrFramePlan.cpp` + o teste, com warnings-as-errors no target.
 Frame-plan review: os subrects validados de color/depth/motion agora são preservados no resultado do
 plan, evitando que offsets já validados sejam perdidos/recalculados downstream. Regressão isolada:
 PASS com `-Wall -Wextra -Wpedantic -Werror`.
+
+
+Naming review: o bloco parcial foi renomeado de `D3D12NrExecutionSnapshot` para
+`D3D12NrFramePlanConfig`; ele configura apenas planejamento de frame e não deve ser confundido
+com o snapshot operacional completo ainda pendente no gate da Fase 05.

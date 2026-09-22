@@ -15,7 +15,7 @@ struct D3D12NrSubrect {
     constexpr bool Valid() const noexcept { return width != 0 && height != 0; }
 };
 
-struct D3D12NrExecutionSnapshot {
+struct D3D12NrFramePlanConfig {
     float workingScale = 1.0f;
     std::uint32_t passes = 1;
     bool unlockPasses = false;
@@ -29,7 +29,7 @@ struct D3D12NrFramePlanInput {
     D3D12NrSubrect activeColor{};
     D3D12NrSubrect depth{};
     D3D12NrSubrect motion{};
-    D3D12NrExecutionSnapshot execution{};
+    D3D12NrFramePlanConfig execution{};
     bool beforeUpscale = false;
 };
 
