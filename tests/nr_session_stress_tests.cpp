@@ -39,6 +39,14 @@ void RecordAllocation(std::size_t size) noexcept {
         gFirstAllocationSizes[index].store(size, std::memory_order_relaxed);
 }
 
+struct StressCoverage {
+    bool sawHybrid = false;
+    bool sawScaleChange = false;
+    bool sawGenerationChange = false;
+    float firstScale = 0.0f;
+    std::uint64_t lastGeneration = 0;
+};
+
 struct FakeExecutor {
     bool Execute(
         NrSession& session, const NrSessionFrameResult& frame, double gpuMs) noexcept {
@@ -77,11 +85,21 @@ NrSessionFramePacket Packet(std::uint64_t generation, FrameId frameId) {
 }
 
 bool Step(NrSession& session, FakeExecutor& executor,
-          NrSessionFramePacket& packet) noexcept {
+          NrSessionFramePacket& packet, StressCoverage* coverage = nullptr) noexcept {
     gMeasuredFrame.store(packet.frame.frameId, std::memory_order_relaxed);
     gPhase.store(1, std::memory_order_relaxed);
     const NrSessionFrameResult result = session.Resolve(packet);
     if (!result) return false;
+    if (coverage != nullptr) {
+        const float scale = result.decision.workingScale;
+        coverage->sawHybrid |= result.decision.precision == NrPrecision::HybridNvfp4;
+        if (coverage->firstScale == 0.0f) coverage->firstScale = scale;
+        else coverage->sawScaleChange |= scale != coverage->firstScale;
+        if (coverage->lastGeneration != 0)
+            coverage->sawGenerationChange |=
+                result.runtimeGeneration != coverage->lastGeneration;
+        coverage->lastGeneration = result.runtimeGeneration;
+    }
     const double gpuMs = result.decision.precision == NrPrecision::HybridNvfp4
         ? 3.0 : 4.0;
     if (!executor.Execute(session, result, gpuMs)) return false;
@@ -196,10 +214,15 @@ int main() {
     gRecordedAllocationSizes.store(0, std::memory_order_relaxed);
     for (auto& size : gFirstAllocationSizes)
         size.store(0, std::memory_order_relaxed);
+    StressCoverage coverage;
     gMeasure.store(true, std::memory_order_relaxed);
     for (std::size_t i = 0; i < 1'000'000; ++i)
-        assert(Step(session, executor, packet));
+        assert(Step(session, executor, packet, &coverage));
     gMeasure.store(false, std::memory_order_relaxed);
+
+    assert(coverage.sawHybrid);
+    assert(coverage.sawScaleChange);
+    assert(coverage.sawGenerationChange);
 
     const auto allocations = gAllocations.load(std::memory_order_relaxed);
     if (allocations != 0) {
