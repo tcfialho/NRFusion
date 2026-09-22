@@ -42,6 +42,18 @@ add_executable(nrfusion_harness_3d
     endif()
     add_test(NAME nrfusion_nr_scratch_resources_tests COMMAND nrfusion_nr_scratch_resources_tests)
 
+    add_executable(nrfusion_nr_guide_clones_tests
+        tests/d3d12_nr_guide_clones_tests.cpp
+        src/D3D12NrGuideClones.cpp
+        src/NrDeferredRetirementQueue.cpp
+    )
+    target_include_directories(nrfusion_nr_guide_clones_tests PRIVATE include)
+    target_link_libraries(nrfusion_nr_guide_clones_tests PRIVATE d3d12 dxgi)
+    if (MSVC)
+        target_compile_options(nrfusion_nr_guide_clones_tests PRIVATE /W4 /permissive- /UNDEBUG)
+    endif()
+    add_test(NAME nrfusion_nr_guide_clones_tests COMMAND nrfusion_nr_guide_clones_tests)
+
     add_executable(nrfusion_residual_gpu_test tests/residual_gpu_test.cpp)
     target_link_libraries(nrfusion_residual_gpu_test PRIVATE nrfusion_core d3d12 dxgi d3dcompiler)
     if (MSVC)
