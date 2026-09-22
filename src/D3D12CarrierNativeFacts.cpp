@@ -93,6 +93,7 @@ D3D12NativeAcquireResult BuildD3D12NativeAcquireSnapshot(
     snapshot.motionVectors = ToAcquired(input.motionVectors, input.identity.frameId);
     snapshot.exposure = ToAcquired(input.exposure, input.identity.frameId);
     snapshot.reactiveMask = ToAcquired(input.reactiveMask, input.identity.frameId);
+    snapshot.outputOpaqueId = input.output.opaqueId;
     snapshot.hdr = input.hdr;
     snapshot.cameraCut = input.cameraCut;
     snapshot.resetHistory = input.resetHistory;
