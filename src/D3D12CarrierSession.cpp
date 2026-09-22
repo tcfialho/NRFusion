@@ -14,10 +14,19 @@ void D3D12CarrierSession::Reset() noexcept {
 D3D12CarrierFrameResult D3D12CarrierSession::Resolve(
     const D3D12CarrierFramePacket& packet) {
     D3D12CarrierFrameResult result{};
+    NrSessionFramePacket sessionPacket{};
+    if (session_.State().configurationGeneration == 0 || !session_.Config().enabled) {
+        sessionPacket.game = packet.game;
+        sessionPacket.frame.frameId = packet.acquire.identity.frameId;
+        sessionPacket.frame.configurationGeneration =
+            packet.acquire.identity.configurationGeneration;
+        result.session = session_.Resolve(sessionPacket);
+        return result;
+    }
+
     result.acquire = BuildD3D12FrameContract(packet.acquire);
     if (!result.acquire) return result;
 
-    NrSessionFramePacket sessionPacket{};
     sessionPacket.game = packet.game;
     sessionPacket.frame = result.acquire.frame;
     sessionPacket.telemetry = packet.telemetry;
