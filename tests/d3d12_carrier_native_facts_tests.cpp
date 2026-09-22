@@ -99,6 +99,10 @@ int main() {
     assert(BuildD3D12NativeAcquireSnapshot(unknownFormat).failure ==
            D3D12NativeAcquireFailure::InvalidTexture);
 
+    auto unknownOutputFormat = base;
+    unknownOutputFormat.output.format = ResourceFormat::Unknown;
+    assert(BuildD3D12NativeAcquireSnapshot(unknownOutputFormat));
+
     auto missingEvidence = base;
     missingEvidence.color.provenance = ResourceProvenance::Unknown;
     assert(BuildD3D12NativeAcquireSnapshot(missingEvidence).failure ==
