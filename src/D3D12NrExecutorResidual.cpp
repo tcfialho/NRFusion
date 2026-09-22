@@ -106,26 +106,34 @@ D3D12NrFrameResult D3D12NrExecutor::ApplyStoredResidual(
 
     const bool applied = codec_.DispatchResidual(cmd, constants, codecResources);
     if (applied) {
-        scratch_.Transition(
-            cmd, D3D12NrScratchKind::ResidualComposed,
-            D3D12_RESOURCE_STATE_UNORDERED_ACCESS,
-            D3D12_RESOURCE_STATE_COPY_SOURCE);
-        TransitionExternal(
-            cmd, resources.output, outputState, D3D12_RESOURCE_STATE_COPY_DEST);
+        if (!scratch_.Transition(
+                cmd, D3D12NrScratchKind::ResidualComposed,
+                D3D12_RESOURCE_STATE_UNORDERED_ACCESS,
+                D3D12_RESOURCE_STATE_COPY_SOURCE) ||
+            !TransitionExternal(
+                cmd, resources.output, outputState,
+                D3D12_RESOURCE_STATE_COPY_DEST)) {
+            TransitionExternal(cmd, resources.output, outputState, request.outputState);
+            residualHistoryPrimed_ = false;
+            return D3D12NrFrameResult::Failed;
+        }
         cmd->CopyResource(resources.output, composed);
-        TransitionExternal(cmd, resources.output, outputState, request.outputState);
-        scratch_.Transition(
+        const bool outputRestored = TransitionExternal(
+            cmd, resources.output, outputState, request.outputState);
+        const bool carrierRestored = scratch_.Transition(
             cmd, D3D12NrScratchKind::ResidualComposed,
             D3D12_RESOURCE_STATE_COPY_SOURCE,
             D3D12_RESOURCE_STATE_NON_PIXEL_SHADER_RESOURCE);
-        return D3D12NrFrameResult::Applied;
+        if (outputRestored && carrierRestored)
+            return D3D12NrFrameResult::Applied;
+    } else {
+        TransitionExternal(cmd, resources.output, outputState, request.outputState);
+        scratch_.Transition(
+            cmd, D3D12NrScratchKind::ResidualComposed,
+            D3D12_RESOURCE_STATE_UNORDERED_ACCESS,
+            D3D12_RESOURCE_STATE_NON_PIXEL_SHADER_RESOURCE);
     }
 
-    TransitionExternal(cmd, resources.output, outputState, request.outputState);
-    scratch_.Transition(
-        cmd, D3D12NrScratchKind::ResidualComposed,
-        D3D12_RESOURCE_STATE_UNORDERED_ACCESS,
-        D3D12_RESOURCE_STATE_NON_PIXEL_SHADER_RESOURCE);
     residualHistoryPrimed_ = false;
     return D3D12NrFrameResult::Failed;
 }

@@ -614,3 +614,10 @@ Correções adicionais:
 - submission/retirement tick e feature epochs ocorrem antes de scratch resize, evitando deadlock quando a
   retirement queue está cheia;
 - falha ao preparar o carrier residual restaura o Output ao state de chegada.
+
+
+### Segunda revisão — build determinístico e residual teardown
+
+- CMake resolve Python explicitamente via `find_package(Python3 REQUIRED COMPONENTS Interpreter)`;
+- codegen usa `${Python3_EXECUTABLE}`, sem depender do alias `python` no PATH;
+- pós-RR verifica transições críticas de carrier/output e invalida history em falha.

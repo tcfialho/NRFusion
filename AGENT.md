@@ -127,6 +127,7 @@ Completed:
 - no PR opened and no Windows build/test requested or triggered
 
 Second-review base: 6ef2c5172641dd9e7fcf03861acfc312291a5253
+Second-review fixes through: cd98fa35eb19557f8f48a9d07288a813bb88c1f0
 
 Phase 05 caveat:
 - Windows/D3D12 runtime validation is intentionally deferred to final cutover.
