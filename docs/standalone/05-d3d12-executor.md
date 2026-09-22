@@ -2,7 +2,7 @@
 
 ## Status
 
-**Em andamento.** Subgates 01–03a concluídos: canonicalização/split, submission epoch e deferred retirement.
+**Em andamento.** Subgates 01–03a concluídos; 03b scratch/state inicial implementado e aguardando validação Windows focada.
 Evidência parcial: [05-d3d12-executor-evidence.md](05-d3d12-executor-evidence.md).
 
 ## Objetivo
@@ -117,6 +117,17 @@ read-only. Boundaries mapeados:
 - 100.000 ciclos no teste portátil com 0 allocations.
 - Portable 8/8 PASS; Windows 21/21 PASS.
 
+## Subgate 03b — scratch owner inicial
+
+- Owner explícito para `output`, `colorCopy` e `hdrCopy`.
+- Criação preserva UAV + dimensões work/frame do executor maduro.
+- Resize estaciona recursos antigos na mesma retirement queue.
+- Estado esperado é validado antes de emitir barrier.
+- Enum inválido falha fechado; não cai silenciosamente em `hdrCopy`.
+- Regressão WARP cobre create/idempotência/barrier/resize/retire.
+- Target focado não depende mais de `nrfusion_core`: compila 2 fontes de produção + 1 teste.
+- Nenhum full build/CI foi disparado para este subgate.
+
 ## Resource-state map auditado para o próximo subgate
 
 - `output/passScratch`: repouso UAV; NPSR apenas enquanto alimentam o próximo pass/resolve.
@@ -127,7 +138,7 @@ read-only. Boundaries mapeados:
 
 ## Próxima ação
 
-Extrair scratch/resource owner com estado explícito e retirement; não portar HDR/residual/multipass ainda.
+Validar o target focado de scratch no Windows; depois ligar output/colorCopy/hdrCopy ao primeiro seam real de encode/copy, sem HDR/residual/multipass.
 
 ## Próxima fase
 

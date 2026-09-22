@@ -49,26 +49,22 @@
 
 ## Current session
 
-Start: 2026-09-21 19:43 BRT
-Freeze: 2026-09-21 20:02 BRT
+Start: 2026-09-21 21:13 BRT
 Branch: standalone/phase-05-d3d12-executor-20260921
-Base phase-04: dcb5ea54c9d36bc36a9009fd4ffebaa3c26ef1ca
-Phase 05: in progress; subgates 01-03a complete.
+Base: master 548349b740e6fdfec7b0a9f6dacc17ebcdf9b160
+Phase 05: in progress; subgates 01-03a complete; 03b implementation staged.
 
 Completed this session:
-- submission epoch subgate validated: Portable 7/7, Windows 20/20
-- handled concurrent branch update without force push
-- audited mature resource/state ownership and barrier states
-- added fixed-capacity NrDeferredRetirementQueue
-- wired feature rebuild to 32-call deferred retirement
-- overflow fails closed and preserves active pointer
-- 100k retirement stress cycles with zero allocations
-- Portable run 35664783931 passed 8/8
-- Windows run 35664783982 passed 21/21 and integrated validation
-- HostServer64 remained read-only
-- all files touched in retirement subgate <=126 lines
+- reanchored the integration history as master + two scratch WIP commits
+- proved old/new integration trees identical before moving the branch
+- fixed invalid scratch kind incorrectly selecting HdrCopy
+- added fail-closed regression
+- isolated scratch validation from nrfusion_core
+- added WARP lifecycle/state/resize/retirement regression
+- confirmed master Portable run 35669420707 passed
+- no full Windows build or new PR
 
 Exact next action:
-- extract scratch/resource owner with explicit D3D12 state
-- begin with output/colorCopy/hdrCopy and retirement wiring
-- keep HDR/exposure/residual/multipass out until resource-state regression passes
+- run only nrfusion_nr_scratch_resources_tests on Windows fast validation
+- if it passes, wire output/colorCopy/hdrCopy into the first real encode/copy seam
+- keep HDR/exposure/residual/multipass out until this resource-state subgate is validated

@@ -206,3 +206,44 @@ O fixture maduro mostra estados de repouso determinísticos:
 | guide clone | COPY_DEST | NPSR |
 
 O próximo subgate deve extrair owner/state tracking desses surfaces antes de HDR/residual/multipass.
+
+
+## Subgate 03b — scratch owner inicial
+
+Histórico foi reancorado sem perda: o antigo head `db70d1632121a56a27aa2df630d0df644278a401`
+e o novo head reancorado `97c5720a1687e3b4f243b2bddd1ce30357386519` possuem a mesma tree
+`87c35a95f9380da24f90cad40b5787ef37b885be`. A branch ficou linear como master + dois WIP.
+
+Implementação:
+- `D3D12NrScratchResources` possui `output`, `colorCopy` e `hdrCopy`;
+- estado inicial/repouso é UAV;
+- resize usa retirement em vez de release imediato;
+- transition exige o estado anterior conhecido;
+- enum inválido agora falha fechado em vez de selecionar `hdrCopy`.
+
+A revisão encontrou esse fallback de enum inválido no WIP e o corrigiu no commit
+`a9d719285b5b1b35e30840c53654ebe859a226c3`.
+
+Build rápido:
+- `nrfusion_nr_scratch_resources_tests` deixou de linkar `nrfusion_core`;
+- o target compila somente `D3D12NrScratchResources.cpp`, `NrDeferredRetirementQueue.cpp` e o teste;
+- commit: `93ab8359029ffba7977e6600ad9d1ae163363962`.
+
+Regressão WARP:
+- cria os três surfaces sem depender de GPU física;
+- verifica idempotência;
+- exercita UAV -> NPSR -> UAV;
+- rejeita state-before incorreto;
+- resize estaciona 3 recursos;
+- retire estaciona os 3 novos;
+- drain libera os 6 recursos.
+- commit: `a4dd528c3a95cc026b853c7f0d9384d941d70d1d`.
+
+Source sizes deste lote:
+- header scratch: < 100 linhas;
+- implementação scratch: < 200 linhas;
+- teste WARP: 121 linhas;
+- CMake Windows: 157 linhas.
+
+Validação deste head: revisão estrutural concluída; nenhum full build/CI foi disparado.
+O próximo build deve ser somente o target focado de scratch + seu CTest.
