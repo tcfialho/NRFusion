@@ -83,7 +83,7 @@ int main() {
     wrongApi.game.api = GraphicsApi::Vulkan;
     const auto mismatched = carrier.Resolve(wrongApi);
     assert(!mismatched);
-    assert(mismatched.acquire);
+    assert(!mismatched.acquire.attempted);
     assert(mismatched.session.disposition == NrSessionDisposition::InvalidFrame);
 
     RuntimeConfig disabled = config;
