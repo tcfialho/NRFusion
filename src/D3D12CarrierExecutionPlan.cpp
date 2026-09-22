@@ -98,6 +98,7 @@ D3D12CarrierExecutionPlanResult BuildD3D12CarrierExecutionPlan(
     plan.submissionEpoch = work.submissionEpoch;
     plan.reset = acquired.resetHistory || acquired.cameraCut;
     plan.depthInverted = config.depthInverted;
+    plan.colourIsLinearHdr = acquired.hdr;
     plan.motionScaleX = config.motionScaleX;
     plan.motionScaleY = config.motionScaleY;
     return result;
