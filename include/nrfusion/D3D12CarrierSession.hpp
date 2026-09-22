@@ -22,7 +22,8 @@ struct D3D12CarrierWork {
     std::uint64_t submissionEpoch = 0;
 
     constexpr explicit operator bool() const noexcept {
-        return ticket.id != 0 && submissionEpoch == ticket.id;
+        return ticket.id != 0 && ticket.session != 0 &&
+               submissionEpoch == ticket.id;
     }
 };
 
