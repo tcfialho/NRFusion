@@ -78,6 +78,7 @@ D3D12AcquireResult BuildD3D12FrameContract(
         return result;
     }
 
+    result.outputOpaqueId = snapshot.outputOpaqueId;
     FrameContext& frame = result.frame;
     frame.frameId = snapshot.identity.frameId;
     frame.hostFrameToken = snapshot.identity.hostFrameToken;
