@@ -418,7 +418,7 @@ Run `35723235377`, head `e2697cc283a144f79109fd7faab0247d155d11c8`:
 
 ## Fechamento da Fase 06
 
-Validated code commit: `e2697cc283a144f79109fd7faab0247d155d11c8`.
+Validated code commit after post-close adversarial review: `916190b95f50b9f54d1af320db30495ede87c317`.
 
 Call graph standalone final:
 `carrier/provider -> FrameContract/NrSessionFramePacket -> NrSession -> FusionRuntime policy +
@@ -442,3 +442,17 @@ Correção:
 
 A mesma revisão removeu um `nrRecentSamples_.clear()` e um `emaNrMs_=0` duplicados literalmente
 no branch de downshift do hot path; comportamento permanece idêntico.
+
+
+### Validação da revisão pós-fechamento
+
+Run `35724258682`, head `916190b95f50b9f54d1af320db30495ede87c317`:
+- configure focado: PASS;
+- build dos dois targets NrSession: PASS;
+- `nrfusion_nr_session_tests`: PASS;
+- `nrfusion_nr_session_stress_tests`: PASS;
+- stress de 1.000.000 frames preserva 0 allocations;
+- duplicate timing mapping regression: PASS;
+- sem Windows.
+
+A Fase 06 permanece CLOSED após a segunda revisão adversarial.

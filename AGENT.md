@@ -109,42 +109,39 @@
 Start: 2026-09-22 08:32 BRT
 Branch: standalone/integration
 Base/default branch: master
-Phase 06: CLOSED.
+Phase 06: CLOSED AFTER POST-CLOSE ADVERSARIAL REVIEW.
 
 Validated code commit:
-e2697cc283a144f79109fd7faab0247d155d11c8
+916190b95f50b9f54d1af320db30495ede87c317
 
 Focused portable validation:
-- workflow: Focused portable validation
-- final run: 35723235377
-- configure: PASS
-- focused build: PASS
-- nrfusion_nr_session_tests: PASS
-- nrfusion_nr_session_stress_tests: PASS
+- original closure run: 35723235377 -> PASS
+- post-review run: 35724258682 -> PASS
+- configure/build/nrfusion_nr_session_tests/nrfusion_nr_session_stress_tests: PASS
 - measured stress: 1,000,000 frames, exactly 0 heap allocations
 - Windows: not used
 
-Measured allocation bug fixed during closure:
-- two allocations of 80 bytes each occurred in Resolve at frame 780
-- root cause: robust 5-sample windows pushed a sixth element before erasing the oldest
-- fix: erase oldest before push when full; window semantics unchanged
-- PerformanceController was split by responsibility instead of modifying a >300-line grandfathered file
+Post-close defect found and fixed:
+- MapTimedWork accepted the same submitted WorkTicket more than once
+- duplicate entries could consume the 16-slot timing ring and displace valid work
+- NrSessionWorkTracker now marks timing mapping one-shot with fixed per-entry state
+- duplicate MapTimedWork fails before touching the ring
+- regression added and validated
+- removed one duplicate nrRecentSamples_.clear() and emaNrMs_=0 assignment in the downshift hot path
 
-Current source-size state for the split:
-- src/PerformanceController.cpp: 284 lines
+Current source-size state:
+- src/PerformanceController.cpp: 282 lines
 - src/PerformanceControllerLifecycle.cpp: 209 lines
 - src/PerformanceControllerScale.cpp: 56 lines
 - include/nrfusion/FusionRuntime.hpp: 296 lines
-- tests/nr_session_stress_tests.cpp: 227 lines
-
-Focused validation workflow:
-- .github/workflows/focused-portable.yml
-- dormant on normal pushes
-- runs only when .github/focused-validation.trigger changes
+- include/nrfusion/NrSessionWorkState.hpp: 73 lines
+- src/NrSessionWorkState.cpp: 130 lines
+- src/NrSession.cpp: 138 lines
+- tests/nr_session_tests.cpp: 204 lines
 
 Outstanding Phase 06 work: none.
 
 Exact next action:
 - read docs/standalone/07-*.md and start Phase 07 on standalone/integration
-- preserve the Phase 06 validated code commit as the baseline
+- preserve 916190b95f50b9f54d1af320db30495ede87c317 as the Phase 06 validated code baseline
 - do not open a new branch or PR
