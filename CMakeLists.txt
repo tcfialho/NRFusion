@@ -5,10 +5,14 @@ set(CMAKE_CXX_STANDARD 20)
 set(CMAKE_CXX_STANDARD_REQUIRED ON)
 set(CMAKE_CXX_EXTENSIONS OFF)
 
+if (WIN32)
+    include(cmake/NRFusionShaders.cmake)
+endif()
+
 include(cmake/NRFusionCore.cmake)
 include(cmake/NRFusionTests.cmake)
 include(cmake/NRFusionTools.cmake)
+
 if (WIN32)
-    include(cmake/NRFusionShaders.cmake)
     include(cmake/NRFusionWindows.cmake)
 endif()

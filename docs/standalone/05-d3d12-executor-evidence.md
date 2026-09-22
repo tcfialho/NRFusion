@@ -583,3 +583,10 @@ Split first-party final do frame path:
 
 Não foi feita alegação de Windows PASS nesta fase final. O código será validado no Windows apenas no
 cutover global, conforme instrução operacional.
+
+
+### Revisão final de CMake
+
+Encontrado após o fechamento funcional: `nrfusion_core` passou a depender de
+`nrfusion_dlssnr_shader_codegen`, mas o módulo de shaders ainda era incluído depois do core.
+A ordem foi corrigida para criar o target de codegen antes de `NRFusionCore.cmake`.
