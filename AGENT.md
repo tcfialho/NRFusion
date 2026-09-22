@@ -107,25 +107,65 @@
 ## Current session
 
 Start: 2026-09-22 18:04 BRT
+Freeze: 2026-09-22 18:18 BRT
 Branch: standalone/integration
 Base/default branch: master
 Head at start: d27e48c994ade64f3a405a17cba4531f7c9ad9da
 
 Phase 06: CLOSED and validated.
-Phase 07: IN PROGRESS.
+Phase 07: IN PROGRESS; subgates 07a/07b validated.
 
 Checklist:
-- [ ] 07a define a portable D3D12 Acquire seam that distinguishes captured resources from arbitrary ResourceRef
-- [ ] 07a normalize acquired resources into FrameContext without heap/locks/API pointers in the core contract
-- [ ] 07a add focused portable regressions for valid, unproven and stale resources
-- [ ] validate portable build/tests and source-size gate
-- [ ] checkpoint ZIP and handoff
+- [x] 07a define a portable D3D12 Acquire seam that distinguishes captured resources from arbitrary ResourceRef
+- [x] 07a normalize acquired resources into FrameContext without heap/locks/API pointers in the core contract
+- [x] 07a add focused portable regressions for valid, unproven and stale resources
+- [x] 07b route acquired D3D12 frames through an owned NrSession transaction
+- [x] reject NotConfigured/Disabled/stale/non-D3D12 before Acquire
+- [x] validate portable build/tests and source-size gate
+- [x] checkpoint ZIP and handoff
 
-Constraints for this session:
-- SyntheticDx12Provider.cpp, HostServer64.cpp and apply_to_optiscaler.py remain read-only
-- no wrapper that delegates to SyntheticDx12Provider counts as carrier progress
-- no Windows validation in the inner loop
-- freeze new code by 18:22 BRT
+Validated code commit:
+1dbb83ee017b5596f966c47fd7f13aea1a4bcf2b
+
+Final focused validation:
+- run 35785546335: SUCCESS
+- 5/5 focused tests PASS
+- nrfusion_d3d12_carrier_contract_tests: PASS
+- nrfusion_d3d12_carrier_session_tests: PASS
+- Phase 06 NrSession stress/regressions remain PASS in the same gate
+- Windows: not used
+
+Phase 07 code added:
+- D3D12CarrierContract.hpp: 59 lines
+- D3D12CarrierContract.cpp: 119
+- D3D12CarrierSession.hpp: 42
+- D3D12CarrierSession.cpp: 46
+- d3d12_carrier_contract_tests.cpp: 141
+- d3d12_carrier_session_tests.cpp: 109
+
+Behavioral invariants:
+- arbitrary/unproven ResourceRef is rejected by the Acquire contract
+- stale configuration is rejected before Acquire
+- non-D3D12 route is rejected before Acquire
+- Disabled and NotConfigured do not attempt Acquire
+- active valid D3D12 frames normalize to FrameContext and enter NrSession
+- no new heap, lock or legacy SyntheticDx12Provider dependency
+
+Legacy files kept read-only:
+- src/SyntheticDx12Provider.cpp
+- src/HostServer64.cpp
+- tools/apply_to_optiscaler.py
+
+Source checkpoint:
+- validated source head: 1dbb83ee017b5596f966c47fd7f13aea1a4bcf2b
+- ZIP: NRFusion-source-1dbb83ee.zip
+- entries: 392
+- SHA-256: 01229f7c370da780b5f2cfafbf0d01c0cc7009e701895b28d3c81e34b3db4779
 
 Exact next action:
-- add D3D12CarrierContract.{hpp,cpp} and its portable test
+- add the Windows-only native D3D12 Acquire owner in new <=300-line files
+- accept ID3D12Resource* and derive dimensions/format from GetDesc instead of caller metadata
+- make that owner the normal producer of D3D12AcquireSnapshot
+- only then register real D3D12 carrier capabilities and connect work identity to D3D12NrExecutor/scratch
+- keep legacy provider/Host64/patcher read-only
+- no new branch or intermediate PR
