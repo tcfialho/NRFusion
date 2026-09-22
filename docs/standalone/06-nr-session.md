@@ -456,3 +456,24 @@ Run `35724258682`, head `916190b95f50b9f54d1af320db30495ede87c317`:
 - sem Windows.
 
 A Fase 06 permanece CLOSED após a segunda revisão adversarial.
+
+
+## Auditoria final 06h — cobertura dos gates
+
+A revisão independente pós-fechamento identificou três lacunas de prova e as fechou sem mudar policy:
+
+- o stress agora exige observar HybridNvfp4, mudança de working scale e mudança de execution generation;
+- o timing ring possui regressão explícita 16 -> 17, provando displacement/abandon do work mais antigo;
+- o workflow focado também compila e executa `nrfusion_tests`, preservando as regressões históricas de
+  `PerformanceController`/`FusionRuntime` além do diferencial interno de `NrSession`.
+
+Run `35783094348`, head `6fcdec5f53244d6912837f37f8b60c969d173425`:
+- configure: PASS;
+- build `nrfusion_nr_session_tests`: PASS;
+- build `nrfusion_nr_session_stress_tests`: PASS;
+- build `nrfusion_tests`: PASS;
+- CTest: 3/3 PASS;
+- stress medido: 1.000.000 frames, 0 allocations, com transitions obrigatoriamente observadas;
+- nenhum Windows gate.
+
+A Fase 06 está CLOSED sem ressalva de validação portátil.
