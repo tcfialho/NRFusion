@@ -51,6 +51,8 @@ bool D3D12NrCodec::CreateRootSignature() noexcept {
     sampler.AddressU = D3D12_TEXTURE_ADDRESS_MODE_CLAMP;
     sampler.AddressV = D3D12_TEXTURE_ADDRESS_MODE_CLAMP;
     sampler.AddressW = D3D12_TEXTURE_ADDRESS_MODE_CLAMP;
+    sampler.MaxAnisotropy = 1;
+    sampler.ComparisonFunc = D3D12_COMPARISON_FUNC_ALWAYS;
     sampler.MaxLOD = D3D12_FLOAT32_MAX;
     sampler.ShaderVisibility = D3D12_SHADER_VISIBILITY_ALL;
 

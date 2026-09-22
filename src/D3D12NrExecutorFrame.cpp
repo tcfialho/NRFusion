@@ -13,6 +13,19 @@ D3D12NrFrameResult D3D12NrExecutor::ExecuteFrame(
     const bool acrossRr = request.composition.residualAcrossRr &&
                           request.composition.runBeforeUpscale &&
                           request.composition.rayReconstruction;
+    if (acrossRr != residualModeActive_) {
+        residualStoreValid_ = false;
+        residualHistoryPrimed_ = false;
+        residualModeActive_ = acrossRr;
+    }
+    if (acrossRr && before) {
+        if (residualStoreValid_) residualHistoryPrimed_ = false;
+        residualStoreValid_ = false;
+        if (request.composition.debugView != 0 ||
+            request.composition.compareMode != 0 ||
+            request.composition.showSkinMask != 0)
+            return D3D12NrFrameResult::SkippedPlacement;
+    }
     if (acrossRr && !before)
         return ApplyStoredResidual(cmdList, resources, request);
     if (request.composition.runBeforeUpscale != before)
@@ -87,10 +100,27 @@ D3D12NrFrameResult D3D12NrExecutor::ExecuteMainFrame(
     device->Release();
     if (!ok) return D3D12NrFrameResult::Failed;
 
+    bool generationChanged = feature_ != nullptr &&
+        (!featurePlacementValid_ ||
+         featureBeforeUpscale_ != request.plan.beforeUpscale ||
+         featureRayReconstruction_ != request.composition.rayReconstruction);
+    for (std::uint32_t pass = 1;
+         !generationChanged && pass < context.plan.requestedPasses; ++pass) {
+        generationChanged = passFeatures_[pass] != nullptr &&
+            (!passTuningValid_[pass] || !(passTunings_[pass] == request.tuning[pass]));
+    }
+    if (generationChanged && !RetireFeatureGeneration())
+        return D3D12NrFrameResult::Failed;
+
     if (!EnsureFeatureForEpoch(
             cmdList, context.plan.work.width, context.plan.work.height,
             request.submissionEpoch, request.tuning[0]))
         return D3D12NrFrameResult::Failed;
+    if (justBuilt_) {
+        featureBeforeUpscale_ = request.plan.beforeUpscale;
+        featureRayReconstruction_ = request.composition.rayReconstruction;
+        featurePlacementValid_ = true;
+    }
     if (!submissionGate_.ReadyFor(request.submissionEpoch))
         return D3D12NrFrameResult::PendingFeature;
 

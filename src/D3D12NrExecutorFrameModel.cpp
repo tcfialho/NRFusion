@@ -32,6 +32,11 @@ D3D12NrCodecConstants ResolveConstants(
     c.transferStrength = request.composition.transferStrength;
     c.colourStrength = request.composition.colourStrength;
     c.debugView = request.composition.debugView;
+    c.compareMode = request.composition.compareMode;
+    c.compareSplit = request.composition.compareSplit;
+    c.compareZoom = request.composition.compareZoom;
+    c.compareSwap = request.composition.compareSwap;
+    c.debugScale = request.composition.debugScale;
     c.maxRatio = std::max(request.composition.maxRatio, 1.0f);
     c.passthrough = request.composition.colourIsLinearHdr ? 0u : 1u;
     c.transfer = request.composition.transfer;

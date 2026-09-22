@@ -71,6 +71,11 @@ struct D3D12NrComposition {
     float colourStrength = 1.0f;
     float maxRatio = 4.0f;
     std::uint32_t debugView = 0;
+    std::uint32_t compareMode = 0;
+    float compareSplit = 0.5f;
+    float compareZoom = 1.0f;
+    std::uint32_t compareSwap = 0;
+    float debugScale = 1.0f;
     std::uint32_t transfer = 0;
     std::uint32_t reversibleMode = 0;
     bool applyModel = true;
@@ -216,6 +221,7 @@ private:
     static void ReleaseRetired(void* context, NrRetiredObject retired) noexcept;
     void DiscoverFloatSlot();
     bool RetirePassFeatures(std::uint32_t first) noexcept;
+    bool RetireFeatureGeneration() noexcept;
     std::uint32_t PreparePassFeatures(
         ID3D12GraphicsCommandList* cmdList, std::uint32_t width, std::uint32_t height,
         std::uint32_t requested, std::uint64_t epoch,
@@ -265,7 +271,11 @@ private:
     std::uint32_t residualHistoryIndex_ = 0;
     bool residualHistoryPrimed_ = false;
     bool residualStoreValid_ = false;
+    bool residualModeActive_ = false;
     std::uint64_t residualEpoch_ = 0;
+    bool featurePlacementValid_ = false;
+    bool featureBeforeUpscale_ = false;
+    bool featureRayReconstruction_ = false;
     std::wstring snippetPath_;
     std::string status_ = "not loaded";
 };

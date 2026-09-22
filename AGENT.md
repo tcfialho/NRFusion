@@ -126,7 +126,7 @@ Completed:
 - retirement queue focused portable C++20 warnings-as-errors test: PASS
 - no PR opened and no Windows build/test requested or triggered
 
-Validated structural code head: 2e043f793e8d2ffc21cb2121abc8260a2bc90477
+Second-review base: 6ef2c5172641dd9e7fcf03861acfc312291a5253
 
 Phase 05 caveat:
 - Windows/D3D12 runtime validation is intentionally deferred to final cutover.

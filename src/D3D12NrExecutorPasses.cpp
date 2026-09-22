@@ -22,6 +22,28 @@ bool D3D12NrExecutor::RetirePassFeatures(std::uint32_t first) noexcept {
     return true;
 }
 
+bool D3D12NrExecutor::RetireFeatureGeneration() noexcept {
+    std::size_t active = static_cast<std::size_t>(feature_ != nullptr);
+    for (std::uint32_t pass = 1; pass < kD3D12NrMaxPassCount; ++pass)
+        active += static_cast<std::size_t>(passFeatures_[pass] != nullptr);
+    if (active > NrDeferredRetirementQueue::kCapacity - retirement_.Size()) return false;
+
+    if (!RetirePassFeatures(1)) return false;
+    if (feature_ != nullptr) {
+        void* feature = feature_;
+        if (!retirement_.Park(feature, NrRetiredObjectKind::Feature)) return false;
+        feature_ = nullptr;
+    }
+    submissionGate_.Reset();
+    featureWidth_ = 0;
+    featureHeight_ = 0;
+    featureTuningValid_ = false;
+    featurePlacementValid_ = false;
+    residualHistoryPrimed_ = false;
+    residualStoreValid_ = false;
+    return true;
+}
+
 std::uint32_t D3D12NrExecutor::PreparePassFeatures(
     ID3D12GraphicsCommandList* cmdList, std::uint32_t width, std::uint32_t height,
     std::uint32_t requested, std::uint64_t epoch,

@@ -40,16 +40,11 @@ bool D3D12NrExecutor::EnsureFeature(ID3D12GraphicsCommandList* cmdList, uint32_t
     }
 
     if (feature_ != nullptr) {
-        if (release_ == nullptr || !RetirePassFeatures(1) ||
-            !retirement_.Park(feature_, NrRetiredObjectKind::Feature)) {
+        if (release_ == nullptr || !RetireFeatureGeneration()) {
             device->Release();
             status_ = "NR retirement queue full";
             return false;
         }
-        submissionGate_.Reset();
-        featureTuningValid_ = false;
-        residualHistoryPrimed_ = false;
-        residualStoreValid_ = false;
     }
 
     feature_ = create_(snippetPath_.c_str(), L"", device, cmdList, capabilityParams_, width, height,
@@ -98,7 +93,11 @@ void D3D12NrExecutor::Shutdown() {
     residualHistoryIndex_ = 0;
     residualHistoryPrimed_ = false;
     residualStoreValid_ = false;
+    residualModeActive_ = false;
     residualEpoch_ = 0;
+    featurePlacementValid_ = false;
+    featureBeforeUpscale_ = false;
+    featureRayReconstruction_ = false;
     featureWidth_ = featureHeight_ = 0;
     featureTuning_ = {};
     featureTuningValid_ = false;

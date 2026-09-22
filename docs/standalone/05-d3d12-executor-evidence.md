@@ -590,3 +590,17 @@ cutover global, conforme instrução operacional.
 Encontrado após o fechamento funcional: `nrfusion_core` passou a depender de
 `nrfusion_dlssnr_shader_codegen`, mas o módulo de shaders ainda era incluído depois do core.
 A ordem foi corrigida para criar o target de codegen antes de `NRFusionCore.cmake`.
+
+
+## Segunda revisão adversarial — 2026-09-21
+
+Correções adicionais:
+- residual post-RR volta a compor em `residualComposed` e só copia para Output após sucesso;
+- Output não precisa mais de UAV no seam residual; chega/volta no state informado pelo caller;
+- residual store é consumido uma única vez e gaps/epoch mismatch invalidam history;
+- toggle do modo residual e pre-seam perdido invalidam history antiga;
+- ApplyModel desligado ou strength inválido/zero não reaplica residual;
+- compare/debug/skin-mask incompatíveis com residual-across-RR falham fechado no pre-seam;
+- mudanças de placement SR/RR ou tuning de pass extra aposentam a geração inteira de features;
+- compare mode/split/zoom/swap e debugScale agora fazem parte do snapshot standalone;
+- static sampler define MaxAnisotropy/ComparisonFunc explicitamente.
