@@ -2,7 +2,7 @@
 
 ## Status
 
-**Em andamento.** Subgates 06a–06b concluídos: transação básica, decomposição inicial e work/timing fixos.
+**Em andamento.** Subgates 06a–06d implementados; gates de execução portátil ainda pendentes.
 
 ## Objetivo
 
@@ -50,7 +50,7 @@ Fase 05.
 - [ ] 0 heap allocations steady.
 - [x] Menos locks/calls: standalone remove singleton/mutex/getters do adapter.
 - [ ] Mesmas decisões equivalentes.
-- [ ] Core tocado <=300 linhas por arquivo.
+- [x] Core tocado <=300 linhas por arquivo.
 
 ## Próxima fase
 
@@ -158,3 +158,21 @@ Consequências estruturais:
 - mutex do adapter fora do frame path standalone;
 - `LastDecision`, `LastAutoDecision` e `FusionRuntimeEngine` não participam do novo fluxo;
 - policy continua única em `FusionRuntime`; `NrSession` apenas orquestra e possui state de transação.
+
+
+## Checkpoint 06d
+
+Verificação estrutural no head `b98309b9e1c81a58293c3fae918ca99eb9859db3`:
+- `nrfusion_core` não contém `OptiScalerAdapter.cpp`;
+- `nrfusion_tests` compila o adapter explicitamente para manter regressões legadas;
+- `NrSession` não contém mutex/scoped_lock;
+- `NrSessionWorkState` não contém vector/deque/unordered_map;
+- arquivos tocados: core CMake 109, tests CMake 37, NrSession.hpp 43,
+  NrSession.cpp 123, work header 71, work source 121;
+- branch +54/-0 contra master; PR aberto 0.
+
+Gates ainda abertos por execução, não por implementação:
+- differential decision test;
+- timing/reset/overload/config-change tests;
+- fake executor de 1.000.000 frames;
+- prova runtime de 0 allocations steady.

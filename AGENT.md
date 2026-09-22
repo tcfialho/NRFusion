@@ -106,52 +106,37 @@
 
 ## Current session
 
-Start: 2026-09-22 00:24 BRT
+Start: 2026-09-22 00:41 BRT
 Branch: standalone/integration
 Base/default branch: master
-Phase 06: IN PROGRESS; subgates 06a-06c implemented.
+Phase 06: IN PROGRESS; subgates 06a-06d implemented.
 
-06a result:
-- added minimal NrSessionFramePacket/NrSessionFrameResult contracts
-- RuntimeConfig and mutable NrSessionState are separate owners
-- stale configuration generation is quarantined before policy mutation
-- new configuration opens a fresh FusionRuntime adaptive generation
-- NrSession resolves scale/precision/placement/scheduler through existing FusionRuntime policy
-- no policy duplication and no executor virtual/heap boundary introduced
-- FusionRuntime.hpp decomposed by moving Auto structural helpers into AutoDecision.hpp
-- differential portable test compares NrSession decision with independent FusionRuntime
-
-06b result:
-- NrSession owns a fixed 64-entry work tracker and 16-entry timing ring
-- no unordered_map/vector/lock in the new work/timing path
-- reconfigure resets work session + timing ring before new-generation acceptance
-- stale ticket/timing cannot train a later RuntimeConfig generation
-
-06c result:
-- found and removed per-frame vector materialization in CheaperPrecision
-- added portable fake-executor stress for 1,000,000 complete session transactions
-- allocation counter is enabled only after 512-frame warmup and requires exactly zero new/new[]
-
-06d result:
+Completed this session:
+- found and removed a steady-path vector allocation from CheaperPrecision
+- added 1,000,000-frame fake-executor allocation stress target
 - removed OptiScalerAdapter.cpp from nrfusion_core
-- legacy adapter source remains only in nrfusion_tests and patcher source distribution
-- standalone call graph has no adapter singleton, adapter mutex or decision getters
-- old-vs-new call graph, state ownership and lock boundary reviewed
+- preserved adapter source only for legacy controller tests and OptiScaler patcher
+- completed old-vs-new call graph, ownership and lock-boundary review
+- standalone NrSession path has zero adapter singleton/mutex/getter dependency
+- structural LOC gate passes for every touched first-party file
 
-Outstanding Phase 06:
-- execute nrfusion_nr_session_tests and nrfusion_nr_session_stress_tests once a source checkout can be materialized locally
-- close differential/timing/allocation runtime gates after actual portable execution
+Validation limitation:
+- local C++ toolchain exists, but repository source cannot be materialized through shell/codeload
+- GitHub connector has no workflow-dispatch action
+- stress/differential targets are versioned but not claimed PASS
+- no Windows build/test was requested or used
 
-Validated structural code head before closure docs: ccd4c9fc8cb3be1e807171dc763bdeaf801efa63
+Validated structural code head: b98309b9e1c81a58293c3fae918ca99eb9859db3
+Branch vs master at verification: +54 / -0
+Open PRs: 0
+
+Outstanding Phase 06 runtime gates:
+- execute nrfusion_nr_session_tests
+- execute nrfusion_nr_session_stress_tests
+- close differential/timing/reset/overload/config-change gates
+- prove 0 steady-state allocations during the measured million-frame interval
 
 Exact next action:
-- materialize only the portable NrSession dependency set locally and run focused tests
-- if stress reports an allocation, fix only the measured allocation source
-- otherwise close Phase 06 runtime gates and proceed to Phase 07
-
-
-06c validation note:
-- stress target is implemented but not claimed PASS
-- local g++/clang++/cmake exist, but no repository checkout is present
-- available GitHub connector has no workflow-dispatch action
-- Windows remains deliberately unused
+- at the next available portable execution path, run only the two focused NrSession targets
+- fix only an actually measured failure/allocation
+- when both pass, close Phase 06 and proceed to Phase 07
