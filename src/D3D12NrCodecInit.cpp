@@ -61,7 +61,10 @@ bool D3D12NrCodec::CreateRootSignature() noexcept {
     const HRESULT serialized =
         D3D12SerializeVersionedRootSignature(&desc, &signature, &errors);
     if (errors != nullptr) errors->Release();
-    if (FAILED(serialized) || signature == nullptr) return false;
+    if (FAILED(serialized) || signature == nullptr) {
+        if (signature != nullptr) signature->Release();
+        return false;
+    }
 
     const HRESULT created = device_->CreateRootSignature(
         0, signature->GetBufferPointer(), signature->GetBufferSize(),
