@@ -79,6 +79,8 @@ D3D12CarrierExecuteResult D3D12CarrierExecutor::Execute(
         planned.plan.framePlan.beforeUpscale;
     request.composition.rayReconstruction = false;
     request.composition.residualAcrossRr = false;
+    request.composition.colourIsLinearHdr =
+        planned.plan.colourIsLinearHdr;
     request.submissionEpoch = planned.plan.submissionEpoch;
     request.reset = planned.plan.reset;
     request.depthInverted = planned.plan.depthInverted;
