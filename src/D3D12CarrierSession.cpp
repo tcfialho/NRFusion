@@ -18,6 +18,7 @@ D3D12CarrierFrameResult D3D12CarrierSession::Resolve(
     const std::uint64_t activeGeneration = session_.State().configurationGeneration;
     if (activeGeneration == 0 ||
         packet.acquire.identity.configurationGeneration != activeGeneration ||
+        packet.game.api != GraphicsApi::D3D12 ||
         !session_.Config().enabled) {
         sessionPacket.game = packet.game;
         sessionPacket.frame.frameId = packet.acquire.identity.frameId;
