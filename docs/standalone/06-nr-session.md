@@ -425,3 +425,20 @@ Call graph standalone final:
 fixed work/timing`.
 
 A Fase 07 pode iniciar sem pendência funcional ou estrutural da Fase 06.
+
+
+## Revisão adversarial pós-fechamento
+
+Foi encontrado um invariant não coberto pelo fechamento 06g: o mesmo work submetido podia ser
+inserido duas vezes no timing ring. A segunda completion já era rejeitada, porém a entrada duplicada
+consumia capacidade e podia deslocar/abandonar outro work válido sob pressão.
+
+Correção:
+- cada work possui um bit fixo `timingMapped`;
+- `MarkTimingMapped` aceita exatamente uma associação após Submit;
+- mapping repetido falha antes de tocar o timing ring;
+- sem heap, lock, lookup adicional ou mudança na completion normal;
+- regressão explícita exige que o segundo `MapTimedWork` retorne false.
+
+A mesma revisão removeu um `nrRecentSamples_.clear()` e um `emaNrMs_=0` duplicados literalmente
+no branch de downshift do hot path; comportamento permanece idêntico.

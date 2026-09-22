@@ -105,8 +105,8 @@ bool NrSession::AbandonWork(const WorkTicket& ticket) noexcept {
 }
 
 bool NrSession::MapTimedWork(const WorkTicket& ticket) noexcept {
-    if (!works_.IsSubmitted(ticket) ||
-        ticket.configurationGeneration != state_.runtimeGeneration)
+    if (ticket.configurationGeneration != state_.runtimeGeneration ||
+        !works_.MarkTimingMapped(ticket))
         return false;
     if (const auto displaced = timings_.Push(ticket))
         works_.Abandon(*displaced);

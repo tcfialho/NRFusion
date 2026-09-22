@@ -225,8 +225,6 @@ PerformanceDecision PerformanceController::Update(const TelemetrySample& sample)
         nrRecentSamples_.clear();
         frameRecentSamples_.clear();
         emaNrMs_ = 0.0;
-        nrRecentSamples_.clear();
-        emaNrMs_ = 0.0;
         changed = true;
     } else if (!awaitingNrTiming_ && cooldownRemaining_ <= 0.0 && headroomSeconds_ >= config_.scaleUpSustainSeconds && CanScaleUp()) {
         // Sustained headroom ends the episode: the next time cost rises, precision may be traded

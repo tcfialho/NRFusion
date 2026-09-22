@@ -73,6 +73,7 @@ int main() {
     assert(work);
     assert(session.SubmitWork(*work));
     assert(session.MapTimedWork(*work));
+    assert(!session.MapTimedWork(*work));
 
     auto resized = Packet(config.generation, 2);
     resized.frame.renderResolution = {1280, 720};

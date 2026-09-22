@@ -26,6 +26,7 @@ public:
     bool Complete(const WorkTicket& ticket) noexcept;
     bool Abandon(const WorkTicket& ticket) noexcept;
     bool IsSubmitted(const WorkTicket& ticket) const noexcept;
+    bool MarkTimingMapped(const WorkTicket& ticket) noexcept;
     void ResetSession() noexcept;
 
     std::size_t Outstanding() const noexcept { return size_; }
@@ -36,6 +37,7 @@ private:
         WorkTicket ticket{};
         WorkState state = WorkState::Started;
         bool occupied = false;
+        bool timingMapped = false;
     };
 
     Entry* Find(const WorkTicket& ticket) noexcept;
