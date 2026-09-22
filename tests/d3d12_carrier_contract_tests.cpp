@@ -57,7 +57,9 @@ int main() {
     assert(acquired.frame.viewId == base.identity.viewId);
     assert(acquired.frame.configurationGeneration ==
            base.identity.configurationGeneration);
-    assert(acquired.frame.color == base.color.resource);
+    assert(acquired.frame.color.opaqueId == base.color.resource.opaqueId);
+    assert(acquired.frame.color.resolution == base.color.resource.resolution);
+    assert(acquired.frame.color.format == base.color.resource.format);
     assert(acquired.frame.ReadyForCore());
     assert(acquired.diagnostics.supported);
     assert(acquired.diagnostics.frameComplete);
