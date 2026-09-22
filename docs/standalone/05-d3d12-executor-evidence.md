@@ -531,3 +531,13 @@ Corrigido um bug funcional no seed standalone: os dois últimos floats de
 `motionWidth/motionHeight`. A API agora separa as dimensões da surface dos fatores de escala.
 Callsites existentes recebem default `1.0f, 1.0f` até o frame snapshot portar a escala reportada
 pelo jogo; isso evita enviar dimensões de milhares como fator de motion.
+
+
+### Loader lifecycle review
+
+`Load()` passou a ser transacional: driver/forwarder/exports/model path são validados em locals e
+só então publicados no executor. Falhas não deixam handles ou function pointers parciais.
+
+O loader agora diferencia handle borrowed por `GetModuleHandleW` de handle owned por
+`LoadLibraryW`/DriverStore. `Shutdown()` só chama `FreeLibrary` no driver quando o executor
+realmente adquiriu essa referência. `Init(nullptr)` também falha fechado.

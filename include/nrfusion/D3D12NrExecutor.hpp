@@ -114,6 +114,7 @@ private:
     void DiscoverFloatSlot();
 
     HMODULE driverModule_ = nullptr;
+    bool driverModuleOwned_ = false;
     HMODULE forwarderModule_ = nullptr;
     InitFn driverInit_ = nullptr;
     GetCapFn getCapabilityParams_ = nullptr;

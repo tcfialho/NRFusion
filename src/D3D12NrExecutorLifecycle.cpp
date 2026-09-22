@@ -97,7 +97,9 @@ void D3D12NrExecutor::Shutdown() {
     probeFloat_ = nullptr;
     driverInit_ = nullptr;
     getCapabilityParams_ = nullptr;
+    if (driverModule_ != nullptr && driverModuleOwned_) FreeLibrary(driverModule_);
     driverModule_ = nullptr;
+    driverModuleOwned_ = false;
     snippetPath_.clear();
     status_ = "shut down";
 }
