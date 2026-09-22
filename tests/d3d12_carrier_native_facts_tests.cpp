@@ -69,6 +69,7 @@ int main() {
     assert(contract);
     assert(contract.frame.renderResolution == base.color.texture.resolution);
     assert(contract.frame.outputResolution == base.output.resolution);
+    assert(contract.outputOpaqueId == base.output.opaqueId);
 
     auto missingColor = base;
     missingColor.color = {};
