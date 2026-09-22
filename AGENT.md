@@ -107,23 +107,65 @@
 ## Current session
 
 Start: 2026-09-22 20:05 BRT
+Freeze: 2026-09-22 20:15 BRT
 Branch: standalone/integration
 Base/default branch: master
 Head at start: 5206038d447d24dfc7badc65e98446b4cc8d1012
 
 Phase 06: CLOSED.
-Phase 07: IN PROGRESS; 07a/07b validated.
+Phase 07: IN PROGRESS; 07a/07b/07c validated portably.
 
-Checklist:
-- [ ] 07c add portable native-resource facts -> D3D12AcquireSnapshot builder
-- [ ] 07c add Windows-only ID3D12Resource GetDesc adapter
-- [ ] 07c add focused regressions for format/dimensions/evidence/output sizing
-- [ ] wire Windows adapter into nrfusion_core without touching legacy provider/Host64/patcher
-- [ ] validate portable gate, LOC and checkpoint ZIP
+Validated code commit:
+23465328c4a36433d6bbde993d2493a46fb8ca91
+
+Final focused validation:
+- run 35796387110: SUCCESS
+- 8/8 focused tests PASS
+- Phase 06 NrSession regressions/stress remain in the same gate
+- carrier contract/session/native facts/capabilities/work tests: PASS
+- Windows: not used
+
+07c results:
+- portable facts builder derives FrameContract metadata from native texture facts
+- Windows adapter receives ID3D12Resource* and derives dimensions/format via GetDesc()
+- output format may remain unknown when only output geometry is required
+- provider registry advertises Acquire + Normalize only
+- Execute + Compose remain unregistered
+- D3D12CarrierWork binds submissionEpoch exactly to monotonic WorkTicket.id
+- work submit/timing/retire stays owned by NrSession
+- no new heap or lock in the carrier code
+- no legacy SyntheticDx12Provider dependency
+
+Important validation caveat:
+- D3D12CarrierNativeAcquire.cpp is WIN32-only and was structurally reviewed but not compiled in the
+  portable gate; Windows compilation remains deferred by repository policy.
+
+Current code sizes:
+- D3D12CarrierNativeFacts.hpp/cpp: 61 / 103
+- D3D12CarrierNativeAcquire.hpp/cpp: 40 / 91
+- D3D12CarrierCapabilities.hpp/cpp: 25 / 19
+- D3D12CarrierSession.hpp/cpp: 59 / 70
+- d3d12_carrier_native_facts_tests.cpp: 126
+- d3d12_carrier_capabilities_tests.cpp: 45
+- d3d12_carrier_work_tests.cpp: 101
+- CMake core/tests: 117 / 106
+- focused workflow: 53
+
+Legacy files kept read-only:
+- src/SyntheticDx12Provider.cpp
+- src/HostServer64.cpp
+- tools/apply_to_optiscaler.py
 
 Commit discipline:
-- one responsibility per commit
-- no squash/rewrite of shared branch history
+- work was preserved as small responsibility-scoped commits
+- no squash/rewrite/force-push
 
 Exact next action:
-- add D3D12CarrierNativeFacts contract and builder, then its portable test
+- create a Windows-only D3D12 carrier execution boundary
+- consume D3D12CarrierWork + normalized frame
+- build D3D12NrFramePlanInput/D3D12NrFrameRequest
+- pass work.submissionEpoch to D3D12NrExecutor
+- reuse Phase 05 scratch/retirement owners
+- do not register Execute or Compose until each path exists and has regression coverage
+- keep legacy provider/Host64/patcher read-only
+- no new branch or intermediate PR
