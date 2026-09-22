@@ -106,38 +106,38 @@
 
 ## Current session
 
-Start: 2026-09-21 22:09 BRT
+Start: 2026-09-21 22:37 BRT
 Branch: standalone/phase-05-d3d12-executor-20260921
 Base: master 548349b740e6fdfec7b0a9f6dacc17ebcdf9b160
-Phase 05: OPEN; 03d complete structurally; 04a/04b implemented and awaiting focused Windows validation.
+Phase 05: OPEN; meticulous review in progress; Windows validation deferred to final cutover.
 
 Completed this session:
-- resolved RenoDX attribution/provenance for the locked composition shader
-- vendored the locked HLSL verbatim; Git blob preserved
-- added opt-in fxc cs_5_0 codegen with source/CSO/header Git-blob verification
-- kept generated CSO/header out of Git
-- extracted standalone D3D12NrCodec without Shader_Dx12/Config/State dependencies
-- preserved 5 SRV + 2 UAV + 1 CBV + linear-clamp sampler + 48-slot ring semantics
-- added isolated WARP codec test
-- adversarial review disabled copying, asserted cbuffer offsets, fixed CBV cast and Encode target/keep setup
-- fixed root-signature serialization failure leak
-- no executor wiring yet
-- no PR opened and no full build/CI triggered
+- removed intermediate Windows validation as a development gate
+- confirmed no user-run testing is required during implementation
+- fixed feature identity so tuning changes rebuild the NR feature
+- added codec RAII teardown
+- pinned codegen to the exact upstream fxc.exe Git blob
+- made executor/scratch/guide owners non-copyable and non-movable
+- cleared unloaded forwarder exports during shutdown
+- split motion-vector dimensions from motion-vector scale in evaluate ABI
+- made loader transactional and tracked borrowed vs owned driver modules
+- reject invalid retirement kinds without transferring ownership
+- reject codec dispatch to undersized target
+- retirement queue portable compile/test with C++20 warnings-as-errors: PASS
+- fixed upstream bootstrap so the OptiScaler checkout follows upstreams.lock.json instead of main
+- no PR opened and no Windows build/test requested or triggered
 
-Current head before this documentation commit: a9359f43bfeccca46eab57402bd7ecdd9e2d8865
-
-Windows validation policy:
-- deferred until final cutover by explicit user instruction
-- intermediate progress must not wait on or request Windows validation
+Current head before final stabilization docs: 5a8fd44b306a95d836c24742468c3305b0aed687
 
 Outstanding Phase 05:
 - 04c wire frame plan + scratch/guide owners + D3D12NrCodec into encode/downsample/evaluate/resolve
+- solve explicit caller state restoration/barrier guarantees for 04c
 - 05 multipass/history and per-pass submission epochs
 - 06 HDR/exposure/residual behavior
 - 07 pre/post SR/RR seams + complete operational snapshot + final adversarial review
+- host teardown must eventually satisfy D3D12NrExecutor::Shutdown GPU-idle contract without growing the grandfathered HostServer64 monolith
 
 Exact next action:
-- continue Phase 05 review and implementation without Windows gating
-- implement 04c state-machine wiring only after static/portable contract review
-- regress every resource back to its resting state with fakes/state tests where possible
-- reserve Windows build/integration validation for final cutover
+- continue 04c using static/portable/fake validation only
+- first extract a portable frame-state transition plan so encode/resolve wiring can be verified without D3D12 runtime
+- Windows build/integration/installer validation remains final-cutover-only

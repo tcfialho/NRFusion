@@ -548,3 +548,13 @@ realmente adquiriu essa referência. `Init(nullptr)` também falha fechado.
 - retirement queue agora rejeita `NrRetiredObjectKind` inválido sem transferir ownership;
 - teste portátil cobre enum inválido e preservação do pointer;
 - codec valida que o target Texture2D cobre `constants.width/height` antes de gravar dispatch.
+
+
+### Upstream lock review
+
+`bootstrap_upstreams.ps1` previously cloned/pulled the OptiScaler upstream without consulting
+`upstreams.lock.json`. Isso tornava o caminho default do `fxc.exe` não reproduzível apesar do
+generator validar um blob fixo.
+
+O bootstrap agora lê o lock, faz checkout detached do commit travado e confirma `rev-parse HEAD`.
+Os upstreams sem lock continuam usando `pull --ff-only`.

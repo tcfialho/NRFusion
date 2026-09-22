@@ -2,7 +2,7 @@
 
 ## Status
 
-**Em andamento.** Subgates 01–03d concluídos estruturalmente; o gate ainda não fecha porque encode/resolve, multipass, HDR/residual e seams não foram portados.
+**Em andamento.** Subgates 01–03d e 04a/04b concluídos estruturalmente; 04c, multipass, HDR/residual e seams ainda faltam.
 Evidência parcial: [05-d3d12-executor-evidence.md](05-d3d12-executor-evidence.md).
 
 ## Objetivo
@@ -138,7 +138,7 @@ read-only. Boundaries mapeados:
 
 ## Próxima ação
 
-Validar scratch + frame-plan em Windows fast; depois expandir o owner de surfaces e extrair o seam encode/resolve.
+Implementar 04c: ligar frame plan + owners + codec ao encode/downsample/evaluate/resolve com state restoration explícita.
 
 ## Próxima fase
 
@@ -165,7 +165,7 @@ copiados com dependências de Config/State.
 
 ## Subgates restantes para fechar a Fase 05
 
-1. **03d resources/state completos** — concluído estruturalmente; falta apenas Windows fast do lote.
+1. **03d resources/state completos** — concluído estruturalmente; wiring efetivo pertence ao 04c.
 2. **04 encode/resolve + scale real** — ligar o frame plan aos resources e portar codec/copy/resample
    sem dependência de `Config`/`State`.
 3. **05 multipass/history** — features extras, create epoch por pass, ping-pong e reset/history.
@@ -275,5 +275,5 @@ O próximo subgate é extrair `D3D12NrCodec` usando o header gerado, não um blo
 - dispatch group size permanece 8x8;
 - teste WARP executa um Encode 8x8 e verifica ausência de device removal.
 
-O codec permanece isolado do executor até esse target passar no Windows fast.
+O codec permanece isolado porque o wiring 04c ainda não foi implementado; Windows não é gate intermediário.
 O shader vendorizado confirma `[numthreads(8,8,1)]`; nenhum group size novo foi inventado.
