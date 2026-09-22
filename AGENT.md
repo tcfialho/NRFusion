@@ -106,31 +106,26 @@
 
 ## Current session
 
-Start: 2026-09-22 17:49 BRT
+Start: 2026-09-22 18:04 BRT
 Branch: standalone/integration
 Base/default branch: master
+Head at start: d27e48c994ade64f3a405a17cba4531f7c9ad9da
 
-Phase 06: CLOSED without portable-validation caveat.
-- final functional run: 35783094348 -> 3/3 PASS
-- transition coverage: Hybrid + scale + execution-generation required
-- timing ring 16->17 pressure regression: PASS
-- historical nrfusion_tests/controller_tests.cpp: PASS
+Phase 06: CLOSED and validated.
+Phase 07: IN PROGRESS.
 
-Phase 07: IN PROGRESS, initial audit only.
-- SyntheticDx12Provider.cpp: 596 lines, read-only
-- HostServer64.cpp: 659 lines, read-only
-- apply_to_optiscaler.py: 3900 lines, read-only
-- direct provider split would break the OptiScaler fallback source manifest
-- no D3D12 source was changed in Phase 07 yet
+Checklist:
+- [ ] 07a define a portable D3D12 Acquire seam that distinguishes captured resources from arbitrary ResourceRef
+- [ ] 07a normalize acquired resources into FrameContext without heap/locks/API pointers in the core contract
+- [ ] 07a add focused portable regressions for valid, unproven and stale resources
+- [ ] validate portable build/tests and source-size gate
+- [ ] checkpoint ZIP and handoff
 
-Validated checkpoint run:
-- 35783957612 -> SUCCESS
-- 3/3 Phase 06 tests PASS
-- source checkpoint artifact uploaded
-- source ZIP head: e7c06a6555d02f010cf2b1f371b16fe4d6ab6df5
+Constraints for this session:
+- SyntheticDx12Provider.cpp, HostServer64.cpp and apply_to_optiscaler.py remain read-only
+- no wrapper that delegates to SyntheticDx12Provider counts as carrier progress
+- no Windows validation in the inner loop
+- freeze new code by 18:22 BRT
 
 Exact next action:
-- define the replacement D3D12 standalone carrier ownership boundary without delegating to the 596-line monolith
-- use the 269-line synthetic_dx12_scale_gate_test as the first existing behavioral gate
-- keep legacy provider/Host64/patcher read-only until their own retirement/split path is explicit
-- no new branch or intermediate PR
+- add D3D12CarrierContract.{hpp,cpp} and its portable test
