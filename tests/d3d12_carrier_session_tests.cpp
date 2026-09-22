@@ -90,15 +90,19 @@ int main() {
     ++disabled.generation;
     disabled.enabled = false;
     assert(carrier.Configure(disabled, performance));
-    const auto passThrough = carrier.Resolve(Packet(disabled.generation, 5));
+    auto disabledPacket = Packet(disabled.generation, 5);
+    disabledPacket.acquire.color = {};
+    const auto passThrough = carrier.Resolve(disabledPacket);
     assert(!passThrough);
-    assert(passThrough.acquire);
+    assert(!passThrough.acquire.attempted);
     assert(passThrough.session.disposition == NrSessionDisposition::Disabled);
 
     carrier.Reset();
-    const auto afterReset = carrier.Resolve(Packet(config.generation, 6));
+    auto resetPacket = Packet(config.generation, 6);
+    resetPacket.acquire.color = {};
+    const auto afterReset = carrier.Resolve(resetPacket);
     assert(!afterReset);
-    assert(afterReset.acquire);
+    assert(!afterReset.acquire.attempted);
     assert(afterReset.session.disposition == NrSessionDisposition::NotConfigured);
     return 0;
 }
