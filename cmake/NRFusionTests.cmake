@@ -12,6 +12,7 @@ function(nrfusion_test target source)
 endfunction()
 
 nrfusion_test(nrfusion_tests tests/controller_tests.cpp)
+target_sources(nrfusion_tests PRIVATE src/OptiScalerAdapter.cpp)
 nrfusion_test(nrfusion_game_probe_tests tests/game_probe_tests.cpp)
 nrfusion_test(nrfusion_telemetry_tests tests/telemetry_tracker_tests.cpp)
 nrfusion_test(nrfusion_timing_mapper_tests tests/timing_mapper_tests.cpp)

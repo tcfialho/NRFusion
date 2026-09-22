@@ -132,19 +132,22 @@ Phase 06: IN PROGRESS; subgates 06a-06c implemented.
 - added portable fake-executor stress for 1,000,000 complete session transactions
 - allocation counter is enabled only after 512-frame warmup and requires exactly zero new/new[]
 
+06d result:
+- removed OptiScalerAdapter.cpp from nrfusion_core
+- legacy adapter source remains only in nrfusion_tests and patcher source distribution
+- standalone call graph has no adapter singleton, adapter mutex or decision getters
+- old-vs-new call graph, state ownership and lock boundary reviewed
+
 Outstanding Phase 06:
 - execute nrfusion_nr_session_tests and nrfusion_nr_session_stress_tests once a source checkout can be materialized locally
-- remove OptiScalerAdapter from standalone call graph/getter path
-- old-vs-new call graph review
-- lock ownership review
-- final LOC/performance gate
+- close differential/timing/allocation runtime gates after actual portable execution
 
 Validated structural code head before closure docs: ccd4c9fc8cb3be1e807171dc763bdeaf801efa63
 
 Exact next action:
-- run/compile the focused portable NrSession tests if an execution path is available
-- then remove OptiScalerAdapter from the standalone call graph without touching legacy patcher behavior
-- keep PerformanceController/ProfileStore untouched unless their owning responsibility must change
+- materialize only the portable NrSession dependency set locally and run focused tests
+- if stress reports an allocation, fix only the measured allocation source
+- otherwise close Phase 06 runtime gates and proceed to Phase 07
 
 
 06c validation note:

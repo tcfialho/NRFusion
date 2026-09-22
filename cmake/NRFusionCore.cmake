@@ -37,7 +37,6 @@ add_library(nrfusion_core STATIC
     src/GameProbeSupport.cpp
     src/Sha256.cpp
     src/InstallerState.cpp
-    src/OptiScalerAdapter.cpp
     src/Presets.cpp
     src/QualityValidator.cpp
     src/Dlss5NeuralRendering.cpp

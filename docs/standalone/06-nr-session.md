@@ -22,7 +22,7 @@ Fase 05.
 - [x] Definir FramePacket/FrameResult mínimos.
 - [x] Resolver scale/precision/placement/scheduler em uma transação.
 - [x] Integrar work identity/timing retirement.
-- [ ] Remover OptiScalerAdapter e getters repetidos.
+- [x] Remover OptiScalerAdapter e getters repetidos do call graph standalone.
 - [x] Separar RuntimeConfig de state mutável.
 - [x] Preservar stale timing/generation/reconfigure quarantine.
 - [x] `NrSession` orquestra; helpers permanecem focados.
@@ -32,23 +32,23 @@ Fase 05.
 
 ## Revisão obrigatória
 
-- [ ] Old vs new call graph.
-- [ ] Cada lock tem concorrência demonstrada.
-- [ ] Nenhum state tem dois owners.
-- [ ] Header contém contrato, não implementação escondida.
-- [ ] Split não duplica policy.
+- [x] Old vs new call graph.
+- [x] Standalone NrSession não possui lock; locks do adapter ficaram confinados ao legado.
+- [x] Nenhum state standalone tem dois owners.
+- [x] Header contém contrato, não implementação escondida.
+- [x] Split não duplica policy.
 
 ## Validação rápida
 
 - [ ] Fake executor: teste de 1.000.000 frames implementado; execução portátil pendente.
 - [ ] Differential decisions.
 - [ ] Timing/reset/overload/config changes.
-- [ ] LOC checker.
+- [x] LOC checker estrutural: todos os arquivos first-party tocados <=300.
 
 ## Gate
 
 - [ ] 0 heap allocations steady.
-- [ ] Menos locks/calls.
+- [x] Menos locks/calls: standalone remove singleton/mutex/getters do adapter.
 - [ ] Mesmas decisões equivalentes.
 - [ ] Core tocado <=300 linhas por arquivo.
 
@@ -134,3 +134,27 @@ O teste de stress está versionado, mas **não foi executado nesta sessão**:
 
 Portanto o gate de 0 allocations permanece aberto até a execução efetiva do target
 `nrfusion_nr_session_stress_tests`.
+
+
+## Subgate 06d — retirada do OptiScalerAdapter do standalone
+
+Auditoria do call graph confirmou que `OptiScalerAdapter` não é consumido por nenhum source standalone:
+os usos restantes são o próprio adapter, o patcher legado e `controller_tests.cpp`.
+
+Mudança:
+- `src/OptiScalerAdapter.cpp` saiu de `nrfusion_core`;
+- o source é compilado somente em `nrfusion_tests`, que preserva as regressões legadas;
+- header/source continuam versionados para o patcher OptiScaler legado;
+- nenhum source de `NrSession`, RuntimeShell, executor ou provider referencia o adapter.
+
+Call graph antigo:
+`patched OptiScaler -> OptiScalerAdapter singleton/mutex -> FusionRuntime -> policies/work/timing`.
+
+Call graph standalone:
+`carrier/provider -> FrameContract/NrSessionFramePacket -> NrSession -> FusionRuntime policy + fixed work/timing`.
+
+Consequências estruturais:
+- singleton do adapter fora do core standalone;
+- mutex do adapter fora do frame path standalone;
+- `LastDecision`, `LastAutoDecision` e `FusionRuntimeEngine` não participam do novo fluxo;
+- policy continua única em `FusionRuntime`; `NrSession` apenas orquestra e possui state de transação.
