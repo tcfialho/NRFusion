@@ -16,6 +16,12 @@ enum class D3D12NrGuideKind : std::uint8_t {
 
 class D3D12NrGuideClones {
 public:
+    D3D12NrGuideClones() = default;
+    D3D12NrGuideClones(const D3D12NrGuideClones&) = delete;
+    D3D12NrGuideClones& operator=(const D3D12NrGuideClones&) = delete;
+    D3D12NrGuideClones(D3D12NrGuideClones&&) = delete;
+    D3D12NrGuideClones& operator=(D3D12NrGuideClones&&) = delete;
+
     bool Ensure(ID3D12Device* device, D3D12NrGuideKind kind,
                 ID3D12Resource* source, DXGI_FORMAT typedFormat,
                 NrDeferredRetirementQueue& retirement) noexcept;

@@ -88,8 +88,17 @@ void D3D12NrExecutor::Shutdown() {
     featureTuningValid_ = false;
     submissionGate_.Reset();
     capabilityParams_ = nullptr;
+    floatSlotKnown_ = false;
     if (forwarderModule_) { FreeLibrary(forwarderModule_); forwarderModule_ = nullptr; }
+    create_ = nullptr;
+    evaluate_ = nullptr;
+    release_ = nullptr;
+    setFloatSlot_ = nullptr;
+    probeFloat_ = nullptr;
+    driverInit_ = nullptr;
+    getCapabilityParams_ = nullptr;
     driverModule_ = nullptr;
+    snippetPath_.clear();
     status_ = "shut down";
 }
 

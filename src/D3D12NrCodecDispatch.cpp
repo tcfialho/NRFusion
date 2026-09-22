@@ -83,7 +83,8 @@ bool D3D12NrCodec::Dispatch(
     const D3D12NrCodecConstants& constants,
     const D3D12NrCodecResources& resources) noexcept {
     if (!Ready() || commandList == nullptr || resources.source == nullptr ||
-        resources.target == nullptr || constants.width == 0 || constants.height == 0)
+        resources.target == nullptr || constants.width == 0 || constants.height == 0 ||
+        constants.mode > static_cast<std::uint32_t>(D3D12NrCodecMode::ZeroMotion))
         return false;
 
     Slot& slot = slots_[slotIndex_];
@@ -116,7 +117,9 @@ bool D3D12NrCodec::Dispatch(
     commandList->SetPipelineState(pipelineState_);
     commandList->SetComputeRootDescriptorTable(
         0, slot.heap->GetGPUDescriptorHandleForHeapStart());
-    commandList->Dispatch((constants.width + 7) / 8, (constants.height + 7) / 8, 1);
+    const UINT groupsX = constants.width / 8u + static_cast<UINT>(constants.width % 8u != 0);
+    const UINT groupsY = constants.height / 8u + static_cast<UINT>(constants.height % 8u != 0);
+    commandList->Dispatch(groupsX, groupsY, 1);
     return true;
 }
 

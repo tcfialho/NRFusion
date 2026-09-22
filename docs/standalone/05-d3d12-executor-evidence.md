@@ -513,3 +513,12 @@ local em `shader_tools`. O generator agora aceita somente o Git blob travado
 `987eb4cae3c343ab024a4b693dbb73660360dbc4`.
 
 Política de validação atualizada: nenhum Windows build/test intermediário será tratado como gate.
+
+
+### Ownership/API hardening
+
+- executor, scratch owner e guide-clone owner deixaram de ser copiáveis/movíveis;
+- shutdown zera exports do forwarder depois de descarregar a DLL e força novo Load antes de reuso;
+- estado de float-slot e snippet path também são resetados no teardown;
+- codec rejeita mode fora do enum;
+- cálculo de dispatch groups não usa mais `width + 7`, evitando overflow em input extremo.

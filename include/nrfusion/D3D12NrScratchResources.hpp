@@ -36,6 +36,12 @@ struct D3D12NrScratchDesc {
 
 class D3D12NrScratchResources {
 public:
+    D3D12NrScratchResources() = default;
+    D3D12NrScratchResources(const D3D12NrScratchResources&) = delete;
+    D3D12NrScratchResources& operator=(const D3D12NrScratchResources&) = delete;
+    D3D12NrScratchResources(D3D12NrScratchResources&&) = delete;
+    D3D12NrScratchResources& operator=(D3D12NrScratchResources&&) = delete;
+
     bool Ensure(ID3D12Device* device, const D3D12NrScratchDesc& desc,
                 NrDeferredRetirementQueue& retirement) noexcept;
     bool EnsureOptional(ID3D12Device* device, D3D12NrScratchKind kind,

@@ -55,6 +55,12 @@ struct DlssNrTuning {
 
 class D3D12NrExecutor {
 public:
+    D3D12NrExecutor() = default;
+    D3D12NrExecutor(const D3D12NrExecutor&) = delete;
+    D3D12NrExecutor& operator=(const D3D12NrExecutor&) = delete;
+    D3D12NrExecutor(D3D12NrExecutor&&) = delete;
+    D3D12NrExecutor& operator=(D3D12NrExecutor&&) = delete;
+
     bool Load();
 
     bool Init(ID3D12Device* device);
