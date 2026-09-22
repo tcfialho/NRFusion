@@ -159,6 +159,7 @@ D3D12NrFrameResult D3D12NrExecutor::ExecuteMainFrame(
     RestoreFrameResources(cmdList, resources, request, context);
     if (!modelOk) {
         residualStoreValid_ = false;
+        if (context.acrossRr) residualHistoryPrimed_ = false;
         return D3D12NrFrameResult::Failed;
     }
     return D3D12NrFrameResult::Applied;

@@ -621,3 +621,6 @@ Correções adicionais:
 - CMake resolve Python explicitamente via `find_package(Python3 REQUIRED COMPONENTS Interpreter)`;
 - codegen usa `${Python3_EXECUTABLE}`, sem depender do alias `python` no PATH;
 - pós-RR verifica transições críticas de carrier/output e invalida history em falha.
+
+
+- falha no frame residual invalida `residualHistoryPrimed_`; history com gap nunca é tratada como contínua.
