@@ -1,151 +1,244 @@
-# Agent workflow
+# Fase 06 — NrSession — uma transação por frame
 
-- Protect work continuously with Git and small logical commits.
-- At session start, identify current state, last relevant commit, what already works, and the exact next action.
-- Before implementation, keep a checklist of independent, verifiable items small enough for one <=20 minute interaction.
-- Prioritize delivery/integration blockers over refinements.
-- For bugs: reproduce -> cause -> fix -> regression test -> full-flow validation.
-- Preserve committed state before destructive or risky changes.
-- Use nohup + PID + persistent log for medium/long jobs when shell execution is available.
-- Before restarting interrupted work, inspect existing process/log state and do not duplicate heavy jobs.
-- Keep useful logs/checkpoints progressively. Do not depend on a final save only.
-- Generate one source checkpoint ZIP per session outside the worktree when source code changed materially.
-- End with: result | tests | commit | ZIP | blocker | exact next action.
+## Status
 
-## Operational speed and validation discipline
+**Em andamento.** Subgates 06a–06d implementados; gates de execução portátil ainda pendentes.
 
-### Session budget
+## Objetivo
 
-- Hard session limit: 20 minutes measured by real wall-clock time, not by perceived amount of work.
-- At 15 minutes, stop opening new work and stabilize the current change.
-- At 18 minutes, freeze code and switch only to validation, checkpoint and handoff.
-- Never spend the end of a session waiting for a long CI/build.
-- If a remote job is still running at freeze, record its run ID and exact expected next action.
-- Inspect unfinished remote jobs at the start of the next session instead of duplicating them.
-- Prefer a smaller completed subgate over starting another responsibility that cannot finish inside the session.
+Consolidar policy/runtime/telemetry sem criar novo God Object e reduzir dívida existente do core.
 
-### Branch and PR policy
+## Dependências
 
-- Use one long-lived standalone integration branch until final cutover.
-- Do not create one branch per phase, subphase, review or fix.
-- Do not create validation PRs for intermediate phases.
-- Create a PR only for final cutover unless the user explicitly requests another PR.
-- Preserve progress with normal Git commits, not with extra branches or PRs.
-- While developing, create small local/detached commits as needed and advance the integration branch only when a coherent subgate is stable.
-- Never force-push or rewrite shared history unless explicitly required and verified safe.
-- If concurrent work moved the branch, inspect ancestry and tree differences first.
-- Rebase or cherry-pick only the missing work after that inspection; never blindly overwrite the branch.
+Fase 05.
 
-### Git checkpoint discipline
+## Fora de escopo
 
-- Commit before risky refactoring or destructive changes.
-- Prefer several small logical commits over one large commit.
-- Do not push every small commit when a push triggers CI.
-- Accumulate a stable logical batch, then advance the integration branch once.
-- Documentation-only closure commits must not trigger expensive validation.
-- Git is the primary recovery mechanism; the ZIP is an external checkpoint, not a replacement for versioned state.
-- At session end, record the integration branch, validated code commit, current branch head, outstanding WIP commits and exact next action.
+- Mudar policy por conveniência
+- Otimizar GPU
 
-### Tool-call economy
+## Implementação
 
-- Batch independent repository reads into one orchestration call whenever possible.
-- Prefer one call that reads several related files over repeated single-file calls.
-- Prefer one search containing several related queries over sequential searches.
-- After the first audit, fetch only changed or directly relevant files; do not repeatedly reread unchanged files.
-- Reuse commit SHAs, tree SHAs, blob SHAs, file contents, refs and workflow IDs already obtained during the session.
-- Do not ask the same repository-state question twice unless the underlying ref changed.
-- Use compare/diff once per stable batch instead of repeatedly comparing after every commit.
-- When inspecting a large file, request only the needed ranges after the first structural scan.
-- Use one orchestration call for related independent GitHub reads in parallel whenever possible.
-- Prefer one read batch, one write batch and one final verification batch for a normal subgate.
-- Avoid low-value status calls whose result cannot change the next action.
-- A normal coding session should need only a few connector round-trips; exceed that only for an actual blocker.
+- [x] Definir FramePacket/FrameResult mínimos.
+- [x] Resolver scale/precision/placement/scheduler em uma transação.
+- [x] Integrar work identity/timing retirement.
+- [x] Remover OptiScalerAdapter e getters repetidos do call graph standalone.
+- [x] Separar RuntimeConfig de state mutável.
+- [x] Preservar stale timing/generation/reconfigure quarantine.
+- [x] `NrSession` orquestra; helpers permanecem focados.
+- [x] Antes de mudanças substanciais, decompor `FusionRuntime.hpp` (>300) em contratos/facades pequenos.
+- [ ] Se `PerformanceController.cpp` for evoluído, separar estimativa/cost learning da state machine de escala.
+- [ ] `ProfileStore.cpp` só é tocado após separar codec/validation de persistence, se ainda fizer parte do standalone.
 
-### Build and validation discipline
+## Revisão obrigatória
 
-- Never use full Windows CI as the inner development loop.
-- First use structural checks, focused unit tests and targeted compilation.
-- Keep focused validation targets isolated from large libraries when they can compile only the production units they actually exercise.
-- Do not use Windows validation as an intermediate development gate.
-- Do not ask the user to run Windows tests or builds during implementation.
-- Develop and review with the available environment: static analysis, portable compilation, fakes and focused non-Windows tests.
-- Windows build/integration/installer validation is deferred to the final cutover unless the user explicitly requests it earlier.
-- Portable CI may run on master code pushes; docs-only master pushes are ignored.
-- Do not repeatedly rebuild an unchanged dependency graph merely to validate a small boundary.
-- If an expensive workflow exceeds the session cap, record its run ID and stop instead of waiting.
-- Keep CI concurrency/cancellation enabled so obsolete runs do not consume runners.
+- [x] Old vs new call graph.
+- [x] Standalone NrSession não possui lock; locks do adapter ficaram confinados ao legado.
+- [x] Nenhum state standalone tem dois owners.
+- [x] Header contém contrato, não implementação escondida.
+- [x] Split não duplica policy.
 
-### CI polling discipline
+## Validação rápida
 
-- Never continuously poll a workflow.
-- After triggering CI, continue useful local/static work only if it does not modify the validated batch.
-- Check CI at most once after enough time has passed for the relevant fast job to finish, once near session freeze, and immediately after a reported failure.
-- Before relaunching a failed or interrupted heavy job, inspect its existing status/logs and fix or explain the cause first.
-- Do not start another equivalent workflow while the previous relevant run is still active.
+- [ ] Fake executor: teste de 1.000.000 frames implementado; execução portátil pendente.
+- [ ] Differential decisions.
+- [ ] Timing/reset/overload/config changes.
+- [x] LOC checker estrutural: todos os arquivos first-party tocados <=300.
 
-## Source size
+## Gate
 
-- Immediate rule: every new or substantively modified first-party handwritten code file for standalone work must be <=300 physical lines after formatting.
-- Blank lines and comments count. The rule is intentionally mechanical.
-- Soft limit: at ~250 lines, stop adding responsibility and split before reaching 300.
-- Applies to production code, headers, CUDA, shaders, tests, harnesses, tools, scripts, CMake/build logic and installer code.
-- Transition-only grandfathering: existing >300-line first-party files may remain read-only/no-growth until their owning phase splits or retires them.
-- Final cutover requires zero first-party handwritten code files above 300 lines.
-- Generated-file exemption is valid only when the file is reproducibly produced from tracked inputs, lives under a generated directory, is marked generated, and is not manually edited. The checker verifies location/marker; review verifies reproducibility.
-- Vendored/third-party code and upstream fixtures are exempt only while unmodified. Local handwritten modifications count as first-party code.
-- Do not evade the cap with minification, multiple statements per line, giant embedded code strings, generated-style .inc dumps, or by moving implementation into headers.
-- Split by responsibility/lifetime/ownership, never arbitrary Part1/Part2 chunks or one God class spread across partial files.
-- The 300-line rule must not create runtime cost: do not add virtual dispatch, heap/PImpl, shared ownership, locks, atomics, or indirect calls solely to split files.
-- Splitting hot code across translation units can change inlining/optimization. Measure before/after when the split touches a measured hot path; preserve small inline helpers only when justified.
+- [ ] 0 heap allocations steady.
+- [x] Menos locks/calls: standalone remove singleton/mutex/getters do adapter.
+- [ ] Mesmas decisões equivalentes.
+- [x] Core tocado <=300 linhas por arquivo.
 
-## Comments
+## Próxima fase
 
-- Prefer clearer names or extracted functions over comments.
-- Comment only why something non-obvious is necessary, never restate what the code does.
-- No narrative architecture headers, decorative arrows, or comments longer than 120 characters.
+Fase 07.
 
-## Current session
 
-Start: 2026-09-22 00:41 BRT
-Branch: standalone/integration
-Base/default branch: master
-Phase 06: IN PROGRESS; subgates 06a-06e implemented.
+## Subgate 06a — contrato e configuração
 
-Completed this session:
-- found and removed a steady-path vector allocation from CheaperPrecision
-- added 1,000,000-frame fake-executor allocation stress target
-- removed OptiScalerAdapter.cpp from nrfusion_core
-- preserved adapter source only for legacy controller tests and OptiScaler patcher
-- completed old-vs-new call graph, ownership and lock-boundary review
-- standalone NrSession path has zero adapter singleton/mutex/getter dependency
-- structural LOC gate passes for every touched first-party file
+- `NrSessionFramePacket` reúne game/frame/telemetry/capabilities e parâmetros de policy sem heap.
+- `NrSessionFrameResult` devolve disposition + `AutoDecision` + gerações.
+- `RuntimeConfig` permanece configuração; `NrSessionState` concentra state mutável.
+- frame cuja `configurationGeneration` não coincide é rejeitado antes de `ResolveAuto`.
+- reconfigure com generation antiga é rejeitado; generation nova abre novo runtime epoch.
+- `BeginConfigurationEpoch` invalida state adaptativo antigo e avança a generation de precision.
+- decisão válida é diferencialmente comparada com um `FusionRuntime` independente no teste portátil.
+- `FusionRuntime.hpp` deixa de possuir helpers/identity de Auto; eles passam ao contrato focado
+  `AutoDecision.hpp`, mantendo funções inline e sem custo de chamada adicional.
+- o overlap calibrado, que é timing/diagnóstico e não policy central, foi movido para
+  `FusionRuntimeTiming.cpp`; o header volta a ficar abaixo do limite estrutural.
 
-Validation limitation:
-- local C++ toolchain exists, but repository source cannot be materialized through shell/codeload
-- GitHub connector has no workflow-dispatch action
-- stress/differential targets are versioned but not claimed PASS
-- no Windows build/test was requested or used
+Próximo subgate: 06b — work identity/timing retirement com storage fixo e fake executor, removendo
+o caminho por-frame de `OptiScalerAdapter` sem introduzir locks ou allocations steady.
 
-Validated structural code head: b98309b9e1c81a58293c3fae918ca99eb9859db3
-Branch vs master at verification: +54 / -0
-Open PRs: 0
 
-06e result:
-- RuntimeConfig generation protects PerformanceConfig identity too
-- Configure is transactional for invalid PerformanceConfig and generation exhaustion
-- focused NrSession tests link a portable production-source slice instead of nrfusion_core
-- differential regression spans 180 adaptive decisions
-- removed duplicate WorkLedger/TimingWorkMapper ownership from FusionRuntime
-- removed unused duplicate TelemetryTracker/PipelinedExecutorState from FusionRuntime
-- removed potentially-throwing PerformanceConfig reset from NrSession::Reset noexcept
+## Subgate 06b — work/timing fixos
 
-Outstanding Phase 06 runtime gates:
-- execute nrfusion_nr_session_tests
-- execute nrfusion_nr_session_stress_tests
-- close differential/timing/reset/overload/config-change gates
-- prove 0 steady-state allocations during the measured million-frame interval
+`NrSessionWorkTracker` substitui o caminho dinâmico dentro da nova sessão:
+- 64 work tickets fixos;
+- ticket exato, begin/submit/complete/abandon;
+- IDs não são reutilizados;
+- reconfigure troca session namespace e limpa outstanding work.
 
-Exact next action:
-- run only the isolated nrfusion_nr_session_tests and nrfusion_nr_session_stress_tests targets
-- fix only an actually measured failure/allocation
-- when both pass, close Phase 06 and proceed to Phase 07
+`NrSessionTimingQueue` usa ring fixo de 16 entradas:
+- overflow desloca o work mais antigo e o abandona;
+- invalid timing ocupa sua posição para não completar o próximo work por engano;
+- reconfigure limpa o ring;
+- timing só treina custo quando ticket/session/config generation ainda pertencem à configuração atual.
+
+Nenhum `unordered_map`, `vector`, lock ou heap foi introduzido na nova work/timing boundary.
+
+
+### 06b adversarial correction
+
+O primeiro draft capturava `runtimeGeneration` antes de `ResolveAuto`. Isso era incorreto porque
+`ResolveAuto` pode abrir nova generation ao mudar estrutura/precision. Corrigido:
+- `FrameResult.runtimeGeneration` é capturada depois da decisão;
+- `WorkTicket.configurationGeneration` carrega a runtime execution generation;
+- submit/map/retire validam contra a generation atual;
+- timing de work anterior a resize/precision/scheduler epoch é completado/descartado sem treinar custo;
+- exhaustion do namespace de session deixa `Begin` fail-closed.
+
+
+- exhaustion de `session_` é terminal: namespace 0 permanece inválido e nunca recicla para 1.
+
+
+## Subgate 06c — steady-state allocation stress
+
+A auditoria do hot path encontrou uma allocation evitável: `CheaperPrecision()` chamava
+`SupportedPrecisions()`, que materializa um `std::vector`. Como `ResolveAuto()` consulta
+`CheaperPrecision()` no steady path, isso podia alocar por frame.
+
+Correção:
+- `CheaperPrecision()` agora resolve diretamente a única transição válida FP8 -> HybridNvfp4;
+- `SupportedPrecisions()` permanece inalterado para enumeração/menu fora do hot path;
+- sem mudança de policy ou resultado.
+
+Regressão portátil adicionada:
+- 512 frames de warmup;
+- 1.000.000 frames medidos;
+- fake executor percorre Resolve -> Begin -> Submit -> MapTiming -> Retire;
+- `operator new/new[]` do executável contam allocations somente na janela medida;
+- gate: exatamente 0 heap allocations no milhão de frames.
+
+
+### Estado de validação 06c
+
+O teste de stress está versionado, mas **não foi executado nesta sessão**:
+- o ambiente local possui C++ compiler/CMake, porém não possui checkout do repositório;
+- o conector GitHub disponível não expõe workflow dispatch;
+- nenhum Windows gate foi usado.
+
+Portanto o gate de 0 allocations permanece aberto até a execução efetiva do target
+`nrfusion_nr_session_stress_tests`.
+
+
+## Subgate 06d — retirada do OptiScalerAdapter do standalone
+
+Auditoria do call graph confirmou que `OptiScalerAdapter` não é consumido por nenhum source standalone:
+os usos restantes são o próprio adapter, o patcher legado e `controller_tests.cpp`.
+
+Mudança:
+- `src/OptiScalerAdapter.cpp` saiu de `nrfusion_core`;
+- o source é compilado somente em `nrfusion_tests`, que preserva as regressões legadas;
+- header/source continuam versionados para o patcher OptiScaler legado;
+- nenhum source de `NrSession`, RuntimeShell, executor ou provider referencia o adapter.
+
+Call graph antigo:
+`patched OptiScaler -> OptiScalerAdapter singleton/mutex -> FusionRuntime -> policies/work/timing`.
+
+Call graph standalone:
+`carrier/provider -> FrameContract/NrSessionFramePacket -> NrSession -> FusionRuntime policy + fixed work/timing`.
+
+Consequências estruturais:
+- singleton do adapter fora do core standalone;
+- mutex do adapter fora do frame path standalone;
+- `LastDecision`, `LastAutoDecision` e `FusionRuntimeEngine` não participam do novo fluxo;
+- policy continua única em `FusionRuntime`; `NrSession` apenas orquestra e possui state de transação.
+
+
+## Checkpoint 06d
+
+Verificação estrutural no head `b98309b9e1c81a58293c3fae918ca99eb9859db3`:
+- `nrfusion_core` não contém `OptiScalerAdapter.cpp`;
+- `nrfusion_tests` compila o adapter explicitamente para manter regressões legadas;
+- `NrSession` não contém mutex/scoped_lock;
+- `NrSessionWorkState` não contém vector/deque/unordered_map;
+- arquivos tocados: core CMake 109, tests CMake 37, NrSession.hpp 43,
+  NrSession.cpp 123, work header 71, work source 121;
+- branch +54/-0 contra master; PR aberto 0.
+
+Gates ainda abertos por execução, não por implementação:
+- differential decision test;
+- timing/reset/overload/config-change tests;
+- fake executor de 1.000.000 frames;
+- prova runtime de 0 allocations steady.
+
+
+## Subgate 06e — config identity + portable validation slice
+
+A configuração da sessão agora considera `RuntimeConfig` **e** `PerformanceConfig` na mesma generation.
+Uma tentativa de mudar performance mantendo a generation antiga falha fechada em vez de ser ignorada.
+
+O CMake ganhou `nrfusion_nr_session_portable`, composto apenas pelas production units portáteis
+necessárias ao `FusionRuntime/NrSession`. Os dois testes de sessão deixam de linkar `nrfusion_core`,
+portanto não puxam CUDA, hosts, carriers Windows, codecs D3D12 ou OptiScalerAdapter.
+
+O teste diferencial foi ampliado de um frame para 180 decisões adaptativas consecutivas, comparando
+`NrSession` e um `FusionRuntime` independente inclusive durante mudança de pressão GPU.
+
+
+### 06e adversarial correction — transactional Configure
+
+`NrSession::Configure()` agora preflighta exhaustion da runtime generation e valida
+`PerformanceConfig` antes de invalidar work/timing da configuração corrente.
+
+Se `PerformanceController` rejeita o novo config (por exemplo, nenhum scale step finito):
+- `Configure` retorna false;
+- RuntimeConfig anterior permanece;
+- work/timing anteriores não são resetados;
+- a sessão anterior continua resolvendo frames válidos.
+
+Isso remove um partial-reconfigure path sem adicionar custo ao steady frame path.
+
+
+### 06e ownership cleanup
+
+`FusionRuntime` ainda carregava `WorkLedger` e `TimingWorkMapper` legados mesmo depois de
+`NrSession` assumir work/timing fixos. O adapter legado já possui trackers próprios e nenhum callsite
+usa `FusionRuntime::Works()/TimingMap()`.
+
+Removidos do runtime central:
+- os dois getters;
+- os dois members;
+- includes correspondentes.
+
+Efeito: um único owner de work/timing no standalone e remoção da allocation de construção do
+`TimingWorkMapper{16}` que era inútil em cada `NrSession`.
+
+
+### 06e runtime-state cleanup
+
+A busca de consumidores confirmou que `FusionRuntime::Telemetry()/Pipeline()` não eram usados.
+O adapter legado já possui `TelemetryTracker` e `PipelinedExecutorState` próprios, enquanto
+`NrSession` recebe `TelemetrySample` explícito e não usa pipeline state interno.
+
+Removidos do `FusionRuntime`:
+- `TelemetryTracker telemetry_` + getters;
+- `PipelinedExecutorState pipeline_{2}` + getters.
+
+Isso remove mais um vector allocation da construção da sessão e reduz state duplicado sem alterar
+`ResolveAuto`, scheduler, precision, cost learning ou contratos de frame.
+
+
+### 06e noexcept reset correction
+
+`NrSession::Reset() noexcept` não reconstrói mais o snapshot privado de `PerformanceConfig`.
+Esse tipo contém `std::vector`; atribuir um default temporário dentro de `noexcept` poderia alocar
+e terminar o processo em falha de heap.
+
+O snapshot é irrelevante enquanto a sessão está desconfigurada e é sobrescrito no próximo
+`Configure`. Preservar o storage também favorece reutilização de capacidade no cold reconfigure.
