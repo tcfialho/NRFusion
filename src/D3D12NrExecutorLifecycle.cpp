@@ -48,6 +48,8 @@ bool D3D12NrExecutor::EnsureFeature(ID3D12GraphicsCommandList* cmdList, uint32_t
         }
         submissionGate_.Reset();
         featureTuningValid_ = false;
+        residualHistoryPrimed_ = false;
+        residualStoreValid_ = false;
     }
 
     feature_ = create_(snippetPath_.c_str(), L"", device, cmdList, capabilityParams_, width, height,

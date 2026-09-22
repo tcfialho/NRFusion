@@ -106,38 +106,33 @@
 
 ## Current session
 
-Start: 2026-09-21 22:37 BRT
+Start: 2026-09-21 23:20 BRT
 Branch: standalone/phase-05-d3d12-executor-20260921
 Base: master 548349b740e6fdfec7b0a9f6dacc17ebcdf9b160
-Phase 05: OPEN; meticulous review in progress; Windows validation deferred to final cutover.
+Phase 05: COMPLETE IN CODE + STRUCTURAL REVIEW. Windows validation remains final-cutover-only.
 
-Completed this session:
-- removed intermediate Windows validation as a development gate
-- confirmed no user-run testing is required during implementation
-- fixed feature identity so tuning changes rebuild the NR feature
-- added codec RAII teardown
-- pinned codegen to the exact upstream fxc.exe Git blob
-- made executor/scratch/guide owners non-copyable and non-movable
-- cleared unloaded forwarder exports during shutdown
-- split motion-vector dimensions from motion-vector scale in evaluate ABI
-- made loader transactional and tracked borrowed vs owned driver modules
-- reject invalid retirement kinds without transferring ownership
-- reject codec dispatch to undersized target
-- retirement queue portable compile/test with C++20 warnings-as-errors: PASS
-- fixed upstream bootstrap so the OptiScaler checkout follows upstreams.lock.json instead of main
+Completed:
+- locked main + residual shader codegen integrated into nrfusion_core
+- canonical ExecuteFrame snapshot boundary, no Config/State dependency
+- create/pending gate occurs before any frame mutation
+- encode/downsample/evaluate/resolve wired to explicit owners/states
+- up to 30 NGX passes with independent feature/tuning/reset/submission epoch
+- HDR/passthrough + explicit game exposure path
+- residual-across-RR v2 with separate PSO, temporal history and same-epoch post seam
+- pre/post SR/RR placement through explicit snapshot
+- caller resource states restored on the new frame path
+- reset/resize/rebuild invalidate residual history
+- frame path split by responsibility; zero touched handwritten file >300 lines
+- retirement queue focused portable C++20 warnings-as-errors test: PASS
 - no PR opened and no Windows build/test requested or triggered
 
-Current head before final stabilization docs: 5a8fd44b306a95d836c24742468c3305b0aed687
+Current code head before closure commit: 7c2d78f28d0b4449c3a8d655e784c7394806ce86
 
-Outstanding Phase 05:
-- 04c wire frame plan + scratch/guide owners + D3D12NrCodec into encode/downsample/evaluate/resolve
-- solve explicit caller state restoration/barrier guarantees for 04c
-- 05 multipass/history and per-pass submission epochs
-- 06 HDR/exposure/residual behavior
-- 07 pre/post SR/RR seams + complete operational snapshot + final adversarial review
-- host teardown must eventually satisfy D3D12NrExecutor::Shutdown GPU-idle contract without growing the grandfathered HostServer64 monolith
+Phase 05 caveat:
+- Windows/D3D12 runtime validation is intentionally deferred to final cutover.
+- HostServer64 remains a legacy consumer of the compatibility API; installing the canonical seam into
+  final carriers belongs to later carrier/cutover phases, not Phase 05 executor extraction.
 
 Exact next action:
-- continue 04c using static/portable/fake validation only
-- first extract a portable frame-state transition plan so encode/resolve wiring can be verified without D3D12 runtime
-- Windows build/integration/installer validation remains final-cutover-only
+- begin Phase 06 from the completed canonical executor boundary
+- keep Windows integration/build/installer validation for final cutover

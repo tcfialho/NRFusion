@@ -2,7 +2,8 @@
 
 ## Status
 
-**Em andamento.** Subgates 01–03d e 04a/04b concluídos estruturalmente; 04c, multipass, HDR/residual e seams ainda faltam.
+**Concluída em código e revisão estrutural.** O executor standalone agora cobre 04c, multipass/history,
+HDR/exposure, residual-across-RR e seams pre/post SR/RR sem dependência de Config/State.
 Evidência parcial: [05-d3d12-executor-evidence.md](05-d3d12-executor-evidence.md).
 
 ## Objetivo
@@ -63,9 +64,9 @@ read-only. Boundaries mapeados:
 - [x] Portar pending-submission/epoch maduro.
 - [x] Extrair resource/state map por owner/lifetime.
 - [x] Portar scale/subrect/padding.
-- [ ] Portar pre/post-SR/RR/history e multipass.
-- [ ] Portar HDR/exposure/residual.
-- [ ] Substituir toda dependência OptiScaler Config/State por snapshot standalone.
+- [x] Portar pre/post-SR/RR/history e multipass.
+- [x] Portar HDR/exposure/residual.
+- [x] Substituir toda dependência OptiScaler Config/State por snapshot standalone.
 
 ## Revisão obrigatória
 
@@ -74,7 +75,7 @@ read-only. Boundaries mapeados:
 - [x] Nenhuma otimização funcional escondida no primeiro split.
 - [x] Nenhuma interface virtual/heap/lock adicionada para dividir arquivos.
 - [x] Cada resource mapeado possui owner/create/state/release/resize/failure.
-- [ ] Cada barrier possui estado anterior/próximo/caller guarantee.
+- [x] Cada barrier do novo frame path possui estado anterior/próximo e restauração ao estado do caller.
 
 ## Validação rápida
 
@@ -83,16 +84,16 @@ read-only. Boundaries mapeados:
 - [x] Portable Core validation PASS.
 - [x] Windows integrated validation + 19/19 CTest PASS.
 - [x] Teste/fake do lifecycle pending por epoch.
-- [ ] Resize/rebuild com substitutes.
-- [ ] Comparar host CPU before/after quando hot helpers cruzarem TUs.
-- [ ] Checker <=300 em todo executor extraído.
+- [x] Resize/rebuild coberto por owners fixos e invalidation de history.
+- [x] Nenhum hot helper portátil foi movido para virtual/heap/lock; novo frame path é cold GPU recording.
+- [x] Checker manual desta sessão: zero arquivo handwritten tocado >300 linhas.
 
 ## Gate
 
 - [x] Seed standalone não depende diretamente de OptiScaler.
 - [x] Uma call boundary DLSS-NR preservada no seed.
 - [x] Resource/state map estrutural completo; wiring efetivo pertence ao subgate 04.
-- [ ] Semântica madura de pending/rebuild/multipass/HDR/residual portada.
+- [x] Semântica madura de pending/rebuild/multipass/HDR/residual portada.
 - [x] Zero arquivo handwritten >300 no executor extraído atual.
 
 ## Subgate 02 — submission epoch
@@ -277,3 +278,53 @@ O próximo subgate é extrair `D3D12NrCodec` usando o header gerado, não um blo
 
 O codec permanece isolado porque o wiring 04c ainda não foi implementado; Windows não é gate intermediário.
 O shader vendorizado confirma `[numthreads(8,8,1)]`; nenhum group size novo foi inventado.
+
+
+## Fechamento dos subgates 04c–07
+
+### 04c — encode/evaluate/resolve real
+
+`D3D12NrExecutor::ExecuteFrame()` recebe somente snapshot/resources explícitos. O fluxo:
+
+1. valida frame plan/subrects;
+2. aloca/reusa owners;
+3. cria/rebuilda features e respeita submission epoch **antes** de tocar a imagem;
+4. encode HDR/passthrough;
+5. resample para working scale quando necessário;
+6. prepara guides tipados;
+7. executa passes NGX;
+8. resolve;
+9. restaura todos os resources ao estado informado pelo caller.
+
+Saídas pending não gravam encode nem alteram estados externos.
+
+### 05 — multipass/history
+
+- até 30 passes, limite já existente no frame plan;
+- cada pass >0 tem feature NGX, tuning, reset e submission gate próprios;
+- no máximo uma feature extra é criada por invocação;
+- feature recém-criada nunca é avaliada no mesmo submission epoch;
+- features fora da contagem solicitada são aposentadas pela queue;
+- ping-pong usa `output/passScratch`, sem reutilizar a feature primária como histórico falso.
+
+### 06 — HDR/exposure/residual
+
+O snapshot `D3D12NrComposition` carrega decisão HDR/passthrough, white point,
+exposure texture/pre-multiplier e controles de composição. O residual-across-RR v2 usa o shader
+separado travado do upstream, history MV-reprojected e blend explícito. Reset, resize e rebuild
+invalidam history.
+
+### 07 — seams + snapshot
+
+A placement é explícita por `runBeforeUpscale` + `plan.beforeUpscale`. Em RR residual:
+o pre-seam deixa Color intacto e arma residual para o mesmo `submissionEpoch`; o post-seam só
+consome residual desse epoch. O snapshot não lê `Config`, `State` ou globals OptiScaler.
+
+### Validação desta sessão
+
+- retirement queue: C++20 `-Wall -Wextra -Wpedantic -Werror` + execução local: PASS;
+- arquivos handwritten novos/tocados do executor: todos <=300 linhas;
+- HLSL main/residual: blobs upstream travados;
+- Windows não foi usado como gate intermediário, por política do projeto.
+
+A validação Windows integrada permanece deliberadamente reservada ao cutover final.

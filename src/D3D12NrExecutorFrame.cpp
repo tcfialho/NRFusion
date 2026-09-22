@@ -49,6 +49,10 @@ D3D12NrFrameResult D3D12NrExecutor::ExecuteMainFrame(
     D3D12NrScratchDesc scratchDesc{
         targetDesc.Format, context.plan.activeColor.width, context.plan.activeColor.height,
         context.plan.work.width, context.plan.work.height};
+    if (request.reset || !scratch_.Matches(scratchDesc)) {
+        residualHistoryPrimed_ = false;
+        residualStoreValid_ = false;
+    }
     bool ok = codec_.Init(device) && scratch_.Ensure(device, scratchDesc, retirement_);
     if (context.plan.requestedPasses > 1)
         ok = ok && scratch_.EnsureOptional(

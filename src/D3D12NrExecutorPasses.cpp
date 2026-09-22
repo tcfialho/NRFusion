@@ -30,17 +30,7 @@ std::uint32_t D3D12NrExecutor::PreparePassFeatures(
     pending = false;
     if (cmdList == nullptr || requested == 0 || requested > kD3D12NrMaxPassCount) return 0;
 
-    for (std::uint32_t pass = requested; pass < kD3D12NrMaxPassCount; ++pass) {
-        if (passFeatures_[pass] != nullptr) {
-            void* feature = passFeatures_[pass];
-            if (!retirement_.Park(feature, NrRetiredObjectKind::Feature)) return 0;
-            passFeatures_[pass] = nullptr;
-        }
-        passGates_[pass].Reset();
-        passTuningValid_[pass] = false;
-        passNeedsReset_[pass] = false;
-        passCreateFailed_[pass] = false;
-    }
+    if (!RetirePassFeatures(requested)) return 0;
 
     for (std::uint32_t pass = 1; pass < requested; ++pass) {
         if (passFeatures_[pass] != nullptr &&

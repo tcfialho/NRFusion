@@ -558,3 +558,28 @@ generator validar um blob fixo.
 
 O bootstrap agora lê o lock, faz checkout detached do commit travado e confirma `rev-parse HEAD`.
 Os upstreams sem lock continuam usando `pull --ff-only`.
+
+
+## Fechamento Phase 05 — revisão estrutural final
+
+Implementados:
+- `ExecuteFrame` com snapshot standalone;
+- ordering anti-hang: feature create/pending antes de encode/transitions;
+- multipass com feature e epoch independentes por layer;
+- encode/resolve e working-scale fallback no codec travado;
+- HDR/passthrough e exposure texture explícitos;
+- residual-across-RR v2 com PSO separado e history reprojected por motion;
+- seams pre/post com pareamento pelo mesmo submission epoch;
+- restauração de target/depth/motion/exposure e scratch states;
+- reset/resize/rebuild invalidam residual history.
+
+Split first-party final do frame path:
+- `D3D12NrExecutorFrame.cpp`: 116 linhas;
+- `D3D12NrExecutorFramePrepare.cpp`: 218;
+- `D3D12NrExecutorFrameModel.cpp`: 274;
+- `D3D12NrExecutorResidual.cpp`: 89;
+- `D3D12NrExecutorPasses.cpp`: 81 após consolidação;
+- executor header: 275 linhas.
+
+Não foi feita alegação de Windows PASS nesta fase final. O código será validado no Windows apenas no
+cutover global, conforme instrução operacional.
