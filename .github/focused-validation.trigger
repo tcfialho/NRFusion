@@ -1,3 +1,3 @@
-phase07-checkpoint-20260922
+phase07-checkpoint-rerun-20260922
 base=6fcdec5f53244d6912837f37f8b60c969d173425
-request=validate-phase06-and-package-source-checkpoint
+request=validate-and-package-source-checkpoint
