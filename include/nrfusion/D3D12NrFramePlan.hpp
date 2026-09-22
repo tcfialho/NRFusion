@@ -35,6 +35,9 @@ struct D3D12NrFramePlanInput {
 
 struct D3D12NrFramePlan {
     Resolution work{};
+    D3D12NrSubrect activeColor{};
+    D3D12NrSubrect depth{};
+    D3D12NrSubrect motion{};
     float workingScale = 1.0f;
     float motionToWorkX = 1.0f;
     float motionToWorkY = 1.0f;

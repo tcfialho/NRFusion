@@ -68,6 +68,8 @@ int main() {
     in = Base();
     in.motion = {17, 9, 1280, 720};
     assert(BuildD3D12NrFramePlan(in, plan));
+    assert(plan.motion.x == 17 && plan.motion.y == 9);
+    assert(plan.motion.width == 1280 && plan.motion.height == 720);
 
     in.activeColor.width = 0;
     assert(!BuildD3D12NrFramePlan(in, plan));

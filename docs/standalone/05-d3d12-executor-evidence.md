@@ -295,3 +295,8 @@ Nenhum full build foi disparado; este patch requer o próximo Windows fast junto
 O primeiro registro do teste usava `nrfusion_test()`, que linka `nrfusion_core` e faria um target
 focado depender do core inteiro. Foi corrigido: `nrfusion_d3d12_nr_frame_plan_tests` agora compila
 somente `D3D12NrFramePlan.cpp` + o teste, com warnings-as-errors no target.
+
+
+Frame-plan review: os subrects validados de color/depth/motion agora são preservados no resultado do
+plan, evitando que offsets já validados sejam perdidos/recalculados downstream. Regressão isolada:
+PASS com `-Wall -Wextra -Wpedantic -Werror`.

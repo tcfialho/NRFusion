@@ -49,6 +49,9 @@ bool BuildD3D12NrFramePlan(const D3D12NrFramePlanInput& input,
     const std::uint32_t configured = std::clamp(input.execution.passes, 1u, passLimit);
 
     output.work = work;
+    output.activeColor = input.activeColor;
+    output.depth = input.depth;
+    output.motion = input.motion;
     output.workingScale = scale;
     output.requestedPasses = input.execution.proxyBackend ? 1u : configured;
     output.reduced = work.width != input.activeColor.width || work.height != input.activeColor.height;
