@@ -5,10 +5,11 @@
 namespace nrfusion {
 namespace {
 
-bool ValidTexture(const D3D12NativeTextureFacts& texture) noexcept {
+bool ValidTexture(
+    const D3D12NativeTextureFacts& texture, bool requireFormat) noexcept {
     return texture.opaqueId != 0 && texture.texture2D &&
            texture.resolution.Valid() &&
-           texture.format != ResourceFormat::Unknown &&
+           (!requireFormat || texture.format != ResourceFormat::Unknown) &&
            texture.depthOrArraySize == 1 &&
            texture.mipLevels == 1 &&
            texture.sampleCount == 1;
@@ -40,7 +41,7 @@ D3D12NativeAcquireFailure ValidateCapture(
     if (capture.texture.opaqueId == 0)
         return required ? D3D12NativeAcquireFailure::MissingColor
                         : D3D12NativeAcquireFailure::None;
-    if (!ValidTexture(capture.texture))
+    if (!ValidTexture(capture.texture, true))
         return D3D12NativeAcquireFailure::InvalidTexture;
     if (!HasEvidence(capture))
         return D3D12NativeAcquireFailure::InvalidEvidence;
@@ -62,7 +63,7 @@ D3D12NativeAcquireResult BuildD3D12NativeAcquireSnapshot(
         result.failure = D3D12NativeAcquireFailure::MissingOutput;
         return result;
     }
-    if (!ValidTexture(input.output)) {
+    if (!ValidTexture(input.output, false)) {
         result.failure = D3D12NativeAcquireFailure::InvalidTexture;
         return result;
     }
