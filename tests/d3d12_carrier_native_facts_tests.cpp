@@ -57,6 +57,7 @@ int main() {
     assert(built);
     assert(built.snapshot.renderResolution == base.color.texture.resolution);
     assert(built.snapshot.outputResolution == base.output.resolution);
+    assert(built.snapshot.outputOpaqueId == base.output.opaqueId);
     assert(built.snapshot.color.acquired);
     assert(built.snapshot.color.resource.opaqueId == base.color.texture.opaqueId);
     assert(built.snapshot.color.resource.ownership == ResourceOwnership::Borrowed);
