@@ -7,7 +7,8 @@ bool D3D12NrExecutor::Evaluate(ID3D12GraphicsCommandList* cmdList, ID3D12Resourc
                                ID3D12Resource* output, uint32_t width, uint32_t height,
                                bool depthInverted, bool reset, const DlssNrTuning& tuning,
                                uint32_t guideWidth, uint32_t guideHeight,
-                               uint32_t motionWidth, uint32_t motionHeight) {
+                               uint32_t motionWidth, uint32_t motionHeight,
+                               float motionScaleX, float motionScaleY) {
     if (submissionGate_.Pending()) {
         status_ = "feature pending submission";
         return false;
@@ -28,7 +29,7 @@ bool D3D12NrExecutor::Evaluate(ID3D12GraphicsCommandList* cmdList, ID3D12Resourc
                                  0, 0, 0, 0, depthInverted ? 1 : 0, reset ? 1 : 0, tuning.intensity,
                                  tuning.style, tuning.localStructure, tuning.localTone,
                                  tuning.skinStructure, tuning.autoMask ? 1 : 0,
-                                 static_cast<float>(motionWidth), static_cast<float>(motionHeight));
+                                 motionScaleX, motionScaleY);
     status_ = result == kNgxSuccess ? "evaluated" : "dlssnr_call_evaluate_v2 failed";
     return result == kNgxSuccess;
 }
@@ -38,14 +39,16 @@ bool D3D12NrExecutor::EvaluateForEpoch(
     ID3D12Resource* motion, ID3D12Resource* output, uint32_t width, uint32_t height,
     std::uint64_t submissionEpoch, bool depthInverted, bool reset,
     const DlssNrTuning& tuning, uint32_t guideWidth, uint32_t guideHeight,
-    uint32_t motionWidth, uint32_t motionHeight) {
+    uint32_t motionWidth, uint32_t motionHeight,
+    float motionScaleX, float motionScaleY) {
     if (!submissionGate_.ReadyFor(submissionEpoch)) {
         status_ = "feature pending submission";
         return false;
     }
 
     return Evaluate(cmdList, color, depth, motion, output, width, height, depthInverted, reset,
-                    tuning, guideWidth, guideHeight, motionWidth, motionHeight);
+                    tuning, guideWidth, guideHeight, motionWidth, motionHeight,
+                    motionScaleX, motionScaleY);
 }
 
 } // namespace nrfusion

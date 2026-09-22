@@ -77,13 +77,15 @@ public:
                   ID3D12Resource* motion, ID3D12Resource* output, uint32_t width, uint32_t height,
                   bool depthInverted, bool reset, const DlssNrTuning& tuning = {},
                   uint32_t guideWidth = 0, uint32_t guideHeight = 0, uint32_t motionWidth = 0,
-                  uint32_t motionHeight = 0);
+                  uint32_t motionHeight = 0, float motionScaleX = 1.0f,
+                  float motionScaleY = 1.0f);
     bool EvaluateForEpoch(
         ID3D12GraphicsCommandList* cmdList, ID3D12Resource* color, ID3D12Resource* depth,
         ID3D12Resource* motion, ID3D12Resource* output, uint32_t width, uint32_t height,
         std::uint64_t submissionEpoch, bool depthInverted, bool reset,
         const DlssNrTuning& tuning = {}, uint32_t guideWidth = 0, uint32_t guideHeight = 0,
-        uint32_t motionWidth = 0, uint32_t motionHeight = 0);
+        uint32_t motionWidth = 0, uint32_t motionHeight = 0,
+        float motionScaleX = 1.0f, float motionScaleY = 1.0f);
 
     void Shutdown();
 

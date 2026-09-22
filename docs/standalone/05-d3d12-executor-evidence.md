@@ -522,3 +522,12 @@ Política de validação atualizada: nenhum Windows build/test intermediário se
 - estado de float-slot e snippet path também são resetados no teardown;
 - codec rejeita mode fora do enum;
 - cálculo de dispatch groups não usa mais `width + 7`, evitando overflow em input extremo.
+
+
+### ABI review: motion dimensions are not motion scale
+
+Corrigido um bug funcional no seed standalone: os dois últimos floats de
+`dlssnr_call_evaluate_v2` são `MvScaleX/MvScaleY`, mas o wrapper passava
+`motionWidth/motionHeight`. A API agora separa as dimensões da surface dos fatores de escala.
+Callsites existentes recebem default `1.0f, 1.0f` até o frame snapshot portar a escala reportada
+pelo jogo; isso evita enviar dimensões de milhares como fator de motion.
