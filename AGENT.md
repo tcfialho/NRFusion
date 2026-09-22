@@ -106,42 +106,45 @@
 
 ## Current session
 
-Start: 2026-09-22 03:33 BRT
+Start: 2026-09-22 08:32 BRT
 Branch: standalone/integration
 Base/default branch: master
-Phase 06: IN PROGRESS; subgates 06a-06f implemented and adversarially reviewed.
+Phase 06: CLOSED.
 
-Completed this session:
-- removed PrecisionAutotuner percentile-copy allocations with reserved reusable scratch
-- reserved NrCostModel rung storage from PerformanceConfig before steady execution
-- preserved the grandfathered PerformanceController.cpp byte-for-byte/no-growth
-- separated execution generation from PrecisionAutotuner generation
-- FP8/Hybrid transitions now quarantine stale work/timing
-- supported -> unsupported invalidates old execution work immediately
-- split cold FusionRuntime lifecycle methods to keep FusionRuntime.hpp <=300
-- allocation stress counts normal and over-aligned new/new[]
-- stress timing and next-frame telemetry use the same FP8/Hybrid measurements
-- measured stress configuration forces precision qualification and scale transitions
-- verified focused/core CMake both include FusionRuntimeLifecycle.cpp
+Validated code commit:
+e2697cc283a144f79109fd7faab0247d155d11c8
 
-Validated structural code head: 4b19b4273fd0da1b798b3538c16df80c33bad8aa
-Branch vs master: +69 / -0
-Open PRs: 0
-PerformanceController.cpp: grandfathered 514 lines, exact same SHA as prior checkpoint.
+Focused portable validation:
+- workflow: Focused portable validation
+- final run: 35723235377
+- configure: PASS
+- focused build: PASS
+- nrfusion_nr_session_tests: PASS
+- nrfusion_nr_session_stress_tests: PASS
+- measured stress: 1,000,000 frames, exactly 0 heap allocations
+- Windows: not used
 
-Validation still open:
-- nrfusion_nr_session_tests has not executed in this environment
-- nrfusion_nr_session_stress_tests has not executed in this environment
-- 0-allocation runtime gate is therefore not claimed PASS
-- Windows remains intentionally unused
+Measured allocation bug fixed during closure:
+- two allocations of 80 bytes each occurred in Resolve at frame 780
+- root cause: robust 5-sample windows pushed a sixth element before erasing the oldest
+- fix: erase oldest before push when full; window semantics unchanged
+- PerformanceController was split by responsibility instead of modifying a >300-line grandfathered file
 
-Execution workaround status:
-- compact connector payload -> local file reconstruction was proven on a small source batch
-- full portable closure was not materialized before session freeze
+Current source-size state for the split:
+- src/PerformanceController.cpp: 284 lines
+- src/PerformanceControllerLifecycle.cpp: 209 lines
+- src/PerformanceControllerScale.cpp: 56 lines
+- include/nrfusion/FusionRuntime.hpp: 296 lines
+- tests/nr_session_stress_tests.cpp: 227 lines
+
+Focused validation workflow:
+- .github/workflows/focused-portable.yml
+- dormant on normal pushes
+- runs only when .github/focused-validation.trigger changes
+
+Outstanding Phase 06 work: none.
 
 Exact next action:
-- continue materializing the focused portable closure in a few compact batches
-- compile with g++ -std=c++20 -Wall -Wextra -Wpedantic -Werror
-- run nrfusion_nr_session_tests and nrfusion_nr_session_stress_tests
-- fix only measured compile/test/allocation failures
-- if both pass, close Phase 06 and start Phase 07
+- read docs/standalone/07-*.md and start Phase 07 on standalone/integration
+- preserve the Phase 06 validated code commit as the baseline
+- do not open a new branch or PR

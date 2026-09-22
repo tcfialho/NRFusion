@@ -2,7 +2,7 @@
 
 ## Status
 
-**Em andamento.** Subgates 06a–06f implementados e revisados; gates de execução portátil ainda pendentes.
+**CONCLUÍDA.** Subgates 06a–06g implementados, revisados e validados no slice portátil.
 
 ## Objetivo
 
@@ -40,16 +40,16 @@ Fase 05.
 
 ## Validação rápida
 
-- [ ] Fake executor: teste de 1.000.000 frames implementado; execução portátil pendente.
-- [ ] Differential decisions.
-- [ ] Timing/reset/overload/config changes.
+- [x] Fake executor: 1.000.000 frames executados no slice portátil.
+- [x] Differential decisions.
+- [x] Timing/reset/overload/config changes.
 - [x] LOC checker estrutural: todos os arquivos first-party tocados <=300.
 
 ## Gate
 
-- [ ] 0 heap allocations steady.
+- [x] 0 heap allocations steady.
 - [x] Menos locks/calls: standalone remove singleton/mutex/getters do adapter.
-- [ ] Mesmas decisões equivalentes.
+- [x] Mesmas decisões equivalentes.
 - [x] Core tocado <=300 linhas por arquivo.
 
 ## Próxima fase
@@ -127,13 +127,8 @@ Regressão portátil adicionada:
 
 ### Estado de validação 06c
 
-O teste de stress está versionado, mas **não foi executado nesta sessão**:
-- o ambiente local possui C++ compiler/CMake, porém não possui checkout do repositório;
-- o conector GitHub disponível não expõe workflow dispatch;
-- nenhum Windows gate foi usado.
-
-Portanto o gate de 0 allocations permanece aberto até a execução efetiva do target
-`nrfusion_nr_session_stress_tests`.
+O gate inicialmente ficou pendente por ausência de checkout local. Ele foi posteriormente executado
+pelo workflow portátil focado introduzido em 06g; o estado final da fase é PASS.
 
 
 ## Subgate 06d — retirada do OptiScalerAdapter do standalone
@@ -245,14 +240,13 @@ Implementação/revisão estrutural:
 - [x] timing/reset/overload/config-change regressions versionadas;
 - [x] todos os arquivos first-party tocados <=300 linhas.
 
-Execução ainda pendente neste ambiente:
-- [ ] executar `nrfusion_nr_session_tests`;
-- [ ] executar `nrfusion_nr_session_stress_tests`;
-- [ ] confirmar 0 allocations no milhão de frames;
-- [ ] promover os testes diferenciais/versionados de "implementados" para "PASS".
+Execução portátil concluída:
+- [x] `nrfusion_nr_session_tests`;
+- [x] `nrfusion_nr_session_stress_tests`;
+- [x] 0 allocations no milhão de frames;
+- [x] regressões diferenciais/timing/reset/overload/config-change em PASS.
 
-O container possui compiladores e CMake, mas DNS para github.com continua indisponível e o conector
-GitHub não expõe workflow dispatch. Nenhum Windows gate foi usado.
+Nenhum Windows gate foi usado.
 
 
 ### 06f — allocation hardening beyond steady plateau
@@ -361,6 +355,73 @@ Verificação final:
 - normal/aligned allocations instrumentadas;
 - stress força Hybrid qualification e scale transitions.
 
-A tentativa de reconstruir o source local via payload compactado do connector foi comprovada em
-um pequeno lote, mas não foi concluída antes do freeze da sessão. Portanto os dois targets continuam
-versionados, porém não marcados como PASS.
+A tentativa de reconstrução local por payload foi substituída pelo workflow portátil focado descrito
+em 06g; os dois targets foram executados e passaram.
+
+
+## Subgate 06g — fechamento por execução portátil
+
+Foi adicionado um workflow focado dormant por padrão:
+`.github/workflows/focused-portable.yml`.
+
+Ele dispara somente quando `.github/focused-validation.trigger` muda e, portanto, não adiciona
+custo aos pushes normais. O job usa Ubuntu 24.04, configura
+`NRFUSION_FOCUSED_NR_SESSION_VALIDATION=ON`, compila somente os dois targets de NrSession e executa
+o regex focado do CTest.
+
+### Diagnóstico medido
+
+Run `35722332627`:
+- compile/link dos dois targets: PASS;
+- `nrfusion_nr_session_tests`: PASS;
+- stress: FAIL por allocations.
+
+Run `35722518049`:
+- allocation localization: 2 allocations;
+- ambas em `Resolve`;
+- primeiro frame: 780;
+- Begin/Submit/Map/Retire: 0 allocations.
+
+Run `35722745314`:
+- tamanhos: 80 B e 80 B;
+- causa identificada nos dois windows de 5 doubles do controller.
+
+`RobustNrEstimate` fazia `push_back` com o vector já cheio e só depois removia o elemento antigo.
+Com capacity 5, o sexto push fazia growth para capacity 10: exatamente 80 bytes. Isso acontecia em
+`nrRecentSamples_` e `frameRecentSamples_`.
+
+Correção:
+- quando o window está cheio, remove o elemento antigo **antes** do `push_back`;
+- capacity 5 nunca é excedida;
+- algoritmo, tamanho da janela e ordem lógica das amostras permanecem iguais.
+
+Como `PerformanceController.cpp` era um arquivo legado >300, a correção também fechou a dívida
+estrutural em vez de manter o arquivo grandfathered:
+- `PerformanceController.cpp`: 284 linhas, hot update/window logic;
+- `PerformanceControllerLifecycle.cpp`: 209 linhas;
+- `PerformanceControllerScale.cpp`: 56 linhas.
+
+As ações de scale transition foram separadas por responsabilidade; o steady `Update`,
+`CanScaleDown/Up`, EWMA, budget e robust window permanecem no mesmo TU hot.
+
+### Validação final
+
+Run `35723235377`, head `e2697cc283a144f79109fd7faab0247d155d11c8`:
+- configure focado: PASS;
+- build `nrfusion_nr_session_tests`: PASS;
+- build `nrfusion_nr_session_stress_tests`: PASS;
+- `nrfusion_nr_session_tests`: PASS;
+- `nrfusion_nr_session_stress_tests`: PASS;
+- 1.000.000 frames medidos;
+- gate de allocation exige exatamente 0 e passou;
+- sem Windows.
+
+## Fechamento da Fase 06
+
+Validated code commit: `e2697cc283a144f79109fd7faab0247d155d11c8`.
+
+Call graph standalone final:
+`carrier/provider -> FrameContract/NrSessionFramePacket -> NrSession -> FusionRuntime policy +
+fixed work/timing`.
+
+A Fase 07 pode iniciar sem pendência funcional ou estrutural da Fase 06.
