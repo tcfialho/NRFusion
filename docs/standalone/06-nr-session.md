@@ -2,7 +2,7 @@
 
 ## Status
 
-**Em andamento.** Subgate 06a conclui contrato/transação básica e decomposição inicial do runtime.
+**Em andamento.** Subgates 06a–06b concluídos: transação básica, decomposição inicial e work/timing fixos.
 
 ## Objetivo
 

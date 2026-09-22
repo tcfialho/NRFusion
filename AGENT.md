@@ -134,6 +134,8 @@ Outstanding Phase 06:
 - lock ownership review
 - final LOC/performance gate
 
+Validated code head before closure docs: 6aa5b69e940c9cc9538b8c970f599ca7eed09a52
+
 Exact next action:
 - implement 06c fake executor stress + allocation instrumentation
 - then remove OptiScalerAdapter from the standalone call graph without touching legacy patcher behavior
