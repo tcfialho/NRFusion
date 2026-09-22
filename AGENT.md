@@ -109,22 +109,28 @@
 Start: 2026-09-22 17:49 BRT
 Branch: standalone/integration
 Base/default branch: master
-Phase 06: CLOSED after final validation audit.
 
-Validated Phase 06 head:
-6fcdec5f53244d6912837f37f8b60c969d173425
-
-Final portable validation:
-- run 35783094348: PASS
-- nrfusion_nr_session_tests: PASS
-- nrfusion_nr_session_stress_tests: PASS
-- nrfusion_tests/controller_tests.cpp: PASS
-- stress: 1,000,000 frames, exactly 0 heap allocations
-- stress asserts Hybrid, scale and execution-generation transitions
+Phase 06: CLOSED without portable-validation caveat.
+- final functional run: 35783094348 -> 3/3 PASS
+- transition coverage: Hybrid + scale + execution-generation required
 - timing ring 16->17 pressure regression: PASS
-- Windows: not used
+- historical nrfusion_tests/controller_tests.cpp: PASS
+
+Phase 07: IN PROGRESS, initial audit only.
+- SyntheticDx12Provider.cpp: 596 lines, read-only
+- HostServer64.cpp: 659 lines, read-only
+- apply_to_optiscaler.py: 3900 lines, read-only
+- direct provider split would break the OptiScaler fallback source manifest
+- no D3D12 source was changed in Phase 07 yet
+
+Validated checkpoint run:
+- 35783957612 -> SUCCESS
+- 3/3 Phase 06 tests PASS
+- source checkpoint artifact uploaded
+- source ZIP head: e7c06a6555d02f010cf2b1f371b16fe4d6ab6df5
 
 Exact next action:
-- start Phase 07 on standalone/integration
-- first subgate is a mechanical ownership split of SyntheticDx12Provider.cpp before functional evolution
-- preserve public behavior and existing tests; no new branch or intermediate PR
+- define the replacement D3D12 standalone carrier ownership boundary without delegating to the 596-line monolith
+- use the 269-line synthetic_dx12_scale_gate_test as the first existing behavioral gate
+- keep legacy provider/Host64/patcher read-only until their own retirement/split path is explicit
+- no new branch or intermediate PR
