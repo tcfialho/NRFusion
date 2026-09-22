@@ -54,6 +54,7 @@ add_library(nrfusion_core STATIC
     src/NrDeferredRetirementQueue.cpp
     src/D3D12NrFramePlan.cpp
     src/D3D12CarrierContract.cpp
+    src/D3D12CarrierSession.cpp
 )
 
 if (WIN32)
