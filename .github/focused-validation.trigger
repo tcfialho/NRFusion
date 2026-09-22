@@ -1,3 +1,3 @@
-phase07-checkpoint-rerun-20260922
-base=6fcdec5f53244d6912837f37f8b60c969d173425
-request=validate-and-package-source-checkpoint
+phase07-acquire-contract-20260922
+base=d27e48c994ade64f3a405a17cba4531f7c9ad9da
+request=validate-portable-d3d12-acquire-contract
