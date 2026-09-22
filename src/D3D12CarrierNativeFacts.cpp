@@ -1,5 +1,7 @@
 #include "nrfusion/D3D12CarrierNativeFacts.hpp"
 
+#include <iterator>
+
 namespace nrfusion {
 namespace {
 
