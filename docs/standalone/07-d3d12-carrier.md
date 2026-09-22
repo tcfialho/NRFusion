@@ -2,7 +2,7 @@
 
 ## Status
 
-**EM ANDAMENTO — subgates 07a/07b concluídos; native Acquire/registry/executor ainda pendentes.**
+**EM ANDAMENTO — subgates 07a/07b/07c concluídos; executor/compose/resize ainda pendentes.**
 
 ## Objetivo
 
@@ -23,15 +23,15 @@ Fases 04–06.
 - [ ] Boundary sugerida pelo código atual: **initialization/shaders**, **slot resources**, **frame submit/extract**, **compose/poll**.
 - [x] Definir Acquire seam/lifetime de color/depth/motion/exposure.
 - [ ] Usar contrato DLSS/RR confiável ou Synthetic FrameContract honesto.
-- [ ] Integrar registry/NrSession. `NrSession` está integrado desde 07b; registry aguarda native owner real.
+- [x] Integrar registry/NrSession para Acquire/Normalize; Execute/Compose ainda não são anunciados.
 - [ ] Resize/device removal/guides ausentes.
 - [x] Disabled quase pass-through.
 - [ ] Cada arquivo <=300 linhas.
 
 ## Revisão obrigatória
 
-- [ ] Provider aceitar ResourceRef não prova Acquire.
-- [ ] Nenhum CPU pixel path.
+- [x] Provider aceitar ResourceRef não prova Acquire.
+- [x] Nenhum CPU pixel path.
 - [ ] `EnsureSlotResources` só cria em init/reconfigure/resolution change.
 - [ ] Descriptor writes/copies/locks são contabilizados.
 - [ ] Split segue resource ownership, não ordem textual.
@@ -40,7 +40,7 @@ Fases 04–06.
 
 - [ ] Testes atuais antes/depois do split.
 - [ ] Harness Acquire controlado.
-- [ ] LOC checker.
+- [x] LOC checker dos arquivos tocados em 07a–07c.
 - [ ] Jogos reais só para Acquire/model final.
 
 ## Gate
@@ -161,3 +161,84 @@ Somente depois desse owner existir:
 2. ligar work identity ao `D3D12NrExecutor`/scratch já existentes;
 3. provar resize/device removal/guides ausentes;
 4. decidir a retirada do monólito legado sem tocar prematuramente no patcher.
+
+
+## Subgate 07c — native Acquire, registry e work identity
+
+A prova nativa foi separada em duas camadas:
+
+- `D3D12CarrierNativeFacts` é portátil e valida facts de textura, evidence e lifetime;
+- `D3D12CarrierNativeAcquire` é Windows-only e recebe `ID3D12Resource*`, chama `GetDesc()`
+  e produz os facts consumidos pela camada portátil.
+
+O caller não fornece largura, altura ou formato de color. Esses dados vêm do resource real.
+A camada de facts exige Texture2D, array size 1, mip count 1 e sample count 1 para os recursos
+capturados. Color/guides precisam de formato representável pelo `FrameContract`.
+
+Output é diferente: ele fornece `outputResolution`, mas seu formato não precisa ser representável
+pelo core. Isso evita rejeitar swapchains válidos só porque o enum portátil ainda não representa
+todos os formatos DXGI.
+
+O owner Windows faz preflight de identity, color/output ausentes e evidence antes de chamar
+`GetDesc()`. O source foi adicionado apenas ao ramo `WIN32` de `nrfusion_core`; não houve
+Windows build nesta sessão, portanto sua compilação Windows permanece um gate futuro, conforme a
+política do repositório.
+
+### Registry
+
+O provider D3D12 registra somente as capabilities já implementadas:
+- Acquire;
+- Normalize.
+
+`Execute` e `Compose` existem como bits reservados, mas não são registrados nem anunciados.
+Assim o registry não antecipa suporte inexistente.
+
+### Work identity
+
+`D3D12CarrierSession` agora possui a transação de work:
+- `BeginWork` cria `WorkTicket` pelo `NrSession`;
+- `submissionEpoch == WorkTicket.id`;
+- Submit/Abandon/MapTimedWork/RetireTimedInterval continuam delegados ao owner único `NrSession`;
+- work de generation antiga falha fechado após reconfigure;
+- IDs continuam monotônicos entre session resets.
+
+Isso prepara o pending-submission gate do `D3D12NrExecutor` sem criar um segundo namespace de
+epochs.
+
+### Validação 07c
+
+Run final `35796387110`, code head
+`23465328c4a36433d6bbde993d2493a46fb8ca91`:
+- focused configure/build: PASS;
+- CTest: **8/8 PASS**;
+- `nrfusion_d3d12_carrier_contract_tests`: PASS;
+- `nrfusion_d3d12_carrier_session_tests`: PASS;
+- `nrfusion_d3d12_carrier_native_facts_tests`: PASS;
+- `nrfusion_d3d12_carrier_capabilities_tests`: PASS;
+- `nrfusion_d3d12_carrier_work_tests`: PASS;
+- regressões da Fase 06 permanecem no mesmo gate;
+- source checkpoint artifact: PASS;
+- nenhum Windows gate.
+
+Arquivos principais atuais:
+- `D3D12CarrierNativeFacts.hpp/cpp`: 61 / 103;
+- `D3D12CarrierNativeAcquire.hpp/cpp`: 40 / 91;
+- `D3D12CarrierCapabilities.hpp/cpp`: 25 / 19;
+- `D3D12CarrierSession.hpp/cpp`: 59 / 70;
+- testes novos 07c: 126 / 45 / 101 linhas;
+- CMake core/tests: 117 / 106;
+- workflow focado: 53.
+
+O diff da sessão não toca `SyntheticDx12Provider.cpp`, `HostServer64.cpp` nem
+`apply_to_optiscaler.py`.
+
+## Próxima ação exata após 07c
+
+Criar a boundary Windows-only de execução do carrier:
+1. receber `D3D12CarrierWork` + frame normalizada;
+2. preencher `D3D12NrFramePlanInput` e `D3D12NrFrameRequest`;
+3. passar `work.submissionEpoch` ao `D3D12NrExecutor`;
+4. reutilizar os owners de scratch/retirement da Fase 05;
+5. manter `Execute` e `Compose` fora do registry até cada caminho existir e possuir regressão.
+
+Não tocar o provider/Host64/patcher legados para fazer essa ligação.
