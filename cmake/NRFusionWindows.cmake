@@ -30,8 +30,13 @@ add_executable(nrfusion_harness_3d
              COMMAND nrfusion_harness_3d --no-async --frames 0)
     set_tests_properties(nrfusion_harness_3d_cli_zero_frames PROPERTIES WILL_FAIL TRUE)
 
-    add_executable(nrfusion_nr_scratch_resources_tests tests/d3d12_nr_scratch_resources_tests.cpp)
-    target_link_libraries(nrfusion_nr_scratch_resources_tests PRIVATE nrfusion_core d3d12 dxgi)
+    add_executable(nrfusion_nr_scratch_resources_tests
+        tests/d3d12_nr_scratch_resources_tests.cpp
+        src/D3D12NrScratchResources.cpp
+        src/NrDeferredRetirementQueue.cpp
+    )
+    target_include_directories(nrfusion_nr_scratch_resources_tests PRIVATE include)
+    target_link_libraries(nrfusion_nr_scratch_resources_tests PRIVATE d3d12 dxgi)
     if (MSVC)
         target_compile_options(nrfusion_nr_scratch_resources_tests PRIVATE /UNDEBUG)
     endif()
