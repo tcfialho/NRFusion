@@ -12,6 +12,11 @@ bool Matches(
         reinterpret_cast<std::uintptr_t>(native.resource));
 }
 
+std::uint64_t OpaqueId(ID3D12Resource* resource) noexcept {
+    return static_cast<std::uint64_t>(
+        reinterpret_cast<std::uintptr_t>(resource));
+}
+
 bool SameFrameIdentity(
     const D3D12NativeFrameResources& resources,
     const D3D12CarrierFrameResult& frame) noexcept {
@@ -45,6 +50,8 @@ D3D12CarrierExecuteResult D3D12CarrierExecutor::Execute(
     const FrameContext& normalized = frame.acquire.frame;
     if (!SameFrameIdentity(resources, frame) ||
         resources.output == nullptr ||
+        frame.acquire.outputOpaqueId == 0 ||
+        OpaqueId(resources.output) != frame.acquire.outputOpaqueId ||
         !Matches(resources.color, normalized.color) ||
         !Matches(resources.depth, normalized.depth) ||
         !Matches(resources.motionVectors, normalized.motionVectors)) {
