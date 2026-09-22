@@ -624,3 +624,18 @@ Correções adicionais:
 
 
 - falha no frame residual invalida `residualHistoryPrimed_`; history com gap nunca é tratada como contínua.
+
+
+## Segunda revisão — fechamento
+
+Head estrutural validado: `90670e9b7f30ec6d2830f77516f2ec06f2f5d680`.
+
+Resultado final da auditoria:
+- branch `+42/-0` contra o master consolidado;
+- PR aberto: 0;
+- `Config::`, `State::`, `Shader_Dx12`, `tests/fixture` no executor: 0;
+- maior arquivo handwritten tocado: 284 linhas;
+- nenhum Windows gate intermediário.
+
+A segunda revisão não foi apenas documental: encontrou e corrigiu bugs de generation lifetime,
+residual post-RR, descriptor authority, retirement progress e build determinístico.

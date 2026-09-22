@@ -106,34 +106,44 @@
 
 ## Current session
 
-Start: 2026-09-21 23:20 BRT
+Start: 2026-09-21 23:40 BRT
 Branch: standalone/phase-05-d3d12-executor-20260921
 Base: master 548349b740e6fdfec7b0a9f6dacc17ebcdf9b160
-Phase 05: COMPLETE IN CODE + STRUCTURAL REVIEW. Windows validation remains final-cutover-only.
+Phase 05: COMPLETE AFTER SECOND ADVERSARIAL REVIEW.
+Windows/D3D12 runtime validation remains final-cutover-only.
 
-Completed:
-- locked main + residual shader codegen integrated into nrfusion_core
-- canonical ExecuteFrame snapshot boundary, no Config/State dependency
-- create/pending gate occurs before any frame mutation
-- encode/downsample/evaluate/resolve wired to explicit owners/states
-- up to 30 NGX passes with independent feature/tuning/reset/submission epoch
-- HDR/passthrough + explicit game exposure path
-- residual-across-RR v2 with separate PSO, temporal history and same-epoch post seam
-- pre/post SR/RR placement through explicit snapshot
-- caller resource states restored on the new frame path
-- reset/resize/rebuild invalidate residual history
-- frame path split by responsibility; zero touched handwritten file >300 lines
-- retirement queue focused portable C++20 warnings-as-errors test: PASS
-- no PR opened and no Windows build/test requested or triggered
+Second review corrected:
+- multipass tuning changes now retire/rebuild the whole active feature generation
+- placement and SR/RR identity participate in feature-generation validity
+- feature-generation retirement is capacity-checked transactionally
+- residual post-RR composes into owned residualComposed then copies to Output
+- post residual no longer requires Output UAV capability
+- residual store is single-use and epoch gaps/mode toggles invalidate history
+- failed residual frames cannot reuse a primed history across a gap
+- compare mode/split/zoom/swap and debugScale are present in the standalone snapshot
+- residual-incompatible debug/compare/skin-mask combinations fail closed before touching Color
+- frame-plan allocation extents are derived from actual D3D12 resource descriptors
+- lifecycle/epoch processing happens before scratch resize, so a full retirement queue can still drain
+- post residual only requires the Output resource it actually consumes
+- static sampler fields that must not remain zero/default are explicit
+- shader codegen resolves Python3 explicitly instead of assuming a python PATH alias
 
-Second-review base: 6ef2c5172641dd9e7fcf03861acfc312291a5253
-Second-review fixes through: cd98fa35eb19557f8f48a9d07288a813bb88c1f0
+Final structural verification:
+- validated code head before this documentation commit: 90670e9b7f30ec6d2830f77516f2ec06f2f5d680
+- branch vs master: +42 / -0
+- open PRs: 0
+- forbidden dependencies in Phase 05 executor: 0
+- touched/new handwritten Phase 05 files >300 lines: 0
+- largest files: D3D12NrExecutor.hpp 284, D3D12NrExecutorFrameModel.cpp 279
+- retirement queue focused portable C++20 warnings-as-errors test from prior review: PASS
+- no Windows build/test requested or triggered
 
-Phase 05 caveat:
-- Windows/D3D12 runtime validation is intentionally deferred to final cutover.
-- HostServer64 remains a legacy consumer of the compatibility API; installing the canonical seam into
-  final carriers belongs to later carrier/cutover phases, not Phase 05 executor extraction.
+Known boundary, not a Phase 05 blocker:
+- high-quality >1.0x supersample filtering still uses the mature codec fallback path because OS_Dx12
+  remains OptiScaler-owned; the standalone executor does not import that subsystem
+- root-signature restoration belongs to the later carrier/hook integration boundary
 
 Exact next action:
-- begin Phase 06 from the completed canonical executor boundary
-- keep Windows integration/build/installer validation for final cutover
+- begin Phase 06 from the second-reviewed D3D12NrExecutor::ExecuteFrame boundary
+- keep the same long-lived integration branch and no intermediate PR
+- reserve Windows integration/build/installer validation for final cutover

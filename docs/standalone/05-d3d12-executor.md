@@ -2,7 +2,7 @@
 
 ## Status
 
-**Concluída em código e revisão estrutural.** O executor standalone agora cobre 04c, multipass/history,
+**Concluída em código após segunda revisão adversarial.** O executor standalone agora cobre 04c, multipass/history,
 HDR/exposure, residual-across-RR e seams pre/post SR/RR sem dependência de Config/State.
 Evidência: [05-d3d12-executor-evidence.md](05-d3d12-executor-evidence.md).
 
