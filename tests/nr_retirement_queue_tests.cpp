@@ -49,6 +49,11 @@ int main() {
     NrDeferredRetirementQueue queue;
     ReleaseLog log;
 
+    void* invalidObject = reinterpret_cast<void*>(0x44);
+    assert(!queue.Park(invalidObject, static_cast<NrRetiredObjectKind>(0xff)));
+    assert(invalidObject == reinterpret_cast<void*>(0x44));
+    assert(queue.Size() == 0);
+
     int feature = 1;
     void* featurePtr = &feature;
     assert(queue.Park(featurePtr, NrRetiredObjectKind::Feature));
