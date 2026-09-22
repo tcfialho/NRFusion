@@ -90,3 +90,14 @@ o caminho por-frame de `OptiScalerAdapter` sem introduzir locks ou allocations s
 - timing só treina custo quando ticket/session/config generation ainda pertencem à configuração atual.
 
 Nenhum `unordered_map`, `vector`, lock ou heap foi introduzido na nova work/timing boundary.
+
+
+### 06b adversarial correction
+
+O primeiro draft capturava `runtimeGeneration` antes de `ResolveAuto`. Isso era incorreto porque
+`ResolveAuto` pode abrir nova generation ao mudar estrutura/precision. Corrigido:
+- `FrameResult.runtimeGeneration` é capturada depois da decisão;
+- `WorkTicket.configurationGeneration` carrega a runtime execution generation;
+- submit/map/retire validam contra a generation atual;
+- timing de work anterior a resize/precision/scheduler epoch é completado/descartado sem treinar custo;
+- exhaustion do namespace de session deixa `Begin` fail-closed.

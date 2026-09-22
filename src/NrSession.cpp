@@ -57,10 +57,10 @@ NrSessionFrameResult NrSession::Resolve(const NrSessionFramePacket& packet) {
     NrSessionFrameResult result{};
     result.frameId = packet.frame.frameId;
     result.configurationGeneration = config_.generation;
-    result.runtimeGeneration = runtime_.AutoConfigurationGeneration();
     result.decision = runtime_.ResolveAuto(
         packet.game, packet.frame, packet.telemetry, packet.capabilities,
         packet.requestedScheduler, packet.generationMultiplier, packet.compatibility);
+    result.runtimeGeneration = runtime_.AutoConfigurationGeneration();
     result.disposition = result.decision.supported
         ? NrSessionDisposition::Ready
         : NrSessionDisposition::Unsupported;
@@ -80,12 +80,12 @@ std::optional<WorkTicket> NrSession::BeginWork(
     const std::uint8_t precisionTag =
         frame.decision.precision == NrPrecision::HybridNvfp4 ? 4u : 8u;
     return works_.Begin(
-        frame.frameId, viewKey, frame.configurationGeneration,
+        frame.frameId, viewKey, frame.runtimeGeneration,
         frame.decision.workingScale, precisionTag);
 }
 
 bool NrSession::SubmitWork(const WorkTicket& ticket) noexcept {
-    return ticket.configurationGeneration == config_.generation &&
+    return ticket.configurationGeneration == state_.runtimeGeneration &&
            works_.Submit(ticket);
 }
 
@@ -95,7 +95,7 @@ bool NrSession::AbandonWork(const WorkTicket& ticket) noexcept {
 
 bool NrSession::MapTimedWork(const WorkTicket& ticket) noexcept {
     if (!works_.IsSubmitted(ticket) ||
-        ticket.configurationGeneration != config_.generation)
+        ticket.configurationGeneration != state_.runtimeGeneration)
         return false;
     if (const auto displaced = timings_.Push(ticket))
         works_.Abandon(*displaced);
@@ -107,12 +107,12 @@ void NrSession::MapInvalidTimedAttempt() noexcept {
         works_.Abandon(*displaced);
 }
 
-bool NrSession::RetireTimedInterval(double gpuMs) noexcept {
+bool NrSession::RetireTimedInterval(double gpuMs) {
     const auto entry = timings_.Pop();
     if (!entry || !entry->mapsWork) return false;
     const WorkTicket ticket = entry->ticket;
     if (!works_.Complete(ticket)) return false;
-    if (ticket.configurationGeneration != config_.generation ||
+    if (ticket.configurationGeneration != state_.runtimeGeneration ||
         !std::isfinite(gpuMs) || gpuMs <= 0.0 || gpuMs >= 1000.0)
         return false;
     runtime_.ObserveScaleCost(ticket.workingScale, gpuMs);

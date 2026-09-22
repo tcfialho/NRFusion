@@ -22,7 +22,7 @@ public:
     bool AbandonWork(const WorkTicket& ticket) noexcept;
     bool MapTimedWork(const WorkTicket& ticket) noexcept;
     void MapInvalidTimedAttempt() noexcept;
-    bool RetireTimedInterval(double gpuMs) noexcept;
+    bool RetireTimedInterval(double gpuMs);
 
     const RuntimeConfig& Config() const noexcept { return config_; }
     const NrSessionState& State() const noexcept { return state_; }

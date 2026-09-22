@@ -66,16 +66,26 @@ int main() {
     AssertEquivalent(actual.decision, expected);
     assert(actual.configurationGeneration == config.generation);
     assert(actual.runtimeGeneration == baseline.AutoConfigurationGeneration());
+    assert(actual.runtimeGeneration == session.State().runtimeGeneration);
 
     const auto work = session.BeginWork(actual, 9);
     assert(work);
     assert(session.SubmitWork(*work));
     assert(session.MapTimedWork(*work));
 
-    auto stale = Packet(config.generation - 1, 2);
+    auto resized = Packet(config.generation, 2);
+    resized.frame.renderResolution = {1280, 720};
+    resized.frame.outputResolution = {1280, 720};
+    resized.frame.color.resolution = resized.frame.renderResolution;
+    const auto resizedResult = session.Resolve(resized);
+    assert(resizedResult);
+    assert(resizedResult.runtimeGeneration != work->configurationGeneration);
+    assert(!session.RetireTimedInterval(2.0));
+
+    auto stale = Packet(config.generation - 1, 3);
     const auto staleResult = session.Resolve(stale);
     assert(staleResult.disposition == NrSessionDisposition::StaleConfiguration);
-    assert(session.State().lastResolvedFrame == 1);
+    assert(session.State().lastResolvedFrame == 2);
 
     RuntimeConfig older = config;
     --older.generation;

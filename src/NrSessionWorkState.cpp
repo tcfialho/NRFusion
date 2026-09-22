@@ -32,7 +32,7 @@ std::optional<WorkTicket> NrSessionWorkTracker::Begin(
     std::uint64_t configurationGeneration, float workingScale,
     std::uint8_t precisionTag) noexcept {
     if (sourceFrame == 0 || !std::isfinite(workingScale) || workingScale <= 0.0f ||
-        nextId_ == 0)
+        nextId_ == 0 || session_ == 0)
         return std::nullopt;
     Entry* entry = FindFree();
     if (entry == nullptr) return std::nullopt;
