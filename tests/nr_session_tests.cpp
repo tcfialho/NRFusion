@@ -153,5 +153,7 @@ int main() {
 
     session.Reset();
     assert(session.Resolve(packet).disposition == NrSessionDisposition::NotConfigured);
+    assert(session.Configure(config, performance));
+    assert(session.Resolve(Packet(config.generation, 200)));
     return 0;
 }

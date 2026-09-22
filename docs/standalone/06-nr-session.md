@@ -232,3 +232,13 @@ Removidos do `FusionRuntime`:
 
 Isso remove mais um vector allocation da construção da sessão e reduz state duplicado sem alterar
 `ResolveAuto`, scheduler, precision, cost learning ou contratos de frame.
+
+
+### 06e noexcept reset correction
+
+`NrSession::Reset() noexcept` não reconstrói mais o snapshot privado de `PerformanceConfig`.
+Esse tipo contém `std::vector`; atribuir um default temporário dentro de `noexcept` poderia alocar
+e terminar o processo em falha de heap.
+
+O snapshot é irrelevante enquanto a sessão está desconfigurada e é sobrescrito no próximo
+`Configure`. Preservar o storage também favorece reutilização de capacidade no cold reconfigure.

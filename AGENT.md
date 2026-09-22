@@ -137,6 +137,7 @@ Open PRs: 0
 - differential regression spans 180 adaptive decisions
 - removed duplicate WorkLedger/TimingWorkMapper ownership from FusionRuntime
 - removed unused duplicate TelemetryTracker/PipelinedExecutorState from FusionRuntime
+- removed potentially-throwing PerformanceConfig reset from NrSession::Reset noexcept
 
 Outstanding Phase 06 runtime gates:
 - execute nrfusion_nr_session_tests

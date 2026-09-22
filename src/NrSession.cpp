@@ -43,7 +43,6 @@ void NrSession::Reset() noexcept {
     works_.ResetSession();
     timings_.Reset();
     config_ = {};
-    performanceConfig_ = {};
     state_ = {};
     configured_ = false;
 }
