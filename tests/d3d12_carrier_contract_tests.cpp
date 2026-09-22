@@ -32,6 +32,7 @@ D3D12AcquireSnapshot BaseSnapshot() {
     snapshot.identity.configurationGeneration = 3;
     snapshot.renderResolution = {1920, 1080};
     snapshot.outputResolution = {3840, 2160};
+    snapshot.outputOpaqueId = 9;
     snapshot.color = {
         Acquired(1, 42, snapshot.renderResolution, ResourceFormat::Rgba16Float,
                  ResourceProvenance::GameNative),
@@ -67,6 +68,11 @@ int main() {
     assert(!acquired.diagnostics.depthValid);
     assert(!acquired.diagnostics.motionValid);
     assert(!acquired.diagnostics.exposureValid);
+
+    auto missingOutput = base;
+    missingOutput.outputOpaqueId = 0;
+    assert(BuildD3D12FrameContract(missingOutput).failure ==
+           D3D12AcquireFailure::MissingOutput);
 
     auto missingColor = base;
     missingColor.color = {};
