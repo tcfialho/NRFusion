@@ -12,6 +12,7 @@ enum class D3D12AcquireFailure : std::uint8_t {
     InvalidDimensions,
     InvalidJitter,
     MissingColor,
+    MissingOutput,
     UnprovenResource,
     InvalidResource,
     InvalidEvidence,
