@@ -72,10 +72,12 @@ int main() {
         Frame(NrPlacement::PreSr), Work(), config);
     assert(pre);
     assert(pre.plan.framePlan.beforeUpscale);
-    assert(pre.plan.framePlan.colorSurface == Resolution{1920, 1080});
+    const Resolution render{1920, 1080};
+    assert(pre.plan.framePlan.colorSurface == render);
     assert(pre.plan.framePlan.activeColor.width == 1920);
     assert(pre.plan.framePlan.activeColor.height == 1080);
-    assert(pre.plan.resolvedPlan.work == Resolution{1440, 810});
+    const Resolution preWork{1440, 810};
+    assert(pre.plan.resolvedPlan.work == preWork);
     assert(pre.plan.resolvedPlan.requestedPasses == 2);
     assert(pre.plan.submissionEpoch == Work().ticket.id);
     assert(pre.plan.motionScaleX == 2.0f);
@@ -85,8 +87,10 @@ int main() {
         Frame(NrPlacement::PostSr), Work(), {});
     assert(post);
     assert(!post.plan.framePlan.beforeUpscale);
-    assert(post.plan.framePlan.colorSurface == Resolution{3840, 2160});
-    assert(post.plan.resolvedPlan.work == Resolution{2880, 1620});
+    const Resolution output{3840, 2160};
+    const Resolution postWork{2880, 1620};
+    assert(post.plan.framePlan.colorSurface == output);
+    assert(post.plan.resolvedPlan.work == postWork);
 
     auto resetFrame = Frame(NrPlacement::PreSr);
     resetFrame.acquire.frame.cameraCut = true;
