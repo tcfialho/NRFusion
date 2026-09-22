@@ -56,6 +56,7 @@ add_library(nrfusion_core STATIC
     src/D3D12CarrierContract.cpp
     src/D3D12CarrierSession.cpp
     src/D3D12CarrierNativeFacts.cpp
+    src/D3D12CarrierCapabilities.cpp
 )
 
 if (WIN32)
