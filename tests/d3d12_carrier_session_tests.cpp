@@ -75,7 +75,7 @@ int main() {
 
     const auto stale = carrier.Resolve(Packet(config.generation - 1, 3));
     assert(!stale);
-    assert(stale.acquire);
+    assert(!stale.acquire.attempted);
     assert(stale.session.disposition == NrSessionDisposition::StaleConfiguration);
     assert(carrier.State().rejectedFrames == 1);
 
