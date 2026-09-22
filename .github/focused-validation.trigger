@@ -1,3 +1,3 @@
-phase07-acquire-contract-rerun-20260922
-base=d27e48c994ade64f3a405a17cba4531f7c9ad9da
-request=validate-portable-d3d12-acquire-contract
+phase07-carrier-session-20260922
+base=c8a3c555b403b2e36575c991f093256358b47dfc
+request=validate-acquire-to-nrsession-boundary
