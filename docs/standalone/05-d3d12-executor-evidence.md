@@ -473,3 +473,27 @@ Corrigido antes de validação:
 - offsets críticos do constant buffer receberam `static_assert`;
 - `SizeInBytes` do CBV usa cast explícito para `UINT`;
 - teste Encode usa UAV separado para `target` e `keep`, como o caminho real.
+
+
+### Estabilização 04a/04b
+
+Head de código antes deste fechamento documental: `a9359f43bfeccca46eab57402bd7ecdd9e2d8865`.
+
+- HLSL vendorizado mantém blob `4a6102820f736e9349ffed370259d094f2a7f4ae`;
+- attribution local mantém blob `bb5b38afe756589c9eab79e1008444ca3ac56d61`;
+- generator: 96 linhas;
+- CMake shader module: 24 linhas;
+- codec header/init/dispatch/test: 125/133/124/114 linhas;
+- HLSL confirma `[numthreads(8,8,1)]`.
+
+Nenhum arquivo first-party handwritten deste lote excede 300 linhas.
+O HLSL de 1111 linhas é vendored verbatim e conserva o blob upstream, portanto não é first-party handwritten.
+
+Windows fast pendente:
+- `nrfusion_dlssnr_shader_codegen`;
+- `nrfusion_d3d12_nr_codec_tests`;
+- `nrfusion_nr_scratch_resources_tests`;
+- `nrfusion_nr_guide_clones_tests`;
+- `nrfusion_d3d12_nr_frame_plan_tests`.
+
+Nenhum desses resultados foi presumido como PASS.

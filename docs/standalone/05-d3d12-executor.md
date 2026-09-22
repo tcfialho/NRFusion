@@ -61,7 +61,7 @@ read-only. Boundaries mapeados:
 - [x] Preservar load policy do driver/forwarder/model.
 - [x] Preservar `JustBuilt()` durante o primeiro split.
 - [x] Portar pending-submission/epoch maduro.
-- [ ] Extrair resource/state map por owner/lifetime. Deferred retirement de feature já portado.
+- [x] Extrair resource/state map por owner/lifetime.
 - [x] Portar scale/subrect/padding.
 - [ ] Portar pre/post-SR/RR/history e multipass.
 - [ ] Portar HDR/exposure/residual.
@@ -73,7 +73,7 @@ read-only. Boundaries mapeados:
 - [x] Driver/forwarder/model mantêm a load policy anterior.
 - [x] Nenhuma otimização funcional escondida no primeiro split.
 - [x] Nenhuma interface virtual/heap/lock adicionada para dividir arquivos.
-- [ ] Cada resource possui owner/create/state/release/resize/failure.
+- [x] Cada resource mapeado possui owner/create/state/release/resize/failure.
 - [ ] Cada barrier possui estado anterior/próximo/caller guarantee.
 
 ## Validação rápida
@@ -91,7 +91,7 @@ read-only. Boundaries mapeados:
 
 - [x] Seed standalone não depende diretamente de OptiScaler.
 - [x] Uma call boundary DLSS-NR preservada no seed.
-- [ ] Resource/state map completo.
+- [x] Resource/state map estrutural completo; wiring efetivo pertence ao subgate 04.
 - [ ] Semântica madura de pending/rebuild/multipass/HDR/residual portada.
 - [x] Zero arquivo handwritten >300 no executor extraído atual.
 
@@ -165,8 +165,7 @@ copiados com dependências de Config/State.
 
 ## Subgates restantes para fechar a Fase 05
 
-1. **03d resources/state completos** — integrar `passScratch`, `colorSmall`, `outputNative`,
-   `activeColor`, residual surfaces e guide clones com owner/state/resize/failure explícitos.
+1. **03d resources/state completos** — concluído estruturalmente; falta apenas Windows fast do lote.
 2. **04 encode/resolve + scale real** — ligar o frame plan aos resources e portar codec/copy/resample
    sem dependência de `Config`/`State`.
 3. **05 multipass/history** — features extras, create epoch por pass, ping-pong e reset/history.
@@ -277,3 +276,4 @@ O próximo subgate é extrair `D3D12NrCodec` usando o header gerado, não um blo
 - teste WARP executa um Encode 8x8 e verifica ausência de device removal.
 
 O codec permanece isolado do executor até esse target passar no Windows fast.
+O shader vendorizado confirma `[numthreads(8,8,1)]`; nenhum group size novo foi inventado.

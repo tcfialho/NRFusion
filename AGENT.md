@@ -104,38 +104,40 @@
 
 ## Current session
 
-Start: 2026-09-21 21:53 BRT
+Start: 2026-09-21 22:09 BRT
 Branch: standalone/phase-05-d3d12-executor-20260921
 Base: master 548349b740e6fdfec7b0a9f6dacc17ebcdf9b160
-Phase 05: OPEN; subgates 01-03d structurally implemented.
+Phase 05: OPEN; 03d complete structurally; 04a/04b implemented and awaiting focused Windows validation.
 
 Completed this session:
-- confirmed Windows validation remains manual-only
-- confirmed current connector cannot invoke workflow_dispatch
-- expanded scratch owner with passScratch/colorSmall/outputNative/activeColor
-- added residualEdited/history/composed carriers to the same UAV owner
-- fixed private Surface helper compile defect during review
-- added separate depth/motion guide-clone owner with COPY_DEST resting state
-- added isolated WARP guide-clone target
-- wired both owners into executor shutdown ownership
-- no PR opened and no full CI/build triggered
+- resolved RenoDX attribution/provenance for the locked composition shader
+- vendored the locked HLSL verbatim; Git blob preserved
+- added opt-in fxc cs_5_0 codegen with source/CSO/header Git-blob verification
+- kept generated CSO/header out of Git
+- extracted standalone D3D12NrCodec without Shader_Dx12/Config/State dependencies
+- preserved 5 SRV + 2 UAV + 1 CBV + linear-clamp sampler + 48-slot ring semantics
+- added isolated WARP codec test
+- adversarial review disabled copying, asserted cbuffer offsets, fixed CBV cast and Encode target/keep setup
+- fixed root-signature serialization failure leak
+- no executor wiring yet
+- no PR opened and no full build/CI triggered
 
-Current code head before this documentation/fix commit: 3f306234b8eff82c0d9ae5764538fa2faab484fa
-Windows fast pending targets:
+Current head before this documentation commit: a9359f43bfeccca46eab57402bd7ecdd9e2d8865
+
+Focused Windows validation pending:
+- nrfusion_dlssnr_shader_codegen
+- nrfusion_d3d12_nr_codec_tests
 - nrfusion_nr_scratch_resources_tests
 - nrfusion_nr_guide_clones_tests
 - nrfusion_d3d12_nr_frame_plan_tests
 
 Outstanding Phase 05:
-- 04 resolve shader attribution/reproducibility, then wire owners + frame plan into real encode/resolve/scale path
+- 04c wire frame plan + scratch/guide owners + D3D12NrCodec into encode/downsample/evaluate/resolve
 - 05 multipass/history and per-pass submission epochs
 - 06 HDR/exposure/residual behavior
 - 07 pre/post SR/RR seams + complete operational snapshot + final adversarial review
 
 Exact next action:
-- when workflow dispatch is available, run one fast validation with the three focused targets/tests
-- provenance resolved: vendor source + RenoDX MIT attribution are now explicit
-- run nrfusion_dlssnr_shader_codegen on Windows and verify locked CSO/header blob IDs
-- D3D12NrCodec is now extracted behind an isolated WARP target
-- run shader codegen + codec/scratch/guide/frame-plan focused Windows validation
-- only after green, wire D3D12NrCodec into the executor frame path
+- run one Windows fast batch with only the focused targets/tests when workflow_dispatch is available
+- do not wire the codec until that batch is green
+- after green, implement 04c state-machine wiring and regress every resource back to its resting state
