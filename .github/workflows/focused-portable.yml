@@ -1,0 +1,39 @@
+name: Focused portable validation
+
+on:
+  push:
+    branches:
+      - standalone/integration
+    paths:
+      - '.github/focused-validation.trigger'
+
+concurrency:
+  group: focused-portable-${{ github.ref }}
+  cancel-in-progress: true
+
+jobs:
+  nr-session:
+    runs-on: ubuntu-24.04
+    timeout-minutes: 10
+    steps:
+      - uses: actions/checkout@v4
+        with:
+          fetch-depth: 1
+
+      - name: Configure focused NrSession validation
+        run: >
+          cmake -S . -B build-focused
+          -DCMAKE_BUILD_TYPE=Release
+          -DNRFUSION_FOCUSED_NR_SESSION_VALIDATION=ON
+
+      - name: Build focused NrSession targets
+        run: >
+          cmake --build build-focused
+          --target nrfusion_nr_session_tests nrfusion_nr_session_stress_tests
+          --parallel 2
+
+      - name: Run focused NrSession tests
+        run: >
+          ctest --test-dir build-focused
+          --output-on-failure
+          -R '^nrfusion_nr_session_(tests|stress_tests)$'
