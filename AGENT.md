@@ -13,6 +13,15 @@
 - Generate one source checkpoint ZIP per session outside the worktree when source code changed materially.
 - End with: result | tests | commit | ZIP | blocker | exact next action.
 
+## Tool discipline
+
+- Batch independent connector operations into one orchestration call per stage.
+- Reuse returned content, SHAs, trees and refs instead of fetching the same state again.
+- Do not perform repeated exploratory searches after the owner/file/commit is known.
+- Prefer one compare/read batch, one write batch and one final verification batch.
+- Do not query time, branch state or workflow state repeatedly unless it changes the next action.
+- A normal coding session should use only a few connector round-trips; exceed that only for an actual blocker.
+
 ## Branch / PR / build discipline
 
 - Use one long-lived standalone integration branch until final cutover. Do not create a branch per phase.
@@ -63,6 +72,7 @@ Completed this session:
 - added WARP lifecycle/state/resize/retirement regression
 - confirmed master Portable run 35669420707 passed
 - no full Windows build or new PR
+- connector calls are now batched and reused instead of repeated fetch/search loops
 
 Exact next action:
 - run only nrfusion_nr_scratch_resources_tests on Windows fast validation
