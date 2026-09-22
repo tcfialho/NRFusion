@@ -107,7 +107,7 @@
 ## Current session
 
 Start: 2026-09-22 00:02 BRT
-Branch: standalone/phase-05-d3d12-executor-20260921
+Branch: standalone/integration
 Base/default branch: master
 Performance review policy: only changes with no semantic/maintenance trade-off.
 
@@ -120,6 +120,7 @@ Repository topology confirmed:
 Accepted performance changes:
 - remove duplicate D3D12 GetDesc call in guide preparation
 - cache fixed multipass ping-pong resource pointers outside the pass loop
+- cache frame-local scratch resource pointers reused within prepare/resolve paths
 - avoid temporary identity copies in NGX ActionFor lookup
 
 Rejected by policy:
@@ -129,7 +130,11 @@ Rejected by policy:
 - persistent caches or new synchronization
 - any visual/algorithmic change
 
+Branch naming:
+- canonical long-lived branch is standalone/integration
+- old standalone/phase-05-d3d12-executor-20260921 ref is frozen as a historical alias because the connector has no branch-delete operation
+
 Exact next action:
 - verify diff/LOC and ancestry after this performance-only commit
-- continue future phases on the same long-lived integration branch
+- continue future phases on standalone/integration
 - merge/cut over to master only at the planned final integration point

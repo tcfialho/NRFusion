@@ -75,6 +75,10 @@ bool D3D12NrExecutor::RunFrameModel(
         scratch_.Get(D3D12NrScratchKind::Output);
     ID3D12Resource* const passScratch =
         scratch_.Get(D3D12NrScratchKind::PassScratch);
+    ID3D12Resource* const hdrCopy =
+        scratch_.Get(D3D12NrScratchKind::HdrCopy);
+    ID3D12Resource* const residualEdited =
+        scratch_.Get(D3D12NrScratchKind::ResidualEdited);
     ID3D12Resource* passInput = context.modelInput;
     ID3D12Resource* passOutput = primaryOutput;
     ID3D12Resource* finalAnswer = nullptr;
@@ -122,15 +126,11 @@ bool D3D12NrExecutor::RunFrameModel(
 
     if (finalAnswer == nullptr) return false;
     ID3D12Resource* resolveOriginal = context.acrossRr
-        ? scratch_.Get(D3D12NrScratchKind::HdrCopy)
-        : (context.targetSupportsUav
-               ? scratch_.Get(D3D12NrScratchKind::HdrCopy)
-               : context.activeTarget);
+        ? hdrCopy
+        : (context.targetSupportsUav ? hdrCopy : context.activeTarget);
     ID3D12Resource* resolveTarget = context.acrossRr
-        ? scratch_.Get(D3D12NrScratchKind::ResidualEdited)
-        : (context.targetSupportsUav
-               ? context.activeTarget
-               : scratch_.Get(D3D12NrScratchKind::HdrCopy));
+        ? residualEdited
+        : (context.targetSupportsUav ? context.activeTarget : hdrCopy);
 
     if (context.acrossRr) {
         const D3D12_RESOURCE_STATES state =
@@ -214,12 +214,14 @@ bool D3D12NrExecutor::RunFrameModel(
         accum.motionScaleY = request.motionScaleY /
             static_cast<float>(context.plan.activeColor.height);
 
+        ID3D12Resource* const previousHistory = scratch_.Get(previous);
+        ID3D12Resource* const currentHistory = scratch_.Get(current);
         D3D12NrCodecResources residual{};
-        residual.source = scratch_.Get(D3D12NrScratchKind::HdrCopy);
-        residual.model = scratch_.Get(D3D12NrScratchKind::ResidualEdited);
-        residual.original = scratch_.Get(previous);
+        residual.source = hdrCopy;
+        residual.model = residualEdited;
+        residual.original = previousHistory;
         residual.motion = context.motionIn;
-        residual.target = scratch_.Get(current);
+        residual.target = currentHistory;
         if (!codec_.DispatchResidual(cmd, accum, residual) ||
             !scratch_.Transition(
                 cmd, current, D3D12_RESOURCE_STATE_UNORDERED_ACCESS,
@@ -241,8 +243,7 @@ bool D3D12NrExecutor::RunFrameModel(
                 cmd, context.activeTarget, context.targetState,
                 D3D12_RESOURCE_STATE_COPY_DEST))
             return false;
-        cmd->CopyResource(
-            context.activeTarget, scratch_.Get(D3D12NrScratchKind::HdrCopy));
+        cmd->CopyResource(context.activeTarget, hdrCopy);
         if (!TransitionExternal(
                 cmd, context.activeTarget, context.targetState,
                 D3D12_RESOURCE_STATE_NON_PIXEL_SHADER_RESOURCE) ||

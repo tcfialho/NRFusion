@@ -653,3 +653,14 @@ Foram aceitas somente eliminações mecânicas de trabalho redundante:
   `NgxFeatureIdentity` temporária.
 
 Sem mudança de ownership, lifetime, ordem GPU, resultado visual, capacidade ou complexidade assintótica.
+
+
+### Performance review — second no-drawback micro-pass
+
+Additional frame-local pointer reuse only:
+- `ActiveColor`, `ColorCopy`, `HdrCopy` and `ColorSmall` are fetched once per prepare call when used;
+- resolve/multipass reuses frame-local `HdrCopy`/`ResidualEdited` pointers;
+- residual history resources are fetched once per accumulation step.
+
+These pointers are only local aliases to resources whose owner is not mutated during the function.
+No persistent cache, lifetime change, synchronization, GPU command reordering or visual change.

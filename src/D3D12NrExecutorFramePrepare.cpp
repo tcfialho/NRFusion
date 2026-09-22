@@ -68,6 +68,8 @@ bool D3D12NrExecutor::PrepareFrameResources(
     const D3D12NrFrameRequest& request, FrameContext& context) noexcept {
     context.activeTarget = context.target;
     if (context.cropColor) {
+        ID3D12Resource* const activeColor =
+            scratch_.Get(D3D12NrScratchKind::ActiveColor);
         if (!TransitionExternal(cmd, context.target, context.targetState,
                                 D3D12_RESOURCE_STATE_COPY_SOURCE) ||
             !scratch_.Transition(cmd, D3D12NrScratchKind::ActiveColor,
@@ -75,15 +77,14 @@ bool D3D12NrExecutor::PrepareFrameResources(
                                  D3D12_RESOURCE_STATE_COPY_DEST))
             return false;
         CopyFromSubrect(
-            cmd, scratch_.Get(D3D12NrScratchKind::ActiveColor),
-            context.target, context.plan.activeColor);
+            cmd, activeColor, context.target, context.plan.activeColor);
         if (!TransitionExternal(cmd, context.target, context.targetState,
                                 context.targetArrival) ||
             !scratch_.Transition(cmd, D3D12NrScratchKind::ActiveColor,
                                  D3D12_RESOURCE_STATE_COPY_DEST,
                                  D3D12_RESOURCE_STATE_NON_PIXEL_SHADER_RESOURCE))
             return false;
-        context.activeTarget = scratch_.Get(D3D12NrScratchKind::ActiveColor);
+        context.activeTarget = activeColor;
     } else if (!TransitionExternal(
                    cmd, context.target, context.targetState,
                    D3D12_RESOURCE_STATE_NON_PIXEL_SHADER_RESOURCE)) {
@@ -97,12 +98,16 @@ bool D3D12NrExecutor::PrepareFrameResources(
             return false;
     }
 
+    ID3D12Resource* const colorCopy =
+        scratch_.Get(D3D12NrScratchKind::ColorCopy);
+    ID3D12Resource* const hdrCopy =
+        scratch_.Get(D3D12NrScratchKind::HdrCopy);
     D3D12NrCodecResources encodeResources{};
     encodeResources.source = context.activeTarget;
     encodeResources.previousEdit =
         request.composition.useGameExposure ? resources.exposure : nullptr;
-    encodeResources.target = scratch_.Get(D3D12NrScratchKind::ColorCopy);
-    encodeResources.keep = scratch_.Get(D3D12NrScratchKind::HdrCopy);
+    encodeResources.target = colorCopy;
+    encodeResources.keep = hdrCopy;
     if (!codec_.Dispatch(
             cmd, EncodeConstants(request, context.plan.activeColor.width,
                                  context.plan.activeColor.height),
@@ -118,22 +123,24 @@ bool D3D12NrExecutor::PrepareFrameResources(
             D3D12_RESOURCE_STATE_NON_PIXEL_SHADER_RESOURCE))
         return false;
 
-    context.modelInput = scratch_.Get(D3D12NrScratchKind::ColorCopy);
+    context.modelInput = colorCopy;
     if (context.plan.reduced) {
         D3D12NrCodecConstants scale{};
         scale.mode = static_cast<std::uint32_t>(D3D12NrCodecMode::Downsample);
         scale.width = context.plan.work.width;
         scale.height = context.plan.work.height;
+        ID3D12Resource* const colorSmall =
+            scratch_.Get(D3D12NrScratchKind::ColorSmall);
         D3D12NrCodecResources scaleResources{};
         scaleResources.source = context.modelInput;
-        scaleResources.target = scratch_.Get(D3D12NrScratchKind::ColorSmall);
+        scaleResources.target = colorSmall;
         if (!codec_.Dispatch(cmd, scale, scaleResources) ||
             !scratch_.Transition(
                 cmd, D3D12NrScratchKind::ColorSmall,
                 D3D12_RESOURCE_STATE_UNORDERED_ACCESS,
                 D3D12_RESOURCE_STATE_NON_PIXEL_SHADER_RESOURCE))
             return false;
-        context.modelInput = scratch_.Get(D3D12NrScratchKind::ColorSmall);
+        context.modelInput = colorSmall;
     }
 
     auto prepareGuide = [&](D3D12NrGuideKind kind, ID3D12Resource* source,
