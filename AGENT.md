@@ -104,35 +104,34 @@
 
 ## Current session
 
-Start: 2026-09-21 21:32 BRT
+Start: 2026-09-21 21:53 BRT
 Branch: standalone/phase-05-d3d12-executor-20260921
 Base: master 548349b740e6fdfec7b0a9f6dacc17ebcdf9b160
-Phase 05: OPEN; 03d-a transient surface ownership implemented; 03d-b residual/guide ownership pending.
+Phase 05: OPEN; subgates 01-03d structurally implemented.
 
-Completed:
-- confirmed Phase 05 is not complete and did not falsify the gate
-- extracted standalone frame planning for scale/pass/subrect/padding semantics
-- preserved validated color/depth/motion subrects in the frame plan
-- isolated frame-plan validation from nrfusion_core
-- isolated compile/test passed with C++20 warnings-as-errors
-- fixed executor failure ordering before active feature mutation
-- made evaluate fail closed on null resources/command list/zero dimensions
-- current integration remains one long-lived branch; no PR opened
-- no full Windows build triggered
+Completed this session:
+- confirmed Windows validation remains manual-only
+- confirmed current connector cannot invoke workflow_dispatch
+- expanded scratch owner with passScratch/colorSmall/outputNative/activeColor
+- added residualEdited/history/composed carriers to the same UAV owner
+- fixed private Surface helper compile defect during review
+- added separate depth/motion guide-clone owner with COPY_DEST resting state
+- added isolated WARP guide-clone target
+- wired both owners into executor shutdown ownership
+- no PR opened and no full CI/build triggered
 
-Current head before final handoff docs: e45247bbdd597d7f755e9f7d443747b96f85f21a
-Portable-validated boundary: frame-plan code at e45247bb... via isolated compile/test.
-Windows validation pending: scratch WARP target + executor hardening on current integration.
+Current code head before this documentation/fix commit: 3f306234b8eff82c0d9ae5764538fa2faab484fa
+Windows fast pending targets:
+- nrfusion_nr_scratch_resources_tests
+- nrfusion_nr_guide_clones_tests
+- nrfusion_d3d12_nr_frame_plan_tests
 
-Outstanding Phase 05 subgates:
-- 03d complete resource/state ownership and wiring
-- 04 encode/resolve plus real scale path
-- 05 multipass/history and per-pass epochs
-- 06 HDR/exposure/residual
-- 07 pre/post SR/RR seams plus complete standalone operational snapshot
+Outstanding Phase 05:
+- 04 wire owners + frame plan into real encode/resolve/scale path
+- 05 multipass/history and per-pass submission epochs
+- 06 HDR/exposure/residual behavior
+- 07 pre/post SR/RR seams + complete operational snapshot + final adversarial review
 
 Exact next action:
-- run Windows fast only for nrfusion_nr_scratch_resources_tests and nrfusion_d3d12_nr_frame_plan_tests
-- if green, expand resource owner to passScratch/colorSmall/outputNative/activeColor first
-- complete 03d-b residual surfaces + guide clone ownership next
-- do not start HDR/residual/multipass behavior until encode/resolve has a state regression
+- when workflow dispatch is available, run one fast validation with the three focused targets/tests
+- independently begin subgate 04 by extracting the encode/resolve state machine without Config/State dependencies

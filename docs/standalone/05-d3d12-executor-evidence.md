@@ -350,3 +350,24 @@ privado estático da classe.
 O mesmo owner agora inclui `residualEdited`, `residualHistory[0/1]` e `residualComposed`.
 As carriers continuam criadas em UAV e o teste explicita a primeira transição para NPSR, preservando
 o lifecycle do executor maduro em vez de esconder a transição na criação.
+
+
+## Subgate 03d-b — guide clone owner
+
+Commit de implementação: `3f306234b8eff82c0d9ae5764538fa2faab484fa`.
+
+Novo `D3D12NrGuideClones`:
+- depth/motion separados do owner UAV;
+- clone copia shape/layout/sample metadata da source;
+- formato tipado fornecido pelo caller;
+- flags removidas como no helper maduro;
+- estado inicial COPY_DEST;
+- transition valida state-before;
+- descriptor idêntico é idempotente;
+- resize/format change usa deferred retirement;
+- shutdown do executor libera clones após GPU idle.
+
+Target `nrfusion_nr_guide_clones_tests` é isolado de `nrfusion_core` e usa WARP.
+Revisão estática posterior adicionou `<cstddef>` diretamente para `std::size_t`.
+
+Windows fast permanece pendente: o conector disponível não oferece `workflow_dispatch`.

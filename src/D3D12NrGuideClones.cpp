@@ -1,5 +1,7 @@
 #include "nrfusion/D3D12NrGuideClones.hpp"
 
+#include <cstddef>
+
 namespace nrfusion {
 
 bool D3D12NrGuideClones::SameDesc(

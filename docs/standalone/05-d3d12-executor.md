@@ -2,7 +2,7 @@
 
 ## Status
 
-**Em andamento.** Auditoria confirmou que o gate ainda não fecha. Subgates 01–03b preservados; 03c frame planning standalone concluído.
+**Em andamento.** Subgates 01–03d concluídos estruturalmente; o gate ainda não fecha porque encode/resolve, multipass, HDR/residual e seams não foram portados.
 Evidência parcial: [05-d3d12-executor-evidence.md](05-d3d12-executor-evidence.md).
 
 ## Objetivo
@@ -62,7 +62,7 @@ read-only. Boundaries mapeados:
 - [x] Preservar `JustBuilt()` durante o primeiro split.
 - [x] Portar pending-submission/epoch maduro.
 - [ ] Extrair resource/state map por owner/lifetime. Deferred retirement de feature já portado.
-- [ ] Portar scale/subrect/padding.
+- [x] Portar scale/subrect/padding.
 - [ ] Portar pre/post-SR/RR/history e multipass.
 - [ ] Portar HDR/exposure/residual.
 - [ ] Substituir toda dependência OptiScaler Config/State por snapshot standalone.
@@ -188,3 +188,18 @@ O owner agora também controla `passScratch`, `colorSmall`, `outputNative` e `ac
 - o teste WARP cobre add/idempotência/resize/state/retire/geometry invalidation.
 
 03d ainda permanece aberto para residual surfaces e guide clones.
+
+
+## Subgate 03d-b — guide clone ownership
+
+Depth/motion clones usam owner separado porque não são UAV scratch:
+
+- descriptor deriva da guide original;
+- formato tipado é explícito;
+- flags são `NONE`;
+- estado inicial/repouso é `COPY_DEST`;
+- evaluate usa NPSR temporariamente e deve devolver COPY_DEST;
+- resize/format change aposenta o clone anterior pela deferred retirement queue.
+
+O executor agora possui `scratch_` e `guideClones_`. O mapa de ownership/state auditado está
+estruturalmente extraído; o uso efetivo desses owners no frame path passa a ser requisito do subgate 04.
