@@ -11,7 +11,6 @@
 #include "nrfusion/MotionConfidence.hpp"
 #include "nrfusion/NvofPolicy.hpp"
 #include "nrfusion/PerformanceController.hpp"
-#include "nrfusion/PipelinedExecutorState.hpp"
 #include "nrfusion/PrecisionAutotuner.hpp"
 #include "nrfusion/RuntimeCapabilities.hpp"
 #include "nrfusion/ResidualEngine.hpp"
@@ -19,7 +18,6 @@
 #include "nrfusion/ResidualReprojection.hpp"
 #include "nrfusion/PipelinePolicy.hpp"
 #include "nrfusion/SchedulerPolicy.hpp"
-#include "nrfusion/TelemetryTracker.hpp"
 #include "nrfusion/TemporalConfidence.hpp"
 #include "nrfusion/TemporalHistoryRegistry.hpp"
 
@@ -195,10 +193,6 @@ public:
     }
     void InvalidateHistory(std::uint64_t featureKey) { histories_.InvalidateFeature(featureKey); }
 
-    TelemetryTracker& Telemetry() noexcept { return telemetry_; }
-    const TelemetryTracker& Telemetry() const noexcept { return telemetry_; }
-    PipelinedExecutorState& Pipeline() noexcept { return pipeline_; }
-    const PipelinedExecutorState& Pipeline() const noexcept { return pipeline_; }
     AsyncOverlapEstimator& Overlap() noexcept { return overlap_; }
 
     std::optional<double> ObserveCalibratedOverlap(
@@ -258,8 +252,6 @@ private:
     MotionGuideValidator motionValidator_;
     MotionConfidenceEngine motionConfidence_;
     TemporalHistoryRegistry histories_;
-    TelemetryTracker telemetry_;
-    PipelinedExecutorState pipeline_{2};
     AsyncOverlapEstimator overlap_;
     CrossQueueClockCalibrator queueClocks_;
     AsyncQualification asyncTuner_;

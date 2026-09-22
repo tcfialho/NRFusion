@@ -15,8 +15,6 @@ set(NRFUSION_NR_SESSION_PORTABLE_SOURCES
     src/GuideValidation.cpp
     src/MotionConfidence.cpp
     src/TemporalHistoryRegistry.cpp
-    src/TelemetryTracker.cpp
-    src/PipelinedExecutorState.cpp
     src/CrossQueueClockCalibrator.cpp
     src/ResidualPolicy.cpp
     src/TemporalConfidence.cpp

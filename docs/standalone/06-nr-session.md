@@ -218,3 +218,17 @@ Removidos do runtime central:
 
 Efeito: um único owner de work/timing no standalone e remoção da allocation de construção do
 `TimingWorkMapper{16}` que era inútil em cada `NrSession`.
+
+
+### 06e runtime-state cleanup
+
+A busca de consumidores confirmou que `FusionRuntime::Telemetry()/Pipeline()` não eram usados.
+O adapter legado já possui `TelemetryTracker` e `PipelinedExecutorState` próprios, enquanto
+`NrSession` recebe `TelemetrySample` explícito e não usa pipeline state interno.
+
+Removidos do `FusionRuntime`:
+- `TelemetryTracker telemetry_` + getters;
+- `PipelinedExecutorState pipeline_{2}` + getters.
+
+Isso remove mais um vector allocation da construção da sessão e reduz state duplicado sem alterar
+`ResolveAuto`, scheduler, precision, cost learning ou contratos de frame.
