@@ -126,6 +126,7 @@ Completed in the current continuation:
 - reserved NrCostModel scale storage from configured rungs before steady execution without modifying the grandfathered >300-line PerformanceController.cpp
 - expanded the million-frame measured window to exercise Hybrid qualification and scale transitions
 - allocation stress now counts normal and over-aligned new/new[]
+- fake executor timing and next-frame telemetry now use the same FP8/Hybrid measurements
 - separated execution generation from PrecisionAutotuner generation so FP8/Hybrid transitions quarantine stale work
 - split only cold FusionRuntime lifecycle methods to keep the header <=300 without hot-path indirection
 - recovered AGENT.md and Phase 06 docs after detecting connector-result misassociation; code files were unaffected

@@ -327,3 +327,13 @@ adicionado para satisfazer o limite estrutural.
 O stress agora intercepta também aligned `new/new[]` e respectivas formas de delete.
 O caso `operator new(0)` também segue o contrato de allocation e não produz falso `bad_alloc`.
 Assim o gate não ignora allocations apenas por serem over-aligned.
+
+
+### 06f stress signal consistency
+
+O fake executor não usa mais um timing constante desconectado da telemetry.
+Cada completion agora reporta 4 ms em FP8 e 3 ms em HybridNvfp4; o mesmo valor vira
+`packet.telemetry.nrGpuMs` do frame seguinte.
+
+Isso preserva a semântica "telemetry descreve a execução anterior", permite qualificação real da
+candidate Hybrid e mantém controller, cost model e precision tuner observando o mesmo workload.

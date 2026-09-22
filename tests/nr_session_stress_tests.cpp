@@ -16,11 +16,12 @@ std::atomic<std::size_t> gAllocations{0};
 std::atomic<bool> gMeasure{false};
 
 struct FakeExecutor {
-    bool Execute(NrSession& session, const NrSessionFrameResult& frame) noexcept {
+    bool Execute(
+        NrSession& session, const NrSessionFrameResult& frame, double gpuMs) noexcept {
         const auto work = session.BeginWork(frame);
         if (!work || !session.SubmitWork(*work) || !session.MapTimedWork(*work))
             return false;
-        return session.RetireTimedInterval(2.0);
+        return session.RetireTimedInterval(gpuMs);
     }
 };
 
@@ -49,7 +50,11 @@ NrSessionFramePacket Packet(std::uint64_t generation, FrameId frameId) {
 bool Step(NrSession& session, FakeExecutor& executor,
           NrSessionFramePacket& packet) noexcept {
     const NrSessionFrameResult result = session.Resolve(packet);
-    if (!result || !executor.Execute(session, result)) return false;
+    if (!result) return false;
+    const double gpuMs = result.decision.precision == NrPrecision::HybridNvfp4
+        ? 3.0 : 4.0;
+    if (!executor.Execute(session, result, gpuMs)) return false;
+    packet.telemetry.nrGpuMs = gpuMs;
     ++packet.frame.frameId;
     return true;
 }
