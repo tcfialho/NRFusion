@@ -275,3 +275,16 @@ O stress medido agora reconfigura antes da janela para:
 
 Assim o contador de allocations cobre também candidate qualification e novos rungs, não apenas um
 plateau FP8/scale fixa.
+
+
+### 06f structural correction
+
+A primeira versão reservava o cost model com uma chamada adicionada em `PerformanceController.cpp`,
+arquivo legado >300. Isso violava a regra no-growth.
+
+Correção:
+- `PerformanceController.cpp` foi devolvido ao conteúdo anterior;
+- `NrCostModel` recebe a capacidade no initializer de `PerformanceController.hpp`, que permanece
+  abaixo de 300 linhas;
+- a capacidade usa o tamanho original de `config_.scaleSteps`, que é >= ao conjunto normalizado,
+  portanto cobre todos os rungs que o controller pode selecionar sem hipótese de tamanho fixo.

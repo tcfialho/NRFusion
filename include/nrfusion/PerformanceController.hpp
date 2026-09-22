@@ -139,7 +139,7 @@ private:
     double emaAsyncOverlap_ = 0.0;
     double governorCapFps_ = 0.0;
     std::vector<bool> failedScaleSteps_;
-    NrCostModel costModel_;
+    NrCostModel costModel_{config_.scaleSteps.size()};
 };
 
 } // namespace nrfusion

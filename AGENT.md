@@ -123,7 +123,7 @@ Completed in the current continuation:
 - expanded differential regression to 180 adaptive decisions
 - added precision qualification regression through baseline/candidate stages
 - removed percentile-copy allocations from PrecisionAutotuner by reusing reserved scratch storage
-- reserved NrCostModel scale storage from configured rungs before steady execution
+- reserved NrCostModel scale storage from configured rungs before steady execution without modifying the grandfathered >300-line PerformanceController.cpp
 - expanded the million-frame measured window to exercise Hybrid qualification and scale transitions
 - recovered AGENT.md and Phase 06 docs after detecting connector-result misassociation; code files were unaffected
 

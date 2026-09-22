@@ -19,8 +19,8 @@ struct NrCostFit {
 // The fixed term matters because real NR cost does not fall perfectly with pixel count.
 class NrCostModel {
 public:
+    explicit NrCostModel(std::size_t reserveScales = 0);
     void Reset();
-    void ReserveScales(std::size_t count);
     void Observe(float scale, double gpuMs);
 
     std::optional<NrCostFit> Fit() const;

@@ -100,6 +100,7 @@ int main() {
 
     RuntimeConfig measuredConfig = config;
     ++measuredConfig.generation;
+    measuredConfig.targetFps = 240.0f;
     PerformanceConfig measuredPerformance = performance;
     measuredPerformance.targetFps = 240.0;
     measuredPerformance.scaleDownSustainSeconds = 0.0;
