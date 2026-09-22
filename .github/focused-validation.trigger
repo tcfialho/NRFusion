@@ -1,3 +1,3 @@
-phase07-stale-acquire-quarantine-20260922
-base=4e827755aa0511912a245da737910b1ecd748cb2
-request=validate-stale-generation-before-d3d12-acquire
+phase07-api-preflight-20260922
+base=eeb4e3b5821ebe25ab709f2edb6a7765234b0c94
+request=validate-non-d3d12-before-acquire
