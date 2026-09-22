@@ -44,6 +44,7 @@ struct D3D12AcquireSnapshot {
 struct D3D12AcquireResult {
     FrameContext frame{};
     ProviderDiagnostics diagnostics{};
+    std::uint64_t outputOpaqueId = 0;
     D3D12AcquireFailure failure = D3D12AcquireFailure::None;
     bool attempted = false;
 
