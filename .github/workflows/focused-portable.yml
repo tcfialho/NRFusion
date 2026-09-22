@@ -36,7 +36,7 @@ jobs:
         run: >
           ctest --test-dir build-focused
           --output-on-failure
-          -R '^(nrfusion_tests|nrfusion_nr_session_(tests|stress_tests))
+          -R '^(nrfusion_tests|nrfusion_nr_session_(tests|stress_tests))$'
 
       - name: Package source checkpoint
         run: git archive --format=zip --output=nrfusion-source-${GITHUB_SHA}.zip HEAD
