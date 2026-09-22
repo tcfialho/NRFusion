@@ -4,6 +4,10 @@
 
 namespace nrfusion {
 
+D3D12NrCodec::~D3D12NrCodec() noexcept {
+    Shutdown();
+}
+
 bool D3D12NrCodec::Init(ID3D12Device* device) noexcept {
     if (Ready()) return device == device_;
     if (device == nullptr) return false;

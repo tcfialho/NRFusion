@@ -1,3 +1,7 @@
+set(NRFUSION_FXC_EXECUTABLE
+    "${CMAKE_CURRENT_SOURCE_DIR}/upstreams/wilsjo/OptiScaler/shaders/shader_tools/fxc.exe"
+    CACHE FILEPATH "Locked upstream fxc.exe used for DLSS-NR DXBC reproduction")
+
 set(NRFUSION_DLSSNR_SHADER_SOURCE
     "${CMAKE_CURRENT_SOURCE_DIR}/shaders/vendor/optiscaler_dlssnr/dlssnr.hlsl")
 set(NRFUSION_DLSSNR_GENERATED_DIR
@@ -13,6 +17,7 @@ add_custom_command(
     COMMAND python "${CMAKE_CURRENT_SOURCE_DIR}/tools/generate_dlssnr_shader.py"
             --source "${NRFUSION_DLSSNR_SHADER_SOURCE}"
             --output-dir "${NRFUSION_DLSSNR_GENERATED_DIR}"
+            --fxc "${NRFUSION_FXC_EXECUTABLE}"
     DEPENDS
         "${NRFUSION_DLSSNR_SHADER_SOURCE}"
         "${CMAKE_CURRENT_SOURCE_DIR}/tools/generate_dlssnr_shader.py"

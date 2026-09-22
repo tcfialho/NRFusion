@@ -66,8 +66,10 @@
 - Never use full Windows CI as the inner development loop.
 - First use structural checks, focused unit tests and targeted compilation.
 - Keep focused validation targets isolated from large libraries when they can compile only the production units they actually exercise.
-- Windows validation is manual-only. Use fast mode with explicit CMake targets and a focused CTest regex.
-- Full Windows build, integrated distribution and NSIS validation are reserved for major integration milestones and final cutover.
+- Do not use Windows validation as an intermediate development gate.
+- Do not ask the user to run Windows tests or builds during implementation.
+- Develop and review with the available environment: static analysis, portable compilation, fakes and focused non-Windows tests.
+- Windows build/integration/installer validation is deferred to the final cutover unless the user explicitly requests it earlier.
 - Portable CI may run on master code pushes; docs-only master pushes are ignored.
 - Do not repeatedly rebuild an unchanged dependency graph merely to validate a small boundary.
 - If an expensive workflow exceeds the session cap, record its run ID and stop instead of waiting.
@@ -124,12 +126,9 @@ Completed this session:
 
 Current head before this documentation commit: a9359f43bfeccca46eab57402bd7ecdd9e2d8865
 
-Focused Windows validation pending:
-- nrfusion_dlssnr_shader_codegen
-- nrfusion_d3d12_nr_codec_tests
-- nrfusion_nr_scratch_resources_tests
-- nrfusion_nr_guide_clones_tests
-- nrfusion_d3d12_nr_frame_plan_tests
+Windows validation policy:
+- deferred until final cutover by explicit user instruction
+- intermediate progress must not wait on or request Windows validation
 
 Outstanding Phase 05:
 - 04c wire frame plan + scratch/guide owners + D3D12NrCodec into encode/downsample/evaluate/resolve
@@ -138,6 +137,7 @@ Outstanding Phase 05:
 - 07 pre/post SR/RR seams + complete operational snapshot + final adversarial review
 
 Exact next action:
-- run one Windows fast batch with only the focused targets/tests when workflow_dispatch is available
-- do not wire the codec until that batch is green
-- after green, implement 04c state-machine wiring and regress every resource back to its resting state
+- continue Phase 05 review and implementation without Windows gating
+- implement 04c state-machine wiring only after static/portable contract review
+- regress every resource back to its resting state with fakes/state tests where possible
+- reserve Windows build/integration validation for final cutover

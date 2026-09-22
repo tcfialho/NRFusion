@@ -10,6 +10,7 @@ from pathlib import Path
 EXPECTED_SOURCE_BLOB = "4a6102820f736e9349ffed370259d094f2a7f4ae"
 EXPECTED_CSO_BLOB = "d6eaab373d6f07142af5c283c1acc4b49edba351"
 EXPECTED_HEADER_BLOB = "23429d34833b5f4ad761f83446998d518217183d"
+EXPECTED_FXC_BLOB = "987eb4cae3c343ab024a4b693dbb73660360dbc4"
 
 
 def git_blob_sha1(data: bytes) -> str:
@@ -24,22 +25,29 @@ def require_blob(data: bytes, expected: str, label: str) -> None:
 
 
 def find_fxc(explicit: str | None) -> Path:
+    candidates: list[Path] = []
     if explicit:
-        candidate = Path(explicit)
-        if candidate.is_file():
-            return candidate
-        raise RuntimeError(f"fxc.exe not found at {candidate}")
+        candidates.append(Path(explicit))
+
+    configured = os.environ.get("NRFUSION_FXC")
+    if configured:
+        candidates.append(Path(configured))
 
     found = shutil.which("fxc.exe") or shutil.which("fxc")
     if found:
-        return Path(found)
+        candidates.append(Path(found))
 
-    program_files = Path(os.environ.get("ProgramFiles(x86)", r"C:\Program Files (x86)"))
-    kits = program_files / "Windows Kits" / "10" / "bin"
-    candidates = sorted(kits.glob("*/x64/fxc.exe"), reverse=True)
-    if candidates:
-        return candidates[0]
-    raise RuntimeError("fxc.exe not found; install the Windows SDK")
+    for candidate in candidates:
+        if not candidate.is_file():
+            continue
+        data = candidate.read_bytes()
+        if git_blob_sha1(data) == EXPECTED_FXC_BLOB:
+            return candidate
+
+    raise RuntimeError(
+        "the locked upstream fxc.exe was not found; pass --fxc or NRFUSION_FXC "
+        f"with Git blob {EXPECTED_FXC_BLOB}"
+    )
 
 
 def render_header(shader: bytes) -> bytes:

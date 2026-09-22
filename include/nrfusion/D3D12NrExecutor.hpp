@@ -49,6 +49,8 @@ struct DlssNrTuning {
     float skinStructure = -1.0f;
     bool autoMask = true;
     int uiCorrection = 1;
+
+    bool operator==(const DlssNrTuning&) const noexcept = default;
 };
 
 class D3D12NrExecutor {
@@ -117,6 +119,8 @@ private:
     void* feature_ = nullptr;
     uint32_t featureWidth_ = 0;
     uint32_t featureHeight_ = 0;
+    DlssNrTuning featureTuning_{};
+    bool featureTuningValid_ = false;
     bool floatSlotKnown_ = false;
     bool justBuilt_ = false;
     NrSubmissionGate submissionGate_{};

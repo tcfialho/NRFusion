@@ -24,7 +24,9 @@ bool D3D12NrExecutor::EnsureFeature(ID3D12GraphicsCommandList* cmdList, uint32_t
         status_ = "invalid NR feature request";
         return false;
     }
-    if (feature_ && featureWidth_ == width && featureHeight_ == height) return true;
+    if (feature_ && featureWidth_ == width && featureHeight_ == height &&
+        featureTuningValid_ && featureTuning_ == tuning)
+        return true;
     if (cmdList == nullptr) {
         status_ = "NR feature creation requires a command list";
         return false;
@@ -45,6 +47,7 @@ bool D3D12NrExecutor::EnsureFeature(ID3D12GraphicsCommandList* cmdList, uint32_t
             return false;
         }
         submissionGate_.Reset();
+        featureTuningValid_ = false;
     }
 
     feature_ = create_(snippetPath_.c_str(), L"", device, cmdList, capabilityParams_, width, height,
@@ -59,6 +62,8 @@ bool D3D12NrExecutor::EnsureFeature(ID3D12GraphicsCommandList* cmdList, uint32_t
     }
     featureWidth_ = width;
     featureHeight_ = height;
+    featureTuning_ = tuning;
+    featureTuningValid_ = true;
     justBuilt_ = true;
     status_ = "feature built; usable starting next call";
     return true;
@@ -79,6 +84,8 @@ void D3D12NrExecutor::Shutdown() {
     scratch_.ReleaseAfterIdle();
     guideClones_.ReleaseAfterIdle();
     featureWidth_ = featureHeight_ = 0;
+    featureTuning_ = {};
+    featureTuningValid_ = false;
     submissionGate_.Reset();
     capabilityParams_ = nullptr;
     if (forwarderModule_) { FreeLibrary(forwarderModule_); forwarderModule_ = nullptr; }

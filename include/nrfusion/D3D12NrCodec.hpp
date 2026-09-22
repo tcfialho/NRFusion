@@ -78,6 +78,7 @@ struct D3D12NrCodecResources {
 class D3D12NrCodec {
 public:
     D3D12NrCodec() = default;
+    ~D3D12NrCodec() noexcept;
     D3D12NrCodec(const D3D12NrCodec&) = delete;
     D3D12NrCodec& operator=(const D3D12NrCodec&) = delete;
 

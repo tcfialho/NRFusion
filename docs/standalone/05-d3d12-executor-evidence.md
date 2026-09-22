@@ -497,3 +497,19 @@ Windows fast pendente:
 - `nrfusion_d3d12_nr_frame_plan_tests`.
 
 Nenhum desses resultados foi presumido como PASS.
+
+
+## Revisão minuciosa — correções de contrato
+
+Encontrado e corrigido: a feature primária era reutilizada apenas por resolução. O executor maduro
+rebuilda quando tuning muda porque esses parâmetros são consumidos no create. O standalone agora inclui
+`DlssNrTuning` na identidade da feature e registra o tuning somente após create bem-sucedido.
+
+Encontrado e corrigido: `D3D12NrCodec` possuía COM ownership explícito mas não destructor; agora o
+destructor chama `Shutdown()`, mantendo teardown idempotente.
+
+Encontrado e corrigido: o codegen aceitava qualquer `fxc.exe`, embora o upstream gere com o binário
+local em `shader_tools`. O generator agora aceita somente o Git blob travado
+`987eb4cae3c343ab024a4b693dbb73660360dbc4`.
+
+Política de validação atualizada: nenhum Windows build/test intermediário será tratado como gate.
