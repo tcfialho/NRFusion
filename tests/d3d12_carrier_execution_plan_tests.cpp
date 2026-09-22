@@ -109,6 +109,12 @@ int main() {
     assert(BuildD3D12CarrierExecutionPlan(missingMotion, Work(), {}).failure ==
            D3D12CarrierExecutionFailure::MissingMotion);
 
+    auto exposureConfig = config;
+    exposureConfig.useGameExposure = true;
+    assert(BuildD3D12CarrierExecutionPlan(
+               Frame(NrPlacement::PreSr), Work(), exposureConfig).failure ==
+           D3D12CarrierExecutionFailure::MissingExposure);
+
     assert(BuildD3D12CarrierExecutionPlan(
                Frame(NrPlacement::AcrossRr), Work(), {}).failure ==
            D3D12CarrierExecutionFailure::UnsupportedPlacement);
