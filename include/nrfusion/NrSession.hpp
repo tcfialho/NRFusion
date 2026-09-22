@@ -2,6 +2,9 @@
 
 #include "nrfusion/FusionRuntime.hpp"
 #include "nrfusion/NrSessionContracts.hpp"
+#include "nrfusion/NrSessionWorkState.hpp"
+
+#include <optional>
 
 namespace nrfusion {
 
@@ -13,6 +16,14 @@ public:
     void Reset() noexcept;
     NrSessionFrameResult Resolve(const NrSessionFramePacket& packet);
 
+    std::optional<WorkTicket> BeginWork(
+        const NrSessionFrameResult& frame, std::uint64_t viewKey = 0) noexcept;
+    bool SubmitWork(const WorkTicket& ticket) noexcept;
+    bool AbandonWork(const WorkTicket& ticket) noexcept;
+    bool MapTimedWork(const WorkTicket& ticket) noexcept;
+    void MapInvalidTimedAttempt() noexcept;
+    bool RetireTimedInterval(double gpuMs) noexcept;
+
     const RuntimeConfig& Config() const noexcept { return config_; }
     const NrSessionState& State() const noexcept { return state_; }
 
@@ -23,6 +34,8 @@ private:
     RuntimeConfig config_{};
     NrSessionState state_{};
     FusionRuntime runtime_{};
+    NrSessionWorkTracker works_{};
+    NrSessionTimingQueue timings_{};
     bool configured_ = false;
 };
 

@@ -1,5 +1,7 @@
 #include "nrfusion/NrSession.hpp"
 
+#include <cmath>
+
 namespace nrfusion {
 
 bool NrSession::Configure(
@@ -10,6 +12,10 @@ bool NrSession::Configure(
         if (config.generation == config_.generation) return config == config_;
     }
 
+    if (configured_) {
+        works_.ResetSession();
+        timings_.Reset();
+    }
     runtime_.Reconfigure(performance);
     runtime_.BeginConfigurationEpoch(runtime_.PerformanceCfg().maxScale);
     config_ = config;
@@ -21,6 +27,8 @@ bool NrSession::Configure(
 }
 
 void NrSession::Reset() noexcept {
+    works_.ResetSession();
+    timings_.Reset();
     config_ = {};
     state_ = {};
     configured_ = false;
@@ -62,6 +70,53 @@ NrSessionFrameResult NrSession::Resolve(const NrSessionFramePacket& packet) {
     ++state_.resolvedFrames;
     if (!result) ++state_.rejectedFrames;
     return result;
+}
+
+std::optional<WorkTicket> NrSession::BeginWork(
+    const NrSessionFrameResult& frame, std::uint64_t viewKey) noexcept {
+    if (!frame || frame.configurationGeneration != config_.generation ||
+        frame.runtimeGeneration != state_.runtimeGeneration)
+        return std::nullopt;
+    const std::uint8_t precisionTag =
+        frame.decision.precision == NrPrecision::HybridNvfp4 ? 4u : 8u;
+    return works_.Begin(
+        frame.frameId, viewKey, frame.configurationGeneration,
+        frame.decision.workingScale, precisionTag);
+}
+
+bool NrSession::SubmitWork(const WorkTicket& ticket) noexcept {
+    return ticket.configurationGeneration == config_.generation &&
+           works_.Submit(ticket);
+}
+
+bool NrSession::AbandonWork(const WorkTicket& ticket) noexcept {
+    return works_.Abandon(ticket);
+}
+
+bool NrSession::MapTimedWork(const WorkTicket& ticket) noexcept {
+    if (!works_.IsSubmitted(ticket) ||
+        ticket.configurationGeneration != config_.generation)
+        return false;
+    if (const auto displaced = timings_.Push(ticket))
+        works_.Abandon(*displaced);
+    return true;
+}
+
+void NrSession::MapInvalidTimedAttempt() noexcept {
+    if (const auto displaced = timings_.PushInvalid())
+        works_.Abandon(*displaced);
+}
+
+bool NrSession::RetireTimedInterval(double gpuMs) noexcept {
+    const auto entry = timings_.Pop();
+    if (!entry || !entry->mapsWork) return false;
+    const WorkTicket ticket = entry->ticket;
+    if (!works_.Complete(ticket)) return false;
+    if (ticket.configurationGeneration != config_.generation ||
+        !std::isfinite(gpuMs) || gpuMs <= 0.0 || gpuMs >= 1000.0)
+        return false;
+    runtime_.ObserveScaleCost(ticket.workingScale, gpuMs);
+    return true;
 }
 
 } // namespace nrfusion

@@ -21,10 +21,10 @@ Fase 05.
 
 - [x] Definir FramePacket/FrameResult mínimos.
 - [x] Resolver scale/precision/placement/scheduler em uma transação.
-- [ ] Integrar work identity/timing retirement.
+- [x] Integrar work identity/timing retirement.
 - [ ] Remover OptiScalerAdapter e getters repetidos.
 - [x] Separar RuntimeConfig de state mutável.
-- [ ] Preservar stale timing/reconfigure quarantine; config-generation quarantine já implementada.
+- [x] Preservar stale timing/generation/reconfigure quarantine.
 - [x] `NrSession` orquestra; helpers permanecem focados.
 - [x] Antes de mudanças substanciais, decompor `FusionRuntime.hpp` (>300) em contratos/facades pequenos.
 - [ ] Se `PerformanceController.cpp` for evoluído, separar estimativa/cost learning da state machine de escala.
@@ -73,3 +73,20 @@ Fase 07.
 
 Próximo subgate: 06b — work identity/timing retirement com storage fixo e fake executor, removendo
 o caminho por-frame de `OptiScalerAdapter` sem introduzir locks ou allocations steady.
+
+
+## Subgate 06b — work/timing fixos
+
+`NrSessionWorkTracker` substitui o caminho dinâmico dentro da nova sessão:
+- 64 work tickets fixos;
+- ticket exato, begin/submit/complete/abandon;
+- IDs não são reutilizados;
+- reconfigure troca session namespace e limpa outstanding work.
+
+`NrSessionTimingQueue` usa ring fixo de 16 entradas:
+- overflow desloca o work mais antigo e o abandona;
+- invalid timing ocupa sua posição para não completar o próximo work por engano;
+- reconfigure limpa o ring;
+- timing só treina custo quando ticket/session/config generation ainda pertencem à configuração atual.
+
+Nenhum `unordered_map`, `vector`, lock ou heap foi introduzido na nova work/timing boundary.

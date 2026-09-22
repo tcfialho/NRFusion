@@ -67,6 +67,11 @@ int main() {
     assert(actual.configurationGeneration == config.generation);
     assert(actual.runtimeGeneration == baseline.AutoConfigurationGeneration());
 
+    const auto work = session.BeginWork(actual, 9);
+    assert(work);
+    assert(session.SubmitWork(*work));
+    assert(session.MapTimedWork(*work));
+
     auto stale = Packet(config.generation - 1, 2);
     const auto staleResult = session.Resolve(stale);
     assert(staleResult.disposition == NrSessionDisposition::StaleConfiguration);
@@ -81,8 +86,23 @@ int main() {
     ++disabled.generation;
     disabled.enabled = false;
     assert(session.Configure(disabled, performance));
+    assert(!session.RetireTimedInterval(2.0));
+    assert(!session.SubmitWork(*work));
     auto disabledPacket = Packet(disabled.generation, 3);
     assert(session.Resolve(disabledPacket).disposition == NrSessionDisposition::Disabled);
+
+    RuntimeConfig enabledAgain = disabled;
+    ++enabledAgain.generation;
+    enabledAgain.enabled = true;
+    assert(session.Configure(enabledAgain, performance));
+    auto nextPacket = Packet(enabledAgain.generation, 4);
+    const auto next = session.Resolve(nextPacket);
+    assert(next);
+    const auto nextWork = session.BeginWork(next);
+    assert(nextWork && session.SubmitWork(*nextWork));
+    session.MapInvalidTimedAttempt();
+    assert(!session.RetireTimedInterval(2.0));
+    assert(session.AbandonWork(*nextWork));
 
     session.Reset();
     assert(session.Resolve(packet).disposition == NrSessionDisposition::NotConfigured);

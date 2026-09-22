@@ -46,6 +46,7 @@ add_library(nrfusion_core STATIC
     src/RuntimeShell.cpp
     src/RuntimeBootstrap.cpp
     src/NrSession.cpp
+    src/NrSessionWorkState.cpp
     src/NgxFeatureRegistry.cpp
     src/NrSubmissionGate.cpp
     src/NrDeferredRetirementQueue.cpp

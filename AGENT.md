@@ -109,7 +109,7 @@
 Start: 2026-09-22 00:24 BRT
 Branch: standalone/integration
 Base/default branch: master
-Phase 06: IN PROGRESS; subgate 06a implemented.
+Phase 06: IN PROGRESS; subgates 06a-06b implemented.
 
 06a result:
 - added minimal NrSessionFramePacket/NrSessionFrameResult contracts
@@ -121,9 +121,13 @@ Phase 06: IN PROGRESS; subgate 06a implemented.
 - FusionRuntime.hpp decomposed by moving Auto structural helpers into AutoDecision.hpp
 - differential portable test compares NrSession decision with independent FusionRuntime
 
+06b result:
+- NrSession owns a fixed 64-entry work tracker and 16-entry timing ring
+- no unordered_map/vector/lock in the new work/timing path
+- reconfigure resets work session + timing ring before new-generation acceptance
+- stale ticket/timing cannot train a later RuntimeConfig generation
+
 Outstanding Phase 06:
-- fixed-capacity work identity + timing retirement
-- stale timing quarantine
 - fake executor million-frame validation and steady-allocation check
 - remove OptiScalerAdapter from standalone call graph/getter path
 - old-vs-new call graph review
@@ -131,6 +135,6 @@ Outstanding Phase 06:
 - final LOC/performance gate
 
 Exact next action:
-- implement 06b fixed-capacity work/timing state owned by NrSession
-- differential-test stale completion/reconfigure behavior
+- implement 06c fake executor stress + allocation instrumentation
+- then remove OptiScalerAdapter from the standalone call graph without touching legacy patcher behavior
 - keep PerformanceController/ProfileStore untouched unless their owning responsibility must change
