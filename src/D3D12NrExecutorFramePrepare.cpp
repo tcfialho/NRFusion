@@ -140,8 +140,9 @@ bool D3D12NrExecutor::PrepareFrameResources(
                             D3D12_RESOURCE_STATES& state,
                             D3D12_RESOURCE_STATES arrival,
                             bool& cloned) -> ID3D12Resource* {
-        const DXGI_FORMAT typed = TypedGuideFormat(source->GetDesc().Format);
-        if (typed == source->GetDesc().Format)
+        const D3D12_RESOURCE_DESC sourceDesc = source->GetDesc();
+        const DXGI_FORMAT typed = TypedGuideFormat(sourceDesc.Format);
+        if (typed == sourceDesc.Format)
             return TransitionExternal(
                 cmd, source, state, D3D12_RESOURCE_STATE_NON_PIXEL_SHADER_RESOURCE)
                 ? source : nullptr;

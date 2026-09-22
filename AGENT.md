@@ -106,44 +106,30 @@
 
 ## Current session
 
-Start: 2026-09-21 23:40 BRT
+Start: 2026-09-22 00:02 BRT
 Branch: standalone/phase-05-d3d12-executor-20260921
-Base: master 548349b740e6fdfec7b0a9f6dacc17ebcdf9b160
-Phase 05: COMPLETE AFTER SECOND ADVERSARIAL REVIEW.
-Windows/D3D12 runtime validation remains final-cutover-only.
+Base/default branch: master
+Performance review policy: only changes with no semantic/maintenance trade-off.
 
-Second review corrected:
-- multipass tuning changes now retire/rebuild the whole active feature generation
-- placement and SR/RR identity participate in feature-generation validity
-- feature-generation retirement is capacity-checked transactionally
-- residual post-RR composes into owned residualComposed then copies to Output
-- post residual no longer requires Output UAV capability
-- residual store is single-use and epoch gaps/mode toggles invalidate history
-- failed residual frames cannot reuse a primed history across a gap
-- compare mode/split/zoom/swap and debugScale are present in the standalone snapshot
-- residual-incompatible debug/compare/skin-mask combinations fail closed before touching Color
-- frame-plan allocation extents are derived from actual D3D12 resource descriptors
-- lifecycle/epoch processing happens before scratch resize, so a full retirement queue can still drain
-- post residual only requires the Output resource it actually consumes
-- static sampler fields that must not remain zero/default are explicit
-- shader codegen resolves Python3 explicitly instead of assuming a python PATH alias
+Repository topology confirmed:
+- no main branch exists
+- phases 00-04 heads are ancestors of master and of the long integration branch
+- phase 05 exists only on the long integration branch
+- the long integration branch contains phases 00-05 cumulatively
 
-Final structural verification:
-- validated code head before this documentation commit: 90670e9b7f30ec6d2830f77516f2ec06f2f5d680
-- branch vs master: +42 / -0
-- open PRs: 0
-- forbidden dependencies in Phase 05 executor: 0
-- touched/new handwritten Phase 05 files >300 lines: 0
-- largest files: D3D12NrExecutor.hpp 284, D3D12NrExecutorFrameModel.cpp 279
-- retirement queue focused portable C++20 warnings-as-errors test from prior review: PASS
-- no Windows build/test requested or triggered
+Accepted performance changes:
+- remove duplicate D3D12 GetDesc call in guide preparation
+- cache fixed multipass ping-pong resource pointers outside the pass loop
+- avoid temporary identity copies in NGX ActionFor lookup
 
-Known boundary, not a Phase 05 blocker:
-- high-quality >1.0x supersample filtering still uses the mature codec fallback path because OS_Dx12
-  remains OptiScaler-owned; the standalone executor does not import that subsystem
-- root-signature restoration belongs to the later carrier/hook integration boundary
+Rejected by policy:
+- registry hashing/index tables
+- retirement queue data-structure changes
+- barrier/copy coalescing
+- persistent caches or new synchronization
+- any visual/algorithmic change
 
 Exact next action:
-- begin Phase 06 from the second-reviewed D3D12NrExecutor::ExecuteFrame boundary
-- keep the same long-lived integration branch and no intermediate PR
-- reserve Windows integration/build/installer validation for final cutover
+- verify diff/LOC and ancestry after this performance-only commit
+- continue future phases on the same long-lived integration branch
+- merge/cut over to master only at the planned final integration point

@@ -71,8 +71,12 @@ bool D3D12NrExecutor::RunFrameModel(
     ID3D12GraphicsCommandList* cmd, const D3D12NrFrameResources& resources,
     const D3D12NrFrameRequest& request, FrameContext& context,
     std::uint32_t effectivePasses) noexcept {
+    ID3D12Resource* const primaryOutput =
+        scratch_.Get(D3D12NrScratchKind::Output);
+    ID3D12Resource* const passScratch =
+        scratch_.Get(D3D12NrScratchKind::PassScratch);
     ID3D12Resource* passInput = context.modelInput;
-    ID3D12Resource* passOutput = scratch_.Get(D3D12NrScratchKind::Output);
+    ID3D12Resource* passOutput = primaryOutput;
     ID3D12Resource* finalAnswer = nullptr;
 
     for (std::uint32_t pass = 0; pass < effectivePasses; ++pass) {
@@ -92,7 +96,7 @@ bool D3D12NrExecutor::RunFrameModel(
 
         if (pass > 0) passNeedsReset_[pass] = false;
         const D3D12NrScratchKind outputKind =
-            passOutput == scratch_.Get(D3D12NrScratchKind::Output)
+            passOutput == primaryOutput
                 ? D3D12NrScratchKind::Output
                 : D3D12NrScratchKind::PassScratch;
         if (!scratch_.Transition(
@@ -103,11 +107,9 @@ bool D3D12NrExecutor::RunFrameModel(
 
         if (pass + 1 < effectivePasses) {
             passInput = finalAnswer;
-            passOutput = passOutput == scratch_.Get(D3D12NrScratchKind::Output)
-                ? scratch_.Get(D3D12NrScratchKind::PassScratch)
-                : scratch_.Get(D3D12NrScratchKind::Output);
+            passOutput = passOutput == primaryOutput ? passScratch : primaryOutput;
             const D3D12NrScratchKind nextKind =
-                passOutput == scratch_.Get(D3D12NrScratchKind::Output)
+                passOutput == primaryOutput
                     ? D3D12NrScratchKind::Output
                     : D3D12NrScratchKind::PassScratch;
             if (scratch_.State(nextKind) == D3D12_RESOURCE_STATE_NON_PIXEL_SHADER_RESOURCE &&

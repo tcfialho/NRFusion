@@ -639,3 +639,17 @@ Resultado final da auditoria:
 
 A segunda revisão não foi apenas documental: encontrou e corrigiu bugs de generation lifetime,
 residual post-RR, descriptor authority, retirement progress e build determinístico.
+
+
+## Performance review — no-drawback pass
+
+A revisão de performance deliberadamente rejeitou mudanças algorítmicas, novos caches persistentes,
+containers diferentes, locks/atomics e alterações de barriers/copies.
+
+Foram aceitas somente eliminações mecânicas de trabalho redundante:
+- guide preparation faz um único `ID3D12Resource::GetDesc()` por decisão de formato;
+- multipass guarda os dois ponteiros fixos de ping-pong fora do loop em vez de repetir `scratch_.Get()`;
+- `NgxFeatureRegistry::ActionFor` usa diretamente o índice já localizado e não materializa uma
+  `NgxFeatureIdentity` temporária.
+
+Sem mudança de ownership, lifetime, ordem GPU, resultado visual, capacidade ou complexidade assintótica.

@@ -107,11 +107,17 @@ NgxFeatureIdentity NgxFeatureRegistry::LookupUnique(std::uintptr_t handle) const
 
 NgxEvaluateAction NgxFeatureRegistry::ActionFor(
     std::uint64_t contextId, std::uintptr_t handle) const noexcept {
-    return ActionForKind(Lookup(contextId, handle).kind);
+    const std::size_t index = Find(contextId, handle);
+    return index == kNotFound
+        ? NgxEvaluateAction::PassThrough
+        : ActionForKind(slots_[index].identity.kind);
 }
 
 NgxEvaluateAction NgxFeatureRegistry::ActionFor(std::uintptr_t handle) const noexcept {
-    return ActionForKind(LookupUnique(handle).kind);
+    const std::size_t index = FindUnique(handle);
+    return index == kNotFound
+        ? NgxEvaluateAction::PassThrough
+        : ActionForKind(slots_[index].identity.kind);
 }
 
 void NgxFeatureRegistry::Clear() noexcept {
