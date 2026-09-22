@@ -1,3 +1,3 @@
-phase07-acquire-contract-20260922
+phase07-acquire-contract-rerun-20260922
 base=d27e48c994ade64f3a405a17cba4531f7c9ad9da
 request=validate-portable-d3d12-acquire-contract
