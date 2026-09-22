@@ -2,7 +2,7 @@
 
 ## Status
 
-**Em andamento.** Subgates 06a–06e implementados e revisados; gates de execução portátil ainda pendentes.
+**Em andamento.** Subgates 06a–06f implementados e revisados; gates de execução portátil ainda pendentes.
 
 ## Objetivo
 
@@ -337,3 +337,30 @@ Cada completion agora reporta 4 ms em FP8 e 3 ms em HybridNvfp4; o mesmo valor v
 
 Isso preserva a semântica "telemetry descreve a execução anterior", permite qualificação real da
 candidate Hybrid e mantém controller, cost model e precision tuner observando o mesmo workload.
+
+
+## Checkpoint 06f
+
+Head estrutural revisado: `4b19b4273fd0da1b798b3538c16df80c33bad8aa`.
+
+Verificação final:
+- branch +69/-0 contra `master`; PR aberto 0;
+- `FusionRuntime.hpp` 296 linhas;
+- `FusionRuntimeLifecycle.cpp` 22;
+- `PrecisionAutotuner.cpp` 186;
+- `NrCostModel.cpp` 167;
+- `NrSession.cpp` 138;
+- `nr_session_tests.cpp` 203;
+- `nr_session_stress_tests.cpp` 172;
+- `PerformanceController.cpp` continua 514 linhas, porém seu SHA é idêntico ao checkpoint anterior:
+  nenhuma modificação/no-growth no arquivo legado;
+- `NrSession` sem mutex;
+- execution generation separada da precision qualifier generation;
+- scratch de percentile reservado;
+- cost-model capacity reservada antes do steady path;
+- normal/aligned allocations instrumentadas;
+- stress força Hybrid qualification e scale transitions.
+
+A tentativa de reconstruir o source local via payload compactado do connector foi comprovada em
+um pequeno lote, mas não foi concluída antes do freeze da sessão. Portanto os dois targets continuam
+versionados, porém não marcados como PASS.

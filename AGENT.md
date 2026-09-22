@@ -106,42 +106,42 @@
 
 ## Current session
 
-Start: 2026-09-22 00:47 BRT
+Start: 2026-09-22 03:33 BRT
 Branch: standalone/integration
 Base/default branch: master
 Phase 06: IN PROGRESS; subgates 06a-06f implemented and adversarially reviewed.
 
-Completed in the current continuation:
-- added 1,000,000-frame allocation stress and removed the steady CheaperPrecision vector allocation
-- removed OptiScalerAdapter.cpp from nrfusion_core while preserving legacy test/patcher compatibility
-- added opt-in focused portable NrSession validation without changing normal-build cost
-- made RuntimeConfig + PerformanceConfig one generation identity
-- made Configure fail-closed/transactional for invalid performance config and generation exhaustion
-- removed duplicate WorkLedger/TimingWorkMapper/TelemetryTracker/PipelinedExecutorState from FusionRuntime
-- kept NrSession::Reset noexcept-safe by not reconstructing a vector-owning private snapshot
-- routed exact retired-work timings into the central PrecisionAutotuner and scale cost model
-- expanded differential regression to 180 adaptive decisions
-- added precision qualification regression through baseline/candidate stages
-- removed percentile-copy allocations from PrecisionAutotuner by reusing reserved scratch storage
-- reserved NrCostModel scale storage from configured rungs before steady execution without modifying the grandfathered >300-line PerformanceController.cpp
-- expanded the million-frame measured window to exercise Hybrid qualification and scale transitions
-- allocation stress now counts normal and over-aligned new/new[]
-- fake executor timing and next-frame telemetry now use the same FP8/Hybrid measurements
-- separated execution generation from PrecisionAutotuner generation so FP8/Hybrid transitions quarantine stale work
-- split only cold FusionRuntime lifecycle methods to keep the header <=300 without hot-path indirection
-- recovered AGENT.md and Phase 06 docs after detecting connector-result misassociation; code files were unaffected
+Completed this session:
+- removed PrecisionAutotuner percentile-copy allocations with reserved reusable scratch
+- reserved NrCostModel rung storage from PerformanceConfig before steady execution
+- preserved the grandfathered PerformanceController.cpp byte-for-byte/no-growth
+- separated execution generation from PrecisionAutotuner generation
+- FP8/Hybrid transitions now quarantine stale work/timing
+- supported -> unsupported invalidates old execution work immediately
+- split cold FusionRuntime lifecycle methods to keep FusionRuntime.hpp <=300
+- allocation stress counts normal and over-aligned new/new[]
+- stress timing and next-frame telemetry use the same FP8/Hybrid measurements
+- measured stress configuration forces precision qualification and scale transitions
+- verified focused/core CMake both include FusionRuntimeLifecycle.cpp
 
-Current structural code head before 06f: 93f7993523f0418a80e89a1723f10bb11d851461
-Open implementation WIP: none
-Windows validation: intentionally not used.
+Validated structural code head: 4b19b4273fd0da1b798b3538c16df80c33bad8aa
+Branch vs master: +69 / -0
+Open PRs: 0
+PerformanceController.cpp: grandfathered 514 lines, exact same SHA as prior checkpoint.
 
-Validation limitation:
-- local g++/clang++/cmake exist
-- git clone/codeload fail because github.com DNS is unavailable from the container
-- GitHub connector has no workflow-dispatch action
-- focused portable targets are versioned but not claimed PASS
+Validation still open:
+- nrfusion_nr_session_tests has not executed in this environment
+- nrfusion_nr_session_stress_tests has not executed in this environment
+- 0-allocation runtime gate is therefore not claimed PASS
+- Windows remains intentionally unused
+
+Execution workaround status:
+- compact connector payload -> local file reconstruction was proven on a small source batch
+- full portable closure was not materialized before session freeze
 
 Exact next action:
-- execute only nrfusion_nr_session_tests and nrfusion_nr_session_stress_tests when a portable source execution path exists
-- fix only an actually measured failure/allocation
-- if both pass, close Phase 06 and begin Phase 07
+- continue materializing the focused portable closure in a few compact batches
+- compile with g++ -std=c++20 -Wall -Wextra -Wpedantic -Werror
+- run nrfusion_nr_session_tests and nrfusion_nr_session_stress_tests
+- fix only measured compile/test/allocation failures
+- if both pass, close Phase 06 and start Phase 07
