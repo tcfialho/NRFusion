@@ -127,11 +127,12 @@ Windows fast pending targets:
 - nrfusion_d3d12_nr_frame_plan_tests
 
 Outstanding Phase 05:
-- 04 wire owners + frame plan into real encode/resolve/scale path
+- 04 resolve shader attribution/reproducibility, then wire owners + frame plan into real encode/resolve/scale path
 - 05 multipass/history and per-pass submission epochs
 - 06 HDR/exposure/residual behavior
 - 07 pre/post SR/RR seams + complete operational snapshot + final adversarial review
 
 Exact next action:
 - when workflow dispatch is available, run one fast validation with the three focused targets/tests
-- independently begin subgate 04 by extracting the encode/resolve state machine without Config/State dependencies
+- resolve RenoDX attribution for the locked upstream shader
+- add reproducible HLSL -> CSO generation before extracting D3D12NrCodec

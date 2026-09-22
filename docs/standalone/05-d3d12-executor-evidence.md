@@ -371,3 +371,27 @@ Target `nrfusion_nr_guide_clones_tests` é isolado de `nrfusion_core` e usa WARP
 Revisão estática posterior adicionou `<cstddef>` diretamente para `std::size_t`.
 
 Windows fast permanece pendente: o conector disponível não oferece `workflow_dispatch`.
+
+
+## Auditoria de provenance do codec
+
+O fixture local não contém:
+- `shaders/dlssnr/precompile/dlssnr.hlsl`;
+- `shaders/dlssnr/precompile/DlssNr_Shader.h`;
+- `shaders/dlssnr/DlssNr_Dx12.h`.
+
+O lock de upstream aponta para
+`wilsjo2/OptiScaler-DLSSNR-PreSR-Multipass@1b1dd650d35ea59ea2d1d0bf7937b71645159f75`.
+
+Nesse commit foram verificados:
+- `dlssnr.hlsl`: blob `4a6102820f736e9349ffed370259d094f2a7f4ae`;
+- `DlssNr_Shader.h`: blob `23429d34833b5f4ad761f83446998d518217183d`;
+- `DlssNr_Shader.cso`: blob `d6eaab373d6f07142af5c283c1acc4b49edba351`;
+- `dlssnr_residual.hlsl`: blob `1aa829e15bd849be6b38e3f9a4265d0405f444be`.
+
+O shader declara derivação/atribuição RenoDX e referencia
+`Licenses/RenoDX_ATTRIBUTION.txt`, porém esse arquivo/pasta não existe no snapshot travado.
+A busca por `RenoDX_ATTRIBUTION` no upstream retornou 4 resultado(s).
+
+Conclusão: subgate 04 não deve vendorizar shader/CSO ainda. Primeiro precisa fechar attribution e
+reprodução do CSO a partir do HLSL fixado.

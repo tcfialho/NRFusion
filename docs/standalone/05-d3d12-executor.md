@@ -203,3 +203,24 @@ Depth/motion clones usam owner separado porque não são UAV scratch:
 
 O executor agora possui `scratch_` e `guideClones_`. O mapa de ownership/state auditado está
 estruturalmente extraído; o uso efetivo desses owners no frame path passa a ser requisito do subgate 04.
+
+
+## Subgate 04 — codec provenance gate
+
+O encode/resolve maduro depende de `dlssnr.hlsl` + CSO precompilado. O fixture local possui
+somente `DlssNr_Dx12.cpp`; os assets do codec foram omitidos.
+
+O upstream já travado por `upstreams.lock.json` contém os assets no commit
+`1b1dd650d35ea59ea2d1d0bf7937b71645159f75`:
+
+- HLSL: `OptiScaler/shaders/dlssnr/precompile/dlssnr.hlsl`, blob `4a610282...`;
+- generated header: `DlssNr_Shader.h`, blob `23429d34...`;
+- CSO: blob `d6eaab37...`;
+- residual HLSL/CSO também existem no mesmo diretório.
+
+Nenhum desses arquivos será copiado para standalone até existir provenance/attribution reproduzível.
+O próprio HLSL referencia `Licenses/RenoDX_ATTRIBUTION.txt`, mas esse arquivo não está presente
+no commit travado e a busca no repositório não o localizou.
+
+Próximo passo do subgate 04: resolver attribution e criar um shader build step reproduzível a partir
+do HLSL travado; só depois extrair o D3D12 codec/root-signature/descriptor boundary.
