@@ -9,6 +9,8 @@
 #include <windows.h>
 #include <d3d12.h>
 
+#include <array>
+
 #include "nrfusion/D3D12CarrierExecutionPlan.hpp"
 #include "nrfusion/D3D12CarrierNativeAcquire.hpp"
 #include "nrfusion/D3D12NrExecutor.hpp"
