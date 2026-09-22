@@ -1,3 +1,3 @@
-phase07-api-preflight-20260922
-base=eeb4e3b5821ebe25ab709f2edb6a7765234b0c94
-request=validate-non-d3d12-before-acquire
+phase07-native-facts-20260922
+base=5206038d447d24dfc7badc65e98446b4cc8d1012
+request=validate-native-resource-facts-builder
