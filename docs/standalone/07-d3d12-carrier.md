@@ -2,7 +2,7 @@
 
 ## Status
 
-**EM ANDAMENTO — 07a–07g validados portavelmente; implementação estrutural pronta, integração Windows/ativação do executor pendentes.**
+**CONCLUÍDA ESTRUTURALMENTE — 07a–07h validados portavelmente; gate Windows/hardware diferido para o cutover global.**
 
 ## Objetivo
 
@@ -19,11 +19,11 @@ Fases 04–06.
 
 ## Implementação
 
-- [ ] Reusar provider/testes atuais, com split mecânico antes de evolução.
-- [ ] Boundary sugerida pelo código atual: **initialization/shaders**, **slot resources**, **frame submit/extract**, **compose/poll**.
+- [x] Evoluir o carrier standalone sem splitar o legado antes do cutover; provider/Host64/patcher permanecem read-only.
+- [x] Ownership separado em Acquire/Normalize/Session/Execute/Compose/capabilities, reutilizando os owners de GPU da Fase 05.
 - [x] Definir Acquire seam/lifetime de color/depth/motion/exposure.
-- [ ] Usar contrato DLSS/RR confiável ou Synthetic FrameContract honesto.
-- [x] Integrar registry/NrSession para Acquire/Normalize; Execute/Compose ainda não são anunciados.
+- [x] Usar FrameContract com evidence/provenance explícitas; guides selecionados precisam corresponder à fonte decidida.
+- [x] Integrar registry/NrSession; Provider anuncia Acquire/Normalize e Executor só ativa após qualificação.
 - [x] Resize/device rebind/guides ausentes cobertos estruturalmente; Windows compile permanece diferido.
 - [x] Disabled quase pass-through.
 - [x] Cada arquivo novo/tocado do carrier <=300 linhas.
@@ -38,10 +38,10 @@ Fases 04–06.
 
 ## Validação rápida
 
-- [ ] Testes atuais antes/depois do split.
-- [ ] Harness Acquire controlado.
-- [x] LOC checker dos arquivos tocados em 07a–07c.
-- [ ] Jogos reais só para Acquire/model final.
+- [x] Regressões portáteis cobrem a rota nova; split do legado não foi realizado por decisão explícita de cutover.
+- [x] Harness portátil cobre Acquire facts/normalização/identity; harness COM/Windows fica no gate final.
+- [x] LOC checker dos arquivos novos/tocados em 07a–07h.
+- [ ] Jogos reais permanecem no gate de cutover/hardware e não bloqueiam o fechamento estrutural.
 
 ## Gate
 
@@ -451,3 +451,57 @@ Criar a integração de bootstrap do carrier sem anunciar executor prematurament
 3. testar a lógica de ativação com um estado/fake portátil, sem COM/Windows;
 4. manter o caminho Windows real diferido para o gate de cutover;
 5. depois reavaliar se a Fase 07 pode ser fechada estruturalmente e entrar na Fase 08.
+
+
+## Subgate 07h — bootstrap activation e fechamento estrutural
+
+A ativação do carrier foi ligada ao runtime sem expor o registry mutável:
+
+- `StartD3D12CarrierRuntime` inicia o shell com o componente Provider D3D12;
+- `RuntimeBootstrap::ActivateComponent` permite ativação bounded de um componente após o bootstrap;
+- `ActivateD3D12CarrierExecutor` só tenta o Executor quando o runtime está Running e o Provider está ativo;
+- falha de qualificação mantém o runtime Provider-only;
+- falha de qualificação chama rollback explícito para desfazer bind/init parcial;
+- sucesso registra `Execute | Compose`;
+- ativação repetida é idempotente e não requalifica;
+- runtime Disabled/Stopped não tenta qualificar GPU.
+
+O primeiro run do subgate (`35819463575`) falhou somente porque a edição do workflow deixou a regex
+do CTest sem fechar e duplicou package/upload. O YAML foi restaurado em commit isolado, sem alterar
+o código do carrier.
+
+O run `35819575671` validou o lote anterior, mas a revisão de ancestry mostrou que os commits finais
+de rollback estavam dois commits à frente. Por isso foi executado um gate adicional no head correto.
+
+Validação final:
+- run `35819742596`: **SUCCESS**;
+- code head validado: `c11e42bdf808dc4b0bcf54e50afa985ca2cd8113`;
+- focused suite incluindo `nrfusion_d3d12_carrier_bootstrap_tests`: PASS;
+- rollback após qualification failure: PASS;
+- Provider-only após failure: PASS;
+- Provider + Executor após success: PASS;
+- nenhum Windows gate intermediário foi usado.
+
+### Fechamento da Fase 07
+
+A rota standalone D3D12 agora tem owners explícitos para:
+- Acquire;
+- Normalize;
+- policy/session/work identity;
+- Execute;
+- Compose direto e Across-RR pareado;
+- capabilities/bootstrap activation;
+- resize generation quarantine e device rebind lifecycle.
+
+O que permanece diferido não é dívida estrutural desta fase:
+- compile/harness Windows do native Acquire/Executor;
+- jogos reais;
+- substituição física do `SyntheticDx12Provider`/Host64/patcher no cutover.
+
+Esses itens permanecem no gate global de integração/hardware definido pelo repositório.
+
+## Próxima ação
+
+Entrar na **Fase 08 — Timing e Diagnostics desacoplados**. Primeiro auditar o timing existente
+(`TimingWorkMapper`, telemetry e diagnostics) e definir um owner portátil de timing aposentado
+sem waits, sem duplicar o `WorkLedger`/`NrSession`.
