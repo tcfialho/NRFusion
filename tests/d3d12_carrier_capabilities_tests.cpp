@@ -40,5 +40,19 @@ int main() {
     assert(!registry.Supports({
         RuntimeComponentKind::Executor, GraphicsApi::D3D12, execute
     }));
+
+    const auto executor = D3D12CarrierExecutorComponent();
+    assert(executor.kind == RuntimeComponentKind::Executor);
+    assert(executor.api == GraphicsApi::D3D12);
+    assert((executor.capabilityMask & execute) == execute);
+    assert((executor.capabilityMask & compose) == compose);
+    assert((executor.capabilityMask & acquire) == 0);
+    assert((executor.capabilityMask & normalize) == 0);
+
+    assert(registry.Register(executor));
+    assert(registry.Supports({
+        RuntimeComponentKind::Executor, GraphicsApi::D3D12,
+        execute | compose
+    }));
     return 0;
 }
