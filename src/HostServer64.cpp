@@ -232,9 +232,6 @@ bool HostServer64::EnsureZeroGuides(uint32_t width, uint32_t height) {
 bool HostServer64::Start(uint32_t hostPid) {
     if (running_) return true;
 
-    // Optional D3D12 initialization (proceeds even if software/headless test)
-    InitializeD3D12();
-
     char pipeName[128];
     FormatPipeName(pipeName, sizeof(pipeName), hostPid);
 
@@ -406,7 +403,7 @@ void HostServer64::ServerLoop() {
         const bool modeKnown = build.processingMode == static_cast<uint32_t>(IpcProcessingMode::DummyCopy) ||
             build.processingMode == static_cast<uint32_t>(IpcProcessingMode::Neural);
 
-        bool handlesOpened = true;
+        bool handlesOpened = !carriesSharedTransport || InitializeD3D12();
         handlesOpened &= OpenAndReleaseTargetHandle(d3d12Device_.Get(), build.colorSharedHandle, importedColor_);
         handlesOpened &= OpenAndReleaseTargetHandle(d3d12Device_.Get(), build.residualSharedHandle, importedResidual_);
         handlesOpened &= OpenAndReleaseTargetHandle(d3d12Device_.Get(), build.depthSharedHandle, importedDepth_);
