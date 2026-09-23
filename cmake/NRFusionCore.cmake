@@ -72,6 +72,7 @@ if (WIN32)
         src/CaptureProvider32.cpp
         src/CaptureProvider32Export.cpp
         src/HostServer64.cpp
+        src/HostServer64Lifecycle.cpp
         src/D3D12NrExecutorLoader.cpp
         src/D3D12NrExecutorLifecycle.cpp
         src/D3D12NrExecutorDispatch.cpp
