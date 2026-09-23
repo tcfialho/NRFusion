@@ -2,7 +2,7 @@
 
 ## Status
 
-**EM ANDAMENTO — 07a–07f validados portavelmente; paired Across-RR planejado, typeless native guides pendentes.**
+**EM ANDAMENTO — 07a–07g validados portavelmente; implementação estrutural pronta, integração Windows/ativação do executor pendentes.**
 
 ## Objetivo
 
@@ -24,17 +24,17 @@ Fases 04–06.
 - [x] Definir Acquire seam/lifetime de color/depth/motion/exposure.
 - [ ] Usar contrato DLSS/RR confiável ou Synthetic FrameContract honesto.
 - [x] Integrar registry/NrSession para Acquire/Normalize; Execute/Compose ainda não são anunciados.
-- [ ] Resize/device removal/guides ausentes.
+- [x] Resize/device rebind/guides ausentes cobertos estruturalmente; Windows compile permanece diferido.
 - [x] Disabled quase pass-through.
-- [ ] Cada arquivo <=300 linhas.
+- [x] Cada arquivo novo/tocado do carrier <=300 linhas.
 
 ## Revisão obrigatória
 
 - [x] Provider aceitar ResourceRef não prova Acquire.
 - [x] Nenhum CPU pixel path.
-- [ ] `EnsureSlotResources` só cria em init/reconfigure/resolution change.
-- [ ] Descriptor writes/copies/locks são contabilizados.
-- [ ] Split segue resource ownership, não ordem textual.
+- [x] Scratch/guide owners retornam sem criação quando desc/shape coincide; codec slots são criados no Init.
+- [x] Descriptor writes/copies são explícitos no executor canônico; carrier não adiciona locks nem heaps por frame.
+- [x] Novo carrier foi separado por Acquire/Normalize/Session/Execute/capabilities, sem split textual do legado.
 
 ## Validação rápida
 
@@ -45,9 +45,9 @@ Fases 04–06.
 
 ## Gate
 
-- [ ] Quatro etapas têm owner.
-- [ ] Fast path cumpre steady-state.
-- [ ] D3D12 carrier <=300 por arquivo.
+- [x] Acquire, Normalize, Execute e Compose têm owners separados.
+- [x] Carrier steady-state não cria heap/resource/descriptor heap quando device/shape permanecem estáveis.
+- [x] D3D12 carrier <=300 por arquivo.
 
 ## Próxima fase
 
@@ -374,3 +374,80 @@ sobre o formato portátil:
 2. manter color/output com regras próprias;
 3. não aceitar metadata de formato inventada pelo caller;
 4. somente depois revisar se Execute/Compose podem ser anunciados no registry.
+
+
+## Subgate 07g — guides typeless e ownership de capabilities
+
+O blocker de guides typeless foi fechado sem aceitar metadata inventada pelo caller.
+
+Foi introduzida uma normalização portátil por **papel** e **família typeless**:
+- depth aceita apenas famílias compatíveis com depth que o executor da Fase 05 sabe clonar;
+- motion aceita apenas famílias compatíveis com motion;
+- famílias de outro papel retornam `ResourceFormat::Unknown`;
+- color/output não passam por essa exceção guide-only.
+
+Os formatos semânticos necessários para representar o clone typed foram acrescentados ao
+`ResourceFormat`, preservando explicitamente os valores numéricos 0–7 já existentes. A regressão
+trava essa ABI para impedir deslocamento silencioso futuro.
+
+O adapter Windows agora:
+- classifica `DXGI_FORMAT_*_TYPELESS` por família;
+- aplica a normalização apenas em depth/motion;
+- continua derivando tudo de `ID3D12Resource::GetDesc()`;
+- não recebe formato do caller.
+
+A regressão final também prova que os formatos semânticos normalizados atravessam
+`NativeFacts -> D3D12AcquireSnapshot -> FrameContract`.
+
+### Capability ownership
+
+O registry agora possui duas identidades separadas:
+- Provider D3D12: `Acquire | Normalize`;
+- Executor D3D12: `Execute | Compose`.
+
+O componente Executor é apenas uma identidade/factory neste momento. Ele **não é registrado
+automaticamente em produção**; isso evita anunciar a rota Windows antes do gate de integração.
+O teste prova que registrar explicitamente esse componente produz a máscara correta e que Provider
+não herda bits de Execute/Compose.
+
+### Validação 07g
+
+- run typeless inicial `35818039759`: SUCCESS;
+- run capability ownership `35818221637`: SUCCESS;
+- run final `35818315400`, code head
+  `993f440b227f88f0a08923bb97f035719fda147c`: SUCCESS;
+- focused suite: 10/10 PASS;
+- `nrfusion_d3d12_guide_format_tests`: PASS;
+- normalized typeless guides através do FrameContract: PASS;
+- legacy numeric `ResourceFormat` values: compile-time locked;
+- todos os arquivos tocados nesta sessão <=300 linhas.
+
+### Auditoria steady-state
+
+O carrier novo não adiciona criação por frame:
+- `D3D12NrScratchResources::Ensure/EnsureOptional` retornam imediatamente para desc/shape estáveis;
+- `D3D12NrGuideClones::Ensure` retorna para clone com o mesmo desc;
+- heaps/constant buffers do codec são criados em `D3D12NrCodec::Init`;
+- descriptor writes do codec continuam por dispatch e estão explicitamente contabilizados;
+- nenhum lock foi introduzido pelo carrier.
+
+## O que ainda impede fechar a Fase 07
+
+A implementação estrutural está pronta, mas a fase continua **EM ANDAMENTO** por dois itens de
+integração, não por falta de boundary:
+
+1. `D3D12CarrierNativeAcquire.cpp` e `D3D12CarrierExecutor.cpp` continuam Windows-only e não
+   tiveram compile/harness Windows nesta fase, conforme a política atual de diferir Windows;
+2. o componente Executor existe no registry, mas ainda não é ativado pelo bootstrap/runtime real.
+
+O legado `SyntheticDx12Provider` continua intencionalmente read-only para não quebrar o fallback
+OptiScaler/pat​​cher antes do cutover.
+
+## Próxima ação exata após 07g
+
+Criar a integração de bootstrap do carrier sem anunciar executor prematuramente:
+1. definir um plano D3D12 que registre Provider sempre e Executor somente depois de bind/init bem-sucedido;
+2. preservar rollback fail-closed se o executor não inicializar;
+3. testar a lógica de ativação com um estado/fake portátil, sem COM/Windows;
+4. manter o caminho Windows real diferido para o gate de cutover;
+5. depois reavaliar se a Fase 07 pode ser fechada estruturalmente e entrar na Fase 08.
