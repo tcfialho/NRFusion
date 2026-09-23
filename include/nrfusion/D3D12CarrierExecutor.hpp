@@ -58,8 +58,8 @@ struct D3D12CarrierExecuteResult {
 class D3D12CarrierExecutor {
 public:
     bool Load() { return executor_.Load(); }
-    bool Init(ID3D12Device* device) { return executor_.Init(device); }
-    void Shutdown() { executor_.Shutdown(); }
+    bool BindDeviceAfterIdle(ID3D12Device* device);
+    void ShutdownAfterIdle();
 
     D3D12CarrierExecuteResult Execute(
         ID3D12GraphicsCommandList* cmdList,
@@ -72,6 +72,7 @@ public:
 
 private:
     D3D12NrExecutor executor_{};
+    ID3D12Device* boundDevice_ = nullptr;
 };
 
 } // namespace nrfusion
