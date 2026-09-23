@@ -132,6 +132,11 @@ std::optional<WorkTicket> NrSessionTimingQueue::PushInvalid() noexcept {
     return PushEntry({});
 }
 
+std::optional<NrSessionTimingEntry> NrSessionTimingQueue::Peek() const noexcept {
+    if (size_ == 0) return std::nullopt;
+    return entries_[head_];
+}
+
 std::optional<NrSessionTimingEntry> NrSessionTimingQueue::Pop() noexcept {
     if (size_ == 0) return std::nullopt;
     const NrSessionTimingEntry entry = entries_[head_];

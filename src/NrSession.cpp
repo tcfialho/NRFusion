@@ -128,20 +128,30 @@ void NrSession::MapInvalidTimedAttempt() noexcept {
         works_.Abandon(*displaced);
 }
 
-bool NrSession::RetireTimedInterval(double gpuMs) {
-    const auto entry = timings_.Pop();
-    if (!entry || !entry->mapsWork) return false;
+bool NrSession::RetireTimedSample(const NrRetiredTimingSample& sample) {
+    const auto entry = timings_.Peek();
+    if (!entry || entry->mapsWork != sample.mapsWork) return false;
+    if (entry->mapsWork && !(entry->ticket == sample.ticket)) return false;
+    timings_.Pop();
+    if (!entry->mapsWork) return false;
+
     const WorkTicket ticket = entry->ticket;
     if (!works_.Complete(ticket)) return false;
     if (ticket.configurationGeneration != state_.runtimeGeneration ||
-        !std::isfinite(gpuMs) || gpuMs <= 0.0 || gpuMs >= 1000.0)
+        !std::isfinite(sample.gpuMs) || sample.gpuMs <= 0.0 || sample.gpuMs >= 1000.0)
         return false;
     const NrPrecision precision = ticket.precisionTag == 4u
         ? NrPrecision::HybridNvfp4 : NrPrecision::Fp8;
     runtime_.ObservePrecisionCost(
-        precision, ticket.configurationGeneration, gpuMs);
-    runtime_.ObserveScaleCost(ticket.workingScale, gpuMs);
+        precision, ticket.configurationGeneration, sample.gpuMs);
+    runtime_.ObserveScaleCost(ticket.workingScale, sample.gpuMs);
     return true;
+}
+
+bool NrSession::RetireTimedInterval(double gpuMs) {
+    const auto entry = timings_.Peek();
+    if (!entry) return false;
+    return RetireTimedSample({entry->mapsWork, entry->ticket, gpuMs});
 }
 
 } // namespace nrfusion

@@ -192,6 +192,29 @@ int main() {
         assert(!ringSession.AbandonWork(ringTickets[1]));
     }
 
+    {
+        NrSession exactSession;
+        assert(exactSession.Configure(config, performance));
+        const auto exactFrame = exactSession.Resolve(Packet(config.generation, 700));
+        assert(exactFrame);
+        const auto a = exactSession.BeginWork(exactFrame, 1);
+        const auto b = exactSession.BeginWork(exactFrame, 2);
+        assert(a && b);
+        assert(exactSession.SubmitWork(*a) && exactSession.MapTimedWork(*a));
+        assert(exactSession.SubmitWork(*b) && exactSession.MapTimedWork(*b));
+
+        assert(!exactSession.RetireTimedSample({true, *b, 2.0}));
+        assert(exactSession.RetireTimedSample({true, *a, 1.5}));
+        assert(exactSession.RetireTimedSample({true, *b, 2.0}));
+
+        const auto c = exactSession.BeginWork(exactFrame, 3);
+        assert(c && exactSession.SubmitWork(*c));
+        exactSession.MapInvalidTimedAttempt();
+        assert(!exactSession.RetireTimedSample({true, *c, 1.0}));
+        assert(!exactSession.RetireTimedSample({false, {}, 0.0}));
+        assert(exactSession.AbandonWork(*c));
+    }
+
     RuntimeConfig disabled = config;
     ++disabled.generation;
     disabled.enabled = false;

@@ -72,6 +72,11 @@ bool D3D12CarrierSession::MapTimedWork(const D3D12CarrierWork& work) noexcept {
     return work && session_.MapTimedWork(work.ticket);
 }
 
+bool D3D12CarrierSession::RetireTimedSample(
+    const NrRetiredTimingSample& sample) {
+    return session_.RetireTimedSample(sample);
+}
+
 bool D3D12CarrierSession::RetireTimedInterval(double gpuMs) {
     return session_.RetireTimedInterval(gpuMs);
 }

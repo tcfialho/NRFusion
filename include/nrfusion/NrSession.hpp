@@ -3,6 +3,7 @@
 #include "nrfusion/FusionRuntime.hpp"
 #include "nrfusion/NrSessionContracts.hpp"
 #include "nrfusion/NrSessionWorkState.hpp"
+#include "nrfusion/NrTimingSource.hpp"
 
 #include <optional>
 
@@ -24,6 +25,7 @@ public:
     bool AbandonWork(const WorkTicket& ticket) noexcept;
     bool MapTimedWork(const WorkTicket& ticket) noexcept;
     void MapInvalidTimedAttempt() noexcept;
+    bool RetireTimedSample(const NrRetiredTimingSample& sample);
     bool RetireTimedInterval(double gpuMs);
 
     const RuntimeConfig& Config() const noexcept { return config_; }

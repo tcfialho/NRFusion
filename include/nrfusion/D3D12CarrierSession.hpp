@@ -49,6 +49,7 @@ public:
     bool SubmitWork(const D3D12CarrierWork& work) noexcept;
     bool AbandonWork(const D3D12CarrierWork& work) noexcept;
     bool MapTimedWork(const D3D12CarrierWork& work) noexcept;
+    bool RetireTimedSample(const NrRetiredTimingSample& sample);
     bool RetireTimedInterval(double gpuMs);
 
     const RuntimeConfig& Config() const noexcept { return session_.Config(); }

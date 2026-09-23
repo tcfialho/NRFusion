@@ -59,6 +59,7 @@ public:
 
     std::optional<WorkTicket> Push(const WorkTicket& ticket) noexcept;
     std::optional<WorkTicket> PushInvalid() noexcept;
+    std::optional<NrSessionTimingEntry> Peek() const noexcept;
     std::optional<NrSessionTimingEntry> Pop() noexcept;
     void Reset() noexcept { head_ = 0; size_ = 0; }
 
