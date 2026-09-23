@@ -107,29 +107,58 @@
 ## Current session
 
 Start: 2026-09-22 23:17 BRT
+Freeze: 2026-09-22 23:29 BRT
 Branch: standalone/integration
 Base/default branch: master
 Head at start: c452cb17d550d85849e9e8a6a18707422b26511d
 
 Phase 06: CLOSED.
-Phase 07: IN PROGRESS; 07a/07b/07c validated, 07d pending validation.
+Phase 07: IN PROGRESS; 07a–07d validated portably, 07e resize validated.
 
-Recovered failure:
-- run 35799720077: FAIL during portable compile
-- D3D12CarrierExecutionConfig is missing useGameExposure
-- D3D12CarrierExecutionPlan is missing colourIsLinearHdr
-- cause: prior header patch placed those two fields in the opposite structs
+Recovered compile failure:
+- run 35799720077 failed because useGameExposure/colourIsLinearHdr were placed in opposite structs
+- fix commit: 00a350abcf5f14f02bbaf4f3ab98e38ff14e2a19
+- recovery run 35809871923: SUCCESS
 
-Checklist:
-- [ ] fix the swapped execution-plan fields only
-- [ ] rerun focused portable gate
-- [ ] if green, mark 07d portable side validated
-- [ ] review exact next 07e boundary without opening Windows CI
-- [ ] checkpoint ZIP and handoff
+Resize evidence:
+- run 35810072641: SUCCESS
+- 9/9 focused tests PASS
+- resize advances runtimeGeneration
+- old work cannot Submit/Map after resize
+- old work can still Abandon for slot cleanup
+- pre-resize frame cannot BeginWork after the new shape resolves
+
+07e Windows lifecycle added after the validated portable run:
+- D3D12CarrierExecutor::BindDeviceAfterIdle
+- D3D12CarrierExecutor::ShutdownAfterIdle
+- device change shuts down/reloads the canonical executor before binding the new device
+- carrier AddRefs the bound device so pointer identity cannot be recycled underneath it
+- Execute fails closed with NotInitialized until a device is bound
+
+Validation caveat:
+- D3D12CarrierExecutor.cpp and native Acquire remain WIN32-only
+- the new device rebind code is structurally reviewed but not Windows-compiled
+- Execute and Compose remain unregistered in the capability registry
+
+Current sizes:
+- D3D12CarrierExecutionPlan.hpp/cpp: 61 / 112
+- d3d12_carrier_execution_plan_tests.cpp: 161
+- D3D12CarrierExecutor.hpp/cpp: 80 / 133
+- d3d12_carrier_work_tests.cpp: 114
+
+Legacy files kept read-only:
+- src/SyntheticDx12Provider.cpp
+- src/HostServer64.cpp
+- tools/apply_to_optiscaler.py
 
 Commit discipline:
-- preserve the failed commits; no history rewrite
-- one responsibility per fix commit
+- all fixes/features preserved as small responsibility-scoped commits
+- failed history preserved; no squash/rewrite/force-push
 
 Exact next action:
-- correct D3D12CarrierExecutionPlan.hpp field ownership
+- qualify Compose ownership for the standalone D3D12 carrier
+- reuse the canonical executor's existing resolve/compose for PreSr/PostSr
+- define a separate paired seam only for AcrossRr/DeferredResidual
+- do not duplicate SyntheticDx12Provider residual/compose machinery
+- keep Execute/Compose unregistered until their evidence is sufficient
+- no new branch or intermediate PR
