@@ -2,7 +2,7 @@
 
 ## Status
 
-**EM ANDAMENTO — subgates 07a/07b/07c concluídos; executor/compose/resize ainda pendentes.**
+**EM ANDAMENTO — 07a–07d validados portavelmente; resize coberto, device rebind Windows implementado, Compose pendente.**
 
 ## Objetivo
 
@@ -242,3 +242,68 @@ Criar a boundary Windows-only de execução do carrier:
 5. manter `Execute` e `Compose` fora do registry até cada caminho existir e possuir regressão.
 
 Não tocar o provider/Host64/patcher legados para fazer essa ligação.
+
+
+## Subgate 07d — execution boundary
+
+O carrier agora possui uma boundary de execução separada do executor canônico:
+
+- `D3D12CarrierExecutionPlan` valida frame/work/guides/placement antes de qualquer chamada D3D12;
+- working scale, reset, HDR e submission epoch vêm do estado já normalizado/`NrSession`;
+- `PreSr` e `PostSr` são aceitos;
+- `AcrossRr` e `DeferredResidual` permanecem fail-closed até existir o seam de compose pareado;
+- `D3D12CarrierExecutor` recebe resources nativos, verifica identidade contra Acquire e então chama
+  `D3D12NrExecutor::ExecuteFrame`;
+- scratch, guide clones, retirement, feature lifetime e barriers continuam owned pelo executor da Fase 05.
+
+A auditoria encontrou e corrigiu:
+- output identity estava sendo descartada após Acquire;
+- HDR podia vir de uma segunda fonte de verdade;
+- game exposure ausente podia avançar quando ambos os lados estavam nulos;
+- dois campos do contrato foram temporariamente parar nos structs errados; o run de recovery recompilou
+  o lote completo após a correção.
+
+Recovery portátil:
+- run `35809871923`: SUCCESS;
+- execution plan + regressões anteriores: PASS.
+
+## Subgate 07e — resize quarantine e device rebind
+
+Resize real de render/output já muda a structural identity no `FusionRuntime`, avançando
+`runtimeGeneration`. A regressão do carrier agora prova que:
+- work criado antes do resize não pode mais ser submetido nem mapeado para timing;
+- o work antigo ainda pode ser abandonado para liberar o slot;
+- um `D3D12CarrierFrameResult` anterior ao resize não pode iniciar novo work;
+- o próximo work usa a generation nova.
+
+Run `35810072641`: **9/9 PASS**, incluindo
+`nrfusion_d3d12_carrier_execution_plan_tests` e a regressão de resize em
+`nrfusion_d3d12_carrier_work_tests`.
+
+Para device recreation/removal, `D3D12CarrierExecutor` agora possui lifecycle explícito:
+- `BindDeviceAfterIdle(ID3D12Device*)`;
+- `ShutdownAfterIdle()`;
+- mudança de device derruba o executor anterior antes de recarregar NGX no novo device;
+- o carrier mantém uma referência COM ao device bound, evitando confundir um novo device com um
+  endereço reciclado;
+- `Execute` falha fechado enquanto nenhum device estiver bound.
+
+Esse trecho é Windows-only e **não foi compilado neste gate portátil**. A semântica `AfterIdle` é
+intencional: `D3D12NrExecutor::Shutdown` libera feature/scratch/retirement assumindo GPU ociosa.
+
+Tamanhos atuais do 07d/07e:
+- `D3D12CarrierExecutionPlan.hpp/cpp`: 61 / 112;
+- `d3d12_carrier_execution_plan_tests.cpp`: 161;
+- `D3D12CarrierExecutor.hpp/cpp`: 80 / 133;
+- `d3d12_carrier_work_tests.cpp`: 114.
+
+`Execute` continua **não registrado** no capability registry porque a boundary Windows ainda não
+teve compile gate. `Compose` também permanece não registrado.
+
+## Próxima ação exata após 07e
+
+Qualificar Compose sem duplicar o provider legado:
+1. documentar/encapsular que o executor canônico já faz resolve/compose para PreSr/PostSr;
+2. definir o seam separado necessário para AcrossRr/DeferredResidual;
+3. somente anunciar Execute/Compose depois que cada rota tiver evidência suficiente;
+4. manter `SyntheticDx12Provider.cpp`, `HostServer64.cpp` e `apply_to_optiscaler.py` read-only.
