@@ -664,3 +664,27 @@ Additional frame-local pointer reuse only:
 
 These pointers are only local aliases to resources whose owner is not mutated during the function.
 No persistent cache, lifetime change, synchronization, GPU command reordering or visual change.
+
+
+## Auditoria Windows real dos subgates diferidos ? 2026-09-23
+
+Validated code head: 1e6f55a.
+
+Os subgates que historicamente ficaram sem Windows fast foram reexecutados em hardware real:
+
+- nrfusion_nr_scratch_resources_tests: PASS no RTX;
+- nrfusion_nr_guide_clones_tests: PASS no RTX;
+- nrfusion_d3d12_nr_codec_tests: PASS no RTX;
+- nrfusion_residual_gpu_test: PASS;
+- nrfusion_synthetic_dx12_test: PASS;
+- nrfusion_synthetic_dx12_scale_gate_test: PASS;
+- codegen HLSL/CSO/header reproduz?vel: hashes lockados verificados pelo build MSVC.
+
+Consolida??o:
+- MinGW x64 full build + CTest: 35/35 PASS;
+- MSVC x64 full build + CTest: 35/35 PASS;
+- o WARP desta m?quina apresentou hangs durante a auditoria; os tr?s owner gates mant?m WARP como
+  default, mas aceitam NRFUSION_TEST_D3D12_HARDWARE=1 para executar o mesmo contrato em GPU real.
+
+As men??es anteriores a Windows pendente permanecem no documento como hist?rico do subgate,
+mas n?o representam mais uma pend?ncia atual da Fase 05.

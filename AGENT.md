@@ -106,48 +106,45 @@
 
 ## Current session
 
-Start: 2026-09-23 03:18 BRT
-Freeze: 2026-09-23 03:33 BRT
+Date: 2026-09-23 BRT
 Branch: standalone/integration
-Base/default branch: master
-Head at start: 46b8e5e2b2e1bf280fc74d2689ad76292444e756
+Validated code head: 1e6f55a
 
 Phase 06: CLOSED.
-Phase 07: CLOSED after 07i + Windows code-review gate.
+Phase 07: CLOSED, including real Windows compile/harness validation.
 Phase 08: NOT STARTED.
 
-Branch consolidation:
-- audited every remote branch against standalone/integration
-- all 9 historical phase/perf/plan branches were ancestors with exclusive=0
-- deleted all redundant remote refs
-- official remote topology is now only master + standalone/integration
-- continue every future phase on standalone/integration
-- one PR only at final cutover
+Windows gate closure:
+- MinGW x64/Ninja full build: PASS.
+- MinGW x64 CTest with RTX hardware owner gates: 35/35 PASS.
+- MSVC 19.44 x64 full build: PASS.
+- MSVC x64 CTest with RTX hardware owner gates: 35/35 PASS.
+- D3D12CarrierNativeAcquire.cpp and D3D12CarrierExecutor.cpp compiled under MSVC x64.
+- MSVC Win32 built PE x86 capture DLL/roundtrip.
+- D3D11 hook x86: PASS.
+- x86 capture -> x64 NRFusionHost64 roundtrip: PASS, including Neural 1.0 and reduced 0.5.
 
-Windows review findings fixed in small commits:
-- 5c87242 fix CRLF-invariant shader source lock verification
-- 5b106cd fix exact locked shader-header formatting
-- c992c8c use Windows aligned allocation on MinGW stress test
-- a2d2998 split SyntheticOpenGlProvider lifecycle; original file 408 -> 256 lines
-- 641310a resolve OpenGL procedure symbols portably with std::bit_cast
+Validation-driven fixes preserved in Git:
+- WinAPI version proxy declarations corrected per toolchain.
+- harness no longer requires DirectXMath.
+- synthetic DX12 tests use portable half conversion.
+- residual GPU CTest runs from the source root.
+- UNORM midpoint regression accepts the legal 127/128 result.
+- Host64 defers GPU/NGX init until shared transport needs it.
+- D3D12 owner tests can opt into a real hardware device.
+- Host64 and capture roundtrip oversized responsibilities were split.
 
-Validation:
-- locked upstream materialized at wilsjo2/OptiScaler-DLSSNR-PreSR-Multipass@1b1dd650
-- locked fxc blob matched expected 1ff12bda
-- main/residual CSO + generated header lock hashes reproduced exactly
-- nrfusion_core compiled on Windows/MinGW including D3D12CarrierNativeAcquire.cpp and D3D12CarrierExecutor.cpp
-- focused Windows CTest: 11/11 PASS
-- git diff --check: PASS
-- all files touched by this review <=300 lines
-- validated code head: 641310a
+Known non-gate issue:
+- python tools/check_source_size.py changed still reports the locked vendored
+  shaders/vendor/optiscaler_dlssnr/dlssnr.hlsl (1110 lines). This is third-party locked source,
+  not a Windows functional failure; the checker needs a vendor exemption before final cutover.
 
-Remaining gate:
-- real D3D12 hardware/game execution remains deferred to final cutover
-- no structural/code compile blocker remains in Phase 07
+Remaining global gate:
+- real-game execution and physical provider/Host64/patcher cutover.
 
 Exact next action:
-- start Phase 08 on standalone/integration
-- audit TimingWorkMapper, TelemetryTracker, Diagnostics and WorkLedger/NrSession timing flow
-- split Diagnostics.cpp before substantive growth
-- define one owner for retired GPU timing tied to exact WorkTicket identity
-- target 2 timestamps + 1 resolve per sampled workload, never wait for current GPU work
+- start Phase 08 on standalone/integration;
+- audit TimingWorkMapper, TelemetryTracker, Diagnostics and WorkLedger/NrSession timing flow;
+- split Diagnostics.cpp before substantive growth;
+- define one owner for retired GPU timing tied to exact WorkTicket identity;
+- target 2 timestamps + 1 resolve per sampled workload, never wait for current GPU work.

@@ -477,3 +477,18 @@ Run `35783094348`, head `6fcdec5f53244d6912837f37f8b60c969d173425`:
 - nenhum Windows gate.
 
 A Fase 06 está CLOSED sem ressalva de validação portátil.
+
+
+## Cross-check Windows real ? 2026-09-23
+
+A Fase 06 n?o tinha gate Windows espec?fico, mas seu conjunto inteiro foi inclu?do na auditoria
+Windows real do head 1e6f55a:
+
+- nrfusion_nr_session_tests: PASS;
+- nrfusion_nr_session_stress_tests: PASS;
+- nrfusion_tests (controller/runtime regressions): PASS;
+- MinGW x64 full CTest: 35/35 PASS;
+- MSVC x64 full CTest: 35/35 PASS.
+
+Isso n?o altera o crit?rio original da fase; apenas confirma que os invariants port?teis permanecem
+v?lidos sob os dois toolchains Windows usados na auditoria.

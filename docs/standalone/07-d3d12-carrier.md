@@ -24,7 +24,7 @@ Fases 04–06.
 - [x] Definir Acquire seam/lifetime de color/depth/motion/exposure.
 - [x] Usar FrameContract com evidence/provenance explícitas; guides selecionados precisam corresponder à fonte decidida.
 - [x] Integrar registry/NrSession; Provider anuncia Acquire/Normalize e Executor só ativa após qualificação.
-- [x] Resize/device rebind/guides ausentes cobertos; carrier Windows compila no gate local MinGW.
+- [x] Resize/device rebind/guides ausentes cobertos; carrier Windows compila em MinGW x64 e MSVC x64.
 - [x] Disabled quase pass-through.
 - [x] Cada arquivo novo/tocado do carrier <=300 linhas.
 
@@ -616,3 +616,27 @@ Code head Windows validado: 641310a.
 O que permanece diferido:
 - execu??o real em GPU/D3D12 com jogo/harness COM;
 - cutover f?sico do provider/Host64/patcher.
+
+
+## Auditoria Windows real ? 2026-09-23
+
+Validated code head: 1e6f55a.
+
+O gate diferido de Windows foi executado em m?quina Windows real com NVIDIA GeForce RTX 4050 Laptop GPU:
+
+- MinGW x64/Ninja: full build PASS; CTest 35/35 PASS com NRFUSION_TEST_D3D12_HARDWARE=1;
+- MSVC 19.44 x64 / Visual Studio 2022: full build PASS; CTest 35/35 PASS;
+- D3D12CarrierNativeAcquire.cpp e D3D12CarrierExecutor.cpp compilaram no core MSVC x64;
+- harness D3D12 correctness/scenarios/benchmark: PASS;
+- synthetic D3D12, scale gate, D3D11 bridge, OpenGL, residual GPU e IPC/roundtrip: PASS;
+- scratch resources, guide clones e codec: PASS no RTX real.
+
+O gate tamb?m validou o caminho x86 existente, sem confundir isso com a Fase 07 D3D12 x64:
+
+- MSVC Win32 compilou nrfusion_capture32.dll e o roundtrip;
+- dumpbin confirmou DLL e teste como PE machine x86;
+- hook D3D11 x86: PASS;
+- roundtrip x86 -> NRFusionHost64.exe x64: PASS, incluindo Neural 1.0 e reduced scale 0.5.
+
+Essa auditoria quita as pend?ncias de compile/harness Windows descritas anteriormente.
+Ela n?o substitui o gate de jogo real nem o cutover f?sico do provider/Host64/patcher.
