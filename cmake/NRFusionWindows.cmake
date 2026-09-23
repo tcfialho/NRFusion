@@ -151,7 +151,11 @@ add_executable(nrfusion_harness_3d
     target_link_libraries(nrfusion_capture32 PRIVATE d3d11 dxgi d3dcompiler)
     set_target_properties(nrfusion_capture32 PROPERTIES OUTPUT_NAME "nrfusion_capture32")
 
-    add_executable(nrfusion_capture32_roundtrip_test tests/capture32_roundtrip_test.cpp)
+    add_executable(nrfusion_capture32_roundtrip_test
+        tests/capture32_roundtrip_test.cpp
+        tests/Capture32RoundtripSupport.cpp
+        tests/Capture32RoundtripNeural.cpp
+        tests/Capture32RoundtripReduced.cpp)
     target_link_libraries(nrfusion_capture32_roundtrip_test PRIVATE nrfusion_capture32 d3d11 dxgi)
     if (CMAKE_SIZEOF_VOID_P EQUAL 8)
         add_dependencies(nrfusion_capture32_roundtrip_test nrfusion_host64)
