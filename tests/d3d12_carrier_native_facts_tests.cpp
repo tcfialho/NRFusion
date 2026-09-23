@@ -119,6 +119,28 @@ int main() {
     assert(withDepth.snapshot.depth.acquired);
     assert(withDepth.snapshot.depth.resource.sourceFrameId == base.identity.frameId);
 
+    auto typelessDepthSemantic = base;
+    typelessDepthSemantic.depth = Capture(
+        301, {1920, 1080}, ResourceFormat::R24UnormX8,
+        ResourceProvenance::GameNative);
+    const auto normalizedDepth =
+        BuildD3D12NativeAcquireSnapshot(typelessDepthSemantic);
+    assert(normalizedDepth);
+    assert(BuildD3D12FrameContract(normalizedDepth.snapshot));
+
+    auto typelessMotionSemantic = base;
+    typelessMotionSemantic.motionVectors = Capture(
+        302, {1920, 1080}, ResourceFormat::Rg32Float,
+        ResourceProvenance::DlssContract);
+    const auto normalizedMotion =
+        BuildD3D12NativeAcquireSnapshot(typelessMotionSemantic);
+    assert(normalizedMotion);
+    const auto motionContract =
+        BuildD3D12FrameContract(normalizedMotion.snapshot);
+    assert(motionContract);
+    assert(motionContract.frame.EffectiveMotionSource() ==
+           MotionSource::DlssContract);
+
     auto badIdentity = base;
     badIdentity.identity.frameId = 0;
     assert(BuildD3D12NativeAcquireSnapshot(badIdentity).failure ==
