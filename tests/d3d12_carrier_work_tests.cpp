@@ -64,6 +64,9 @@ int main() {
     assert(first->ticket.configurationGeneration ==
            frame.session.runtimeGeneration);
     assert(carrier.CanExecuteWork(*first));
+    assert(carrier.ClaimExecuteWork(*first));
+    assert(!carrier.CanExecuteWork(*first));
+    assert(!carrier.ClaimExecuteWork(*first));
 
     assert(carrier.SubmitWork(*first));
     assert(!carrier.CanExecuteWork(*first));
@@ -77,6 +80,8 @@ int main() {
     assert(second);
     assert(second->submissionEpoch > first->submissionEpoch);
     assert(carrier.CanExecuteWork(*second));
+    assert(carrier.ClaimExecuteWork(*second));
+    assert(!carrier.ClaimExecuteWork(*second));
     assert(carrier.AbandonWork(*second));
     assert(!carrier.CanExecuteWork(*second));
 
