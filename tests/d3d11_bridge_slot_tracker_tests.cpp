@@ -41,5 +41,16 @@ int main() {
     tracker.Reset();
     assert(tracker.AllRetired(0));
     assert(!tracker.Find(104));
+
+    std::uint64_t completed = 0;
+    for (std::uint64_t workId = 1; workId <= 10000; ++workId) {
+        const auto lease = tracker.Acquire(workId, completed);
+        assert(lease);
+        const std::uint64_t fence = workId + 10000;
+        assert(tracker.MarkSubmitted(*lease, fence));
+        assert(!tracker.AllRetired(fence - 1));
+        completed = fence;
+        assert(tracker.AllRetired(completed));
+    }
     return 0;
 }

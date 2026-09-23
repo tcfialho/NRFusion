@@ -26,6 +26,37 @@ using namespace nrfusion;
 
 namespace {
 
+ComPtr<ID3D11Texture2D> MakeTexture(
+    ID3D11Device* device, UINT width, UINT height) {
+    D3D11_TEXTURE2D_DESC desc{};
+    desc.Width = width;
+    desc.Height = height;
+    desc.MipLevels = 1;
+    desc.ArraySize = 1;
+    desc.Format = DXGI_FORMAT_R16G16B16A16_FLOAT;
+    desc.SampleDesc.Count = 1;
+    desc.Usage = D3D11_USAGE_DEFAULT;
+    desc.BindFlags = D3D11_BIND_SHADER_RESOURCE | D3D11_BIND_RENDER_TARGET;
+    ComPtr<ID3D11Texture2D> texture;
+    assert(SUCCEEDED(device->CreateTexture2D(&desc, nullptr, &texture)));
+    return texture;
+}
+
+SyntheticFrameInputs Inputs(
+    std::uint64_t workId, ID3D11Texture2D* color, UINT width, UINT height) {
+    SyntheticFrameInputs inputs{};
+    inputs.ticket.id = workId;
+    inputs.ticket.session = 1;
+    inputs.frameId = workId;
+    inputs.renderResolution = {width, height};
+    inputs.targetResolution = {width, height};
+    inputs.workingScale = 0.75f;
+    inputs.color.opaqueId = reinterpret_cast<std::uint64_t>(color);
+    inputs.color.resolution = {width, height};
+    inputs.color.format = ResourceFormat::Rgba16Float;
+    return inputs;
+}
+
 bool WaitForD3D11(ID3D11Device* device, ID3D11DeviceContext* context) {
     D3D11_QUERY_DESC desc{};
     desc.Query = D3D11_QUERY_EVENT;
@@ -141,50 +172,31 @@ int main() {
         std::cout << "  [PASS] NvofMotionProvider 180p low-res geometry validated: " << fRes.width << "x" << fRes.height << std::endl;
     }
 
-    // 5. Zero-CPU Copy D3D11 Input / Output Interop Verification
+    // 5. GPU-only bridge handoff, retirement and resize/reset stress.
     {
-        D3D11_TEXTURE2D_DESC texDesc{};
-        texDesc.Width = 1920;
-        texDesc.Height = 1080;
-        texDesc.MipLevels = 1;
-        texDesc.ArraySize = 1;
-        texDesc.Format = DXGI_FORMAT_R16G16B16A16_FLOAT;
-        texDesc.SampleDesc.Count = 1;
-        texDesc.Usage = D3D11_USAGE_DEFAULT;
-        texDesc.BindFlags = D3D11_BIND_SHADER_RESOURCE | D3D11_BIND_RENDER_TARGET;
+        for (std::uint64_t frame = 1; frame <= 12; ++frame) {
+            const UINT width = (frame & 1u) ? 640u : 800u;
+            const UINT height = (frame & 1u) ? 360u : 450u;
+            auto gameColor = MakeTexture(d3d11Device.Get(), width, height);
+            auto gameDest = MakeTexture(d3d11Device.Get(), width, height);
+            const auto inputs = Inputs(2000 + frame, gameColor.Get(), width, height);
 
-        ComPtr<ID3D11Texture2D> gameColor;
-        ComPtr<ID3D11Texture2D> gameDest;
-        hr = d3d11Device->CreateTexture2D(&texDesc, nullptr, &gameColor);
-        assert(SUCCEEDED(hr));
-        hr = d3d11Device->CreateTexture2D(&texDesc, nullptr, &gameDest);
-        assert(SUCCEEDED(hr));
-
-        // Submit work ticket
-        SyntheticFrameInputs inputs{};
-        inputs.ticket.id = 2001;
-        inputs.ticket.session = 1;
-        inputs.frameId = 1;
-        inputs.renderResolution = { 1920, 1080 };
-        inputs.targetResolution = { 1920, 1080 };
-        inputs.workingScale = 0.75f;
-        inputs.color.opaqueId = reinterpret_cast<uint64_t>(gameColor.Get());
-        inputs.color.resolution = { 1920, 1080 };
-        inputs.color.format = ResourceFormat::Rgba16Float;
-
-        SyntheticWorkHandle handle = bridge.Submit(inputs, nullptr);
-        assert(handle.valid);
-        assert(handle.workId == 2001);
-
-        bool copyOutOk = bridge.RecordD3D11OutputConsume(
-            handle, d3d11Context.Get(), gameDest.Get());
-        assert(copyOutOk);
-        assert(WaitForD3D11(d3d11Device.Get(), d3d11Context.Get()));
-        assert(bridge.Poll(handle));
-
-        std::cout << "  [PASS] GPU-fenced D3D11 <-> D3D12 bridge transport confirmed." << std::endl;
+            const SyntheticWorkHandle handle = bridge.Submit(inputs, nullptr);
+            assert(handle.valid);
+            assert(handle.workId == inputs.ticket.id);
+            assert(bridge.RecordD3D11OutputConsume(
+                handle, d3d11Context.Get(), gameDest.Get()));
+            assert(WaitForD3D11(d3d11Device.Get(), d3d11Context.Get()));
+            assert(bridge.Poll(handle));
+        }
+        std::cout << "  [PASS] GPU-fenced handoff, slot retirement and resize stress confirmed."
+                  << std::endl;
     }
 
+    bridge.Shutdown();
+    assert(!bridge.IsReady());
+    assert(bridge.Initialize(ctx));
+    assert(bridge.IsReady());
     bridge.Shutdown();
     assert(!bridge.IsReady());
 
