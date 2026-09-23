@@ -1,14 +1,15 @@
 #include "D3D12TestHarness.hpp"
-#include <directxmath.h>
 #include <iostream>
 #include <utility>
 #pragma comment(lib, "d3d12.lib")
 #pragma comment(lib, "dxgi.lib")
 #pragma comment(lib, "d3dcompiler.lib")
 namespace nrfusion::testing {
-using namespace DirectX;
 D3D12TestHarness::D3D12TestHarness(HarnessConfig config) : config_(std::move(config)) {
-    XMStoreFloat4x4(reinterpret_cast<XMFLOAT4X4*>(prevViewProj_), XMMatrixIdentity());
+    prevViewProj_[0] = 1.0f;
+    prevViewProj_[5] = 1.0f;
+    prevViewProj_[10] = 1.0f;
+    prevViewProj_[15] = 1.0f;
 }
 D3D12TestHarness::~D3D12TestHarness() {
     if (directQueue_ && directFence_ && directFenceValue_ > 0) {
