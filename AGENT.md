@@ -106,54 +106,30 @@
 
 ## Current session
 
-Start: 2026-09-23 00:25 BRT
-Freeze: 2026-09-23 00:34 BRT
+Start: 2026-09-23 01:17 BRT
 Branch: standalone/integration
 Base/default branch: master
-Head at start: 6de9369c1af03d687cab92dc454786323ab51a9d
+Head at start: 8a7881db3063e1bccdca0b465e2edc9193861797
 
 Phase 06: CLOSED.
 Phase 07: IN PROGRESS; 07a–07f validated portably.
 
-07f paired compose:
-- Direct / AcrossRrStore / AcrossRrApply are explicit execution stages
-- PreSr/PostSr remain owned by D3D12NrExecutor resolve/compose
-- AcrossRr Store+Apply reuse the canonical executor and the same submissionEpoch
-- caller no longer owns runBeforeUpscale/rayReconstruction/residualAcrossRr truth
-- DeferredResidual remains fail-closed because the canonical executor has no equivalent mode
+Current blocker:
+- D3D12CarrierNativeAcquire maps typeless depth/motion to ResourceFormat::Unknown
+- Phase 05 already supports typed guide clones for typeless D3D12 resources
 
-Guide contract:
-- model stages require reliable depth
-- selected motion must be Native or DlssContract
-- acquired motion provenance/reliability must match the selected MotionSource
-- apply-only AcrossRr stage does not require model guides
+Checklist:
+- [ ] 07g define portable D3D12 typeless guide families and semantic normalization
+- [ ] extend ResourceFormat only for typed clone formats that need representation
+- [ ] add portable regressions before touching Windows mapping
+- [ ] wire DXGI typeless families in D3D12CarrierNativeAcquire
+- [ ] verify color/output do not inherit guide-only typeless acceptance
+- [ ] rerun focused portable gate, LOC and checkpoint ZIP
+- [ ] reassess Phase 07 gates and registry advertisement
 
-Validation:
-- initial guide run 35814648573 failed because the test fixture left PipelineDecision.motion at Zero
-- fixture-only fix: f2e27e5b4df049dc74a31493587f2fd11643a127
-- recovery run 35814760066: SUCCESS
-- 9/9 focused tests PASS
-- validated code head: 27bdbfa095b4265376d063bddf31af70fc04a69e
-
-Current sizes:
-- D3D12CarrierExecutionPlan.hpp: 77
-- D3D12CarrierExecutionPlan.cpp: 165
-- d3d12_carrier_execution_plan_tests.cpp: 227
-- D3D12CarrierExecutor.cpp: 137
-- all touched handwritten files <=300
-
-Windows caveat:
-- native Acquire/executor/device rebind remain WIN32-only and were not Windows-compiled
-- Execute and Compose remain unregistered in the capability registry
-
-Next blocker:
-- D3D12CarrierNativeAcquire::MapFormat rejects typeless depth/motion as ResourceFormat::Unknown
-- this conflicts with Phase 05 executor support that clones typeless guides to typed views
+Commit discipline:
+- one responsibility per commit
+- preserve shared history; no squash/rewrite/force-push
 
 Exact next action:
-- define a portable semantic normalization for typeless D3D12 depth/motion guides
-- derive it from the native resource role/format, never caller metadata
-- add portable regressions first, then wire the Windows DXGI mapping
-- keep color/output rules separate
-- only after that revisit Execute/Compose registry advertisement
-- no new branch or intermediate PR
+- add portable D3D12 guide-format normalization contract and tests
