@@ -1,3 +1,3 @@
-phase07-typeless-guides-final-20260923
-base=8a7881db3063e1bccdca0b465e2edc9193861797
-request=validate-role-scoped-typeless-guides-and-resourceformat-abi
+phase07-capability-ownership-20260923
+base=dddd09fc741531e4056134f1e355c7e8e3af897b
+request=validate-provider-executor-capability-separation
