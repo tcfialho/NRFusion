@@ -6,7 +6,7 @@
 #include <cstdio>
 #include <cstdlib>
 #include <new>
-#ifdef _MSC_VER
+#ifdef _WIN32
 #include <malloc.h>
 #endif
 
@@ -141,7 +141,7 @@ void* operator new(std::size_t size, std::align_val_t alignment) {
     RecordAllocation(size);
     const std::size_t align = static_cast<std::size_t>(alignment);
     if (size == 0) size = align;
-#ifdef _MSC_VER
+#ifdef _WIN32
     if (void* memory = _aligned_malloc(size, align)) return memory;
 #else
     const std::size_t rounded = ((size + align - 1) / align) * align;
@@ -155,7 +155,7 @@ void* operator new[](std::size_t size, std::align_val_t alignment) {
 }
 
 void operator delete(void* memory, std::align_val_t) noexcept {
-#ifdef _MSC_VER
+#ifdef _WIN32
     _aligned_free(memory);
 #else
     std::free(memory);
