@@ -95,6 +95,25 @@ int main() {
     assert(repeated);
     assert(fake.qualifyCalls == 2);
     assert(shell.Registry().Size() == 2);
+    assert(StartD3D12CarrierRuntime(shell, enabled));
+
+    const auto deactivated =
+        DeactivateD3D12CarrierExecutor(shell, hooks);
+    assert(deactivated);
+    assert(fake.rollbackCalls == 2);
+    assert(shell.Registry().Size() == 1);
+    assert(shell.Registry().Supports(D3D12CarrierProviderComponent()));
+    assert(!SupportsExecutor(shell));
+
+    const auto repeatedDeactivate =
+        DeactivateD3D12CarrierExecutor(shell, hooks);
+    assert(repeatedDeactivate);
+    assert(fake.rollbackCalls == 2);
+
+    const auto reactivated = ActivateD3D12CarrierExecutor(shell, hooks);
+    assert(reactivated);
+    assert(fake.qualifyCalls == 3);
+    assert(SupportsExecutor(shell));
 
     RuntimeBootstrap::Stop(shell);
     assert(!SupportsExecutor(shell));
