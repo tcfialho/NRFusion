@@ -107,33 +107,44 @@
 ## Current session
 
 Start: 2026-09-23 02:46 BRT
+Freeze: 2026-09-23 02:58 BRT
 Branch: standalone/integration
 Base/default branch: master
 Head at start: 1ba7b6437e5ff18d1b4c91961f179563eadff4a8
 
 Phase 06: CLOSED.
-Phase 07: REOPENED FOR 07i ADVERSARIAL HARDENING.
+Phase 07: CLOSED after 07i adversarial hardening.
 Phase 08: NOT STARTED.
 
-Review findings to fix:
-- typed D3D12 guides bypass role validation
-- Execute does not prove command-list/resource device matches the bound device
-- Executor capability can remain advertised after executor shutdown/device loss
-- copied/abandoned work can still satisfy structural execution-plan checks
-- PendingFeature records GPU work but carrier bool only represents Applied
+07i fixes:
+- typed depth/motion formats are validated by guide role
+- D3D12 execution requires a live Started work ticket
+- execution claim is one-shot, preventing duplicate GPU recording with a copied ticket
+- command list/resources must belong to the bound D3D12 device
+- PendingFeature now reports NeedsSubmission separately from Applied
+- runtime registry supports component capability removal
+- D3D12 executor capability can be deactivated before teardown/device loss
+- D3D12 runtime Start remains idempotent after executor activation
 
-Checklist:
-- [ ] enforce typed guide role compatibility with portable regressions
-- [ ] add exact work liveness query and require it before execution
-- [ ] make execute result expose command-list submission requirement separately from Applied
-- [ ] add registry component removal/deactivation and D3D12 executor deactivation path
-- [ ] reject command-list/output device mismatch against boundDevice_
-- [ ] focused portable regression gate
-- [ ] LOC/checkpoint/handoff
+Validation:
+- run 35824485857: SUCCESS
+- 11/11 focused tests PASS
+- validated code head: 071d63834b2303878a93866a996c06693784a404
+- Windows-only device identity/result changes structurally reviewed; Windows gate remains deferred
+- all touched first-party files remain <=300 lines
+
+Lifecycle:
+- no implicit destructor shutdown was added because GPU idle is an explicit precondition
+- correct teardown path: DeactivateD3D12CarrierExecutor -> rollback -> ShutdownAfterIdle
 
 Commit discipline:
-- one responsibility per commit
-- preserve shared history; no rewrite/force-push
+- findings were fixed in small responsibility-scoped commits
+- no history rewrite/force-push
+- no intermediate PR
 
 Exact next action:
-- fix typed guide role validation first
+- start Phase 08 audit only after this 07i checkpoint
+- define one owner for retired GPU timing samples tied to exact WorkTicket identity
+- normal path target: 2 timestamps + 1 resolve per sampled workload
+- never wait for current GPU work
+- split Diagnostics.cpp before substantive growth
