@@ -12,7 +12,7 @@
 #include "nrfusion/SyntheticDlaaContract.hpp"
 #include "nrfusion/SyntheticDx12Provider.hpp"
 
-#include <DirectXPackedVector.h>
+#include "HalfFloat.hpp"
 
 #include <cassert>
 #include <cmath>
@@ -296,7 +296,7 @@ int main() {
                                                              IID_PPV_ARGS(&upload))));
 
             std::vector<uint16_t> halfRow(width * 4);
-            const uint16_t halfValue = DirectX::PackedVector::XMConvertFloatToHalf(value);
+            const uint16_t halfValue = nrfusion::testing::FloatToHalf(value);
             for (auto& c : halfRow) c = halfValue;
 
             uint8_t* mapped = nullptr;
@@ -400,7 +400,7 @@ int main() {
         D3D12_RANGE readRange{ 0, static_cast<SIZE_T>(readbackSize) };
         assert(SUCCEEDED(readback->Map(0, &readRange, reinterpret_cast<void**>(&mappedReadback))));
         const uint16_t* firstTexel = reinterpret_cast<const uint16_t*>(mappedReadback + readbackFootprint.Offset);
-        const float residualR = DirectX::PackedVector::XMConvertHalfToFloat(firstTexel[0]);
+        const float residualR = nrfusion::testing::HalfToFloat(firstTexel[0]);
         readback->Unmap(0, nullptr);
 
         // 0.40 (neuralOut) - 0.25 (colour) = 0.15, the matched residual CSExtractResidual computes.
