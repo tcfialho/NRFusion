@@ -1,3 +1,3 @@
-phase07-capability-ownership-20260923
-base=dddd09fc741531e4056134f1e355c7e8e3af897b
-request=validate-provider-executor-capability-separation
+phase07-typeless-guide-contract-final-20260923
+base=ca1c618be1fd4e0730c1ec2cac31bff213f3d35d
+request=validate-typeless-guide-normalization-through-framecontract
