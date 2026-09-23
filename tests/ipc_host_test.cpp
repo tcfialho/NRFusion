@@ -287,7 +287,7 @@ void TestCapture32ExportApi() {
 }
 
 int main() {
-    std::cout << "=== NRFusion Stage 3: x86 IPC Pipelined Architecture & Vulkan Tests ===\n";
+    std::cout << std::unitbuf << "=== NRFusion Stage 3: x86 IPC Pipelined Architecture & Vulkan Tests ===\n";
 
     TestIpcHandshakeAndBuild();
     TestPipelinedFrameStreaming();
