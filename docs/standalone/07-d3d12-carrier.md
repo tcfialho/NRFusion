@@ -2,7 +2,7 @@
 
 ## Status
 
-**EM ANDAMENTO — 07a–07d validados portavelmente; resize coberto, device rebind Windows implementado, Compose pendente.**
+**EM ANDAMENTO — 07a–07f validados portavelmente; paired Across-RR planejado, typeless native guides pendentes.**
 
 ## Objetivo
 
@@ -307,3 +307,70 @@ Qualificar Compose sem duplicar o provider legado:
 2. definir o seam separado necessário para AcrossRr/DeferredResidual;
 3. somente anunciar Execute/Compose depois que cada rota tiver evidência suficiente;
 4. manter `SyntheticDx12Provider.cpp`, `HostServer64.cpp` e `apply_to_optiscaler.py` read-only.
+
+
+## Subgate 07f — ownership de Compose e contrato de guides
+
+O carrier não ganhou um segundo compositor. A revisão do executor canônico confirmou:
+
+- PreSr/PostSr já fazem resolve/compose dentro de `D3D12NrExecutor::ExecuteFrame`;
+- AcrossRr já possui protocolo pareado interno:
+  - estágio store executa pre-RR, preserva residual/history e não escreve o resultado final;
+  - estágio apply executa post-RR e consome o residual armazenado;
+  - ambos usam o mesmo `submissionEpoch`;
+- `ApplyStoredResidual` falha fechado se o epoch não corresponder;
+- `DeferredResidual` não possui modo canônico equivalente e continua não suportado no carrier.
+
+O seam portátil agora modela explicitamente:
+- `Direct`;
+- `AcrossRrStore`;
+- `AcrossRrApply`.
+
+O carrier deriva `runBeforeUpscale`, `rayReconstruction` e `residualAcrossRr`; esses três
+flags não são mais confiados ao caller. O apply stage não exige color/depth/motion/exposure porque o
+executor canônico consome apenas output + residual previamente armazenado nesse ponto.
+
+### Guide contract
+
+Antes de executar um model stage, o plano agora exige:
+- depth presente e `DepthReliable()`;
+- motion presente;
+- `PipelineDecision.motion` limitado a Native ou DlssContract;
+- provenance/reliability do recurso de motion compatível com a fonte realmente selecionada.
+
+Isso impede que a policy selecione uma fonte e o executor receba silenciosamente outra.
+
+O primeiro run do guide gate (`35814648573`) falhou apenas porque o fixture não inicializava
+`PipelineDecision.motion` e portanto herdava `Zero`. O fixture foi corrigido sem relaxar o
+contrato.
+
+Validação final:
+- run `35814760066`: **SUCCESS**;
+- **9/9 focused tests PASS**;
+- paired AcrossRr store/apply: PASS;
+- DeferredResidual fail-closed: PASS;
+- missing/unreliable depth: PASS;
+- missing/mismatched/unsupported motion source: PASS;
+- Native e DlssContract motion coerentes: PASS.
+
+Code head validado:
+`27bdbfa095b4265376d063bddf31af70fc04a69e`.
+
+Tamanhos:
+- `D3D12CarrierExecutionPlan.hpp`: 77;
+- `D3D12CarrierExecutionPlan.cpp`: 165;
+- `d3d12_carrier_execution_plan_tests.cpp`: 227;
+- `D3D12CarrierExecutor.cpp`: 137.
+
+### Blocker encontrado para o próximo subgate
+
+`D3D12CarrierNativeAcquire::MapFormat` ainda retorna `ResourceFormat::Unknown` para guides
+D3D12 typeless. Isso entra em conflito com a Fase 05, cujo executor já sabe clonar formats typeless
+para views typed em `D3D12NrExecutorFramePrepare.cpp`.
+
+Portanto o próximo trabalho não é Compose. É alinhar o native Acquire com essa capacidade sem mentir
+sobre o formato portátil:
+1. definir normalização semântica testável para depth/motion typeless;
+2. manter color/output com regras próprias;
+3. não aceitar metadata de formato inventada pelo caller;
+4. somente depois revisar se Execute/Compose podem ser anunciados no registry.
