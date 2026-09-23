@@ -63,8 +63,10 @@ int main() {
     assert(first->ticket.viewKey == 77);
     assert(first->ticket.configurationGeneration ==
            frame.session.runtimeGeneration);
+    assert(carrier.CanExecuteWork(*first));
 
     assert(carrier.SubmitWork(*first));
+    assert(!carrier.CanExecuteWork(*first));
     assert(!carrier.SubmitWork(*first));
     assert(carrier.MapTimedWork(*first));
     assert(!carrier.MapTimedWork(*first));
@@ -74,7 +76,9 @@ int main() {
     const auto second = carrier.BeginWork(frame, 88);
     assert(second);
     assert(second->submissionEpoch > first->submissionEpoch);
+    assert(carrier.CanExecuteWork(*second));
     assert(carrier.AbandonWork(*second));
+    assert(!carrier.CanExecuteWork(*second));
 
     auto invalidPacket = Packet(config.generation, 102);
     invalidPacket.acquire.color.acquired = false;
@@ -84,11 +88,13 @@ int main() {
 
     const auto resizePending = carrier.BeginWork(frame, 99);
     assert(resizePending);
+    assert(carrier.CanExecuteWork(*resizePending));
     const auto resized = carrier.Resolve(
         Packet(config.generation, 103, {1280, 720}));
     assert(resized);
     assert(resized.session.runtimeGeneration != frame.session.runtimeGeneration);
     assert(!carrier.BeginWork(frame));
+    assert(!carrier.CanExecuteWork(*resizePending));
     assert(!carrier.SubmitWork(*resizePending));
     assert(!carrier.MapTimedWork(*resizePending));
     assert(carrier.AbandonWork(*resizePending));
