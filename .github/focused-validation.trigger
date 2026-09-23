@@ -1,3 +1,3 @@
-phase07-session-checkpoint-20260922
-base=7f5a0d16bc3427bab3fd042d63ffb4dbf6907ab8
-request=validate-portable-state-and-package-device-rebind-source
+phase07-paired-compose-20260923
+base=6de9369c1af03d687cab92dc454786323ab51a9d
+request=validate-direct-and-across-rr-paired-execution-plan
