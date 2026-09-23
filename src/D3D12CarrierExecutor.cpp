@@ -27,6 +27,28 @@ bool SameFrameIdentity(
 
 } // namespace
 
+bool D3D12CarrierExecutor::BindDeviceAfterIdle(ID3D12Device* device) {
+    if (device == nullptr) return false;
+    if (boundDevice_ == device) return executor_.Init(device);
+
+    if (boundDevice_ != nullptr) {
+        executor_.Shutdown();
+        boundDevice_->Release();
+        boundDevice_ = nullptr;
+    }
+
+    if (!executor_.Load() || !executor_.Init(device)) return false;
+    device->AddRef();
+    boundDevice_ = device;
+    return true;
+}
+
+void D3D12CarrierExecutor::ShutdownAfterIdle() {
+    executor_.Shutdown();
+    if (boundDevice_ != nullptr) boundDevice_->Release();
+    boundDevice_ = nullptr;
+}
+
 D3D12CarrierExecuteResult D3D12CarrierExecutor::Execute(
     ID3D12GraphicsCommandList* cmdList,
     const D3D12NativeFrameResources& resources,
