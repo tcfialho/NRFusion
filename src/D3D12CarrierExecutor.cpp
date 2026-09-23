@@ -79,14 +79,19 @@ D3D12CarrierExecuteResult D3D12CarrierExecutor::Execute(
     if (!SameFrameIdentity(resources, frame) ||
         resources.output == nullptr ||
         frame.acquire.outputOpaqueId == 0 ||
-        OpaqueId(resources.output) != frame.acquire.outputOpaqueId ||
-        !Matches(resources.color, normalized.color) ||
-        !Matches(resources.depth, normalized.depth) ||
-        !Matches(resources.motionVectors, normalized.motionVectors)) {
+        OpaqueId(resources.output) != frame.acquire.outputOpaqueId) {
         result.failure = D3D12CarrierExecuteFailure::ResourceIdentityMismatch;
         return result;
     }
-    if (options.composition.useGameExposure &&
+    if (planned.plan.modelStage &&
+        ((!Matches(resources.depth, normalized.depth)) ||
+         (!Matches(resources.motionVectors, normalized.motionVectors)) ||
+         (planned.plan.requiresColor &&
+          !Matches(resources.color, normalized.color)))) {
+        result.failure = D3D12CarrierExecuteFailure::ResourceIdentityMismatch;
+        return result;
+    }
+    if (planned.plan.modelStage && options.composition.useGameExposure &&
         (resources.exposure.resource == nullptr ||
          !Matches(resources.exposure, normalized.exposure))) {
         result.failure = D3D12CarrierExecuteFailure::MissingExposure;
@@ -104,10 +109,9 @@ D3D12CarrierExecuteResult D3D12CarrierExecutor::Execute(
     request.plan = planned.plan.framePlan;
     request.tuning = options.tuning;
     request.composition = options.composition;
-    request.composition.runBeforeUpscale =
-        planned.plan.framePlan.beforeUpscale;
-    request.composition.rayReconstruction = false;
-    request.composition.residualAcrossRr = false;
+    request.composition.runBeforeUpscale = planned.plan.runBeforeUpscale;
+    request.composition.rayReconstruction = planned.plan.rayReconstruction;
+    request.composition.residualAcrossRr = planned.plan.residualAcrossRr;
     request.composition.colourIsLinearHdr =
         planned.plan.colourIsLinearHdr;
     request.submissionEpoch = planned.plan.submissionEpoch;
