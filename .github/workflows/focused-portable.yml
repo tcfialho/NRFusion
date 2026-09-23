@@ -41,17 +41,7 @@ jobs:
         run: >
           ctest --test-dir build-focused
           --output-on-failure
-          -R '^(nrfusion_tests|nrfusion_nr_session_(tests|stress_tests)|nrfusion_d3d12_(carrier_(contract|session|native_facts|capabilities|bootstrap|work|execution_plan)|guide_format)_tests)
-      - name: Package source checkpoint
-        run: git archive --format=zip --output=nrfusion-source-${GITHUB_SHA}.zip HEAD
-
-      - name: Upload source checkpoint
-        uses: actions/upload-artifact@v4
-        with:
-          name: nrfusion-source-${{ github.sha }}
-          path: nrfusion-source-${{ github.sha }}.zip
-          if-no-files-found: error
-
+          -R '^(nrfusion_tests|nrfusion_nr_session_(tests|stress_tests)|nrfusion_d3d12_(carrier_(contract|session|native_facts|capabilities|bootstrap|work|execution_plan)|guide_format)_tests)$'
 
       - name: Package source checkpoint
         run: git archive --format=zip --output=nrfusion-source-${GITHUB_SHA}.zip HEAD
