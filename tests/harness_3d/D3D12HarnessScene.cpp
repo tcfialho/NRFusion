@@ -1,13 +1,12 @@
 #include "D3D12TestHarness.hpp"
-#include <directxmath.h>
+#include "HarnessMath.hpp"
 #include <cstring>
 namespace nrfusion::testing {
-using namespace DirectX;
 namespace {
 struct SceneConstants {
-    XMFLOAT4X4 currentWvp;
-    XMFLOAT4X4 previousWvp;
-    XMFLOAT4 jitterAndFlags;
+    harnessmath::Matrix4 currentWvp;
+    harnessmath::Matrix4 previousWvp;
+    harnessmath::Float4 jitterAndFlags;
 };
 }
 void D3D12TestHarness::RenderScene(std::uint64_t frameIndex, float angleRad, Jitter jitter, bool cameraCut) {
@@ -33,16 +32,16 @@ void D3D12TestHarness::RenderScene(std::uint64_t frameIndex, float angleRad, Jit
     directCmdList_->ClearDepthStencilView(dsv, D3D12_CLEAR_FLAG_DEPTH, 1.0f, 0, 0, nullptr);
     directCmdList_->OMSetRenderTargets(3, rtvs, FALSE, &dsv);
     directCmdList_->SetGraphicsRootSignature(rootSig_.Get());
-    XMMATRIX world = XMMatrixRotationRollPitchYaw(angleRad * 0.7f, angleRad, 0.0f);
-    XMVECTOR eye = XMVectorSet(0.0f, 1.5f, -3.5f, 0.0f);
-    XMVECTOR at = XMVectorSet(0.0f, 0.0f, 0.0f, 0.0f);
-    XMVECTOR up = XMVectorSet(0.0f, 1.0f, 0.0f, 0.0f);
-    XMMATRIX view = XMMatrixLookAtLH(eye, at, up);
-    float aspect = static_cast<float>(config_.width) / static_cast<float>(config_.height);
-    XMMATRIX proj = XMMatrixPerspectiveFovLH(XM_PIDIV4, aspect, 0.1f, 100.0f);
-    XMMATRIX wvp = XMMatrixMultiply(world, XMMatrixMultiply(view, proj));
-    SceneConstants constants;
-    XMStoreFloat4x4(&constants.currentWvp, XMMatrixTranspose(wvp));
+    const auto world = harnessmath::RotationRollPitchYaw(angleRad * 0.7f, angleRad, 0.0f);
+    const harnessmath::Float3 eye{0.0f, 1.5f, -3.5f};
+    const harnessmath::Float3 at{0.0f, 0.0f, 0.0f};
+    const harnessmath::Float3 up{0.0f, 1.0f, 0.0f};
+    const auto view = harnessmath::LookAtLH(eye, at, up);
+    const float aspect = static_cast<float>(config_.width) / static_cast<float>(config_.height);
+    const auto proj = harnessmath::PerspectiveFovLH(0.7853981634f, aspect, 0.1f, 100.0f);
+    const auto wvp = harnessmath::Multiply(world, harnessmath::Multiply(view, proj));
+    SceneConstants constants{};
+    constants.currentWvp = harnessmath::Transpose(wvp);
     if (!hasPrevFrame_ || cameraCut) {
         constants.previousWvp = constants.currentWvp;
     } else {
@@ -50,7 +49,7 @@ void D3D12TestHarness::RenderScene(std::uint64_t frameIndex, float angleRad, Jit
     }
     memcpy(prevViewProj_, &constants.currentWvp, sizeof(prevViewProj_));
     hasPrevFrame_ = true;
-    constants.jitterAndFlags = XMFLOAT4(jitter.x, jitter.y, cameraCut ? 1.0f : 0.0f, 0.0f);
+    constants.jitterAndFlags = {jitter.x, jitter.y, cameraCut ? 1.0f : 0.0f, 0.0f};
     directCmdList_->SetGraphicsRoot32BitConstants(0, sizeof(SceneConstants) / 4, &constants, 0);
     directCmdList_->IASetPrimitiveTopology(D3D_PRIMITIVE_TOPOLOGY_TRIANGLELIST);
     directCmdList_->IASetVertexBuffers(0, 1, &vertexBufferView_);

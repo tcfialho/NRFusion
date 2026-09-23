@@ -1,20 +1,19 @@
 #include "D3D12TestHarness.hpp"
+#include "HarnessMath.hpp"
 #include <d3dcompiler.h>
-#include <directxmath.h>
 #include <cstring>
 #include <iostream>
 namespace nrfusion::testing {
-using namespace DirectX;
 const char* HarnessShaderSource() noexcept;
 namespace {
 struct Vertex {
-    XMFLOAT3 position;
-    XMFLOAT3 normal;
+    harnessmath::Float3 position;
+    harnessmath::Float3 normal;
 };
 struct SceneConstants {
-    XMFLOAT4X4 currentWvp;
-    XMFLOAT4X4 previousWvp;
-    XMFLOAT4 jitterAndFlags;
+    harnessmath::Matrix4 currentWvp;
+    harnessmath::Matrix4 previousWvp;
+    harnessmath::Float4 jitterAndFlags;
 };
 const char* g_harnessShaderSource = HarnessShaderSource();
 }
