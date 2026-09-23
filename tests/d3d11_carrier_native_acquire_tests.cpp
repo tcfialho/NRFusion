@@ -78,8 +78,9 @@ int main() {
     assert(acquired.frame.color.ownership == ResourceOwnership::Borrowed);
     assert(acquired.frame.color.lifetime == ResourceLifetime::Frame);
     assert(acquired.frame.color.sourceFrameId == input.identity.frameId);
-    assert(acquired.frame.renderResolution == Resolution{96, 64});
-    assert(acquired.frame.outputResolution == Resolution{96, 64});
+    const Resolution expectedResolution{96, 64};
+    assert(acquired.frame.renderResolution == expectedResolution);
+    assert(acquired.frame.outputResolution == expectedResolution);
     assert(acquired.frame.hdr);
 
     auto badIdentity = input;
