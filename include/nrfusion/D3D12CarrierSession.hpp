@@ -44,6 +44,7 @@ public:
     D3D12CarrierFrameResult Resolve(const D3D12CarrierFramePacket& packet);
     std::optional<D3D12CarrierWork> BeginWork(
         const D3D12CarrierFrameResult& frame, std::uint64_t viewKey = 0) noexcept;
+    bool CanExecuteWork(const D3D12CarrierWork& work) const noexcept;
     bool SubmitWork(const D3D12CarrierWork& work) noexcept;
     bool AbandonWork(const D3D12CarrierWork& work) noexcept;
     bool MapTimedWork(const D3D12CarrierWork& work) noexcept;
