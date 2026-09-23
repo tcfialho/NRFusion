@@ -107,26 +107,51 @@
 ## Current session
 
 Start: 2026-09-23 01:39 BRT
+Freeze: 2026-09-23 01:49 BRT
 Branch: standalone/integration
 Base/default branch: master
 Head at start: 410aadf1405ce5125e7dc45a69c0dede5467f178
 
 Phase 06: CLOSED.
-Phase 07: IN PROGRESS; 07a–07g validated portably.
+Phase 07: CLOSED STRUCTURALLY.
+Phase 08: NOT STARTED.
 
-Checklist:
-- [ ] 07h add portable D3D12 carrier bootstrap activation boundary
-- [ ] qualify executor before runtime component plan is built
-- [ ] failed qualification starts Provider-only without Executor capability
-- [ ] successful qualification registers Provider + Executor
-- [ ] bootstrap failure after successful qualification invokes rollback
-- [ ] invalid config must not call qualification
-- [ ] add focused portable fake/regressions
-- [ ] rerun focused gate, LOC and checkpoint ZIP
+07h bootstrap activation:
+- RuntimeBootstrap can activate one component after startup without exposing mutable registry
+- D3D12 runtime starts Provider-only
+- Executor qualification happens only while Running with Provider present
+- failed qualification invokes rollback and leaves no Executor capability
+- successful qualification registers Execute | Compose
+- repeated activation is idempotent and does not requalify
+- Disabled/Stopped paths do not touch qualification
+
+Validation history:
+- run 35819463575: FAIL, workflow regex/package duplication only
+- workflow repair commit: 3249b757798dc0abfdf1aa93d4a19aabfa1f2072
+- run 35819575671: SUCCESS for pre-rollback head
+- ancestry review found final rollback commits were two commits ahead
+- run 35819742596: SUCCESS on final code head
+- validated code head: c11e42bdf808dc4b0bcf54e50afa985ca2cd8113
+
+Phase 07 closure:
+- Acquire/Normalize/Session/Execute/Compose/capability/bootstrap owners explicit
+- direct PreSr/PostSr and paired AcrossRr reuse canonical D3D12NrExecutor
+- typeless depth/motion guides normalized by role
+- resize generation quarantine and device rebind lifecycle defined
+- steady carrier path adds no per-frame resource/heap/lock creation
+- all new/touched carrier files <=300
+- native Windows compile/harness and real games remain deferred to global cutover by repository policy
+- SyntheticDx12Provider/HostServer64/apply_to_optiscaler remain read-only
 
 Commit discipline:
-- one responsibility per commit
-- preserve shared history; no squash/rewrite/force-push
+- small responsibility-scoped commits preserved
+- failed CI history preserved
+- no squash/rewrite/force-push
+- no intermediate PR
 
 Exact next action:
-- add D3D12CarrierBootstrap.{hpp,cpp} with pre-bootstrap qualification + rollback hooks
+- start Phase 08 audit on TimingWorkMapper, TelemetryTracker, Diagnostics and WorkLedger/NrSession timing flow
+- define one owner for retired GPU timing samples with exact WorkTicket association
+- normal path target: 2 timestamps + 1 resolve per sampled workload, no wait on current GPU work
+- do not duplicate WorkLedger or create a second timing identity namespace
+- split Diagnostics.cpp before substantive growth because it is already 286 lines
