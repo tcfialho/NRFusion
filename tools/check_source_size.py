@@ -14,6 +14,9 @@ EXTS = {
 EXEMPT_PREFIXES = ("tests/fixture/", "third_party/", "vendor/", "external/")
 GENERATED_PREFIXES = ("generated/", "src/generated/", "include/generated/", "shaders/generated/")
 GENERATED_MARKER = "NRFUSION_GENERATED_FILE"
+LOCKED_VENDOR_BLOBS = {
+    "shaders/vendor/optiscaler_dlssnr/dlssnr.hlsl": "4a6102820f736e9349ffed370259d094f2a7f4ae",
+}
 
 
 def git(*args, check=True):
@@ -55,6 +58,14 @@ def is_generated(path):
     return any(GENERATED_MARKER in line for line in head)
 
 
+def is_locked_vendor(path):
+    expected = LOCKED_VENDOR_BLOBS.get(path)
+    if expected is None:
+        return False
+    actual = git("hash-object", path).stdout.decode().strip()
+    return actual == expected
+
+
 def line_count(path):
     return len(Path(path).read_text(encoding="utf-8", errors="replace").splitlines())
 
@@ -78,6 +89,8 @@ def main():
     violations = []
     for path in sorted(paths):
         if not is_source(path) or not Path(path).is_file() or is_generated(path):
+            continue
+        if is_locked_vendor(path):
             continue
         if path.startswith(EXEMPT_PREFIXES) and path not in modified:
             continue

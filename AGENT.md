@@ -187,10 +187,9 @@ Phase 08 closure:
 
 Phase 09: IN PROGRESS.
 
-Known non-gate issue:
-- python tools/check_source_size.py changed still reports the locked vendored
-  shaders/vendor/optiscaler_dlssnr/dlssnr.hlsl (1110 lines). This is third-party locked source,
-  not a Windows functional failure; the checker needs a vendor exemption before final cutover.
+Source-size vendor handling:
+- tools/check_source_size.py exempts shaders/vendor/optiscaler_dlssnr/dlssnr.hlsl only while its Git blob SHA matches the locked upstream vendor blob;
+- any byte change to that shader removes the exemption automatically and restores the 300-line violation.
 
 Remaining global gate:
 - real-game execution and physical provider/Host64/patcher cutover.
