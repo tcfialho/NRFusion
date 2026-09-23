@@ -1,6 +1,17 @@
 #include "nrfusion/SyntheticOpenGlProvider.hpp"
 
+#include <bit>
+
 namespace nrfusion {
+namespace {
+
+template <typename To, typename From>
+To ProcCast(From value) noexcept {
+    static_assert(sizeof(To) == sizeof(From));
+    return std::bit_cast<To>(value);
+}
+
+} // namespace
 
 SyntheticOpenGlProvider::SyntheticOpenGlProvider() = default;
 
@@ -19,45 +30,45 @@ bool SyntheticOpenGlProvider::LoadOpenGl() {
         return false;
     }
 
-    gl_.wglGetProcAddress = reinterpret_cast<PROC(WINAPI*)(LPCSTR)>(
+    gl_.wglGetProcAddress = ProcCast<PROC(WINAPI*)(LPCSTR)>(
         GetProcAddress(gl_.libGl, "wglGetProcAddress"));
-    gl_.wglGetCurrentContext = reinterpret_cast<HGLRC(WINAPI*)(void)>(
+    gl_.wglGetCurrentContext = ProcCast<HGLRC(WINAPI*)(void)>(
         GetProcAddress(gl_.libGl, "wglGetCurrentContext"));
 
     if (gl_.wglGetProcAddress) {
-        gl_.CreateMemoryObjectsEXT = reinterpret_cast<PFN_glCreateMemoryObjectsEXT_>(
+        gl_.CreateMemoryObjectsEXT = ProcCast<PFN_glCreateMemoryObjectsEXT_>(
             gl_.wglGetProcAddress("glCreateMemoryObjectsEXT"));
-        gl_.DeleteMemoryObjectsEXT = reinterpret_cast<PFN_glDeleteMemoryObjectsEXT_>(
+        gl_.DeleteMemoryObjectsEXT = ProcCast<PFN_glDeleteMemoryObjectsEXT_>(
             gl_.wglGetProcAddress("glDeleteMemoryObjectsEXT"));
-        gl_.MemoryObjectParameterivEXT = reinterpret_cast<PFN_glMemoryObjectParameterivEXT_>(
+        gl_.MemoryObjectParameterivEXT = ProcCast<PFN_glMemoryObjectParameterivEXT_>(
             gl_.wglGetProcAddress("glMemoryObjectParameterivEXT"));
-        gl_.TexStorageMem2DEXT = reinterpret_cast<PFN_glTexStorageMem2DEXT_>(
+        gl_.TexStorageMem2DEXT = ProcCast<PFN_glTexStorageMem2DEXT_>(
             gl_.wglGetProcAddress("glTexStorageMem2DEXT"));
-        gl_.ImportMemoryWin32HandleEXT = reinterpret_cast<PFN_glImportMemoryWin32HandleEXT_>(
+        gl_.ImportMemoryWin32HandleEXT = ProcCast<PFN_glImportMemoryWin32HandleEXT_>(
             gl_.wglGetProcAddress("glImportMemoryWin32HandleEXT"));
 
-        gl_.GenSemaphoresEXT = reinterpret_cast<PFN_glGenSemaphoresEXT_>(
+        gl_.GenSemaphoresEXT = ProcCast<PFN_glGenSemaphoresEXT_>(
             gl_.wglGetProcAddress("glGenSemaphoresEXT"));
-        gl_.DeleteSemaphoresEXT = reinterpret_cast<PFN_glDeleteSemaphoresEXT_>(
+        gl_.DeleteSemaphoresEXT = ProcCast<PFN_glDeleteSemaphoresEXT_>(
             gl_.wglGetProcAddress("glDeleteSemaphoresEXT"));
-        gl_.ImportSemaphoreWin32HandleEXT = reinterpret_cast<PFN_glImportSemaphoreWin32HandleEXT_>(
+        gl_.ImportSemaphoreWin32HandleEXT = ProcCast<PFN_glImportSemaphoreWin32HandleEXT_>(
             gl_.wglGetProcAddress("glImportSemaphoreWin32HandleEXT"));
-        gl_.WaitSemaphoreEXT = reinterpret_cast<PFN_glWaitSemaphoreEXT_>(
+        gl_.WaitSemaphoreEXT = ProcCast<PFN_glWaitSemaphoreEXT_>(
             gl_.wglGetProcAddress("glWaitSemaphoreEXT"));
-        gl_.SignalSemaphoreEXT = reinterpret_cast<PFN_glSignalSemaphoreEXT_>(
+        gl_.SignalSemaphoreEXT = ProcCast<PFN_glSignalSemaphoreEXT_>(
             gl_.wglGetProcAddress("glSignalSemaphoreEXT"));
 
-        gl_.GenFramebuffers = reinterpret_cast<PFN_glGenFramebuffers_>(
+        gl_.GenFramebuffers = ProcCast<PFN_glGenFramebuffers_>(
             gl_.wglGetProcAddress("glGenFramebuffers"));
-        gl_.DeleteFramebuffers = reinterpret_cast<PFN_glDeleteFramebuffers_>(
+        gl_.DeleteFramebuffers = ProcCast<PFN_glDeleteFramebuffers_>(
             gl_.wglGetProcAddress("glDeleteFramebuffers"));
-        gl_.BindFramebuffer = reinterpret_cast<PFN_glBindFramebuffer_>(
+        gl_.BindFramebuffer = ProcCast<PFN_glBindFramebuffer_>(
             gl_.wglGetProcAddress("glBindFramebuffer"));
-        gl_.FramebufferTexture2D = reinterpret_cast<PFN_glFramebufferTexture2D_>(
+        gl_.FramebufferTexture2D = ProcCast<PFN_glFramebufferTexture2D_>(
             gl_.wglGetProcAddress("glFramebufferTexture2D"));
-        gl_.BlitFramebuffer = reinterpret_cast<PFN_glBlitFramebuffer_>(
+        gl_.BlitFramebuffer = ProcCast<PFN_glBlitFramebuffer_>(
             gl_.wglGetProcAddress("glBlitFramebuffer"));
-        gl_.CopyImageSubData = reinterpret_cast<PFN_glCopyImageSubData_>(
+        gl_.CopyImageSubData = ProcCast<PFN_glCopyImageSubData_>(
             gl_.wglGetProcAddress("glCopyImageSubData"));
 
         if (gl_.CreateMemoryObjectsEXT && gl_.ImportMemoryWin32HandleEXT &&
