@@ -12,7 +12,7 @@ struct D3D12CarrierExecutionConfig {
     bool unlockPasses = false;
     bool proxyBackend = false;
     bool depthInverted = false;
-    bool colourIsLinearHdr = false;
+    bool useGameExposure = false;
     float motionScaleX = 1.0f;
     float motionScaleY = 1.0f;
 };
@@ -37,7 +37,7 @@ struct D3D12CarrierExecutionPlan {
     std::uint64_t submissionEpoch = 0;
     bool reset = false;
     bool depthInverted = false;
-    bool useGameExposure = false;
+    bool colourIsLinearHdr = false;
     float motionScaleX = 1.0f;
     float motionScaleY = 1.0f;
 };
