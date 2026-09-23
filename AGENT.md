@@ -1,3 +1,17 @@
+# PRIORIDADE MÁXIMA — ESTABILIDADE DO AGENT MODE
+
+A falha mostrada como **“Agent Mode Connection Failed”** significa perda/intermitência do canal remoto e deve ser tratada antes de atribuir erro ao código.
+
+Regras obrigatórias desta prioridade:
+- Minimizar chamadas remotas: preferir **1 chamada grande por etapa** e **1 leitura de resultado**.
+- Dentro da chamada grande, executar localmente no Windows: inspeção, edição, build, testes, git status, logs e diagnóstico.
+- Gravar logs persistentes fora do worktree em D:\Users\tcfialho\Documents\NRFusion-*.log.
+- Não fazer dezenas de read_file, search, list_processes ou chamadas pequenas em sequência quando PowerShell/grep local resolve na mesma execução.
+- Não usar chamadas remotas concorrentes.
+- Antes de repetir trabalho após timeout/desconexão, verificar processo e log já existentes.
+- Se a conexão cair, preservar o estado local e retomar pelo log/processo existente; não reinterpretar automaticamente a queda como falha do código.
+- Em tarefas médias/longas, encapsular a etapa em script PowerShell local e executar em lote; retornar ao MCP só para coletar o resultado.
+- Priorizar robustez do canal sobre granularidade de observação. Menos round-trips é melhor.
 # Agent workflow
 
 - Protect work continuously with Git and small logical commits.
