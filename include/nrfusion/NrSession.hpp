@@ -41,6 +41,7 @@ private:
     FusionRuntime runtime_{};
     NrSessionWorkTracker works_{};
     NrSessionTimingQueue timings_{};
+    std::optional<double> retiredNrGpuMs_;
     bool configured_ = false;
 };
 

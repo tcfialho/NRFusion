@@ -28,6 +28,7 @@ bool NrSession::Configure(
         works_.ResetSession();
         timings_.Reset();
     }
+    retiredNrGpuMs_.reset();
     config_ = config;
     performanceConfig_ = performance;
     configured_ = true;
@@ -40,6 +41,7 @@ bool NrSession::Configure(
 void NrSession::Reset() noexcept {
     works_.ResetSession();
     timings_.Reset();
+    retiredNrGpuMs_.reset();
     config_ = {};
     state_ = {};
     configured_ = false;
@@ -68,9 +70,16 @@ NrSessionFrameResult NrSession::Resolve(const NrSessionFramePacket& packet) {
     NrSessionFrameResult result{};
     result.frameId = packet.frame.frameId;
     result.configurationGeneration = config_.generation;
+    TelemetrySample telemetry = packet.telemetry;
+    const bool consumeRetiredTiming = retiredNrGpuMs_.has_value();
+    if (consumeRetiredTiming) {
+        telemetry.nrGpuMs = *retiredNrGpuMs_;
+        telemetry.nrTimingFresh = true;
+    }
     result.decision = runtime_.ResolveAuto(
-        packet.game, packet.frame, packet.telemetry, packet.capabilities,
+        packet.game, packet.frame, telemetry, packet.capabilities,
         packet.requestedScheduler, packet.generationMultiplier, packet.compatibility);
+    if (consumeRetiredTiming) retiredNrGpuMs_.reset();
     result.runtimeGeneration = runtime_.AutoConfigurationGeneration();
     result.disposition = result.decision.supported
         ? NrSessionDisposition::Ready
@@ -145,6 +154,7 @@ bool NrSession::RetireTimedSample(const NrRetiredTimingSample& sample) {
     runtime_.ObservePrecisionCost(
         precision, ticket.configurationGeneration, sample.gpuMs);
     runtime_.ObserveScaleCost(ticket.workingScale, sample.gpuMs);
+    retiredNrGpuMs_ = sample.gpuMs;
     return true;
 }
 

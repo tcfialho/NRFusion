@@ -89,6 +89,7 @@ if (WIN32)
         src/D3D12NrCodecDispatch.cpp
         src/D3D12CarrierNativeAcquire.cpp
         src/D3D12CarrierExecutor.cpp
+        src/D3D12RetiredTimingSource.cpp
         src/SyntheticVulkanProvider.cpp
         src/SyntheticOpenGlProvider.cpp
         src/SyntheticOpenGlProviderLifecycle.cpp

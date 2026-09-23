@@ -215,6 +215,51 @@ int main() {
         assert(exactSession.AbandonWork(*c));
     }
 
+    {
+        PerformanceConfig timingPerformance = performance;
+        timingPerformance.nrWarmupSamples = 1;
+        RuntimeConfig timingConfig = config;
+        timingConfig.generation = 30;
+        NrSession timingSession;
+        assert(timingSession.Configure(timingConfig, timingPerformance));
+
+        auto firstPacket = Packet(timingConfig.generation, 800);
+        firstPacket.telemetry.nrGpuMs = 0.0;
+        firstPacket.telemetry.nrTimingFresh = false;
+        const auto firstFrame = timingSession.Resolve(firstPacket);
+        assert(firstFrame);
+        const auto firstTimedWork = timingSession.BeginWork(firstFrame);
+        assert(firstTimedWork && timingSession.SubmitWork(*firstTimedWork));
+        assert(timingSession.MapTimedWork(*firstTimedWork));
+        assert(timingSession.RetireTimedSample({true, *firstTimedWork, 3.0}));
+
+        auto secondPacket = Packet(timingConfig.generation, 801);
+        secondPacket.telemetry.nrGpuMs = 0.0;
+        secondPacket.telemetry.nrTimingFresh = false;
+        const auto secondFrame = timingSession.Resolve(secondPacket);
+        assert(secondFrame);
+        assert(!secondFrame.decision.performance.telemetryReady);
+
+        const auto secondTimedWork = timingSession.BeginWork(secondFrame);
+        assert(secondTimedWork && timingSession.SubmitWork(*secondTimedWork));
+        assert(timingSession.MapTimedWork(*secondTimedWork));
+        assert(timingSession.RetireTimedSample({true, *secondTimedWork, 2.5}));
+
+        auto thirdPacket = Packet(timingConfig.generation, 802);
+        thirdPacket.telemetry.nrGpuMs = 0.0;
+        thirdPacket.telemetry.nrTimingFresh = false;
+        const auto thirdFrame = timingSession.Resolve(thirdPacket);
+        assert(thirdFrame);
+        assert(thirdFrame.decision.performance.telemetryReady);
+
+        auto fourthPacket = Packet(timingConfig.generation, 803);
+        fourthPacket.telemetry.nrGpuMs = 0.0;
+        fourthPacket.telemetry.nrTimingFresh = false;
+        const auto fourthFrame = timingSession.Resolve(fourthPacket);
+        assert(fourthFrame);
+        assert(!fourthFrame.decision.performance.telemetryReady);
+    }
+
     RuntimeConfig disabled = config;
     ++disabled.generation;
     disabled.enabled = false;

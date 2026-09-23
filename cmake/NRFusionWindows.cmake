@@ -76,6 +76,20 @@ add_executable(nrfusion_harness_3d
     endif()
     add_test(NAME nrfusion_d3d12_nr_codec_tests COMMAND nrfusion_d3d12_nr_codec_tests)
 
+    add_executable(nrfusion_d3d12_retired_timing_source_tests
+        tests/d3d12_retired_timing_source_tests.cpp)
+    target_include_directories(nrfusion_d3d12_retired_timing_source_tests PRIVATE tests)
+    target_link_libraries(nrfusion_d3d12_retired_timing_source_tests PRIVATE nrfusion_core d3d12 dxgi)
+    if (MSVC)
+        target_compile_options(nrfusion_d3d12_retired_timing_source_tests PRIVATE /W4 /permissive- /UNDEBUG)
+    else()
+        target_compile_options(nrfusion_d3d12_retired_timing_source_tests PRIVATE -UNDEBUG)
+    endif()
+    add_test(NAME nrfusion_d3d12_retired_timing_source_tests
+        COMMAND nrfusion_d3d12_retired_timing_source_tests)
+    set_tests_properties(nrfusion_d3d12_retired_timing_source_tests PROPERTIES
+        SKIP_RETURN_CODE 77)
+
     add_executable(nrfusion_residual_gpu_test tests/residual_gpu_test.cpp)
     target_link_libraries(nrfusion_residual_gpu_test PRIVATE nrfusion_core d3d12 dxgi d3dcompiler)
     if (MSVC)
