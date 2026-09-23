@@ -2,7 +2,7 @@
 
 ## Status
 
-**CONCLUÍDA ESTRUTURALMENTE — 07a–07h validados portavelmente; gate Windows/hardware diferido para o cutover global.**
+**CONCLUÍDA ESTRUTURALMENTE — 07a–07i validados portavelmente; gate Windows/hardware diferido para o cutover global.**
 
 ## Objetivo
 
@@ -505,3 +505,70 @@ Esses itens permanecem no gate global de integração/hardware definido pelo rep
 Entrar na **Fase 08 — Timing e Diagnostics desacoplados**. Primeiro auditar o timing existente
 (`TimingWorkMapper`, telemetry e diagnostics) e definir um owner portátil de timing aposentado
 sem waits, sem duplicar o `WorkLedger`/`NrSession`.
+
+
+## Subgate 07i — adversarial hardening pós-review
+
+A revisão pós-fechamento encontrou cinco invariants que ainda podiam falhar. Foram corrigidos antes
+de iniciar a Fase 08.
+
+### Guide role
+
+Formats typed agora passam pela mesma validação por papel usada para typeless:
+- depth aceita somente formatos depth compatíveis;
+- motion aceita somente formatos motion compatíveis;
+- um formato conhecido mas pertencente ao papel errado vira `ResourceFormat::Unknown`;
+- regressão explícita rejeita RG16 como depth e D32 como motion.
+
+### Work liveness e execução única
+
+O executor não confia mais apenas nos campos copiáveis de `D3D12CarrierWork`:
+- `NrSessionWorkTracker` sabe se o ticket ainda está Started;
+- resize/reconfigure/abandon/submit invalidam execution eligibility;
+- `ClaimExecution` consome um claim exatamente uma vez;
+- duas chamadas Execute com o mesmo ticket não podem gravar GPU duas vezes;
+- o claim só é consumido depois de plan/device/resource preflight.
+
+### Device identity
+
+O wrapper Windows verifica que command list, output e todos os resources presentes pertencem ao
+mesmo `ID3D12Device` bound no executor antes de delegar ao executor canônico.
+
+### Submission semantics
+
+`D3D12CarrierExecuteResult` separa:
+- `Applied()`: resultado final foi aplicado;
+- `NeedsSubmission()`: a command list precisa avançar, incluindo `PendingFeature`.
+
+O operador booleano segue `NeedsSubmission()`, evitando descartar a criação de feature que precisa
+ser submetida antes da próxima epoch.
+
+### Capability deactivation
+
+O registry agora permite remover capability bits sem derrubar o runtime inteiro.
+`DeactivateD3D12CarrierExecutor`:
+- remove `Execute | Compose` primeiro;
+- executa o rollback/teardown depois;
+- preserva o Provider;
+- é idempotente quando o Executor já está ausente;
+- permite requalificar e reativar depois.
+
+`StartD3D12CarrierRuntime` também permanece idempotente depois que o Executor foi ativado.
+
+O teardown automático por destrutor não foi adotado: `ShutdownAfterIdle` libera owners de GPU que
+exigem idle explícito. O lifecycle correto é deactivation -> rollback/`ShutdownAfterIdle`.
+
+### Validação 07i
+
+Run `35824485857`, code head
+`071d63834b2303878a93866a996c06693784a404`:
+- configure/build focado: PASS;
+- CTest: **11/11 PASS**;
+- guide role regression: PASS;
+- work liveness + one-shot claim: PASS;
+- capability deactivate/reactivate: PASS;
+- regressões anteriores de Fases 06/07: PASS;
+- nenhum Windows gate intermediário.
+
+Todos os arquivos first-party tocados no 07i permanecem abaixo de 300 linhas.
+A Fase 07 retorna a CLOSED após esta revisão adversarial.
