@@ -34,7 +34,11 @@ def git_blob_sha1(data: bytes) -> str:
     return hashlib.sha1(prefix + data).hexdigest()
 
 
-def require_blob(data: bytes, expected: str, label: str) -> None:
+def require_blob(
+    data: bytes, expected: str, label: str, *, text: bool = False
+) -> None:
+    if text:
+        data = data.replace(b"\r\n", b"\n")
     actual = git_blob_sha1(data)
     if actual != expected:
         raise RuntimeError(f"{label} blob mismatch: expected {expected}, got {actual}")
@@ -82,7 +86,9 @@ def main() -> int:
 
     profile = VARIANTS[args.variant]
     source = args.source.read_bytes()
-    require_blob(source, profile["source_blob"], args.source.name)
+    require_blob(
+        source, profile["source_blob"], args.source.name, text=True
+    )
     if args.verify_source_only:
         print(f"verified {args.source.name} {profile['source_blob']}")
         return 0
