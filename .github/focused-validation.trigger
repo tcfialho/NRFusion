@@ -1,3 +1,3 @@
-phase07-guide-contract-20260923
-base=a3156ed2c326b55b35b347e9b923cb19d5e4a93f
-request=validate-selected-depth-motion-provenance-before-d3d12-execute
+phase07-guide-contract-recovery-20260923
+base=3d895e8397c99288d116bfc4c3c565d6f9e66e0a
+request=validate-guide-contract-with-explicit-selected-motion
