@@ -68,9 +68,9 @@ def render_header(shader: bytes, symbol: str) -> bytes:
     for index, byte in enumerate(shader):
         chunks.append(f"0x{byte:02x}")
         if index < len(shader) - 1:
-            chunks.append(", ")
-        if (index + 1) % 12 == 0:
-            chunks.append("\n    ")
+            chunks.append(
+                ",\n    " if (index + 1) % 12 == 0 else ", "
+            )
     chunks.append("\n};\n")
     return "".join(chunks).encode("utf-8")
 
