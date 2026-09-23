@@ -39,6 +39,7 @@ enum class D3D12CarrierExecuteFailure : std::uint8_t {
     NotInitialized,
     InactiveWork,
     InvalidCommandList,
+    DeviceMismatch,
     ResourceIdentityMismatch,
     MissingExposure,
     ExecutorFailed
@@ -51,9 +52,19 @@ struct D3D12CarrierExecuteResult {
     D3D12NrFrameResult executorResult = D3D12NrFrameResult::Failed;
     bool attempted = false;
 
-    constexpr explicit operator bool() const noexcept {
+    constexpr bool Applied() const noexcept {
         return attempted && failure == D3D12CarrierExecuteFailure::None &&
                executorResult == D3D12NrFrameResult::Applied;
+    }
+
+    constexpr bool NeedsSubmission() const noexcept {
+        return attempted && failure == D3D12CarrierExecuteFailure::None &&
+               (executorResult == D3D12NrFrameResult::Applied ||
+                executorResult == D3D12NrFrameResult::PendingFeature);
+    }
+
+    constexpr explicit operator bool() const noexcept {
+        return NeedsSubmission();
     }
 };
 
