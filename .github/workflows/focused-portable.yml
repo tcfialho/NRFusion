@@ -1,11 +1,18 @@
 name: Focused portable validation
 
 on:
+  workflow_dispatch:
   push:
     branches:
       - standalone/integration
     paths:
-      - '.github/focused-validation.trigger'
+      - 'CMakeLists.txt'
+      - 'cmake/**'
+      - 'include/**'
+      - 'src/**'
+      - 'tests/**'
+      - 'tools/check_source_size.py'
+      - '.github/workflows/focused-portable.yml'
 
 concurrency:
   group: focused-portable-${{ github.ref }}
@@ -30,18 +37,22 @@ jobs:
         run: >
           cmake --build build-focused
           --target nrfusion_nr_session_tests nrfusion_nr_session_stress_tests nrfusion_tests
+          nrfusion_nr_timing_source_tests
           nrfusion_d3d12_carrier_contract_tests nrfusion_d3d12_carrier_session_tests
           nrfusion_d3d12_carrier_native_facts_tests nrfusion_d3d12_carrier_capabilities_tests
           nrfusion_d3d12_carrier_bootstrap_tests
           nrfusion_d3d12_carrier_work_tests nrfusion_d3d12_carrier_execution_plan_tests
-          nrfusion_d3d12_guide_format_tests
+          nrfusion_d3d12_guide_format_tests nrfusion_d3d12_nr_frame_plan_tests
           --parallel 2
 
       - name: Run focused regression tests
         run: >
           ctest --test-dir build-focused
           --output-on-failure
-          -R '^(nrfusion_tests|nrfusion_nr_session_(tests|stress_tests)|nrfusion_d3d12_(carrier_(contract|session|native_facts|capabilities|bootstrap|work|execution_plan)|guide_format)_tests)$'
+          -R '^(nrfusion_tests|nrfusion_nr_(session_(tests|stress_tests)|timing_source_tests)|nrfusion_d3d12_(carrier_(contract|session|native_facts|capabilities|bootstrap|work|execution_plan)|guide_format|nr_frame_plan)_tests)$'
+
+      - name: Check changed source size
+        run: python tools/check_source_size.py changed
 
       - name: Package source checkpoint
         run: git archive --format=zip --output=nrfusion-source-${GITHUB_SHA}.zip HEAD

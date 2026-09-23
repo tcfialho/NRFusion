@@ -48,3 +48,12 @@ Fases 07–08.
 ## Próxima fase
 
 Fase 10.
+
+## Operacional da fase
+
+- Desenvolvimento normal, commits e revisão: GitHub connector em standalone/integration.
+- Primeiro gate: portable CI automático em Ubuntu quando aplicável.
+- Segundo gate: Windows hosted fast CI automático para compilação/testes que não exigem hardware físico.
+- Notebook Windows: somente gate físico final de hook/acquisition D3D11 x64, ordering de sync e transporte GPU-resident.
+- Falha no gate físico gera log; a correção volta ao GitHub e ao CI antes de repetir o hardware gate.
+- Não editar o código no notebook durante o loop normal da fase.

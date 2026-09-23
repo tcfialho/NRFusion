@@ -1,17 +1,21 @@
-# PRIORIDADE MÁXIMA — ESTABILIDADE DO AGENT MODE
+# PRIORIDADE MÁXIMA — OPERACIONAL GITHUB-FIRST
 
-A falha mostrada como **“Agent Mode Connection Failed”** significa perda/intermitência do canal remoto e deve ser tratada antes de atribuir erro ao código.
+O desenvolvimento normal usa GitHub como fonte canônica e evita depender do Agent Mode/Windows físico.
 
-Regras obrigatórias desta prioridade:
-- Minimizar chamadas remotas: preferir **1 chamada grande por etapa** e **1 leitura de resultado**.
-- Dentro da chamada grande, executar localmente no Windows: inspeção, edição, build, testes, git status, logs e diagnóstico.
-- Gravar logs persistentes fora do worktree em D:\Users\tcfialho\Documents\NRFusion-*.log.
-- Não fazer dezenas de read_file, search, list_processes ou chamadas pequenas em sequência quando PowerShell/grep local resolve na mesma execução.
-- Não usar chamadas remotas concorrentes.
-- Antes de repetir trabalho após timeout/desconexão, verificar processo e log já existentes.
-- Se a conexão cair, preservar o estado local e retomar pelo log/processo existente; não reinterpretar automaticamente a queda como falha do código.
-- Em tarefas médias/longas, encapsular a etapa em script PowerShell local e executar em lote; retornar ao MCP só para coletar o resultado.
-- Priorizar robustez do canal sobre granularidade de observação. Menos round-trips é melhor.
+Regras obrigatórias:
+- standalone/integration é a branch canônica até o cutover final.
+- Fazer leitura, edição, commits, push e acompanhamento de CI pelo conector GitHub sempre que o trabalho não exigir hardware local.
+- Usar GitHub Actions Ubuntu como primeiro gate para contratos/testes portáteis.
+- Usar GitHub-hosted Windows como gate automático de compilação/testes Windows que não exigem GPU/driver físico.
+- Usar o notebook Windows via Agent Mode somente para gates que realmente dependem de GPU física, driver, hook/interop real, x86->x64 local, jogo real ou artefato local não reproduzível no CI hospedado.
+- Antes de um gate físico: exigir branch remota estável e CI hospedado relevante aprovado; então fazer git fetch + git pull --ff-only.
+- Não corrigir código diretamente no notebook após falha de gate físico. Coletar o log, corrigir via GitHub, validar CI e só então repetir o gate.
+- No Agent Mode, preferir 1 chamada grande por gate + 1 leitura de resultado, com log persistente fora do worktree.
+- Nunca interpretar queda de Agent Mode como falha do código sem evidência do processo/log local.
+- Não manter divergência deliberada entre checkout local e origin/standalone/integration.
+- Pushes de documentação não devem disparar gates caros.
+- O gate físico é confirmação final de uma capacidade específica, não loop de desenvolvimento.
+
 # Agent workflow
 
 - Protect work continuously with Git and small logical commits.
@@ -75,6 +79,17 @@ Regras obrigatórias desta prioridade:
 - Avoid low-value status calls whose result cannot change the next action.
 - A normal coding session should need only a few connector round-trips; exceed that only for an actual blocker.
 
+### GitHub-first development discipline
+
+- Prefer GitHub connector reads/writes over Remote Desktop for ordinary source development.
+- Build coherent multi-file commits atomically when practical; keep commit scope small and reviewable.
+- Portable CI is the first executable gate for portable code.
+- GitHub-hosted Windows fast CI is the first Windows compile/test gate.
+- Physical Windows/RTX is reserved for capabilities unavailable on hosted runners.
+- A physical-gate failure produces a log/evidence bundle; fixes go back through GitHub and hosted CI before another physical run.
+- Keep the physical checkout clean and fast-forward-only from the canonical integration branch.
+- Do not use the physical machine as a second development branch.
+
 ### Build and validation discipline
 
 - Never use full Windows CI as the inner development loop.
@@ -83,7 +98,7 @@ Regras obrigatórias desta prioridade:
 - Do not use Windows validation as an intermediate development gate.
 - Do not ask the user to run Windows tests or builds during implementation.
 - Develop and review with the available environment: static analysis, portable compilation, fakes and focused non-Windows tests.
-- Windows build/integration/installer validation is deferred to the final cutover unless the user explicitly requests it earlier.
+- GitHub-hosted Windows fast compile/tests may run automatically on relevant pushes; physical Windows/RTX validation stays deferred to explicit hardware gates.
 - Portable CI may run on master code pushes; docs-only master pushes are ignored.
 - Do not repeatedly rebuild an unchanged dependency graph merely to validate a small boundary.
 - If an expensive workflow exceeds the session cap, record its run ID and stop instead of waiting.
@@ -170,7 +185,7 @@ Phase 08 closure:
 - timing/diagnostics first-party files remain <=300 lines;
 - physical provider/Host64/patcher cutover remains deferred to the global cutover phase.
 
-Phase 09: NOT STARTED.
+Phase 09: IN PROGRESS.
 
 Known non-gate issue:
 - python tools/check_source_size.py changed still reports the locked vendored
@@ -181,7 +196,7 @@ Remaining global gate:
 - real-game execution and physical provider/Host64/patcher cutover.
 
 Exact next action:
-- start Phase 09 from the existing SyntheticDx11BridgeProvider and current D3D11 hook/bridge tests;
-- baseline tests before edits, then separate D3D11 acquisition/hook ownership from D3D11<->D3D12 bridge ownership;
-- define slot/fence reuse and controlled x64 hook/acquisition validation;
-- keep x86 and CPU frame transport out of Phase 09.
+- baseline Phase 09 through GitHub-first CI from SyntheticDx11BridgeProvider and the current D3D11 bridge tests;
+- audit acquisition/hook versus bridge ownership without touching the physical notebook;
+- split/implement portable and hosted-Windows-verifiable responsibilities first;
+- use the notebook only for the final x64 D3D11 physical hook/acquisition and GPU-resident bridge gate.
