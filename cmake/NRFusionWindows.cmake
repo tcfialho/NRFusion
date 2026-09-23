@@ -78,6 +78,8 @@ add_executable(nrfusion_harness_3d
         target_compile_options(nrfusion_residual_gpu_test PRIVATE -UNDEBUG)
     endif()
     add_test(NAME nrfusion_residual_gpu_test COMMAND nrfusion_residual_gpu_test)
+    set_tests_properties(nrfusion_residual_gpu_test PROPERTIES
+        WORKING_DIRECTORY "${CMAKE_CURRENT_SOURCE_DIR}")
 
     add_executable(nrfusion_synthetic_dx12_test tests/synthetic_dx12_test.cpp)
     target_link_libraries(nrfusion_synthetic_dx12_test PRIVATE nrfusion_core d3d12 dxgi d3dcompiler)
