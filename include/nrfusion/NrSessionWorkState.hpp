@@ -25,6 +25,7 @@ public:
     bool Submit(const WorkTicket& ticket) noexcept;
     bool Complete(const WorkTicket& ticket) noexcept;
     bool Abandon(const WorkTicket& ticket) noexcept;
+    bool IsStarted(const WorkTicket& ticket) const noexcept;
     bool IsSubmitted(const WorkTicket& ticket) const noexcept;
     bool MarkTimingMapped(const WorkTicket& ticket) noexcept;
     void ResetSession() noexcept;
