@@ -108,6 +108,18 @@ void HostServer64::Stop() {
         workerThread_.join();
     }
 
+    if (d3d12Fence_ && fenceValue_ > 0 &&
+        d3d12Fence_->GetCompletedValue() < fenceValue_) {
+        HANDLE idleEvent = CreateEventW(nullptr, FALSE, FALSE, nullptr);
+        if (idleEvent) {
+            if (SUCCEEDED(d3d12Fence_->SetEventOnCompletion(
+                    fenceValue_, idleEvent))) {
+                WaitForSingleObject(idleEvent, 2000);
+            }
+            CloseHandle(idleEvent);
+        }
+    }
+
     if (pipeHandle_ != INVALID_HANDLE_VALUE) {
         CloseHandle(pipeHandle_);
         pipeHandle_ = INVALID_HANDLE_VALUE;
