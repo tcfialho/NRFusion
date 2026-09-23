@@ -55,6 +55,11 @@ bool D3D12CarrierSession::CanExecuteWork(
     return work && session_.CanExecuteWork(work.ticket);
 }
 
+bool D3D12CarrierSession::ClaimExecuteWork(
+    const D3D12CarrierWork& work) noexcept {
+    return work && session_.ClaimExecuteWork(work.ticket);
+}
+
 bool D3D12CarrierSession::SubmitWork(const D3D12CarrierWork& work) noexcept {
     return work && session_.SubmitWork(work.ticket);
 }
