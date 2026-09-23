@@ -26,8 +26,12 @@ D3D12CarrierActivationResult ActivateD3D12CarrierExecutor(
     const auto executor = D3D12CarrierExecutorComponent();
     if (shell.Registry().Supports(executor)) return {};
 
-    if (hooks.qualify == nullptr || !hooks.qualify(hooks.context))
+    if (hooks.qualify == nullptr)
         return {D3D12CarrierActivationFailure::QualificationFailed};
+    if (!hooks.qualify(hooks.context)) {
+        if (hooks.rollback != nullptr) hooks.rollback(hooks.context);
+        return {D3D12CarrierActivationFailure::QualificationFailed};
+    }
 
     const auto activated =
         RuntimeBootstrap::ActivateComponent(shell, executor);
