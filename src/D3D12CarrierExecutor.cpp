@@ -51,6 +51,7 @@ void D3D12CarrierExecutor::ShutdownAfterIdle() {
 
 D3D12CarrierExecuteResult D3D12CarrierExecutor::Execute(
     ID3D12GraphicsCommandList* cmdList,
+    const D3D12CarrierSession& session,
     const D3D12NativeFrameResources& resources,
     const D3D12CarrierFrameResult& frame,
     const D3D12CarrierWork& work,
@@ -68,6 +69,10 @@ D3D12CarrierExecuteResult D3D12CarrierExecutor::Execute(
     }
     if (boundDevice_ == nullptr) {
         result.failure = D3D12CarrierExecuteFailure::NotInitialized;
+        return result;
+    }
+    if (!session.CanExecuteWork(work)) {
+        result.failure = D3D12CarrierExecuteFailure::InactiveWork;
         return result;
     }
     if (cmdList == nullptr) {
