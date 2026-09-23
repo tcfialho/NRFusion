@@ -46,6 +46,7 @@ D3D12CarrierFrameResult Frame(NrPlacement placement) {
     frame.session.decision.supported = true;
     frame.session.decision.pipeline.supported = true;
     frame.session.decision.pipeline.api = GraphicsApi::D3D12;
+    frame.session.decision.pipeline.motion = MotionSource::Native;
     frame.session.decision.pipeline.placement = placement;
     frame.session.decision.workingScale = 0.75f;
     return frame;
