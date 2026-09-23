@@ -36,6 +36,7 @@ struct D3D12CarrierExecuteOptions {
 enum class D3D12CarrierExecuteFailure : std::uint8_t {
     None,
     Planning,
+    NotInitialized,
     InvalidCommandList,
     ResourceIdentityMismatch,
     MissingExposure,
