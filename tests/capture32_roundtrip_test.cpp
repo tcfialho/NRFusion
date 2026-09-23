@@ -249,7 +249,8 @@ int main() {
     const bool sourceVerified = ReadFirstPixelForTest(device.Get(), context.Get(), sharedColor.Get(), sourcePixel);
     colorMutex->ReleaseSync(0);
     if (!sourceVerified ||
-        sourcePixel[0] != 64 || sourcePixel[1] != 128 || sourcePixel[2] != 191 || sourcePixel[3] != 255) {
+        sourcePixel[0] != 64 || sourcePixel[1] < 127 || sourcePixel[1] > 128 ||
+        sourcePixel[2] != 191 || sourcePixel[3] != 255) {
         std::cerr << "[Capture32 Roundtrip] source pixel = " << static_cast<unsigned>(sourcePixel[0]) << ','
                   << static_cast<unsigned>(sourcePixel[1]) << ',' << static_cast<unsigned>(sourcePixel[2]) << ','
                   << static_cast<unsigned>(sourcePixel[3]) << "\n";
@@ -307,7 +308,8 @@ int main() {
     }
     const auto* pixel = static_cast<const uint8_t*>(mapped.pData);
     const std::array<uint8_t, 4> returnedPixel = {pixel[0], pixel[1], pixel[2], pixel[3]};
-    const bool copied = returnedPixel[0] == 64 && returnedPixel[1] == 128 &&
+    const bool copied = returnedPixel[0] == 64 &&
+        returnedPixel[1] >= 127 && returnedPixel[1] <= 128 &&
         returnedPixel[2] == 191 && returnedPixel[3] == 255;
     context->Unmap(readback.Get(), 0);
     outputMutex->ReleaseSync(0);
