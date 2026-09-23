@@ -11,6 +11,14 @@
 
 #include <string>
 
+#if defined(__MINGW32__)
+using VersionInputA = LPSTR;
+using VersionInputW = LPWSTR;
+#else
+using VersionInputA = LPCSTR;
+using VersionInputW = LPCWSTR;
+#endif
+
 namespace {
 
 HMODULE RealVersionModule() {
@@ -110,36 +118,46 @@ DWORD WINAPI VerLanguageNameW(DWORD wLang, LPWSTR szLang, DWORD cchLang) {
     return real ? real(wLang, szLang, cchLang) : 0;
 }
 
-DWORD WINAPI VerFindFileA(DWORD uFlags, LPSTR szFileName, LPSTR szWinDir, LPSTR szAppDir, LPSTR szCurDir,
-                           PUINT lpuCurDirLen, LPSTR szDestDir, PUINT lpuDestDirLen) {
-    using Fn = DWORD(WINAPI*)(DWORD, LPSTR, LPSTR, LPSTR, LPSTR, PUINT, LPSTR, PUINT);
+DWORD WINAPI VerFindFileA(DWORD uFlags, VersionInputA szFileName, VersionInputA szWinDir,
+                           VersionInputA szAppDir, LPSTR szCurDir, PUINT lpuCurDirLen,
+                           LPSTR szDestDir, PUINT lpuDestDirLen) {
+    using Fn = DWORD(WINAPI*)(DWORD, VersionInputA, VersionInputA, VersionInputA,
+                              LPSTR, PUINT, LPSTR, PUINT);
     static Fn real = ResolveRealExport<Fn>("VerFindFileA");
     return real ? real(uFlags, szFileName, szWinDir, szAppDir, szCurDir, lpuCurDirLen, szDestDir,
                         lpuDestDirLen)
                 : 0;
 }
 
-DWORD WINAPI VerFindFileW(DWORD uFlags, LPWSTR szFileName, LPWSTR szWinDir, LPWSTR szAppDir,
-                           LPWSTR szCurDir, PUINT lpuCurDirLen, LPWSTR szDestDir, PUINT lpuDestDirLen) {
-    using Fn = DWORD(WINAPI*)(DWORD, LPWSTR, LPWSTR, LPWSTR, LPWSTR, PUINT, LPWSTR, PUINT);
+DWORD WINAPI VerFindFileW(DWORD uFlags, VersionInputW szFileName, VersionInputW szWinDir,
+                           VersionInputW szAppDir, LPWSTR szCurDir, PUINT lpuCurDirLen,
+                           LPWSTR szDestDir, PUINT lpuDestDirLen) {
+    using Fn = DWORD(WINAPI*)(DWORD, VersionInputW, VersionInputW, VersionInputW,
+                              LPWSTR, PUINT, LPWSTR, PUINT);
     static Fn real = ResolveRealExport<Fn>("VerFindFileW");
     return real ? real(uFlags, szFileName, szWinDir, szAppDir, szCurDir, lpuCurDirLen, szDestDir,
                         lpuDestDirLen)
                 : 0;
 }
 
-DWORD WINAPI VerInstallFileA(DWORD uFlags, LPSTR szSrcFileName, LPSTR szDestFileName, LPSTR szSrcDir,
-                              LPSTR szDestDir, LPSTR szCurDir, LPSTR szTmpFile, PUINT lpuTmpFileLen) {
-    using Fn = DWORD(WINAPI*)(DWORD, LPSTR, LPSTR, LPSTR, LPSTR, LPSTR, LPSTR, PUINT);
+DWORD WINAPI VerInstallFileA(DWORD uFlags, VersionInputA szSrcFileName,
+                              VersionInputA szDestFileName, VersionInputA szSrcDir,
+                              VersionInputA szDestDir, VersionInputA szCurDir,
+                              LPSTR szTmpFile, PUINT lpuTmpFileLen) {
+    using Fn = DWORD(WINAPI*)(DWORD, VersionInputA, VersionInputA, VersionInputA,
+                              VersionInputA, VersionInputA, LPSTR, PUINT);
     static Fn real = ResolveRealExport<Fn>("VerInstallFileA");
     return real ? real(uFlags, szSrcFileName, szDestFileName, szSrcDir, szDestDir, szCurDir, szTmpFile,
                         lpuTmpFileLen)
                 : 0;
 }
 
-DWORD WINAPI VerInstallFileW(DWORD uFlags, LPWSTR szSrcFileName, LPWSTR szDestFileName, LPWSTR szSrcDir,
-                              LPWSTR szDestDir, LPWSTR szCurDir, LPWSTR szTmpFile, PUINT lpuTmpFileLen) {
-    using Fn = DWORD(WINAPI*)(DWORD, LPWSTR, LPWSTR, LPWSTR, LPWSTR, LPWSTR, LPWSTR, PUINT);
+DWORD WINAPI VerInstallFileW(DWORD uFlags, VersionInputW szSrcFileName,
+                              VersionInputW szDestFileName, VersionInputW szSrcDir,
+                              VersionInputW szDestDir, VersionInputW szCurDir,
+                              LPWSTR szTmpFile, PUINT lpuTmpFileLen) {
+    using Fn = DWORD(WINAPI*)(DWORD, VersionInputW, VersionInputW, VersionInputW,
+                              VersionInputW, VersionInputW, LPWSTR, PUINT);
     static Fn real = ResolveRealExport<Fn>("VerInstallFileW");
     return real ? real(uFlags, szSrcFileName, szDestFileName, szSrcDir, szDestDir, szCurDir, szTmpFile,
                         lpuTmpFileLen)
