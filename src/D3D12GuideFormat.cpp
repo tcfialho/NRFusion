@@ -2,6 +2,33 @@
 
 namespace nrfusion {
 
+ResourceFormat NormalizeD3D12TypedGuideFormat(
+    D3D12GuideRole role, ResourceFormat format) noexcept {
+    if (role == D3D12GuideRole::Depth) {
+        switch (format) {
+        case ResourceFormat::D32Float:
+        case ResourceFormat::R32Float:
+        case ResourceFormat::R16Unorm:
+        case ResourceFormat::R24UnormX8:
+        case ResourceFormat::R32FloatX8X24:
+            return format;
+        default:
+            return ResourceFormat::Unknown;
+        }
+    }
+
+    switch (format) {
+    case ResourceFormat::Rg16Float:
+    case ResourceFormat::Rg32Float:
+    case ResourceFormat::Rgba8Unorm:
+    case ResourceFormat::Rgba16Float:
+    case ResourceFormat::Rgba32Float:
+        return format;
+    default:
+        return ResourceFormat::Unknown;
+    }
+}
+
 ResourceFormat NormalizeD3D12TypelessGuideFormat(
     D3D12GuideRole role,
     D3D12TypelessGuideFamily family) noexcept {
