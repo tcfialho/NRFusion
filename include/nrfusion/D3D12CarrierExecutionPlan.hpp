@@ -7,7 +7,14 @@
 
 namespace nrfusion {
 
+enum class D3D12CarrierExecutionStage : std::uint8_t {
+    Direct,
+    AcrossRrStore,
+    AcrossRrApply
+};
+
 struct D3D12CarrierExecutionConfig {
+    D3D12CarrierExecutionStage stage = D3D12CarrierExecutionStage::Direct;
     std::uint32_t passes = 1;
     bool unlockPasses = false;
     bool proxyBackend = false;
@@ -26,6 +33,7 @@ enum class D3D12CarrierExecutionFailure : std::uint8_t {
     MissingDepth,
     MissingMotion,
     MissingExposure,
+    StageMismatch,
     UnsupportedPlacement,
     InvalidMotionScale,
     InvalidPlan
@@ -38,6 +46,11 @@ struct D3D12CarrierExecutionPlan {
     bool reset = false;
     bool depthInverted = false;
     bool colourIsLinearHdr = false;
+    bool modelStage = true;
+    bool requiresColor = false;
+    bool runBeforeUpscale = false;
+    bool rayReconstruction = false;
+    bool residualAcrossRr = false;
     float motionScaleX = 1.0f;
     float motionScaleY = 1.0f;
 };
