@@ -108,11 +108,11 @@
 
 Date: 2026-09-23 BRT
 Branch: standalone/integration
-Validated code head: 1e6f55a
+Validated code head: bc2c008
 
 Phase 06: CLOSED.
 Phase 07: CLOSED, including real Windows compile/harness validation.
-Phase 08: NOT STARTED.
+Phase 08: IN PROGRESS.
 
 Windows gate closure:
 - MinGW x64/Ninja full build: PASS.
@@ -134,6 +134,12 @@ Validation-driven fixes preserved in Git:
 - D3D12 owner tests can opt into a real hardware device.
 - Host64 and capture roundtrip oversized responsibilities were split.
 
+Phase 08 subgate 08a:
+- Diagnostics.cpp reduced from 285 to 248 lines without adding a patcher source.
+- NrSession remains the sole standalone owner of timed WorkTicket identity and retirement.
+- Existing NrD3D12Diagnostics timing is explicit profiling, not the normal telemetry owner.
+- D3D12 timing next needs a focused query-ring/readback owner with cached queue frequency and no waits.
+
 Known non-gate issue:
 - python tools/check_source_size.py changed still reports the locked vendored
   shaders/vendor/optiscaler_dlssnr/dlssnr.hlsl (1110 lines). This is third-party locked source,
@@ -143,8 +149,8 @@ Remaining global gate:
 - real-game execution and physical provider/Host64/patcher cutover.
 
 Exact next action:
-- start Phase 08 on standalone/integration;
-- audit TimingWorkMapper, TelemetryTracker, Diagnostics and WorkLedger/NrSession timing flow;
-- split Diagnostics.cpp before substantive growth;
-- define one owner for retired GPU timing tied to exact WorkTicket identity;
-- target 2 timestamps + 1 resolve per sampled workload, never wait for current GPU work.
+- define a portable retired-timing contract plus FakeTimingSource;
+- bind samples to exact WorkTicket identity already owned by NrSession;
+- add a D3D12 query-ring/readback owner with cached timestamp frequency;
+- consume only fence-retired slots, never wait for current GPU work;
+- keep model/resolve profiling exclusive to Diagnostics.
