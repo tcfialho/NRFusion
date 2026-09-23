@@ -9,6 +9,8 @@
 #include <dxgi1_6.h>
 #include <wrl/client.h>
 
+#include "D3D12TestDevice.hpp"
+
 #include "nrfusion/D3D12NrGuideClones.hpp"
 
 #include <cassert>
@@ -29,14 +31,10 @@ struct TestGpu {
     ComPtr<ID3D12GraphicsCommandList> list;
 };
 
-TestGpu CreateWarpGpu() {
+TestGpu CreateTestGpu() {
     TestGpu gpu;
-    ComPtr<IDXGIFactory4> factory;
-    ComPtr<IDXGIAdapter> adapter;
-    assert(SUCCEEDED(CreateDXGIFactory1(IID_PPV_ARGS(&factory))));
-    assert(SUCCEEDED(factory->EnumWarpAdapter(IID_PPV_ARGS(&adapter))));
-    assert(SUCCEEDED(D3D12CreateDevice(
-        adapter.Get(), D3D_FEATURE_LEVEL_11_0, IID_PPV_ARGS(&gpu.device))));
+    gpu.device = nrfusion::testing::CreateD3D12TestDevice();
+    assert(gpu.device);
     assert(SUCCEEDED(gpu.device->CreateCommandAllocator(
         D3D12_COMMAND_LIST_TYPE_DIRECT, IID_PPV_ARGS(&gpu.allocator))));
     assert(SUCCEEDED(gpu.device->CreateCommandList(
@@ -71,7 +69,7 @@ ComPtr<ID3D12Resource> CreateSource(
 int main() {
     using namespace nrfusion;
 
-    TestGpu gpu = CreateWarpGpu();
+    TestGpu gpu = CreateTestGpu();
     NrDeferredRetirementQueue retirement;
     D3D12NrGuideClones clones;
     const auto invalidKind = static_cast<D3D12NrGuideKind>(0xff);

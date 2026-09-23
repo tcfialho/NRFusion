@@ -9,6 +9,8 @@
 #include <dxgi1_6.h>
 #include <wrl/client.h>
 
+#include "D3D12TestDevice.hpp"
+
 #include "nrfusion/D3D12NrCodec.hpp"
 
 #include <cassert>
@@ -44,18 +46,14 @@ ComPtr<ID3D12Resource> Texture(
 int main() {
     using namespace nrfusion;
 
-    ComPtr<IDXGIFactory4> factory;
-    ComPtr<IDXGIAdapter> adapter;
-    ComPtr<ID3D12Device> device;
+    ComPtr<ID3D12Device> device =
+        nrfusion::testing::CreateD3D12TestDevice();
     ComPtr<ID3D12CommandQueue> queue;
     ComPtr<ID3D12CommandAllocator> allocator;
     ComPtr<ID3D12GraphicsCommandList> list;
     ComPtr<ID3D12Fence> fence;
 
-    assert(SUCCEEDED(CreateDXGIFactory1(IID_PPV_ARGS(&factory))));
-    assert(SUCCEEDED(factory->EnumWarpAdapter(IID_PPV_ARGS(&adapter))));
-    assert(SUCCEEDED(D3D12CreateDevice(
-        adapter.Get(), D3D_FEATURE_LEVEL_11_0, IID_PPV_ARGS(&device))));
+    assert(device);
 
     D3D12_COMMAND_QUEUE_DESC queueDesc{};
     queueDesc.Type = D3D12_COMMAND_LIST_TYPE_DIRECT;

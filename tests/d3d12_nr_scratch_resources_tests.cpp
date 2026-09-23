@@ -9,6 +9,8 @@
 #include <dxgi1_6.h>
 #include <wrl/client.h>
 
+#include "D3D12TestDevice.hpp"
+
 #include "nrfusion/D3D12NrScratchResources.hpp"
 
 #include <cassert>
@@ -29,14 +31,10 @@ struct TestGpu {
     ComPtr<ID3D12GraphicsCommandList> list;
 };
 
-TestGpu CreateWarpGpu() {
+TestGpu CreateTestGpu() {
     TestGpu gpu;
-    ComPtr<IDXGIFactory4> factory;
-    ComPtr<IDXGIAdapter> adapter;
-    assert(SUCCEEDED(CreateDXGIFactory1(IID_PPV_ARGS(&factory))));
-    assert(SUCCEEDED(factory->EnumWarpAdapter(IID_PPV_ARGS(&adapter))));
-    assert(SUCCEEDED(D3D12CreateDevice(
-        adapter.Get(), D3D_FEATURE_LEVEL_11_0, IID_PPV_ARGS(&gpu.device))));
+    gpu.device = nrfusion::testing::CreateD3D12TestDevice();
+    assert(gpu.device);
     assert(SUCCEEDED(gpu.device->CreateCommandAllocator(
         D3D12_COMMAND_LIST_TYPE_DIRECT, IID_PPV_ARGS(&gpu.allocator))));
     assert(SUCCEEDED(gpu.device->CreateCommandList(
@@ -70,7 +68,7 @@ int main() {
     assert(scratch.State(invalidKind) == D3D12_RESOURCE_STATE_COMMON);
     assert(!scratch.Retire(invalidKind, retirement));
 
-    TestGpu gpu = CreateWarpGpu();
+    TestGpu gpu = CreateTestGpu();
     assert(scratch.Ensure(gpu.device.Get(), native, retirement));
     assert(scratch.Complete());
     ExpectSize(scratch.Get(D3D12NrScratchKind::Output), 1280, 720);
