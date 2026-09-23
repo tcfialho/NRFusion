@@ -1,3 +1,3 @@
-phase07-resize-quarantine-20260922
-base=5a7474d0efe8670c8aec25fc777da1826c364451
-request=validate-resize-advances-runtime-generation-and-quarantines-old-work
+phase07-session-checkpoint-20260922
+base=7f5a0d16bc3427bab3fd042d63ffb4dbf6907ab8
+request=validate-portable-state-and-package-device-rebind-source
