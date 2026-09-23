@@ -1,3 +1,3 @@
-phase07-paired-compose-20260923
-base=6de9369c1af03d687cab92dc454786323ab51a9d
-request=validate-direct-and-across-rr-paired-execution-plan
+phase07-guide-contract-20260923
+base=a3156ed2c326b55b35b347e9b923cb19d5e4a93f
+request=validate-selected-depth-motion-provenance-before-d3d12-execute
