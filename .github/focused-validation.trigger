@@ -1,3 +1,3 @@
-phase07-guide-contract-recovery-20260923
-base=3d895e8397c99288d116bfc4c3c565d6f9e66e0a
-request=validate-guide-contract-with-explicit-selected-motion
+phase07-typeless-guides-20260923
+base=8a7881db3063e1bccdca0b465e2edc9193861797
+request=validate-role-scoped-typeless-guide-normalization
