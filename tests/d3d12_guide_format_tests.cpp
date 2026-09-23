@@ -5,6 +5,15 @@
 using namespace nrfusion;
 
 int main() {
+    static_assert(static_cast<std::uint8_t>(ResourceFormat::Unknown) == 0);
+    static_assert(static_cast<std::uint8_t>(ResourceFormat::R8Unorm) == 1);
+    static_assert(static_cast<std::uint8_t>(ResourceFormat::R16Float) == 2);
+    static_assert(static_cast<std::uint8_t>(ResourceFormat::R32Float) == 3);
+    static_assert(static_cast<std::uint8_t>(ResourceFormat::Rg16Float) == 4);
+    static_assert(static_cast<std::uint8_t>(ResourceFormat::Rgba16Float) == 5);
+    static_assert(static_cast<std::uint8_t>(ResourceFormat::Rgba32Float) == 6);
+    static_assert(static_cast<std::uint8_t>(ResourceFormat::D32Float) == 7);
+
     assert(NormalizeD3D12TypelessGuideFormat(
                D3D12GuideRole::Depth,
                D3D12TypelessGuideFamily::R32) ==
