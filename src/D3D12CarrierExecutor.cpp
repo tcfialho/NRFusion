@@ -61,7 +61,7 @@ void D3D12CarrierExecutor::ShutdownAfterIdle() {
 
 D3D12CarrierExecuteResult D3D12CarrierExecutor::Execute(
     ID3D12GraphicsCommandList* cmdList,
-    const D3D12CarrierSession& session,
+    D3D12CarrierSession& session,
     const D3D12NativeFrameResources& resources,
     const D3D12CarrierFrameResult& frame,
     const D3D12CarrierWork& work,
@@ -123,6 +123,11 @@ D3D12CarrierExecuteResult D3D12CarrierExecutor::Execute(
         (resources.exposure.resource == nullptr ||
          !Matches(resources.exposure, normalized.exposure))) {
         result.failure = D3D12CarrierExecuteFailure::MissingExposure;
+        return result;
+    }
+
+    if (!session.ClaimExecuteWork(work)) {
+        result.failure = D3D12CarrierExecuteFailure::InactiveWork;
         return result;
     }
 
