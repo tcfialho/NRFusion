@@ -94,8 +94,24 @@ D3D12CarrierExecutionPlanResult BuildD3D12CarrierExecutionPlan(
             result.failure = D3D12CarrierExecutionFailure::MissingDepth;
             return result;
         }
+        if (!acquired.DepthReliable()) {
+            result.failure = D3D12CarrierExecutionFailure::UnreliableDepth;
+            return result;
+        }
         if (!acquired.motionVectors.Valid()) {
             result.failure = D3D12CarrierExecutionFailure::MissingMotion;
+            return result;
+        }
+        const MotionSource motion = frame.session.decision.pipeline.motion;
+        if (motion != MotionSource::Native &&
+            motion != MotionSource::DlssContract) {
+            result.failure =
+                D3D12CarrierExecutionFailure::UnsupportedMotionSource;
+            return result;
+        }
+        if (!acquired.MotionReliable(motion)) {
+            result.failure =
+                D3D12CarrierExecutionFailure::MotionSourceMismatch;
             return result;
         }
         if (config.useGameExposure && !acquired.exposure.Valid()) {
