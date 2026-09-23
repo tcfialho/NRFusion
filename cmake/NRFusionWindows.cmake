@@ -39,6 +39,8 @@ add_executable(nrfusion_harness_3d
     target_link_libraries(nrfusion_nr_scratch_resources_tests PRIVATE d3d12 dxgi)
     if (MSVC)
         target_compile_options(nrfusion_nr_scratch_resources_tests PRIVATE /UNDEBUG)
+    else()
+        target_compile_options(nrfusion_nr_scratch_resources_tests PRIVATE -UNDEBUG)
     endif()
     add_test(NAME nrfusion_nr_scratch_resources_tests COMMAND nrfusion_nr_scratch_resources_tests)
 
@@ -51,6 +53,8 @@ add_executable(nrfusion_harness_3d
     target_link_libraries(nrfusion_nr_guide_clones_tests PRIVATE d3d12 dxgi)
     if (MSVC)
         target_compile_options(nrfusion_nr_guide_clones_tests PRIVATE /W4 /permissive- /UNDEBUG)
+    else()
+        target_compile_options(nrfusion_nr_guide_clones_tests PRIVATE -UNDEBUG)
     endif()
     add_test(NAME nrfusion_nr_guide_clones_tests COMMAND nrfusion_nr_guide_clones_tests)
 
@@ -67,6 +71,8 @@ add_executable(nrfusion_harness_3d
     target_link_libraries(nrfusion_d3d12_nr_codec_tests PRIVATE d3d12 dxgi)
     if (MSVC)
         target_compile_options(nrfusion_d3d12_nr_codec_tests PRIVATE /W4 /permissive- /UNDEBUG)
+    else()
+        target_compile_options(nrfusion_d3d12_nr_codec_tests PRIVATE -UNDEBUG)
     endif()
     add_test(NAME nrfusion_d3d12_nr_codec_tests COMMAND nrfusion_d3d12_nr_codec_tests)
 
