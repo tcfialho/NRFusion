@@ -70,3 +70,17 @@ Pr?ximo subgate exato:
 3. criar o owner D3D12 de query ring/readback com frequ?ncia cacheada no bind;
 4. nunca esperar a GPU atual: retirement s? consome slot cujo completion j? foi observado;
 5. manter model/resolve profiling exclusivo do caminho Diagnostics.
+
+### Subgate 08b/08c ? retired timing contract and D3D12 owner
+
+- `NrRetiredTimingSample` now carries exact `WorkTicket` identity; `NrSession` rejects out-of-order samples without consuming the queued mapping.
+- `FakeTimingSource` validates bounded capacity, no slot reuse before retirement, monotonic completion values, invalid samples, and zero heap allocation over 100k iterations.
+- `NrSession` caches one retired NR timing and exposes it to the controller exactly once on the next resolved frame; stale values are not replayed.
+- `D3D12RetiredTimingSource` owns an 8-slot timestamp query/readback ring, records exactly two timestamps plus one resolve per sampled workload, and caches queue timestamp frequency during bind.
+- `TryRetire()` only maps readback after the caller reports the completion value as retired; the source contains no fence wait or current-work synchronization.
+- The hardware test is opt-in with `NRFUSION_TEST_D3D12_HARDWARE=1`; default CTest skips before creating WARP, avoiding the known synthetic-driver hang path.
+
+Exact next action:
+- wire `D3D12RetiredTimingSource` into the real D3D12 submission owner that has queue/fence completion values;
+- map successful work with its exact `WorkTicket`, convert failed/unsampled attempts to invalid timing entries, and drain retired samples through `D3D12CarrierSession::RetireTimedSample`;
+- keep model/resolve profiling exclusive to Diagnostics and preserve the no-wait normal path.

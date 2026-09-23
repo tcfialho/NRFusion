@@ -154,6 +154,14 @@ Phase 08 subgate 08a:
 - Existing NrD3D12Diagnostics timing is explicit profiling, not the normal telemetry owner.
 - D3D12 timing next needs a focused query-ring/readback owner with cached queue frequency and no waits.
 
+
+Phase 08 subgates 08b/08c:
+- portable retired-timing contract and `FakeTimingSource` are implemented with exact `WorkTicket` identity;
+- `NrSession` consumes a retired NR timing once on the next frame and does not replay stale timing;
+- `D3D12RetiredTimingSource` owns a bounded 8-slot query/readback ring with cached queue frequency;
+- normal timing records 2 timestamps + 1 resolve per sampled workload and never waits for current GPU work;
+- hardware timing gate passes with `NRFUSION_TEST_D3D12_HARDWARE=1`; default gate skips before WARP creation.
+
 Known non-gate issue:
 - python tools/check_source_size.py changed still reports the locked vendored
   shaders/vendor/optiscaler_dlssnr/dlssnr.hlsl (1110 lines). This is third-party locked source,
@@ -163,8 +171,7 @@ Remaining global gate:
 - real-game execution and physical provider/Host64/patcher cutover.
 
 Exact next action:
-- define a portable retired-timing contract plus FakeTimingSource;
-- bind samples to exact WorkTicket identity already owned by NrSession;
-- add a D3D12 query-ring/readback owner with cached timestamp frequency;
-- consume only fence-retired slots, never wait for current GPU work;
-- keep model/resolve profiling exclusive to Diagnostics.
+- wire D3D12RetiredTimingSource into the real D3D12 submission owner that knows queue/fence completion;
+- map successful samples to exact WorkTicket identity and failed/unsampled attempts to invalid timing entries;
+- drain only fence-retired samples through D3D12CarrierSession::RetireTimedSample;
+- keep model/resolve profiling exclusive to Diagnostics and preserve the no-wait normal path.
