@@ -14,6 +14,19 @@ int main() {
     static_assert(static_cast<std::uint8_t>(ResourceFormat::Rgba32Float) == 6);
     static_assert(static_cast<std::uint8_t>(ResourceFormat::D32Float) == 7);
 
+    assert(NormalizeD3D12TypedGuideFormat(
+               D3D12GuideRole::Depth, ResourceFormat::D32Float) ==
+           ResourceFormat::D32Float);
+    assert(NormalizeD3D12TypedGuideFormat(
+               D3D12GuideRole::Motion, ResourceFormat::Rg16Float) ==
+           ResourceFormat::Rg16Float);
+    assert(NormalizeD3D12TypedGuideFormat(
+               D3D12GuideRole::Depth, ResourceFormat::Rg16Float) ==
+           ResourceFormat::Unknown);
+    assert(NormalizeD3D12TypedGuideFormat(
+               D3D12GuideRole::Motion, ResourceFormat::D32Float) ==
+           ResourceFormat::Unknown);
+
     assert(NormalizeD3D12TypelessGuideFormat(
                D3D12GuideRole::Depth,
                D3D12TypelessGuideFamily::R32) ==
