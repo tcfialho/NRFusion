@@ -1,5 +1,7 @@
 #include "nrfusion/D3D11D3D12FenceBridge.hpp"
 
+#include <utility>
+
 namespace nrfusion {
 
 bool D3D11D3D12FenceBridge::CreateSharedFencePair(
