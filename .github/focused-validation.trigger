@@ -1,3 +1,3 @@
-phase07-bootstrap-rollback-final-20260923
-base=ad264261c33042659d383daf4d9432d29e17bfae
-request=validate-final-qualification-rollback-head
+phase07-adversarial-hardening-20260923
+base=1ba7b6437e5ff18d1b4c91961f179563eadff4a8
+request=validate-guide-role-work-liveness-and-capability-deactivation
