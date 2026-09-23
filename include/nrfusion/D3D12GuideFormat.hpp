@@ -22,6 +22,9 @@ enum class D3D12TypelessGuideFamily : std::uint8_t {
     R16G16B16A16
 };
 
+ResourceFormat NormalizeD3D12TypedGuideFormat(
+    D3D12GuideRole role, ResourceFormat format) noexcept;
+
 ResourceFormat NormalizeD3D12TypelessGuideFormat(
     D3D12GuideRole role,
     D3D12TypelessGuideFamily family) noexcept;
