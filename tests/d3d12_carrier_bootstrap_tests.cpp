@@ -79,7 +79,7 @@ int main() {
     assert(failedQualification.failure ==
            D3D12CarrierActivationFailure::QualificationFailed);
     assert(fake.qualifyCalls == 1);
-    assert(fake.rollbackCalls == 0);
+    assert(fake.rollbackCalls == 1);
     assert(shell.Registry().Size() == 1);
     assert(!SupportsExecutor(shell));
 
@@ -87,7 +87,7 @@ int main() {
     const auto activated = ActivateD3D12CarrierExecutor(shell, hooks);
     assert(activated);
     assert(fake.qualifyCalls == 2);
-    assert(fake.rollbackCalls == 0);
+    assert(fake.rollbackCalls == 1);
     assert(shell.Registry().Size() == 2);
     assert(SupportsExecutor(shell));
 
