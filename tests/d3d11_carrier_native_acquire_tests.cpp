@@ -91,6 +91,12 @@ int main() {
     missingContext.context = nullptr;
     assert(AcquireD3D11NativeFrame(missingContext).failure ==
            D3D11NativeAcquireFailure::MissingContext);
+    auto rgba8 = Texture(device.Get(), DXGI_FORMAT_R8G8B8A8_UNORM);
+    const auto rgba8Acquire =
+        AcquireD3D11NativeFrame(Input(context.Get(), rgba8.Get()));
+    assert(rgba8Acquire);
+    assert(rgba8Acquire.frame.color.format == ResourceFormat::Rgba8Unorm);
+
     auto unsupported = Texture(device.Get(), DXGI_FORMAT_B8G8R8A8_UNORM);
     assert(AcquireD3D11NativeFrame(Input(context.Get(), unsupported.Get())).failure ==
            D3D11NativeAcquireFailure::UnsupportedFormat);

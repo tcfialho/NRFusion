@@ -67,6 +67,10 @@ int main() {
     wrongColor.color.provenance = ResourceProvenance::Generated;
     assert(!BuildD3D11CarrierWork(wrongColor, ticket));
 
+    auto unsupportedBridgeFormat = frame;
+    unsupportedBridgeFormat.color.format = ResourceFormat::Rgba8Unorm;
+    assert(!BuildD3D11CarrierWork(unsupportedBridgeFormat, ticket));
+
     auto invalidTicket = ticket;
     invalidTicket.id = 0;
     assert(!BuildD3D11CarrierWork(frame, invalidTicket));

@@ -79,6 +79,7 @@ void SyntheticDx11BridgeProvider::CloseSharedHandles() {
         slot.d3d12Residual.Reset();
     }
     slotTracker_.Reset();
+    currentRes_ = {};
 }
 
 bool SyntheticDx11BridgeProvider::CreateSharedResources(
@@ -205,9 +206,11 @@ SyntheticWorkHandle SyntheticDx11BridgeProvider::Submit(
     ID3D12CommandList* lists[] = {d3d12CmdList_.Get()};
     d3d12Queue_->ExecuteCommandLists(1, lists);
     const std::uint64_t fenceValue = nextFenceValue_++;
-    if (FAILED(d3d12Queue_->Signal(d3d12Fence_.Get(), fenceValue)) ||
-        !slotTracker_.MarkSubmitted(*lease, fenceValue))
+    if (FAILED(d3d12Queue_->Signal(d3d12Fence_.Get(), fenceValue))) {
+        slotTracker_.Release(*lease);
         return {};
+    }
+    if (!slotTracker_.MarkSubmitted(*lease, fenceValue)) return {};
     handle.fenceValue = fenceValue;
     return handle;
 }

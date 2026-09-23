@@ -23,6 +23,7 @@ std::optional<SyntheticFrameInputs> BuildD3D11CarrierWork(
         return std::nullopt;
     if (frame.color.provenance != ResourceProvenance::GameNative ||
         frame.color.reliability != ResourceReliability::Reliable ||
+        frame.color.format != ResourceFormat::Rgba16Float ||
         !TrustedOptionalResource(frame.depth, frame.frameId) ||
         !TrustedOptionalResource(frame.motionVectors, frame.frameId) ||
         !TrustedOptionalResource(frame.exposure, frame.frameId) ||
