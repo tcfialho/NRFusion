@@ -100,6 +100,11 @@ bool NrSession::CanExecuteWork(const WorkTicket& ticket) const noexcept {
            works_.IsStarted(ticket);
 }
 
+bool NrSession::ClaimExecuteWork(const WorkTicket& ticket) noexcept {
+    return ticket.configurationGeneration == state_.runtimeGeneration &&
+           works_.ClaimExecution(ticket);
+}
+
 bool NrSession::SubmitWork(const WorkTicket& ticket) noexcept {
     return ticket.configurationGeneration == state_.runtimeGeneration &&
            works_.Submit(ticket);
