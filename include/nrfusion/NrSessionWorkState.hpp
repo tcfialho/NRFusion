@@ -26,6 +26,7 @@ public:
     bool Complete(const WorkTicket& ticket) noexcept;
     bool Abandon(const WorkTicket& ticket) noexcept;
     bool IsStarted(const WorkTicket& ticket) const noexcept;
+    bool ClaimExecution(const WorkTicket& ticket) noexcept;
     bool IsSubmitted(const WorkTicket& ticket) const noexcept;
     bool MarkTimingMapped(const WorkTicket& ticket) noexcept;
     void ResetSession() noexcept;
@@ -39,6 +40,7 @@ private:
         WorkState state = WorkState::Started;
         bool occupied = false;
         bool timingMapped = false;
+        bool executionClaimed = false;
     };
 
     Entry* Find(const WorkTicket& ticket) noexcept;
