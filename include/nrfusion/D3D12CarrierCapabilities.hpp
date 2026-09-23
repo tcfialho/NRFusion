@@ -19,6 +19,7 @@ constexpr std::uint32_t D3D12CarrierCapabilityMask(
 }
 
 RuntimeComponent D3D12CarrierProviderComponent() noexcept;
+RuntimeComponent D3D12CarrierExecutorComponent() noexcept;
 bool RegisterD3D12CarrierProvider(RuntimeComponentRegistry& registry) noexcept;
 
 } // namespace nrfusion
