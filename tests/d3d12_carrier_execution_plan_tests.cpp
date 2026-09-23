@@ -104,10 +104,37 @@ int main() {
     assert(BuildD3D12CarrierExecutionPlan(missingDepth, Work(), {}).failure ==
            D3D12CarrierExecutionFailure::MissingDepth);
 
+    auto unreliableDepth = Frame(NrPlacement::PreSr);
+    unreliableDepth.acquire.frame.depth.reliability =
+        ResourceReliability::Unreliable;
+    assert(BuildD3D12CarrierExecutionPlan(
+               unreliableDepth, Work(), {}).failure ==
+           D3D12CarrierExecutionFailure::UnreliableDepth);
+
     auto missingMotion = Frame(NrPlacement::PreSr);
     missingMotion.acquire.frame.motionVectors = {};
     assert(BuildD3D12CarrierExecutionPlan(missingMotion, Work(), {}).failure ==
            D3D12CarrierExecutionFailure::MissingMotion);
+
+    auto mismatchedMotion = Frame(NrPlacement::PreSr);
+    mismatchedMotion.acquire.frame.motionVectors.provenance =
+        ResourceProvenance::DlssContract;
+    assert(BuildD3D12CarrierExecutionPlan(
+               mismatchedMotion, Work(), {}).failure ==
+           D3D12CarrierExecutionFailure::MotionSourceMismatch);
+
+    auto unsupportedMotion = Frame(NrPlacement::PreSr);
+    unsupportedMotion.session.decision.pipeline.motion =
+        MotionSource::ShaderEstimated;
+    assert(BuildD3D12CarrierExecutionPlan(
+               unsupportedMotion, Work(), {}).failure ==
+           D3D12CarrierExecutionFailure::UnsupportedMotionSource);
+
+    auto dlssMotion = Frame(NrPlacement::PreSr);
+    dlssMotion.acquire.frame.motionVectors.provenance =
+        ResourceProvenance::DlssContract;
+    dlssMotion.session.decision.pipeline.motion = MotionSource::DlssContract;
+    assert(BuildD3D12CarrierExecutionPlan(dlssMotion, Work(), {}));
 
     auto exposureConfig = config;
     exposureConfig.useGameExposure = true;
