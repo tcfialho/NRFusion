@@ -1,3 +1,3 @@
-phase07-bootstrap-activation-20260923
-base=410aadf1405ce5125e7dc45a69c0dede5467f178
+phase07-bootstrap-activation-recovery-20260923
+base=229cc6b4351b529c268e621fc5bfb721675d3a51
 request=validate-provider-first-executor-after-qualification
