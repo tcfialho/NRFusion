@@ -152,7 +152,9 @@ add_executable(nrfusion_harness_3d
 
     add_executable(nrfusion_capture32_roundtrip_test tests/capture32_roundtrip_test.cpp)
     target_link_libraries(nrfusion_capture32_roundtrip_test PRIVATE nrfusion_capture32 d3d11 dxgi)
-    add_dependencies(nrfusion_capture32_roundtrip_test nrfusion_host64)
+    if (CMAKE_SIZEOF_VOID_P EQUAL 8)
+        add_dependencies(nrfusion_capture32_roundtrip_test nrfusion_host64)
+    endif()
     if (MSVC)
         target_compile_options(nrfusion_capture32_roundtrip_test PRIVATE /UNDEBUG)
     else()
