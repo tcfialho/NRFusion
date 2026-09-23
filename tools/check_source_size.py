@@ -14,6 +14,7 @@ EXTS = {
 EXEMPT_PREFIXES = ("tests/fixture/", "third_party/", "vendor/", "external/")
 GENERATED_PREFIXES = ("generated/", "src/generated/", "include/generated/", "shaders/generated/")
 GENERATED_MARKER = "NRFUSION_GENERATED_FILE"
+IGNORED_BUILD_PREFIXES = ("build/", "build-", ".build/", "cmake-build-")
 LOCKED_VENDOR_BLOBS = {
     "shaders/vendor/optiscaler_dlssnr/dlssnr.hlsl": "4a6102820f736e9349ffed370259d094f2a7f4ae",
 }
@@ -47,6 +48,8 @@ def changed_paths(base):
 
 
 def is_source(path):
+    if path.startswith(IGNORED_BUILD_PREFIXES):
+        return False
     p = Path(path)
     return p.name == "CMakeLists.txt" or p.suffix.lower() in EXTS
 
