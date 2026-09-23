@@ -71,6 +71,11 @@ bool NrSessionWorkTracker::Abandon(const WorkTicket& ticket) noexcept {
     return true;
 }
 
+bool NrSessionWorkTracker::IsStarted(const WorkTicket& ticket) const noexcept {
+    const Entry* entry = Find(ticket);
+    return entry != nullptr && entry->state == WorkState::Started;
+}
+
 bool NrSessionWorkTracker::IsSubmitted(const WorkTicket& ticket) const noexcept {
     const Entry* entry = Find(ticket);
     return entry != nullptr && entry->state == WorkState::Submitted;
