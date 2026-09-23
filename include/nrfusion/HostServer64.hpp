@@ -35,6 +35,7 @@ public:
 
 private:
     void ServerLoop();
+    IpcFrameAckMessage ProcessFrame(const IpcFrameMessage& frameMsg);
     bool EnsureZeroGuides(uint32_t width, uint32_t height);
 
     HANDLE pipeHandle_ = INVALID_HANDLE_VALUE;
