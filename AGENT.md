@@ -106,52 +106,34 @@
 
 ## Current session
 
-Start: 2026-09-23 01:39 BRT
-Freeze: 2026-09-23 01:49 BRT
+Start: 2026-09-23 02:46 BRT
 Branch: standalone/integration
 Base/default branch: master
-Head at start: 410aadf1405ce5125e7dc45a69c0dede5467f178
+Head at start: 1ba7b6437e5ff18d1b4c91961f179563eadff4a8
 
 Phase 06: CLOSED.
-Phase 07: CLOSED STRUCTURALLY.
+Phase 07: REOPENED FOR 07i ADVERSARIAL HARDENING.
 Phase 08: NOT STARTED.
 
-07h bootstrap activation:
-- RuntimeBootstrap can activate one component after startup without exposing mutable registry
-- D3D12 runtime starts Provider-only
-- Executor qualification happens only while Running with Provider present
-- failed qualification invokes rollback and leaves no Executor capability
-- successful qualification registers Execute | Compose
-- repeated activation is idempotent and does not requalify
-- Disabled/Stopped paths do not touch qualification
+Review findings to fix:
+- typed D3D12 guides bypass role validation
+- Execute does not prove command-list/resource device matches the bound device
+- Executor capability can remain advertised after executor shutdown/device loss
+- copied/abandoned work can still satisfy structural execution-plan checks
+- PendingFeature records GPU work but carrier bool only represents Applied
 
-Validation history:
-- run 35819463575: FAIL, workflow regex/package duplication only
-- workflow repair commit: 3249b757798dc0abfdf1aa93d4a19aabfa1f2072
-- run 35819575671: SUCCESS for pre-rollback head
-- ancestry review found final rollback commits were two commits ahead
-- run 35819742596: SUCCESS on final code head
-- validated code head: c11e42bdf808dc4b0bcf54e50afa985ca2cd8113
-
-Phase 07 closure:
-- Acquire/Normalize/Session/Execute/Compose/capability/bootstrap owners explicit
-- direct PreSr/PostSr and paired AcrossRr reuse canonical D3D12NrExecutor
-- typeless depth/motion guides normalized by role
-- resize generation quarantine and device rebind lifecycle defined
-- steady carrier path adds no per-frame resource/heap/lock creation
-- all new/touched carrier files <=300
-- native Windows compile/harness and real games remain deferred to global cutover by repository policy
-- SyntheticDx12Provider/HostServer64/apply_to_optiscaler remain read-only
+Checklist:
+- [ ] enforce typed guide role compatibility with portable regressions
+- [ ] add exact work liveness query and require it before execution
+- [ ] make execute result expose command-list submission requirement separately from Applied
+- [ ] add registry component removal/deactivation and D3D12 executor deactivation path
+- [ ] reject command-list/output device mismatch against boundDevice_
+- [ ] focused portable regression gate
+- [ ] LOC/checkpoint/handoff
 
 Commit discipline:
-- small responsibility-scoped commits preserved
-- failed CI history preserved
-- no squash/rewrite/force-push
-- no intermediate PR
+- one responsibility per commit
+- preserve shared history; no rewrite/force-push
 
 Exact next action:
-- start Phase 08 audit on TimingWorkMapper, TelemetryTracker, Diagnostics and WorkLedger/NrSession timing flow
-- define one owner for retired GPU timing samples with exact WorkTicket association
-- normal path target: 2 timestamps + 1 resolve per sampled workload, no wait on current GPU work
-- do not duplicate WorkLedger or create a second timing identity namespace
-- split Diagnostics.cpp before substantive growth because it is already 286 lines
+- fix typed guide role validation first
