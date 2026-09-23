@@ -88,6 +88,7 @@ add_executable(nrfusion_harness_3d
         WORKING_DIRECTORY "${CMAKE_CURRENT_SOURCE_DIR}")
 
     add_executable(nrfusion_synthetic_dx12_test tests/synthetic_dx12_test.cpp)
+    target_include_directories(nrfusion_synthetic_dx12_test PRIVATE tests)
     target_link_libraries(nrfusion_synthetic_dx12_test PRIVATE nrfusion_core d3d12 dxgi d3dcompiler)
     if (MSVC)
         target_compile_options(nrfusion_synthetic_dx12_test PRIVATE /UNDEBUG)
