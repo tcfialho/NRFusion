@@ -24,6 +24,24 @@
 using Microsoft::WRL::ComPtr;
 using namespace nrfusion;
 
+namespace {
+
+bool WaitForD3D11(ID3D11Device* device, ID3D11DeviceContext* context) {
+    D3D11_QUERY_DESC desc{};
+    desc.Query = D3D11_QUERY_EVENT;
+    ComPtr<ID3D11Query> query;
+    if (FAILED(device->CreateQuery(&desc, &query))) return false;
+    context->End(query.Get());
+    context->Flush();
+    for (int i = 0; i < 5000; ++i) {
+        if (context->GetData(query.Get(), nullptr, 0, 0) == S_OK) return true;
+        Sleep(1);
+    }
+    return false;
+}
+
+}
+
 int main() {
     std::cout << "[Synthetic Dx11 Bridge Test] Starting Stage 2 validation..." << std::endl;
 
@@ -158,14 +176,13 @@ int main() {
         assert(handle.valid);
         assert(handle.workId == 2001);
 
-        for (int i = 0; i < 500 && !bridge.Poll(handle); ++i) Sleep(1);
-        assert(bridge.Poll(handle));
-
         bool copyOutOk = bridge.RecordD3D11OutputConsume(
             handle, d3d11Context.Get(), gameDest.Get());
         assert(copyOutOk);
+        assert(WaitForD3D11(d3d11Device.Get(), d3d11Context.Get()));
+        assert(bridge.Poll(handle));
 
-        std::cout << "  [PASS] Exact-slot D3D11 -> D3D12 bridge transport confirmed." << std::endl;
+        std::cout << "  [PASS] GPU-fenced D3D11 <-> D3D12 bridge transport confirmed." << std::endl;
     }
 
     bridge.Shutdown();

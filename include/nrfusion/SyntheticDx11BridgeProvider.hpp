@@ -13,6 +13,7 @@
 #include <wrl/client.h>
 
 #include "nrfusion/D3D11BridgeSlotTracker.hpp"
+#include "nrfusion/D3D11D3D12FenceBridge.hpp"
 #include "nrfusion/MotionVectorResolver.hpp"
 #include "nrfusion/NvofMotionProvider.hpp"
 #include "nrfusion/SyntheticDx12Provider.hpp"
@@ -83,6 +84,7 @@ private:
     SyntheticDx12Provider syntheticD3D12_;
     NvofMotionProvider nvof_;
     D3D11BridgeSlotTracker slotTracker_{};
+    D3D11D3D12FenceBridge sync_{};
     Resolution currentRes_{};
     std::array<SharedSlot, kMaxInFlight> sharedSlots_{};
     bool ready_ = false;

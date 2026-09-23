@@ -70,6 +70,7 @@ if (WIN32)
         src/SyntheticDx12Provider.cpp
         src/NvofMotionProvider.cpp
         src/SyntheticDx11BridgeProvider.cpp
+        src/D3D11D3D12FenceBridge.cpp
         src/CaptureProvider32.cpp
         src/CaptureProvider32Export.cpp
         src/HostServer64.cpp

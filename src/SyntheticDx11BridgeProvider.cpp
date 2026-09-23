@@ -21,6 +21,10 @@ bool SyntheticDx11BridgeProvider::Initialize(const ProviderContext& context) {
     d3d11Device_ = static_cast<ID3D11Device*>(context.device);
     d3d11Device_->GetImmediateContext(&d3d11Context_);
     if (!CreatePrivateD3D12()) return false;
+    if (!sync_.BindAfterIdle(
+            d3d11Device_.Get(), d3d11Context_.Get(),
+            d3d12Device_.Get(), d3d12Queue_.Get()))
+        return false;
 
     ProviderContext d12Ctx{};
     d12Ctx.api = GraphicsApi::D3D12;
@@ -148,6 +152,7 @@ void SyntheticDx11BridgeProvider::Shutdown() {
     for (auto& slot : sharedSlots_) slot.alloc.Reset();
     nvof_.Shutdown();
     syntheticD3D12_.Shutdown();
+    sync_.ResetAfterIdle();
     d3d12Fence_.Reset();
     d3d12CmdList_.Reset();
     d3d12Queue_.Reset();
@@ -173,7 +178,8 @@ SyntheticWorkHandle SyntheticDx11BridgeProvider::Submit(
     if (!lease) return handle;
     SharedSlot& slot = sharedSlots_[lease->slot];
     auto* gameColor = reinterpret_cast<ID3D11Resource*>(inputs.color.opaqueId);
-    if (!CopyInputToSlot(lease->slot, gameColor)) {
+    if (!CopyInputToSlot(lease->slot, gameColor) ||
+        !sync_.QueueInputHandoff()) {
         slotTracker_.Release(*lease);
         return handle;
     }
@@ -214,9 +220,13 @@ bool SyntheticDx11BridgeProvider::Poll(const SyntheticWorkHandle& handle) {
 bool SyntheticDx11BridgeProvider::RecordD3D11OutputConsume(
     const SyntheticWorkHandle& handle, ID3D11DeviceContext* context,
     ID3D11Resource* gameDestination) {
-    if (!context || !gameDestination || !Poll(handle)) return false;
+    if (!context || !gameDestination || context != d3d11Context_.Get() ||
+        !handle.valid)
+        return false;
     const auto slot = slotTracker_.Find(handle.workId);
-    if (!slot || !sharedSlots_[*slot].d3d11Residual) return false;
+    if (!slot || !sharedSlots_[*slot].d3d11Residual ||
+        !sync_.QueueOutputHandoff())
+        return false;
     context->CopyResource(gameDestination, sharedSlots_[*slot].d3d11Residual.Get());
     return true;
 }
