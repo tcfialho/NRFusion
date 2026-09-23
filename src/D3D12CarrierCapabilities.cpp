@@ -11,6 +11,15 @@ RuntimeComponent D3D12CarrierProviderComponent() noexcept {
     };
 }
 
+RuntimeComponent D3D12CarrierExecutorComponent() noexcept {
+    return {
+        RuntimeComponentKind::Executor,
+        GraphicsApi::D3D12,
+        D3D12CarrierCapabilityMask(D3D12CarrierCapability::Execute) |
+            D3D12CarrierCapabilityMask(D3D12CarrierCapability::Compose)
+    };
+}
+
 bool RegisterD3D12CarrierProvider(RuntimeComponentRegistry& registry) noexcept {
     return registry.Register(D3D12CarrierProviderComponent());
 }
