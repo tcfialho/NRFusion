@@ -106,62 +106,27 @@
 
 ## Current session
 
-Start: 2026-09-23 01:17 BRT
-Freeze: 2026-09-23 01:29 BRT
+Start: 2026-09-23 01:39 BRT
 Branch: standalone/integration
 Base/default branch: master
-Head at start: 8a7881db3063e1bccdca0b465e2edc9193861797
+Head at start: 410aadf1405ce5125e7dc45a69c0dede5467f178
 
 Phase 06: CLOSED.
 Phase 07: IN PROGRESS; 07a–07g validated portably.
 
-07g typeless guides:
-- portable role/family normalization added for D3D12 typeless depth/motion guides
-- color/output do not use the guide-only typeless exception
-- Windows native Acquire maps DXGI typeless families through that portable contract
-- normalized guide formats survive NativeFacts -> D3D12AcquireSnapshot -> FrameContract
-- ResourceFormat legacy numeric values 0..7 are compile-time locked; new values are appended
+Checklist:
+- [ ] 07h add portable D3D12 carrier bootstrap activation boundary
+- [ ] qualify executor before runtime component plan is built
+- [ ] failed qualification starts Provider-only without Executor capability
+- [ ] successful qualification registers Provider + Executor
+- [ ] bootstrap failure after successful qualification invokes rollback
+- [ ] invalid config must not call qualification
+- [ ] add focused portable fake/regressions
+- [ ] rerun focused gate, LOC and checkpoint ZIP
 
-Capability ownership:
-- Provider component owns Acquire | Normalize
-- Executor component identity owns Execute | Compose
-- production still registers Provider only; Executor is not activated automatically
-- this keeps runtime advertisement fail-closed until Windows integration is qualified
-
-Validation:
-- typeless run 35818039759: SUCCESS
-- capability ownership run 35818221637: SUCCESS
-- final run 35818315400: SUCCESS
-- 10/10 focused tests PASS
-- validated code head: 993f440b227f88f0a08923bb97f035719fda147c
-
-Steady-state audit:
-- scratch Ensure/EnsureOptional creates only when desc/shape changes
-- guide clone Ensure creates only when clone desc changes
-- codec heaps/constants are created in Init
-- descriptor writes remain per dispatch and are explicitly owned by the canonical executor
-- carrier introduces no locks or per-frame descriptor heaps/resources
-
-Current sizes:
-- FrameContract.hpp: 236
-- D3D12GuideFormat.hpp/cpp: 30 / 38
-- d3d12_guide_format_tests.cpp: 61
-- D3D12CarrierNativeAcquire.cpp: 139
-- d3d12_carrier_native_facts_tests.cpp: 150
-- D3D12CarrierCapabilities.hpp/cpp: 26 / 28
-- d3d12_carrier_capabilities_tests.cpp: 59
-- all touched handwritten files <=300
-
-Why Phase 07 remains open:
-- D3D12CarrierNativeAcquire.cpp and D3D12CarrierExecutor.cpp remain Windows-only and not Windows-compiled
-- Executor component is defined but not activated by the real bootstrap/runtime
-- controlled native Acquire harness remains pending
-- legacy SyntheticDx12Provider/HostServer64/patcher remain read-only until cutover
+Commit discipline:
+- one responsibility per commit
+- preserve shared history; no squash/rewrite/force-push
 
 Exact next action:
-- add a portable bootstrap activation state/fake
-- register Provider unconditionally but Executor only after successful bind/init qualification
-- prove rollback leaves no Executor capability on failed initialization
-- keep actual Windows gate deferred
-- then reassess structural closure of Phase 07 before entering Phase 08
-- no new branch or intermediate PR
+- add D3D12CarrierBootstrap.{hpp,cpp} with pre-bootstrap qualification + rollback hooks
