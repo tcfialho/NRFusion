@@ -22,17 +22,17 @@ struct Jitter {
 enum class ResourceFormat : std::uint8_t {
     Unknown,
     R8Unorm,
-    R16Unorm,
     R16Float,
     R32Float,
     Rg16Float,
-    Rg32Float,
-    Rgba8Unorm,
     Rgba16Float,
     Rgba32Float,
+    D32Float,
+    R16Unorm,
+    Rg32Float,
+    Rgba8Unorm,
     R24UnormX8,
-    R32FloatX8X24,
-    D32Float
+    R32FloatX8X24
 };
 
 enum class ResourceProvenance : std::uint8_t {
