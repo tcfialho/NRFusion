@@ -10,6 +10,8 @@
 #include <dxgi1_6.h>
 #include <wrl/client.h>
 
+#include "nrfusion/D3D11CarrierNativeAcquire.hpp"
+#include "nrfusion/D3D11CarrierWork.hpp"
 #include "nrfusion/MotionVectorResolver.hpp"
 #include "nrfusion/NvofMotionProvider.hpp"
 #include "nrfusion/SyntheticDx11BridgeProvider.hpp"
@@ -40,21 +42,6 @@ ComPtr<ID3D11Texture2D> MakeTexture(
     ComPtr<ID3D11Texture2D> texture;
     assert(SUCCEEDED(device->CreateTexture2D(&desc, nullptr, &texture)));
     return texture;
-}
-
-SyntheticFrameInputs Inputs(
-    std::uint64_t workId, ID3D11Texture2D* color, UINT width, UINT height) {
-    SyntheticFrameInputs inputs{};
-    inputs.ticket.id = workId;
-    inputs.ticket.session = 1;
-    inputs.frameId = workId;
-    inputs.renderResolution = {width, height};
-    inputs.targetResolution = {width, height};
-    inputs.workingScale = 0.75f;
-    inputs.color.opaqueId = reinterpret_cast<std::uint64_t>(color);
-    inputs.color.resolution = {width, height};
-    inputs.color.format = ResourceFormat::Rgba16Float;
-    return inputs;
 }
 
 bool WaitForD3D11(ID3D11Device* device, ID3D11DeviceContext* context) {
@@ -179,11 +166,26 @@ int main() {
             const UINT height = (frame & 1u) ? 360u : 450u;
             auto gameColor = MakeTexture(d3d11Device.Get(), width, height);
             auto gameDest = MakeTexture(d3d11Device.Get(), width, height);
-            const auto inputs = Inputs(2000 + frame, gameColor.Get(), width, height);
+            D3D11NativeAcquireInput acquire{};
+            acquire.identity.frameId = 2000 + frame;
+            acquire.identity.configurationGeneration = 1;
+            acquire.context = d3d11Context.Get();
+            acquire.color = gameColor.Get();
+            const auto acquired = AcquireD3D11NativeFrame(acquire);
+            assert(acquired);
 
-            const SyntheticWorkHandle handle = bridge.Submit(inputs, nullptr);
+            WorkTicket ticket{};
+            ticket.id = 2000 + frame;
+            ticket.session = 1;
+            ticket.frameId = acquired.frame.frameId;
+            ticket.configurationGeneration = 1;
+            ticket.workingScale = 0.75f;
+            const auto work = BuildD3D11CarrierWork(acquired.frame, ticket, 0.75f);
+            assert(work);
+
+            const SyntheticWorkHandle handle = bridge.Submit(*work, nullptr);
             assert(handle.valid);
-            assert(handle.workId == inputs.ticket.id);
+            assert(handle.workId == work->ticket.id);
             assert(bridge.RecordD3D11OutputConsume(
                 handle, d3d11Context.Get(), gameDest.Get()));
             assert(WaitForD3D11(d3d11Device.Get(), d3d11Context.Get()));
