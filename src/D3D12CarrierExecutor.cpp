@@ -66,6 +66,10 @@ D3D12CarrierExecuteResult D3D12CarrierExecutor::Execute(
         result.planningFailure = planned.failure;
         return result;
     }
+    if (boundDevice_ == nullptr) {
+        result.failure = D3D12CarrierExecuteFailure::NotInitialized;
+        return result;
+    }
     if (cmdList == nullptr) {
         result.failure = D3D12CarrierExecuteFailure::InvalidCommandList;
         return result;
