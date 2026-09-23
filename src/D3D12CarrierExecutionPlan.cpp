@@ -46,40 +46,85 @@ D3D12CarrierExecutionPlanResult BuildD3D12CarrierExecutionPlan(
     }
 
     const FrameContext& acquired = frame.acquire.frame;
-    if (!acquired.depth.Valid()) {
-        result.failure = D3D12CarrierExecutionFailure::MissingDepth;
-        return result;
-    }
-    if (!acquired.motionVectors.Valid()) {
-        result.failure = D3D12CarrierExecutionFailure::MissingMotion;
-        return result;
-    }
-    if (config.useGameExposure && !acquired.exposure.Valid()) {
-        result.failure = D3D12CarrierExecutionFailure::MissingExposure;
-        return result;
-    }
-    if (!ValidMotionScale(config.motionScaleX) ||
-        !ValidMotionScale(config.motionScaleY)) {
-        result.failure = D3D12CarrierExecutionFailure::InvalidMotionScale;
-        return result;
-    }
-
     bool beforeUpscale = false;
+    bool modelStage = true;
+    bool runBeforeUpscale = false;
+    bool rayReconstruction = false;
+    bool residualAcrossRr = false;
+
     switch (frame.session.decision.pipeline.placement) {
     case NrPlacement::PreSr:
+        if (config.stage != D3D12CarrierExecutionStage::Direct) {
+            result.failure = D3D12CarrierExecutionFailure::StageMismatch;
+            return result;
+        }
         beforeUpscale = true;
+        runBeforeUpscale = true;
         break;
     case NrPlacement::PostSr:
-        beforeUpscale = false;
+        if (config.stage != D3D12CarrierExecutionStage::Direct) {
+            result.failure = D3D12CarrierExecutionFailure::StageMismatch;
+            return result;
+        }
+        break;
+    case NrPlacement::AcrossRr:
+        if (config.stage == D3D12CarrierExecutionStage::AcrossRrStore) {
+            beforeUpscale = true;
+            runBeforeUpscale = true;
+            rayReconstruction = true;
+            residualAcrossRr = true;
+        } else if (config.stage == D3D12CarrierExecutionStage::AcrossRrApply) {
+            modelStage = false;
+            runBeforeUpscale = true;
+            rayReconstruction = true;
+            residualAcrossRr = true;
+        } else {
+            result.failure = D3D12CarrierExecutionFailure::StageMismatch;
+            return result;
+        }
         break;
     case NrPlacement::Auto:
     case NrPlacement::DeferredResidual:
-    case NrPlacement::AcrossRr:
         result.failure = D3D12CarrierExecutionFailure::UnsupportedPlacement;
         return result;
     }
 
+    if (modelStage) {
+        if (!acquired.depth.Valid()) {
+            result.failure = D3D12CarrierExecutionFailure::MissingDepth;
+            return result;
+        }
+        if (!acquired.motionVectors.Valid()) {
+            result.failure = D3D12CarrierExecutionFailure::MissingMotion;
+            return result;
+        }
+        if (config.useGameExposure && !acquired.exposure.Valid()) {
+            result.failure = D3D12CarrierExecutionFailure::MissingExposure;
+            return result;
+        }
+        if (!ValidMotionScale(config.motionScaleX) ||
+            !ValidMotionScale(config.motionScaleY)) {
+            result.failure = D3D12CarrierExecutionFailure::InvalidMotionScale;
+            return result;
+        }
+    }
+
     auto& plan = result.plan;
+    plan.framePlan.beforeUpscale = beforeUpscale;
+    plan.submissionEpoch = work.submissionEpoch;
+    plan.reset = acquired.resetHistory || acquired.cameraCut;
+    plan.depthInverted = config.depthInverted;
+    plan.colourIsLinearHdr = acquired.hdr;
+    plan.modelStage = modelStage;
+    plan.requiresColor = modelStage && beforeUpscale;
+    plan.runBeforeUpscale = runBeforeUpscale;
+    plan.rayReconstruction = rayReconstruction;
+    plan.residualAcrossRr = residualAcrossRr;
+    plan.motionScaleX = config.motionScaleX;
+    plan.motionScaleY = config.motionScaleY;
+
+    if (!modelStage) return result;
+
     plan.framePlan.colorSurface = beforeUpscale
         ? acquired.renderResolution : acquired.outputResolution;
     plan.framePlan.depthSurface = acquired.depth.resolution;
@@ -92,19 +137,11 @@ D3D12CarrierExecutionPlanResult BuildD3D12CarrierExecutionPlan(
     plan.framePlan.execution.passes = config.passes;
     plan.framePlan.execution.unlockPasses = config.unlockPasses;
     plan.framePlan.execution.proxyBackend = config.proxyBackend;
-    plan.framePlan.beforeUpscale = beforeUpscale;
 
     if (!BuildD3D12NrFramePlan(plan.framePlan, plan.resolvedPlan)) {
         result.failure = D3D12CarrierExecutionFailure::InvalidPlan;
         return result;
     }
-
-    plan.submissionEpoch = work.submissionEpoch;
-    plan.reset = acquired.resetHistory || acquired.cameraCut;
-    plan.depthInverted = config.depthInverted;
-    plan.colourIsLinearHdr = acquired.hdr;
-    plan.motionScaleX = config.motionScaleX;
-    plan.motionScaleY = config.motionScaleY;
     return result;
 }
 
