@@ -34,6 +34,8 @@ public:
         RuntimeShell& shell, const RuntimeBootstrapPlan& plan) noexcept;
     static RuntimeBootstrapResult ActivateComponent(
         RuntimeShell& shell, RuntimeComponent component) noexcept;
+    static RuntimeBootstrapResult DeactivateComponent(
+        RuntimeShell& shell, RuntimeComponent component) noexcept;
     static void Stop(RuntimeShell& shell) noexcept;
 };
 
