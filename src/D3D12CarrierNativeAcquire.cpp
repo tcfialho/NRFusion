@@ -51,7 +51,12 @@ bool TypelessFamily(
 ResourceFormat MapFormat(
     DXGI_FORMAT format, const D3D12GuideRole* guideRole) noexcept {
     const ResourceFormat typed = MapTypedFormat(format);
-    if (typed != ResourceFormat::Unknown || guideRole == nullptr) return typed;
+    if (typed != ResourceFormat::Unknown) {
+        return guideRole == nullptr
+            ? typed
+            : NormalizeD3D12TypedGuideFormat(*guideRole, typed);
+    }
+    if (guideRole == nullptr) return ResourceFormat::Unknown;
 
     D3D12TypelessGuideFamily family{};
     if (!TypelessFamily(format, family)) return ResourceFormat::Unknown;
