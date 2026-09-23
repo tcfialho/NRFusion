@@ -1,3 +1,3 @@
-phase07-bootstrap-activation-recovery-20260923
-base=229cc6b4351b529c268e621fc5bfb721675d3a51
-request=validate-provider-first-executor-after-qualification
+phase07-bootstrap-rollback-final-20260923
+base=ad264261c33042659d383daf4d9432d29e17bfae
+request=validate-final-qualification-rollback-head
