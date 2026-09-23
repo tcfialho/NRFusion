@@ -70,6 +70,15 @@ bool D3D12NrExecutor::Load() {
     }
 
     const std::wstring exeDir = ExeDirectory();
+    const std::wstring forwarderPath = exeDir + L"nvngx.dll_dlssnr.dll";
+    const std::wstring snippetPath = exeDir + L"nvngx_dlssnr.dll";
+    if (!FileExists(forwarderPath) || !FileExists(snippetPath)) {
+        status_ = !FileExists(forwarderPath)
+            ? "nvngx.dll_dlssnr.dll not found beside NRFusionHost64.exe"
+            : "nvngx_dlssnr.dll (the model itself) not found beside NRFusionHost64.exe";
+        return false;
+    }
+
     HMODULE driver = nullptr;
     bool driverOwned = false;
 
@@ -104,16 +113,6 @@ bool D3D12NrExecutor::Load() {
     if (driverInit == nullptr || getCapabilityParams == nullptr) {
         if (driverOwned) FreeLibrary(driver);
         status_ = "driver module missing Init or GetCapabilityParameters";
-        return false;
-    }
-
-    const std::wstring forwarderPath = exeDir + L"nvngx.dll_dlssnr.dll";
-    const std::wstring snippetPath = exeDir + L"nvngx_dlssnr.dll";
-    if (!FileExists(forwarderPath) || !FileExists(snippetPath)) {
-        if (driverOwned) FreeLibrary(driver);
-        status_ = !FileExists(forwarderPath)
-            ? "nvngx.dll_dlssnr.dll not found beside NRFusionHost64.exe"
-            : "nvngx_dlssnr.dll (the model itself) not found beside NRFusionHost64.exe";
         return false;
     }
 
