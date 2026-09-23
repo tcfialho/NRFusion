@@ -33,13 +33,14 @@ jobs:
           nrfusion_d3d12_carrier_contract_tests nrfusion_d3d12_carrier_session_tests
           nrfusion_d3d12_carrier_native_facts_tests nrfusion_d3d12_carrier_capabilities_tests
           nrfusion_d3d12_carrier_work_tests nrfusion_d3d12_carrier_execution_plan_tests
+          nrfusion_d3d12_guide_format_tests
           --parallel 2
 
       - name: Run focused regression tests
         run: >
           ctest --test-dir build-focused
           --output-on-failure
-          -R '^(nrfusion_tests|nrfusion_nr_session_(tests|stress_tests)|nrfusion_d3d12_carrier_(contract|session|native_facts|capabilities|work|execution_plan)_tests)$'
+          -R '^(nrfusion_tests|nrfusion_nr_session_(tests|stress_tests)|nrfusion_d3d12_(carrier_(contract|session|native_facts|capabilities|work|execution_plan)|guide_format)_tests)$'
 
       - name: Package source checkpoint
         run: git archive --format=zip --output=nrfusion-source-${GITHUB_SHA}.zip HEAD
