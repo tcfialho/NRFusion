@@ -17,6 +17,16 @@ std::uint64_t OpaqueId(ID3D12Resource* resource) noexcept {
         reinterpret_cast<std::uintptr_t>(resource));
 }
 
+bool BelongsToDevice(
+    ID3D12Device* expected, ID3D12DeviceChild* child) noexcept {
+    if (expected == nullptr || child == nullptr) return false;
+    ID3D12Device* actual = nullptr;
+    const HRESULT hr = child->GetDevice(IID_PPV_ARGS(&actual));
+    const bool matches = SUCCEEDED(hr) && actual == expected;
+    if (actual != nullptr) actual->Release();
+    return matches;
+}
+
 bool SameFrameIdentity(
     const D3D12NativeFrameResources& resources,
     const D3D12CarrierFrameResult& frame) noexcept {
@@ -77,6 +87,19 @@ D3D12CarrierExecuteResult D3D12CarrierExecutor::Execute(
     }
     if (cmdList == nullptr) {
         result.failure = D3D12CarrierExecuteFailure::InvalidCommandList;
+        return result;
+    }
+    if (!BelongsToDevice(boundDevice_, cmdList) ||
+        !BelongsToDevice(boundDevice_, resources.output) ||
+        (resources.color.resource != nullptr &&
+         !BelongsToDevice(boundDevice_, resources.color.resource)) ||
+        (resources.depth.resource != nullptr &&
+         !BelongsToDevice(boundDevice_, resources.depth.resource)) ||
+        (resources.motionVectors.resource != nullptr &&
+         !BelongsToDevice(boundDevice_, resources.motionVectors.resource)) ||
+        (resources.exposure.resource != nullptr &&
+         !BelongsToDevice(boundDevice_, resources.exposure.resource))) {
+        result.failure = D3D12CarrierExecuteFailure::DeviceMismatch;
         return result;
     }
 
