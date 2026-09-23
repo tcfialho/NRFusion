@@ -117,7 +117,45 @@ int main() {
 
     assert(BuildD3D12CarrierExecutionPlan(
                Frame(NrPlacement::AcrossRr), Work(), {}).failure ==
-           D3D12CarrierExecutionFailure::UnsupportedPlacement);
+           D3D12CarrierExecutionFailure::StageMismatch);
+
+    auto storeConfig = config;
+    storeConfig.stage = D3D12CarrierExecutionStage::AcrossRrStore;
+    const auto store = BuildD3D12CarrierExecutionPlan(
+        Frame(NrPlacement::AcrossRr), Work(), storeConfig);
+    assert(store);
+    assert(store.plan.modelStage);
+    assert(store.plan.requiresColor);
+    assert(store.plan.framePlan.beforeUpscale);
+    assert(store.plan.runBeforeUpscale);
+    assert(store.plan.rayReconstruction);
+    assert(store.plan.residualAcrossRr);
+    assert(store.plan.submissionEpoch == Work().submissionEpoch);
+
+    auto applyFrame = Frame(NrPlacement::AcrossRr);
+    applyFrame.acquire.frame.depth = {};
+    applyFrame.acquire.frame.motionVectors = {};
+    auto applyConfig = config;
+    applyConfig.stage = D3D12CarrierExecutionStage::AcrossRrApply;
+    applyConfig.useGameExposure = true;
+    applyConfig.motionScaleX =
+        std::numeric_limits<float>::quiet_NaN();
+    const auto apply = BuildD3D12CarrierExecutionPlan(
+        applyFrame, Work(), applyConfig);
+    assert(apply);
+    assert(!apply.plan.modelStage);
+    assert(!apply.plan.requiresColor);
+    assert(!apply.plan.framePlan.beforeUpscale);
+    assert(apply.plan.runBeforeUpscale);
+    assert(apply.plan.rayReconstruction);
+    assert(apply.plan.residualAcrossRr);
+    assert(apply.plan.submissionEpoch == store.plan.submissionEpoch);
+
+    auto wrongStoreStage = storeConfig;
+    assert(BuildD3D12CarrierExecutionPlan(
+               Frame(NrPlacement::PostSr), Work(), wrongStoreStage).failure ==
+           D3D12CarrierExecutionFailure::StageMismatch);
+
     assert(BuildD3D12CarrierExecutionPlan(
                Frame(NrPlacement::DeferredResidual), Work(), {}).failure ==
            D3D12CarrierExecutionFailure::UnsupportedPlacement);
