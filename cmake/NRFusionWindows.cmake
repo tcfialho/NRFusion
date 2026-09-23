@@ -122,6 +122,16 @@ add_executable(nrfusion_harness_3d
         add_test(NAME nrfusion_synthetic_dx12_scale_gate_test COMMAND nrfusion_synthetic_dx12_scale_gate_test)
     endif()
 
+    add_executable(nrfusion_d3d11_carrier_native_acquire_tests
+        tests/d3d11_carrier_native_acquire_tests.cpp)
+    target_link_libraries(nrfusion_d3d11_carrier_native_acquire_tests PRIVATE nrfusion_core d3d11 dxgi)
+    if (MSVC)
+        target_compile_options(nrfusion_d3d11_carrier_native_acquire_tests PRIVATE /W4 /permissive- /UNDEBUG)
+    else()
+        target_compile_options(nrfusion_d3d11_carrier_native_acquire_tests PRIVATE -UNDEBUG)
+    endif()
+    add_test(NAME nrfusion_d3d11_carrier_native_acquire_tests
+        COMMAND nrfusion_d3d11_carrier_native_acquire_tests)
     add_executable(nrfusion_synthetic_dx11_bridge_test tests/synthetic_dx11_bridge_test.cpp)
     target_link_libraries(nrfusion_synthetic_dx11_bridge_test PRIVATE nrfusion_core d3d11 d3d12 dxgi d3dcompiler)
     if (MSVC)

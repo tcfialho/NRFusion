@@ -71,6 +71,7 @@ if (WIN32)
         src/NvofMotionProvider.cpp
         src/SyntheticDx11BridgeProvider.cpp
         src/D3D11D3D12FenceBridge.cpp
+        src/D3D11CarrierNativeAcquire.cpp
         src/CaptureProvider32.cpp
         src/CaptureProvider32Export.cpp
         src/HostServer64.cpp
