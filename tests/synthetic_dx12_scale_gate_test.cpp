@@ -11,7 +11,7 @@
 
 #include "nrfusion/SyntheticDx12Provider.hpp"
 
-#include <DirectXPackedVector.h>
+#include "HalfFloat.hpp"
 
 #include <cassert>
 #include <cmath>
@@ -167,7 +167,7 @@ float ReadFirstHalf(ID3D12Device* device, ID3D12GraphicsCommandList* list, ID3D1
     assert(SUCCEEDED(readback->Map(0, nullptr, reinterpret_cast<void**>(&mapped))));
     const uint16_t half = *reinterpret_cast<const uint16_t*>(mapped + footprint.Offset);
     readback->Unmap(0, nullptr);
-    return DirectX::PackedVector::XMConvertHalfToFloat(half);
+    return nrfusion::testing::HalfToFloat(half);
 }
 
 bool InitializeGpu(TestGpu& gpu) {
@@ -235,7 +235,7 @@ int main() {
     if (!provider.Initialize(context)) return 1;
 
     ComPtr<ID3D12Resource> input = CreateTexture(gpu.device.Get(), 64, 64);
-    const uint16_t halfValue = DirectX::PackedVector::XMConvertFloatToHalf(0.25f);
+    const uint16_t halfValue = nrfusion::testing::FloatToHalf(0.25f);
     ComPtr<ID3D12Resource> upload = CreateConstantTextureUpload(gpu.device.Get(), 64, 64, halfValue);
     gpu.Reset();
     D3D12_RESOURCE_DESC inputDescription = input->GetDesc();
