@@ -24,7 +24,7 @@ Fases 04–06.
 - [x] Definir Acquire seam/lifetime de color/depth/motion/exposure.
 - [x] Usar FrameContract com evidence/provenance explícitas; guides selecionados precisam corresponder à fonte decidida.
 - [x] Integrar registry/NrSession; Provider anuncia Acquire/Normalize e Executor só ativa após qualificação.
-- [x] Resize/device rebind/guides ausentes cobertos estruturalmente; Windows compile permanece diferido.
+- [x] Resize/device rebind/guides ausentes cobertos; carrier Windows compila no gate local MinGW.
 - [x] Disabled quase pass-through.
 - [x] Cada arquivo novo/tocado do carrier <=300 linhas.
 
@@ -572,3 +572,47 @@ Run `35824485857`, code head
 
 Todos os arquivos first-party tocados no 07i permanecem abaixo de 300 linhas.
 A Fase 07 retorna a CLOSED após esta revisão adversarial.
+
+
+## Revis?o Windows p?s-07i e consolida??o Git
+
+Uma rodada adicional de code review foi executada diretamente no clone Windows autorizado.
+
+### Branch topology
+
+As nove branches hist?ricas extras foram auditadas com git merge-base --is-ancestor e
+git rev-list. Todas tinham exclusive=0 contra standalone/integration: nenhum commit exclusivo
+existia nelas. As refs remotas redundantes foram removidas.
+
+Topologia oficial:
+- master: baseline/cutover target;
+- standalone/integration: ?nica branch cumulativa de desenvolvimento para todas as fases.
+
+N?o deve existir branch por fase. O PR continua reservado ao cutover final.
+
+### Compile gate Windows real
+
+O build local Windows/MinGW/Ninja atravessou o codegen de shaders e compilou nrfusion_core,
+incluindo:
+- D3D12CarrierNativeAcquire.cpp;
+- D3D12CarrierExecutor.cpp.
+
+Depois das corre??es desta revis?o, a su?te focada executou **11/11 PASS** no Windows.
+
+### Bugs encontrados pela revis?o Windows
+
+1. A verifica??o do source lock usava bytes CRLF do worktree, embora o blob lockado fosse LF.
+   O gerador agora normaliza texto antes de calcular o blob SHA.
+2. render_header() inseria espa?o no fim de cada linha de 12 bytes e n?o reproduzia exatamente o
+   header lockado upstream. O formato foi corrigido e main/residual reproduzem os blobs esperados.
+3. O stress test usava std::aligned_alloc no MinGW. Windows agora usa _aligned_malloc/free
+   independentemente de MSVC vs MinGW.
+4. SyntheticOpenGlProvider.cpp tinha 408 linhas e casts de FARPROC que falhavam sob
+   -Werror=cast-function-type-strict. Loader/lifecycle foi separado por responsabilidade e os
+   casts passaram a usar std::bit_cast com static_assert de tamanho.
+
+Code head Windows validado: 641310a.
+
+O que permanece diferido:
+- execu??o real em GPU/D3D12 com jogo/harness COM;
+- cutover f?sico do provider/Host64/patcher.

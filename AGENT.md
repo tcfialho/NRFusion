@@ -106,45 +106,48 @@
 
 ## Current session
 
-Start: 2026-09-23 02:46 BRT
-Freeze: 2026-09-23 02:58 BRT
+Start: 2026-09-23 03:18 BRT
+Freeze: 2026-09-23 03:33 BRT
 Branch: standalone/integration
 Base/default branch: master
-Head at start: 1ba7b6437e5ff18d1b4c91961f179563eadff4a8
+Head at start: 46b8e5e2b2e1bf280fc74d2689ad76292444e756
 
 Phase 06: CLOSED.
-Phase 07: CLOSED after 07i adversarial hardening.
+Phase 07: CLOSED after 07i + Windows code-review gate.
 Phase 08: NOT STARTED.
 
-07i fixes:
-- typed depth/motion formats are validated by guide role
-- D3D12 execution requires a live Started work ticket
-- execution claim is one-shot, preventing duplicate GPU recording with a copied ticket
-- command list/resources must belong to the bound D3D12 device
-- PendingFeature now reports NeedsSubmission separately from Applied
-- runtime registry supports component capability removal
-- D3D12 executor capability can be deactivated before teardown/device loss
-- D3D12 runtime Start remains idempotent after executor activation
+Branch consolidation:
+- audited every remote branch against standalone/integration
+- all 9 historical phase/perf/plan branches were ancestors with exclusive=0
+- deleted all redundant remote refs
+- official remote topology is now only master + standalone/integration
+- continue every future phase on standalone/integration
+- one PR only at final cutover
+
+Windows review findings fixed in small commits:
+- 5c87242 fix CRLF-invariant shader source lock verification
+- 5b106cd fix exact locked shader-header formatting
+- c992c8c use Windows aligned allocation on MinGW stress test
+- a2d2998 split SyntheticOpenGlProvider lifecycle; original file 408 -> 256 lines
+- 641310a resolve OpenGL procedure symbols portably with std::bit_cast
 
 Validation:
-- run 35824485857: SUCCESS
-- 11/11 focused tests PASS
-- validated code head: 071d63834b2303878a93866a996c06693784a404
-- Windows-only device identity/result changes structurally reviewed; Windows gate remains deferred
-- all touched first-party files remain <=300 lines
+- locked upstream materialized at wilsjo2/OptiScaler-DLSSNR-PreSR-Multipass@1b1dd650
+- locked fxc blob matched expected 1ff12bda
+- main/residual CSO + generated header lock hashes reproduced exactly
+- nrfusion_core compiled on Windows/MinGW including D3D12CarrierNativeAcquire.cpp and D3D12CarrierExecutor.cpp
+- focused Windows CTest: 11/11 PASS
+- git diff --check: PASS
+- all files touched by this review <=300 lines
+- validated code head: 641310a
 
-Lifecycle:
-- no implicit destructor shutdown was added because GPU idle is an explicit precondition
-- correct teardown path: DeactivateD3D12CarrierExecutor -> rollback -> ShutdownAfterIdle
-
-Commit discipline:
-- findings were fixed in small responsibility-scoped commits
-- no history rewrite/force-push
-- no intermediate PR
+Remaining gate:
+- real D3D12 hardware/game execution remains deferred to final cutover
+- no structural/code compile blocker remains in Phase 07
 
 Exact next action:
-- start Phase 08 audit only after this 07i checkpoint
-- define one owner for retired GPU timing samples tied to exact WorkTicket identity
-- normal path target: 2 timestamps + 1 resolve per sampled workload
-- never wait for current GPU work
+- start Phase 08 on standalone/integration
+- audit TimingWorkMapper, TelemetryTracker, Diagnostics and WorkLedger/NrSession timing flow
 - split Diagnostics.cpp before substantive growth
+- define one owner for retired GPU timing tied to exact WorkTicket identity
+- target 2 timestamps + 1 resolve per sampled workload, never wait for current GPU work
