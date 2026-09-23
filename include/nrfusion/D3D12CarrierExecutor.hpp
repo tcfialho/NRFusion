@@ -37,6 +37,7 @@ enum class D3D12CarrierExecuteFailure : std::uint8_t {
     None,
     Planning,
     NotInitialized,
+    InactiveWork,
     InvalidCommandList,
     ResourceIdentityMismatch,
     MissingExposure,
@@ -64,6 +65,7 @@ public:
 
     D3D12CarrierExecuteResult Execute(
         ID3D12GraphicsCommandList* cmdList,
+        const D3D12CarrierSession& session,
         const D3D12NativeFrameResources& resources,
         const D3D12CarrierFrameResult& frame,
         const D3D12CarrierWork& work,
