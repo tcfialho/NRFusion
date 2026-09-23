@@ -7,17 +7,19 @@ using namespace nrfusion;
 
 namespace {
 
-D3D12CarrierFramePacket Packet(std::uint64_t generation, FrameId frameId) {
+D3D12CarrierFramePacket Packet(
+    std::uint64_t generation, FrameId frameId,
+    Resolution resolution = {1920, 1080}) {
     D3D12NativeAcquireInput input{};
     input.identity.frameId = frameId;
     input.identity.configurationGeneration = generation;
     input.color.texture = {
-        11, {1920, 1080}, ResourceFormat::Rgba16Float, 1, 1, 1, true
+        11, resolution, ResourceFormat::Rgba16Float, 1, 1, 1, true
     };
     input.color.provenance = ResourceProvenance::GameNative;
     input.color.reliability = ResourceReliability::Reliable;
     input.output = {
-        12, {1920, 1080}, ResourceFormat::Unknown, 1, 1, 1, true
+        12, resolution, ResourceFormat::Unknown, 1, 1, 1, true
     };
     const auto native = BuildD3D12NativeAcquireSnapshot(input);
     assert(native);
@@ -80,7 +82,18 @@ int main() {
     assert(!invalidFrame);
     assert(!carrier.BeginWork(invalidFrame));
 
-    const auto pending = carrier.BeginWork(frame, 99);
+    const auto resizePending = carrier.BeginWork(frame, 99);
+    assert(resizePending);
+    const auto resized = carrier.Resolve(
+        Packet(config.generation, 103, {1280, 720}));
+    assert(resized);
+    assert(resized.session.runtimeGeneration != frame.session.runtimeGeneration);
+    assert(!carrier.BeginWork(frame));
+    assert(!carrier.SubmitWork(*resizePending));
+    assert(!carrier.MapTimedWork(*resizePending));
+    assert(carrier.AbandonWork(*resizePending));
+
+    const auto pending = carrier.BeginWork(resized, 100);
     assert(pending);
 
     RuntimeConfig next = config;
@@ -90,7 +103,7 @@ int main() {
     assert(!carrier.MapTimedWork(*pending));
     assert(!carrier.AbandonWork(*pending));
 
-    const auto nextFrame = carrier.Resolve(Packet(next.generation, 103));
+    const auto nextFrame = carrier.Resolve(Packet(next.generation, 104));
     assert(nextFrame);
     const auto nextWork = carrier.BeginWork(nextFrame);
     assert(nextWork);
