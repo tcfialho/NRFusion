@@ -37,7 +37,7 @@ jobs:
         run: >
           cmake --build build-focused
           --target nrfusion_nr_session_tests nrfusion_nr_session_stress_tests nrfusion_tests
-          nrfusion_nr_timing_source_tests
+          nrfusion_nr_timing_source_tests nrfusion_d3d11_bridge_slot_tracker_tests
           nrfusion_d3d12_carrier_contract_tests nrfusion_d3d12_carrier_session_tests
           nrfusion_d3d12_carrier_native_facts_tests nrfusion_d3d12_carrier_capabilities_tests
           nrfusion_d3d12_carrier_bootstrap_tests
@@ -49,7 +49,7 @@ jobs:
         run: >
           ctest --test-dir build-focused
           --output-on-failure
-          -R '^(nrfusion_tests|nrfusion_nr_(session_(tests|stress_tests)|timing_source_tests)|nrfusion_d3d12_(carrier_(contract|session|native_facts|capabilities|bootstrap|work|execution_plan)|guide_format|nr_frame_plan)_tests)$'
+          -R '^(nrfusion_tests|nrfusion_nr_(session_(tests|stress_tests)|timing_source_tests)|nrfusion_d3d11_bridge_slot_tracker_tests|nrfusion_d3d12_(carrier_(contract|session|native_facts|capabilities|bootstrap|work|execution_plan)|guide_format|nr_frame_plan)_tests)$'
 
       - name: Check changed source size
         run: python tools/check_source_size.py changed

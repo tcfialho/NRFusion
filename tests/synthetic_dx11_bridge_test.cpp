@@ -158,15 +158,14 @@ int main() {
         assert(handle.valid);
         assert(handle.workId == 2001);
 
-        // Record GPU copy of inputs without CPU readback
-        bool copyInOk = bridge.RecordD3D11InputCopy(d3d11Context.Get(), gameColor.Get(), nullptr, nullptr);
-        assert(copyInOk);
+        for (int i = 0; i < 500 && !bridge.Poll(handle); ++i) Sleep(1);
+        assert(bridge.Poll(handle));
 
-        // Record GPU copy of output back to game presentation
-        bool copyOutOk = bridge.RecordD3D11OutputConsume(d3d11Context.Get(), gameDest.Get());
+        bool copyOutOk = bridge.RecordD3D11OutputConsume(
+            handle, d3d11Context.Get(), gameDest.Get());
         assert(copyOutOk);
 
-        std::cout << "  [PASS] Zero-CPU D3D11 <-> private D3D12 shared handle transfer confirmed." << std::endl;
+        std::cout << "  [PASS] Exact-slot D3D11 -> D3D12 bridge transport confirmed." << std::endl;
     }
 
     bridge.Shutdown();

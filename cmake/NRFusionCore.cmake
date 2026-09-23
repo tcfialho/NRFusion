@@ -60,6 +60,7 @@ add_library(nrfusion_core STATIC
     src/D3D12CarrierBootstrap.cpp
     src/D3D12CarrierExecutionPlan.cpp
     src/D3D12GuideFormat.cpp
+    src/D3D11BridgeSlotTracker.cpp
 )
 
 if (WIN32)
