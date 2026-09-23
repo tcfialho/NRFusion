@@ -50,6 +50,11 @@ std::optional<D3D12CarrierWork> D3D12CarrierSession::BeginWork(
     return D3D12CarrierWork{*ticket, ticket->id};
 }
 
+bool D3D12CarrierSession::CanExecuteWork(
+    const D3D12CarrierWork& work) const noexcept {
+    return work && session_.CanExecuteWork(work.ticket);
+}
+
 bool D3D12CarrierSession::SubmitWork(const D3D12CarrierWork& work) noexcept {
     return work && session_.SubmitWork(work.ticket);
 }
