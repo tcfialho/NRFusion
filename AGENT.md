@@ -106,59 +106,32 @@
 
 ## Current session
 
-Start: 2026-09-22 23:17 BRT
-Freeze: 2026-09-22 23:29 BRT
+Start: 2026-09-23 00:25 BRT
 Branch: standalone/integration
 Base/default branch: master
-Head at start: c452cb17d550d85849e9e8a6a18707422b26511d
+Head at start: 6de9369c1af03d687cab92dc454786323ab51a9d
 
 Phase 06: CLOSED.
 Phase 07: IN PROGRESS; 07a–07d validated portably, 07e resize validated.
+Windows native Acquire/executor/rebind remain structurally reviewed but not Windows-compiled.
 
-Recovered compile failure:
-- run 35799720077 failed because useGameExposure/colourIsLinearHdr were placed in opposite structs
-- fix commit: 00a350abcf5f14f02bbaf4f3ab98e38ff14e2a19
-- recovery run 35809871923: SUCCESS
+Compose ownership finding:
+- PreSr/PostSr resolve+compose already belong to D3D12NrExecutor::ExecuteFrame
+- AcrossRr is already a paired store/apply protocol inside that executor
+- the pair is keyed by the same submissionEpoch
+- DeferredResidual has no equivalent canonical executor mode and remains fail-closed
 
-Resize evidence:
-- run 35810072641: SUCCESS
-- 9/9 focused tests PASS
-- resize advances runtimeGeneration
-- old work cannot Submit/Map after resize
-- old work can still Abandon for slot cleanup
-- pre-resize frame cannot BeginWork after the new shape resolves
-
-07e Windows lifecycle added after the validated portable run:
-- D3D12CarrierExecutor::BindDeviceAfterIdle
-- D3D12CarrierExecutor::ShutdownAfterIdle
-- device change shuts down/reloads the canonical executor before binding the new device
-- carrier AddRefs the bound device so pointer identity cannot be recycled underneath it
-- Execute fails closed with NotInitialized until a device is bound
-
-Validation caveat:
-- D3D12CarrierExecutor.cpp and native Acquire remain WIN32-only
-- the new device rebind code is structurally reviewed but not Windows-compiled
-- Execute and Compose remain unregistered in the capability registry
-
-Current sizes:
-- D3D12CarrierExecutionPlan.hpp/cpp: 61 / 112
-- d3d12_carrier_execution_plan_tests.cpp: 161
-- D3D12CarrierExecutor.hpp/cpp: 80 / 133
-- d3d12_carrier_work_tests.cpp: 114
-
-Legacy files kept read-only:
-- src/SyntheticDx12Provider.cpp
-- src/HostServer64.cpp
-- tools/apply_to_optiscaler.py
+Checklist:
+- [ ] 07f model Direct/AcrossRrStore/AcrossRrApply stages in the portable execution plan
+- [ ] require guides only for model stages; apply stage requires output identity only
+- [ ] derive residualAcrossRr/rayReconstruction/runBeforeUpscale in the carrier, not caller
+- [ ] add paired-epoch regressions
+- [ ] keep DeferredResidual fail-closed with explicit regression
+- [ ] run focused portable gate, LOC and checkpoint ZIP
 
 Commit discipline:
-- all fixes/features preserved as small responsibility-scoped commits
-- failed history preserved; no squash/rewrite/force-push
+- one responsibility per commit
+- preserve shared history; no squash/rewrite/force-push
 
 Exact next action:
-- qualify Compose ownership for the standalone D3D12 carrier
-- reuse the canonical executor's existing resolve/compose for PreSr/PostSr
-- define a separate paired seam only for AcrossRr/DeferredResidual
-- do not duplicate SyntheticDx12Provider residual/compose machinery
-- keep Execute/Compose unregistered until their evidence is sufficient
-- no new branch or intermediate PR
+- extend D3D12CarrierExecutionPlan with explicit paired stage semantics
