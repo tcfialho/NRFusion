@@ -15,34 +15,34 @@ Fase 07.
 
 ## Implementação
 
-- [ ] Query ring, readback e associação WorkId ficam em componentes focados.
-- [ ] Normal path: um intervalo total; alvo 2 timestamps + 1 resolve por amostra.
-- [ ] Consumir resultado aposentado sem esperar GPU atual.
-- [ ] Cachear timestamp frequency por queue.
-- [ ] Model/resolve timing só em Diagnostics.
-- [ ] FakeTimingSource usa a mesma interface.
-- [ ] Se timing + diagnostics se aproximarem de 250 linhas, separar coleta de apresentação/status.
+- [x] Query ring, readback e associação WorkId ficam em componentes focados.
+- [x] Normal path: um intervalo total; alvo 2 timestamps + 1 resolve por amostra.
+- [x] Consumir resultado aposentado sem esperar GPU atual.
+- [x] Cachear timestamp frequency por queue.
+- [x] Model/resolve timing só em Diagnostics.
+- [x] FakeTimingSource usa a mesma interface.
+- [x] Se timing + diagnostics se aproximarem de 250 linhas, separar coleta de apresentação/status.
 
 ## Revisão obrigatória
 
-- [ ] Slot não reutiliza antes do retirement.
-- [ ] Stale timing não reaplica.
-- [ ] Diagnostics off não mantém recursos/comandos exclusivos.
-- [ ] Map/readback não introduz sync implícita.
-- [ ] Nenhum arquivo <=300 é mantido artificialmente por código comprimido.
+- [x] Slot não reutiliza antes do retirement.
+- [x] Stale timing não reaplica.
+- [x] Diagnostics off não mantém recursos/comandos exclusivos.
+- [x] Map/readback não introduz sync implícita.
+- [x] Nenhum arquivo <=300 é mantido artificialmente por código comprimido.
 
 ## Validação rápida
 
-- [ ] Fake timing valida association/staleness.
-- [ ] Correctness harness valida queries reais.
-- [ ] Benchmark exclui waits artificiais.
-- [ ] Checker de LOC.
+- [x] Fake timing valida association/staleness.
+- [x] Correctness harness valida queries reais.
+- [x] Benchmark exclui waits artificiais.
+- [x] Checker de LOC.
 
 ## Gate
 
-- [ ] Produto normal não espera GPU por telemetry.
-- [ ] Off não paga On.
-- [ ] Timing/diagnostics <=300 linhas por arquivo.
+- [x] Produto normal não espera GPU por telemetry.
+- [x] Off não paga On.
+- [x] Timing/diagnostics <=300 linhas por arquivo.
 
 ## Próxima fase
 
@@ -84,3 +84,22 @@ Exact next action:
 - wire `D3D12RetiredTimingSource` into the real D3D12 submission owner that has queue/fence completion values;
 - map successful work with its exact `WorkTicket`, convert failed/unsampled attempts to invalid timing entries, and drain retired samples through `D3D12CarrierSession::RetireTimedSample`;
 - keep model/resolve profiling exclusive to Diagnostics and preserve the no-wait normal path.
+
+## Fechamento ? 2026-09-23
+
+Fase 08: **CLOSED** no boundary standalone.
+
+Evid?ncias finais:
+- contrato port?til e FakeTimingSource cobrem associa??o exata, staleness, capacity/slot reuse e 100k itera??es sem heap;
+- D3D12RetiredTimingSource usa ring fixo, 2 timestamps + 1 resolve, frequ?ncia cacheada e s? mapeia readback depois do completion observado;
+- gate integrado em hardware real valida D3D12 query/fence -> NrRetiredTimingSample -> D3D12CarrierSession -> controller e confirma consumo ?nico;
+- src/D3D12RetiredTimingSource.cpp n?o cont?m wait/event/sleep de GPU; qualquer espera do teste fica fora do produto;
+- MinGW/Windows com hardware: 37/37 CTest PASS; MSVC focado: 3/3 PASS;
+- LOC: Diagnostics.cpp 248, NrD3D12Diagnostics.cpp 254, D3D12RetiredTimingSource.cpp 175; nenhum componente de timing/diagnostics excede 300 linhas;
+- checker de tamanho continua apontando apenas o shader vendor locked j? conhecido.
+
+Gate integrado: 3726dca.
+
+O cutover f?sico provider/Host64/patcher n?o pertence a esta fase; permanece diferido para o cutover global da Fase 23.
+
+Pr?xima fase: Fase 09 ? D3D11 x64 bridge/carrier.

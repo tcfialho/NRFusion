@@ -122,11 +122,11 @@ Regras obrigatórias desta prioridade:
 
 Date: 2026-09-23 BRT
 Branch: standalone/integration
-Validated code head: bc2c008
+Validated code head: e845b14
 
 Phase 06: CLOSED.
 Phase 07: CLOSED, including real Windows compile/harness validation.
-Phase 08: IN PROGRESS.
+Phase 08: CLOSED.
 
 Windows gate closure:
 - MinGW x64/Ninja full build: PASS.
@@ -162,6 +162,16 @@ Phase 08 subgates 08b/08c:
 - normal timing records 2 timestamps + 1 resolve per sampled workload and never waits for current GPU work;
 - hardware timing gate passes with `NRFUSION_TEST_D3D12_HARDWARE=1`; default gate skips before WARP creation.
 
+
+Phase 08 closure:
+- retired timing contract, fake source, D3D12 query/readback owner and end-to-end hardware carrier gate are complete;
+- MinGW hardware suite 37/37 PASS; MSVC focused timing/session gates 3/3 PASS;
+- normal timing path has no GPU wait/event/sleep and retired timing is consumed once;
+- timing/diagnostics first-party files remain <=300 lines;
+- physical provider/Host64/patcher cutover remains deferred to the global cutover phase.
+
+Phase 09: NOT STARTED.
+
 Known non-gate issue:
 - python tools/check_source_size.py changed still reports the locked vendored
   shaders/vendor/optiscaler_dlssnr/dlssnr.hlsl (1110 lines). This is third-party locked source,
@@ -171,7 +181,7 @@ Remaining global gate:
 - real-game execution and physical provider/Host64/patcher cutover.
 
 Exact next action:
-- wire D3D12RetiredTimingSource into the real D3D12 submission owner that knows queue/fence completion;
-- map successful samples to exact WorkTicket identity and failed/unsampled attempts to invalid timing entries;
-- drain only fence-retired samples through D3D12CarrierSession::RetireTimedSample;
-- keep model/resolve profiling exclusive to Diagnostics and preserve the no-wait normal path.
+- start Phase 09 from the existing SyntheticDx11BridgeProvider and current D3D11 hook/bridge tests;
+- baseline tests before edits, then separate D3D11 acquisition/hook ownership from D3D11<->D3D12 bridge ownership;
+- define slot/fence reuse and controlled x64 hook/acquisition validation;
+- keep x86 and CPU frame transport out of Phase 09.
