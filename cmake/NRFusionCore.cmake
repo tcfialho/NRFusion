@@ -88,6 +88,7 @@ if (WIN32)
         src/D3D12CarrierExecutor.cpp
         src/SyntheticVulkanProvider.cpp
         src/SyntheticOpenGlProvider.cpp
+        src/SyntheticOpenGlProviderLifecycle.cpp
     )
 endif()
 
