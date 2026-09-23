@@ -1,3 +1,3 @@
-phase07-typeless-guide-contract-final-20260923
-base=ca1c618be1fd4e0730c1ec2cac31bff213f3d35d
-request=validate-typeless-guide-normalization-through-framecontract
+phase07-bootstrap-activation-20260923
+base=410aadf1405ce5125e7dc45a69c0dede5467f178
+request=validate-provider-first-executor-after-qualification
