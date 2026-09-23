@@ -106,26 +106,30 @@
 
 ## Current session
 
-Start: 2026-09-22 20:44 BRT
+Start: 2026-09-22 23:17 BRT
 Branch: standalone/integration
 Base/default branch: master
-Head at start: 819df22d571cc2cb0f233d5631b3d296162f04be
+Head at start: c452cb17d550d85849e9e8a6a18707422b26511d
 
 Phase 06: CLOSED.
-Phase 07: IN PROGRESS; 07a/07b/07c validated.
+Phase 07: IN PROGRESS; 07a/07b/07c validated, 07d pending validation.
+
+Recovered failure:
+- run 35799720077: FAIL during portable compile
+- D3D12CarrierExecutionConfig is missing useGameExposure
+- D3D12CarrierExecutionPlan is missing colourIsLinearHdr
+- cause: prior header patch placed those two fields in the opposite structs
 
 Checklist:
-- [ ] 07d add portable execution-plan builder from carrier frame + work
-- [ ] reject unsupported placement and missing guides before any D3D12 call
-- [ ] derive working scale, reset and submission epoch from NrSession-owned state
-- [ ] add Windows-only request/executor boundary without touching legacy files
-- [ ] add focused portable regressions for execution-plan invariants
-- [ ] keep Execute/Compose unregistered until executable paths are independently validated
-- [ ] validate focused gate, LOC and checkpoint ZIP
+- [ ] fix the swapped execution-plan fields only
+- [ ] rerun focused portable gate
+- [ ] if green, mark 07d portable side validated
+- [ ] review exact next 07e boundary without opening Windows CI
+- [ ] checkpoint ZIP and handoff
 
 Commit discipline:
-- one responsibility per commit
-- no squash/rewrite/force-push
+- preserve the failed commits; no history rewrite
+- one responsibility per fix commit
 
 Exact next action:
-- add D3D12CarrierExecutionPlan.{hpp,cpp} and focused portable tests
+- correct D3D12CarrierExecutionPlan.hpp field ownership
