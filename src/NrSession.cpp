@@ -95,6 +95,11 @@ std::optional<WorkTicket> NrSession::BeginWork(
         frame.decision.workingScale, precisionTag);
 }
 
+bool NrSession::CanExecuteWork(const WorkTicket& ticket) const noexcept {
+    return ticket.configurationGeneration == state_.runtimeGeneration &&
+           works_.IsStarted(ticket);
+}
+
 bool NrSession::SubmitWork(const WorkTicket& ticket) noexcept {
     return ticket.configurationGeneration == state_.runtimeGeneration &&
            works_.Submit(ticket);
