@@ -199,6 +199,7 @@ add_executable(nrfusion_harness_3d
 
     add_library(nrfusion_capture32 SHARED
         src/CaptureProvider32.cpp
+        src/CaptureProvider32Frames.cpp
         src/CaptureProvider32Export.cpp
         src/CaptureD3D11.cpp
         src/VersionDllProxy.cpp
