@@ -116,3 +116,34 @@ Harness real em `0470771`:
 
 O harness VkDevice não substitui a evidência de external-memory/semaphore;
 essa prova fica para o próximo subgate.
+
+
+## Subgate 11d — external memory/semaphore hosted interop (WIP)
+
+Head submetido: `35b6272`.
+
+Implementado:
+- produtor D3D12 real com duas textures compartilháveis, producer/consumer fences,
+  adapter LUID e allocation size;
+- import Vulkan valida `vkGetPhysicalDeviceImageFormatProperties2` para
+  format/tiling/usage + `D3D12_RESOURCE`;
+- handles Win32 recebidos permanecem do caller; o provider importa cópias duplicadas
+  e fecha essas cópias após o import criar sua própria referência;
+- harness externo casa o `VkPhysicalDevice` com o adapter D3D12 via LUID;
+- device Vulkan do harness habilita external-memory Win32, external-semaphore Win32
+  e timeline semaphore;
+- harness importa duas textures e dois fences e valida o desenho
+  producer wait -> consumer signal;
+- target continua focado, sem linkar `nrfusion_core` inteiro.
+
+Validação no freeze:
+- portable run `35957702217`: PASS, incluindo LOC/checkpoint artifact;
+- Windows run `35957702242`: ainda em execução;
+- nenhum gate físico foi executado porque o acesso local está desabilitado.
+
+Próximo incremento hosted:
+1. validar capability de external semaphore no provider;
+2. adquirir/liberar ownership de imagem com `VK_QUEUE_FAMILY_EXTERNAL`;
+3. usar os imports em command buffer real no harness;
+4. stress de recreation/long-run;
+5. manter a prova física separada e pendente.

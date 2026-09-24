@@ -235,8 +235,20 @@ Phase 11 subgates 11b/11c:
 - real VkDevice/resource harness is implemented at 0470771;
 - portable and Windows hosted validation PASS for 0470771, including source-size and native harness build/run.
 
+Phase 11 subgate 11d WIP:
+- D3D12 shared producer harness creates shareable RGBA16F textures plus producer/consumer shared fences and exposes adapter LUID/allocation size;
+- Vulkan memory import now validates external-image format/tiling/usage support with vkGetPhysicalDeviceImageFormatProperties2;
+- Win32 import handles are duplicated so caller ownership is preserved, and the duplicates are closed by the application after successful import per Vulkan Win32 ownership rules;
+- memory import, semaphore/sync, native lifecycle and commands remain split into owners <=300 lines;
+- external interop harness matches Vulkan and D3D12 devices by LUID, enables Win32 external-memory/semaphore plus timeline semaphore support, imports two textures and two fences, and tests producer-wait -> consumer-signal;
+- latest link fix at 35b6272 adds only SyntheticDx12Provider.cpp + d3dcompiler to the focused external interop test target;
+- portable run 35957702217 PASS, including source-size and source checkpoint artifact;
+- Windows run 35957702242 was still active at session freeze;
+- local/notebook access is intentionally unavailable in this session; no physical Vulkan gate was attempted.
+
 Exact next action:
-- run nrfusion_vulkan_native_device_tests on the notebook with NRFUSION_TEST_VULKAN_HARDWARE=1;
-- treat that as native VkDevice/resource evidence only, separate from external-memory interop evidence;
-- after the physical VkDevice gate, add the D3D12 shared-resource/fence import harness for external memory + timeline semaphore ownership;
-- do not mark Phase 11 closed until acquire, interop, sync, compose/recreation and long-run evidence are all distinct and real.
+- inspect Windows run 35957702242 first and do not duplicate it;
+- if green, add vkGetPhysicalDeviceExternalSemaphoreProperties importability validation for D3D12_FENCE;
+- add explicit AcquireExternalImage/ReleaseExternalImage ownership transfers using VK_QUEUE_FAMILY_EXTERNAL <-> the local queue family;
+- extend the hosted external interop harness to record acquire/use/release and recreation/long-run cycles;
+- keep the physical Vulkan gate deferred until local access is explicitly available again.
