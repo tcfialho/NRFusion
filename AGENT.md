@@ -135,9 +135,10 @@ Regras obrigatórias:
 
 ## Current session
 
-Date: 2026-09-23 BRT
+Date: 2026-09-24 BRT
 Branch: standalone/integration
 Validated code head: e7be568
+Current code head: d49c898 (hosted CI pending)
 
 Phase 06: CLOSED.
 Phase 07: CLOSED, including real Windows compile/harness validation.
@@ -258,9 +259,21 @@ Phase 11 subgate 11e:
 - workflow duplicate checkpoint blocks were removed in b63d6f6;
 - local/notebook access remained disabled; no physical Vulkan gate was attempted.
 
+Phase 11 subgate 11f WIP:
+- NrSession ledger now exposes claimed-execution inspection/consumption so Vulkan execution cannot create a parallel work ledger;
+- Vulkan Acquire preserves explicit color/output native facts for later identity validation;
+- VulkanCarrierExecutionPlan is portable and bound to VulkanCarrierWork + a pre-claimed WorkTicket;
+- plan validates frame/work/runtime generation, resource identity, queue family, layout, usage, dimensions, format, provenance, ownership, recreation generation and compose intent;
+- external interop plans carry explicit producer wait + consumer signal timeline contracts and external queue ownership;
+- portable tests cover execution before claim, stale work, generation mismatch, queue/layout/usage/dimension/identity/provenance failures, duplicate claim consumption, abandon and valid local/external plans;
+- new/modified implementation/test files checked manually are all <=300 lines;
+- code commits: ea7098c, c12cb6c, d49c898;
+- focused portable run 36012347260 and Windows run 36012347315 were in progress at session freeze;
+- local/notebook access remains disabled; no physical Vulkan gate was attempted.
+
 Exact next action:
-- add a standalone Vulkan carrier execution plan/executor that consumes VulkanCarrierSession + VulkanAcquireResult and records work on a caller-owned VkCommandBuffer without CPU waits;
-- keep external acquire/release and imported timeline semaphore ownership explicit in the execution plan;
-- implement compose-back/recreation ownership in that executor instead of routing Vulkan through SyntheticDx12Provider;
-- extend hosted tests for failure/abandon/slot recreation; external interop runtime may SKIP when the runner lacks matching D3D12/Vulkan support;
+- inspect runs 36012347260 and 36012347315 first; fix only a concrete failure and do not duplicate active runs;
+- once hosted CI is green, implement VulkanCarrierExecutor on a caller-owned VkCommandBuffer;
+- executor must consume the claimed execution exactly once, record commands only, preserve explicit ownership/layout/sync facts, and leave queue submission + retirement to the caller/session;
+- do not add vkQueueWaitIdle, vkWaitForFences normal-path waits, CPU readback, SyntheticDx12Provider fallback or patcher expansion;
 - keep physical Vulkan external-memory/semaphore validation deferred until local access is explicitly available again.

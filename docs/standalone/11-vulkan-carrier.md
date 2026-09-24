@@ -182,3 +182,50 @@ Próximo subgate:
 2. execution plan ligado ao `VulkanCarrierWork`;
 3. compose-back/recreation sem fallback DX12;
 4. physical external-memory/semaphore gate somente quando acesso local voltar.
+
+
+## Subgate 11f — execution plan portátil (WIP)
+
+Código submetido:
+- `ea7098c` — consumo explícito do claim no ledger `NrSession`;
+- `c12cb6c` — `VulkanCarrierExecutionPlan` + fatos nativos preservados;
+- `d49c898` — testes portáteis + focused gate.
+
+Implementado:
+- plan exige `VulkanCarrierWork` válido e `WorkTicket` previamente claimed;
+- o claim continua pertencendo ao ledger do `NrSession`; não existe ledger Vulkan paralelo;
+- consumo do claim é one-shot, permitindo ao executor futuro rejeitar execução duplicada;
+- color/output mantêm opaque id, extent, format, usage, layout e queue family explícitos;
+- provenance do color é validada contra o `FrameContext` adquirido;
+- recreation generation e compose intent são explícitos;
+- external interop mantém queue ownership e producer-wait/consumer-signal timeline contracts no plan;
+- falhas são fail-closed antes de qualquer recording/submission.
+
+Cobertura portátil:
+- work stale;
+- runtime generation mismatch;
+- queue-family mismatch;
+- layout/usage/dimensions inválidos;
+- resource identity/provenance mismatch;
+- execution before claim;
+- duplicate execution consumption;
+- abandon path;
+- valid local plan e valid external-sync plan.
+
+Source-size manual:
+- `VulkanCarrierExecutionPlan.hpp`: 96 linhas;
+- `VulkanCarrierExecutionPlan.cpp`: 176 linhas;
+- `vulkan_carrier_execution_plan_tests.cpp`: 186 linhas;
+- demais arquivos de implementação tocados também permanecem <=300.
+
+Validação no freeze:
+- focused portable run `36012347260`: em andamento;
+- Windows hosted run `36012347315`: em andamento;
+- nenhuma evidência física foi produzida; acesso local continua desabilitado.
+
+Próximo incremento:
+1. inspecionar os dois runs acima e corrigir somente falha concreta;
+2. implementar `VulkanCarrierExecutor` nativo sobre `VkCommandBuffer` do caller;
+3. consumir o claim exatamente uma vez no início do recording;
+4. gravar transitions/acquire/compose/release sem assumir queue submission;
+5. manter waits bloqueantes, CPU readback e fallback DX12 fora do caminho standalone.
