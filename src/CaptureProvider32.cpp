@@ -5,10 +5,26 @@
 namespace nrfusion {
 namespace {
 
-bool CompleteSetupIo(HANDLE pipe, OVERLAPPED& operation, BOOL started, DWORD& bytesTransferred) {
-    if (started) return true;
-    if (GetLastError() != ERROR_IO_PENDING) return false;
-    return GetOverlappedResult(pipe, &operation, &bytesTransferred, TRUE) == TRUE;
+bool CompleteSetupIo(
+    HANDLE pipe, OVERLAPPED& operation, BOOL started,
+    DWORD& bytesTransferred, bool& pending, DWORD timeoutMs) {
+    if (started) {
+        pending = false;
+        return true;
+    }
+    if (GetLastError() != ERROR_IO_PENDING) {
+        pending = false;
+        return false;
+    }
+
+    pending = true;
+    if (WaitForSingleObject(operation.hEvent, timeoutMs) != WAIT_OBJECT_0)
+        return false;
+
+    const BOOL completed =
+        GetOverlappedResult(pipe, &operation, &bytesTransferred, FALSE);
+    pending = false;
+    return completed == TRUE;
 }
 
 } // namespace
@@ -16,12 +32,12 @@ bool CompleteSetupIo(HANDLE pipe, OVERLAPPED& operation, BOOL started, DWORD& by
 CaptureProvider32::CaptureProvider32() {
     readEvent_ = CreateEventW(nullptr, TRUE, FALSE, nullptr);
     writeEvent_ = CreateEventW(nullptr, TRUE, FALSE, nullptr);
-    readOverlapped_.hEvent = readEvent_;
-    writeOverlapped_.hEvent = writeEvent_;
+    ResetOverlappedState();
 }
 
 CaptureProvider32::~CaptureProvider32() {
     Disconnect();
+    DrainCanceledIo(1000);
     if (readEvent_) {
         CloseHandle(readEvent_);
         readEvent_ = nullptr;
@@ -35,6 +51,8 @@ CaptureProvider32::~CaptureProvider32() {
 bool CaptureProvider32::Connect(uint32_t requestedPipePid, uint32_t timeoutMs) {
     std::scoped_lock lock(mutex_);
     if (connected_) return true;
+    if (!DrainCanceledIo(0)) return false;
+    ResetOverlappedState();
 
     const uint32_t pipePid = requestedPipePid == 0 ? GetCurrentProcessId() : requestedPipePid;
     char pipeName[128]{};
@@ -82,33 +100,39 @@ bool CaptureProvider32::Connect(uint32_t requestedPipePid, uint32_t timeoutMs) {
     hello.clientPid = GetCurrentProcessId();
     hello.is32Bit = sizeof(void*) == 4 ? 1u : 0u;
 
+    auto remainingTimeout = [&]() -> DWORD {
+        const DWORD elapsed = GetTickCount() - startTick;
+        return elapsed >= timeoutMs ? 0u : timeoutMs - elapsed;
+    };
+
     DWORD bytesWritten = 0;
     ResetEvent(writeEvent_);
-    if (!CompleteSetupIo(pipeHandle_, writeOverlapped_,
-                         WriteFile(pipeHandle_, &hello, sizeof(hello), &bytesWritten, &writeOverlapped_),
-                         bytesWritten) || bytesWritten != sizeof(hello)) {
-        CloseHandle(pipeHandle_);
-        pipeHandle_ = INVALID_HANDLE_VALUE;
+    if (!CompleteSetupIo(
+            pipeHandle_, writeOverlapped_,
+            WriteFile(pipeHandle_, &hello, sizeof(hello), &bytesWritten, &writeOverlapped_),
+            bytesWritten, writeIoPending_, remainingTimeout()) ||
+        bytesWritten != sizeof(hello)) {
+        MarkTransportFailure();
         return false;
     }
 
     IpcHelloAckMessage ack{};
     DWORD bytesRead = 0;
     ResetEvent(readEvent_);
-    if (!CompleteSetupIo(pipeHandle_, readOverlapped_,
-                         ReadFile(pipeHandle_, &ack, sizeof(ack), &bytesRead, &readOverlapped_),
-                         bytesRead) || bytesRead != sizeof(ack) || ack.magic != NRFUSION_IPC_MAGIC ||
+    if (!CompleteSetupIo(
+            pipeHandle_, readOverlapped_,
+            ReadFile(pipeHandle_, &ack, sizeof(ack), &bytesRead, &readOverlapped_),
+            bytesRead, readIoPending_, remainingTimeout()) ||
+        bytesRead != sizeof(ack) || ack.magic != NRFUSION_IPC_MAGIC ||
         ack.version != NRFUSION_IPC_VERSION || ack.status != 0 || ack.hostPid == 0 ||
         ack.connectionGeneration == 0) {
-        CloseHandle(pipeHandle_);
-        pipeHandle_ = INVALID_HANDLE_VALUE;
+        MarkTransportFailure();
         return false;
     }
 
     hostProcess_ = OpenProcess(PROCESS_DUP_HANDLE, FALSE, ack.hostPid);
     if (!hostProcess_) {
-        CloseHandle(pipeHandle_);
-        pipeHandle_ = INVALID_HANDLE_VALUE;
+        MarkTransportFailure();
         return false;
     }
 
@@ -129,12 +153,56 @@ void CaptureProvider32::Disconnect() {
     MarkTransportFailure();
 }
 
-void CaptureProvider32::MarkTransportFailure() {
+void CaptureProvider32::ResetOverlappedState() {
+    readOverlapped_ = {};
+    writeOverlapped_ = {};
+    readOverlapped_.hEvent = readEvent_;
+    writeOverlapped_.hEvent = writeEvent_;
+    if (readEvent_) ResetEvent(readEvent_);
+    if (writeEvent_) ResetEvent(writeEvent_);
+}
+
+bool CaptureProvider32::DrainCanceledIo(uint32_t timeoutMs) {
+    if (!ioRetiring_) return true;
+
+    const DWORD start = GetTickCount();
+    auto drainOne = [&](OVERLAPPED& operation, HANDLE event, bool& pending) {
+        if (!pending) return true;
+        const DWORD elapsed = GetTickCount() - start;
+        const DWORD waitMs = timeoutMs == 0 ? 0 :
+            (elapsed >= timeoutMs ? 0 : timeoutMs - elapsed);
+        if (WaitForSingleObject(event, waitMs) != WAIT_OBJECT_0) return false;
+
+        DWORD ignored = 0;
+        GetOverlappedResult(pipeHandle_, &operation, &ignored, FALSE);
+        pending = false;
+        return true;
+    };
+
+    if (!drainOne(readOverlapped_, readEvent_, readIoPending_) ||
+        !drainOne(writeOverlapped_, writeEvent_, writeIoPending_)) {
+        return false;
+    }
 
     if (pipeHandle_ != INVALID_HANDLE_VALUE) {
-        CancelIoEx(pipeHandle_, nullptr);
         CloseHandle(pipeHandle_);
         pipeHandle_ = INVALID_HANDLE_VALUE;
+    }
+    ioRetiring_ = false;
+    ResetOverlappedState();
+    return true;
+}
+
+void CaptureProvider32::MarkTransportFailure() {
+    if (pipeHandle_ != INVALID_HANDLE_VALUE) {
+        if (readIoPending_ || writeIoPending_) {
+            CancelIoEx(pipeHandle_, nullptr);
+            ioRetiring_ = true;
+            DrainCanceledIo(0);
+        } else {
+            CloseHandle(pipeHandle_);
+            pipeHandle_ = INVALID_HANDLE_VALUE;
+        }
     }
     if (hostProcess_) {
         CloseHandle(hostProcess_);
@@ -219,25 +287,32 @@ bool CaptureProvider32::Configure(const CaptureClientConfig& config) {
         return false;
     }
 
+    constexpr DWORD kConfigureTimeoutMs = 3000;
     DWORD bytesWritten = 0;
     ResetEvent(writeEvent_);
-    if (!CompleteSetupIo(pipeHandle_, writeOverlapped_,
-                         WriteFile(pipeHandle_, &build, sizeof(build), &bytesWritten, &writeOverlapped_),
-                         bytesWritten) || bytesWritten != sizeof(build)) {
-        CloseDuplicatedBuildHandles(build);
+    if (!CompleteSetupIo(
+            pipeHandle_, writeOverlapped_,
+            WriteFile(pipeHandle_, &build, sizeof(build), &bytesWritten, &writeOverlapped_),
+            bytesWritten, writeIoPending_, kConfigureTimeoutMs) ||
+        bytesWritten != sizeof(build)) {
+        if (!writeIoPending_) CloseDuplicatedBuildHandles(build);
+        MarkTransportFailure();
         return false;
     }
 
     IpcBuildAckMessage ack{};
     DWORD bytesRead = 0;
     ResetEvent(readEvent_);
-    if (!CompleteSetupIo(pipeHandle_, readOverlapped_,
-                         ReadFile(pipeHandle_, &ack, sizeof(ack), &bytesRead, &readOverlapped_),
-                         bytesRead) || bytesRead != sizeof(ack) || ack.magic != NRFUSION_IPC_MAGIC ||
+    if (!CompleteSetupIo(
+            pipeHandle_, readOverlapped_,
+            ReadFile(pipeHandle_, &ack, sizeof(ack), &bytesRead, &readOverlapped_),
+            bytesRead, readIoPending_, kConfigureTimeoutMs) ||
+        bytesRead != sizeof(ack) || ack.magic != NRFUSION_IPC_MAGIC ||
         ack.version != NRFUSION_IPC_VERSION ||
         !IpcSessionMatches(connectionGeneration_, build.sessionId,
                            ack.connectionGeneration, ack.sessionId) ||
         ack.status != 0) {
+        MarkTransportFailure();
         return false;
     }
 

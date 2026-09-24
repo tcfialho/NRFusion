@@ -78,6 +78,8 @@ private:
     void ConsumeCompletedFrameAck();
     bool PollPendingWrites();
     void MarkTransportFailure();
+    bool DrainCanceledIo(uint32_t timeoutMs);
+    void ResetOverlappedState();
 
     HANDLE pipeHandle_ = INVALID_HANDLE_VALUE;
     HANDLE hostProcess_ = nullptr;
@@ -90,6 +92,9 @@ private:
     bool connected_ = false;
     bool frameAckReadPending_ = false;
     bool frameWritePending_ = false;
+    bool readIoPending_ = false;
+    bool writeIoPending_ = false;
+    bool ioRetiring_ = false;
     uint64_t sessionId_ = 1;
     uint64_t connectionGeneration_ = 0;
     uint64_t lastSubmittedWorkId_ = 0;

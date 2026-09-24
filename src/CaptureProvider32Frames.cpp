@@ -9,6 +9,7 @@ bool CaptureProvider32::StartFrameAckRead() {
     DWORD bytesRead = 0;
     ResetEvent(readEvent_);
     if (ReadFile(pipeHandle_, &pendingFrameAck_, sizeof(pendingFrameAck_), &bytesRead, &readOverlapped_)) {
+        readIoPending_ = false;
         if (bytesRead != sizeof(pendingFrameAck_)) return false;
         ConsumeCompletedFrameAck();
         return true;
@@ -18,6 +19,7 @@ bool CaptureProvider32::StartFrameAckRead() {
         return false;
     }
     frameAckReadPending_ = true;
+    readIoPending_ = true;
     return true;
 }
 
@@ -39,10 +41,12 @@ bool CaptureProvider32::PollPendingWrites() {
     DWORD bytesWritten = 0;
     if (GetOverlappedResult(pipeHandle_, &writeOverlapped_, &bytesWritten, FALSE)) {
         frameWritePending_ = false;
+        writeIoPending_ = false;
         return bytesWritten == sizeof(IpcFrameMessage);
     }
     if (GetLastError() == ERROR_IO_INCOMPLETE) return false;
     frameWritePending_ = false;
+    writeIoPending_ = false;
     MarkTransportFailure();
     return false;
 }
@@ -80,10 +84,12 @@ bool CaptureProvider32::SubmitFramePipelinedEx(uint64_t workId,
         DWORD bytesRead = 0;
         if (GetOverlappedResult(pipeHandle_, &readOverlapped_, &bytesRead, FALSE)) {
             frameAckReadPending_ = false;
+            readIoPending_ = false;
             if (bytesRead != sizeof(pendingFrameAck_)) return false;
             ConsumeCompletedFrameAck();
         } else if (GetLastError() != ERROR_IO_INCOMPLETE) {
             frameAckReadPending_ = false;
+            readIoPending_ = false;
             MarkTransportFailure();
             return false;
         }
@@ -120,6 +126,7 @@ bool CaptureProvider32::SubmitFramePipelinedEx(uint64_t workId,
             return false;
         }
         frameWritePending_ = true;
+        writeIoPending_ = true;
     } else if (bytesWritten != sizeof(message)) {
         return false;
     }
