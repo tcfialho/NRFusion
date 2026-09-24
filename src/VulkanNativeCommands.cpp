@@ -3,6 +3,43 @@
 namespace nrfusion {
 namespace {
 
+bool RecordOwnershipBarrier(
+    const VulkanCommandDispatch& dispatch,
+    VkCommandBuffer commandBuffer,
+    VkImage image,
+    VkImageLayout oldLayout,
+    VkImageLayout newLayout,
+    VkAccessFlags sourceAccess,
+    VkAccessFlags destinationAccess,
+    uint32_t sourceQueueFamily,
+    uint32_t destinationQueueFamily) noexcept {
+    if (!dispatch.pipelineBarrier ||
+        commandBuffer == VK_NULL_HANDLE ||
+        image == VK_NULL_HANDLE) {
+        return false;
+    }
+
+    VkImageMemoryBarrier barrier{
+        VK_STRUCTURE_TYPE_IMAGE_MEMORY_BARRIER};
+    barrier.srcAccessMask = sourceAccess;
+    barrier.dstAccessMask = destinationAccess;
+    barrier.oldLayout = oldLayout;
+    barrier.newLayout = newLayout;
+    barrier.srcQueueFamilyIndex = sourceQueueFamily;
+    barrier.dstQueueFamilyIndex = destinationQueueFamily;
+    barrier.image = image;
+    barrier.subresourceRange.aspectMask = VK_IMAGE_ASPECT_COLOR_BIT;
+    barrier.subresourceRange.levelCount = 1;
+    barrier.subresourceRange.layerCount = 1;
+
+    dispatch.pipelineBarrier(
+        commandBuffer,
+        VK_PIPELINE_STAGE_ALL_COMMANDS_BIT,
+        VK_PIPELINE_STAGE_ALL_COMMANDS_BIT,
+        0, 0, nullptr, 0, nullptr, 1, &barrier);
+    return true;
+}
+
 VkImageSubresourceLayers ColorLayers() noexcept {
     VkImageSubresourceLayers layers{};
     layers.aspectMask = VK_IMAGE_ASPECT_COLOR_BIT;
@@ -20,33 +57,42 @@ bool RecordVulkanImageTransition(
     VkImageLayout newLayout,
     uint32_t sourceQueueFamily,
     uint32_t destinationQueueFamily) noexcept {
-    if (!dispatch.pipelineBarrier ||
-        commandBuffer == VK_NULL_HANDLE ||
-        image == VK_NULL_HANDLE) {
-        return false;
-    }
+    return RecordOwnershipBarrier(
+        dispatch, commandBuffer, image,
+        oldLayout, newLayout,
+        VK_ACCESS_MEMORY_READ_BIT | VK_ACCESS_MEMORY_WRITE_BIT,
+        VK_ACCESS_MEMORY_READ_BIT | VK_ACCESS_MEMORY_WRITE_BIT,
+        sourceQueueFamily, destinationQueueFamily);
+}
 
-    VkImageMemoryBarrier barrier{
-        VK_STRUCTURE_TYPE_IMAGE_MEMORY_BARRIER};
-    barrier.srcAccessMask =
-        VK_ACCESS_MEMORY_READ_BIT | VK_ACCESS_MEMORY_WRITE_BIT;
-    barrier.dstAccessMask =
-        VK_ACCESS_MEMORY_READ_BIT | VK_ACCESS_MEMORY_WRITE_BIT;
-    barrier.oldLayout = oldLayout;
-    barrier.newLayout = newLayout;
-    barrier.srcQueueFamilyIndex = sourceQueueFamily;
-    barrier.dstQueueFamilyIndex = destinationQueueFamily;
-    barrier.image = image;
-    barrier.subresourceRange.aspectMask = VK_IMAGE_ASPECT_COLOR_BIT;
-    barrier.subresourceRange.levelCount = 1;
-    barrier.subresourceRange.layerCount = 1;
+bool RecordVulkanExternalImageAcquire(
+    const VulkanCommandDispatch& dispatch,
+    VkCommandBuffer commandBuffer,
+    VkImage image,
+    VkImageLayout externalLayout,
+    VkImageLayout localLayout,
+    uint32_t localQueueFamily) noexcept {
+    return RecordOwnershipBarrier(
+        dispatch, commandBuffer, image,
+        externalLayout, localLayout,
+        0,
+        VK_ACCESS_MEMORY_READ_BIT | VK_ACCESS_MEMORY_WRITE_BIT,
+        VK_QUEUE_FAMILY_EXTERNAL, localQueueFamily);
+}
 
-    dispatch.pipelineBarrier(
-        commandBuffer,
-        VK_PIPELINE_STAGE_ALL_COMMANDS_BIT,
-        VK_PIPELINE_STAGE_ALL_COMMANDS_BIT,
-        0, 0, nullptr, 0, nullptr, 1, &barrier);
-    return true;
+bool RecordVulkanExternalImageRelease(
+    const VulkanCommandDispatch& dispatch,
+    VkCommandBuffer commandBuffer,
+    VkImage image,
+    VkImageLayout localLayout,
+    VkImageLayout externalLayout,
+    uint32_t localQueueFamily) noexcept {
+    return RecordOwnershipBarrier(
+        dispatch, commandBuffer, image,
+        localLayout, externalLayout,
+        VK_ACCESS_MEMORY_READ_BIT | VK_ACCESS_MEMORY_WRITE_BIT,
+        0,
+        localQueueFamily, VK_QUEUE_FAMILY_EXTERNAL);
 }
 
 bool RecordVulkanCopyOrBlit(

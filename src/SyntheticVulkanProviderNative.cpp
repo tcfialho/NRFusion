@@ -73,6 +73,19 @@ bool SyntheticVulkanProvider::InitializeNativeVulkan(
                     "vkGetPhysicalDeviceImageFormatProperties2KHR"));
     }
 
+    vk_.getPhysicalDeviceExternalSemaphoreProperties =
+        reinterpret_cast<FARPROC>(
+            getInstanceProcAddr(
+                native.instance,
+                "vkGetPhysicalDeviceExternalSemaphoreProperties"));
+    if (!vk_.getPhysicalDeviceExternalSemaphoreProperties) {
+        vk_.getPhysicalDeviceExternalSemaphoreProperties =
+            reinterpret_cast<FARPROC>(
+                getInstanceProcAddr(
+                    native.instance,
+                    "vkGetPhysicalDeviceExternalSemaphorePropertiesKHR"));
+    }
+
     vk_.createSemaphore = Resolve(
         getDeviceProcAddr, native.device, "vkCreateSemaphore");
     vk_.destroySemaphore = Resolve(
@@ -115,6 +128,7 @@ bool SyntheticVulkanProvider::InitializeNativeVulkan(
 
     vk_.nativeResolved =
         vk_.getPhysicalDeviceImageFormatProperties2 &&
+        vk_.getPhysicalDeviceExternalSemaphoreProperties &&
         vk_.createSemaphore &&
         vk_.destroySemaphore &&
         vk_.importSemaphoreWin32Handle &&

@@ -37,6 +37,42 @@ bool SyntheticVulkanProvider::TransitionImageLayout(
         static_cast<VkImageLayout>(newLayout));
 }
 
+bool SyntheticVulkanProvider::AcquireExternalImage(
+    void* cmdBuffer,
+    void* image,
+    uint32_t externalLayout,
+    uint32_t localLayout) {
+    if (!ready_ || !vk_.nativeResolved ||
+        vkQueueFamilyIndex_ == UINT32_MAX) {
+        return false;
+    }
+    return RecordVulkanExternalImageAcquire(
+        Dispatch(vk_),
+        reinterpret_cast<VkCommandBuffer>(cmdBuffer),
+        reinterpret_cast<VkImage>(image),
+        static_cast<VkImageLayout>(externalLayout),
+        static_cast<VkImageLayout>(localLayout),
+        vkQueueFamilyIndex_);
+}
+
+bool SyntheticVulkanProvider::ReleaseExternalImage(
+    void* cmdBuffer,
+    void* image,
+    uint32_t localLayout,
+    uint32_t externalLayout) {
+    if (!ready_ || !vk_.nativeResolved ||
+        vkQueueFamilyIndex_ == UINT32_MAX) {
+        return false;
+    }
+    return RecordVulkanExternalImageRelease(
+        Dispatch(vk_),
+        reinterpret_cast<VkCommandBuffer>(cmdBuffer),
+        reinterpret_cast<VkImage>(image),
+        static_cast<VkImageLayout>(localLayout),
+        static_cast<VkImageLayout>(externalLayout),
+        vkQueueFamilyIndex_);
+}
+
 bool SyntheticVulkanProvider::BlitOrCopy(
     void* cmdBuffer,
     void* srcImage,

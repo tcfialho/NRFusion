@@ -22,6 +22,7 @@ struct VulkanRawDispatch {
     FARPROC getInstanceProcAddr = nullptr;
     FARPROC getDeviceProcAddr = nullptr;
     FARPROC getPhysicalDeviceImageFormatProperties2 = nullptr;
+    FARPROC getPhysicalDeviceExternalSemaphoreProperties = nullptr;
     FARPROC createSemaphore = nullptr;
     FARPROC destroySemaphore = nullptr;
     FARPROC importSemaphoreWin32Handle = nullptr;
@@ -97,6 +98,12 @@ public:
     bool TransitionImageLayout(
         void* cmdBuffer, void* image,
         uint32_t oldLayout, uint32_t newLayout);
+    bool AcquireExternalImage(
+        void* cmdBuffer, void* image,
+        uint32_t externalLayout, uint32_t localLayout);
+    bool ReleaseExternalImage(
+        void* cmdBuffer, void* image,
+        uint32_t localLayout, uint32_t externalLayout);
     bool BlitOrCopy(
         void* cmdBuffer,
         void* srcImage, uint32_t srcWidth, uint32_t srcHeight,

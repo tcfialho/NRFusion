@@ -46,6 +46,9 @@ bool SyntheticVulkanProvider::ImportD3D12Fence(
     const VulkanNativeContext native = NativeContext(
         vkInstance_, vkPhysicalDevice_, vkDevice_,
         vkQueue_, vkQueueFamilyIndex_);
+    const auto queryExternalSemaphore =
+        Proc<PFN_vkGetPhysicalDeviceExternalSemaphoreProperties>(
+            vk_.getPhysicalDeviceExternalSemaphoreProperties);
     const auto createSemaphore =
         Proc<PFN_vkCreateSemaphore>(vk_.createSemaphore);
     const auto destroySemaphore =
@@ -53,8 +56,23 @@ bool SyntheticVulkanProvider::ImportD3D12Fence(
     const auto importSemaphore =
         Proc<PFN_vkImportSemaphoreWin32HandleKHR>(
             vk_.importSemaphoreWin32Handle);
-    if (!native.Valid() || !createSemaphore ||
-        !destroySemaphore || !importSemaphore) {
+    if (!native.Valid() || !queryExternalSemaphore ||
+        !createSemaphore || !destroySemaphore || !importSemaphore) {
+        return false;
+    }
+
+    VkPhysicalDeviceExternalSemaphoreInfo externalInfo{
+        VK_STRUCTURE_TYPE_PHYSICAL_DEVICE_EXTERNAL_SEMAPHORE_INFO};
+    externalInfo.handleType =
+        VK_EXTERNAL_SEMAPHORE_HANDLE_TYPE_D3D12_FENCE_BIT;
+    VkExternalSemaphoreProperties externalProperties{
+        VK_STRUCTURE_TYPE_EXTERNAL_SEMAPHORE_PROPERTIES};
+    queryExternalSemaphore(
+        native.physicalDevice, &externalInfo, &externalProperties);
+    if ((externalProperties.externalSemaphoreFeatures &
+         VK_EXTERNAL_SEMAPHORE_FEATURE_IMPORTABLE_BIT) == 0 ||
+        (externalProperties.compatibleHandleTypes &
+         VK_EXTERNAL_SEMAPHORE_HANDLE_TYPE_D3D12_FENCE_BIT) == 0) {
         return false;
     }
 
