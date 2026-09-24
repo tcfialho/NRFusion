@@ -16,7 +16,6 @@ add_library(nrfusion_vulkan_provider_compile OBJECT
     src/SyntheticVulkanProviderMemory.cpp
     src/SyntheticVulkanProviderInterop.cpp
     src/SyntheticVulkanProviderCommands.cpp
-    src/VulkanCarrierExecutor.cpp
     src/VulkanNativeCommands.cpp
     src/VulkanNativeContext.cpp)
 target_include_directories(nrfusion_vulkan_provider_compile PRIVATE
