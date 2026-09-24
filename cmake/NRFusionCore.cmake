@@ -71,6 +71,7 @@ if (WIN32)
         src/SyntheticDx12Provider.cpp
         src/NvofMotionProvider.cpp
         src/SyntheticDx11BridgeProvider.cpp
+        src/SyntheticDx11BridgeResources.cpp
         src/D3D11D3D12FenceBridge.cpp
         src/D3D11BridgeResources.cpp
         src/D3D11CarrierNativeAcquire.cpp
