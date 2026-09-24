@@ -54,7 +54,7 @@ private:
 
     std::thread workerThread_;
     IpcBuildMessage currentBuild_{};
-    uint64_t nextConnectionGeneration_ = 1;
+    uint64_t nextConnectionGeneration_ = 0;
 
     ComPtr<ID3D12Device> d3d12Device_;
     ComPtr<ID3D12CommandQueue> d3d12Queue_;

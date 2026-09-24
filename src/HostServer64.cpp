@@ -6,6 +6,22 @@
 namespace nrfusion {
 namespace {
 
+uint64_t SeedConnectionGeneration() noexcept {
+    FILETIME fileTime{};
+    GetSystemTimePreciseAsFileTime(&fileTime);
+    ULARGE_INTEGER wallClock{};
+    wallClock.LowPart = fileTime.dwLowDateTime;
+    wallClock.HighPart = fileTime.dwHighDateTime;
+
+    LARGE_INTEGER performanceCounter{};
+    QueryPerformanceCounter(&performanceCounter);
+
+    uint64_t seed = wallClock.QuadPart ^
+        (static_cast<uint64_t>(performanceCounter.QuadPart) << 1) ^
+        (static_cast<uint64_t>(GetCurrentProcessId()) << 32);
+    return seed == 0 ? 1 : seed;
+}
+
 void CloseIncomingBuildHandles(const IpcBuildMessage& build) {
     const uint64_t handles[] = {
         build.colorSharedHandle, build.depthSharedHandle,
@@ -37,6 +53,7 @@ bool OpenAndReleaseTargetHandle(ID3D12Device* device, uint64_t rawHandle,
 HostServer64::HostServer64() {
     eventHandle_ = CreateEventW(nullptr, TRUE, FALSE, nullptr);
     overlapped_.hEvent = eventHandle_;
+    nextConnectionGeneration_ = SeedConnectionGeneration();
 }
 
 HostServer64::~HostServer64() {
@@ -120,6 +137,7 @@ void HostServer64::ServerLoop() {
         }
 
         const uint64_t connectionGeneration = nextConnectionGeneration_++;
+        if (nextConnectionGeneration_ == 0) nextConnectionGeneration_ = 1;
         IpcHelloAckMessage helloAck{};
         helloAck.magic = NRFUSION_IPC_MAGIC;
         helloAck.version = NRFUSION_IPC_VERSION;
