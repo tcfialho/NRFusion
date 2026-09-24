@@ -61,3 +61,20 @@ else()
 endif()
 add_test(NAME nrfusion_vulkan_native_device_tests
     COMMAND nrfusion_vulkan_native_device_tests)
+
+add_executable(nrfusion_d3d12_external_share_tests
+    tests/d3d12_external_share_tests.cpp
+    tests/D3D12ExternalShareHarness.cpp)
+target_include_directories(nrfusion_d3d12_external_share_tests PRIVATE
+    tests)
+target_link_libraries(nrfusion_d3d12_external_share_tests PRIVATE
+    d3d12 dxgi)
+if (MSVC)
+    target_compile_options(nrfusion_d3d12_external_share_tests PRIVATE
+        /W4 /permissive- /UNDEBUG)
+else()
+    target_compile_options(nrfusion_d3d12_external_share_tests PRIVATE
+        -Wall -Wextra -Wpedantic -Werror -UNDEBUG)
+endif()
+add_test(NAME nrfusion_d3d12_external_share_tests
+    COMMAND nrfusion_d3d12_external_share_tests)
