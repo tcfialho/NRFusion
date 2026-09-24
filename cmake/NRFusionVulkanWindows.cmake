@@ -125,3 +125,28 @@ else()
 endif()
 add_test(NAME nrfusion_vulkan_carrier_executor_tests
     COMMAND nrfusion_vulkan_carrier_executor_tests)
+
+
+add_executable(nrfusion_vulkan_carrier_device_tests
+    tests/vulkan_carrier_device_tests.cpp
+    tests/VulkanNativeHarness.cpp
+    src/VulkanCarrierExecutor.cpp
+    src/VulkanNativeCommands.cpp
+    src/VulkanNativeContext.cpp)
+target_include_directories(nrfusion_vulkan_carrier_device_tests PRIVATE
+    include
+    tests
+    "${NRFUSION_VULKAN_INCLUDE_DIR}")
+target_link_libraries(nrfusion_vulkan_carrier_device_tests PRIVATE
+    nrfusion_core)
+if (MSVC)
+    target_compile_options(nrfusion_vulkan_carrier_device_tests PRIVATE
+        /W4 /permissive- /UNDEBUG)
+else()
+    target_compile_options(nrfusion_vulkan_carrier_device_tests PRIVATE
+        -Wall -Wextra -Wpedantic -Werror -UNDEBUG)
+endif()
+add_test(NAME nrfusion_vulkan_carrier_device_tests
+    COMMAND nrfusion_vulkan_carrier_device_tests)
+set_tests_properties(nrfusion_vulkan_carrier_device_tests PROPERTIES
+    SKIP_RETURN_CODE 77)
