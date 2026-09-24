@@ -49,6 +49,7 @@ jobs:
           nrfusion_vulkan_carrier_session_tests
           nrfusion_vulkan_carrier_execution_plan_tests
           nrfusion_opengl_carrier_acquire_tests
+          nrfusion_opengl_carrier_sync_tests
           nrfusion_provider_policy_opengl_tests
           --parallel 2
 
@@ -56,7 +57,7 @@ jobs:
         run: >
           ctest --test-dir build-focused
           --output-on-failure
-          -R '^(nrfusion_tests|nrfusion_nr_(session_(tests|stress_tests)|timing_source_tests)|nrfusion_d3d11_bridge_slot_tracker_tests|nrfusion_d3d11_carrier_work_tests|nrfusion_d3d12_(carrier_(contract|session|native_facts|capabilities|bootstrap|work|execution_plan)|guide_format|nr_frame_plan)_tests|nrfusion_vulkan_carrier_(contract|acquire|session|execution_plan)_tests|nrfusion_opengl_carrier_acquire_tests|nrfusion_provider_policy_opengl_tests)'
+          -R '^(nrfusion_tests|nrfusion_nr_(session_(tests|stress_tests)|timing_source_tests)|nrfusion_d3d11_bridge_slot_tracker_tests|nrfusion_d3d11_carrier_work_tests|nrfusion_d3d12_(carrier_(contract|session|native_facts|capabilities|bootstrap|work|execution_plan)|guide_format|nr_frame_plan)_tests|nrfusion_vulkan_carrier_(contract|acquire|session|execution_plan)_tests|nrfusion_opengl_carrier_(acquire|sync)_tests|nrfusion_provider_policy_opengl_tests)'
 
       - name: Check changed source size
         run: python tools/check_source_size.py changed

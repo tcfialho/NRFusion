@@ -1,6 +1,7 @@
 #include "nrfusion/SyntheticOpenGlProvider.hpp"
 
 #include <iostream>
+#include <limits>
 
 // Only one compiler understands a library request written in the source. Elsewhere it is an
 // unknown pragma, which a build with warnings as errors refuses outright.
@@ -27,38 +28,73 @@ SyntheticWorkHandle SyntheticOpenGlProvider::Submit(const SyntheticFrameInputs& 
         const uint32_t candidate =
             (currentSlot_ + offset) % kMaxInFlight;
         const auto& candidateSlot = sharedSlots_[candidate];
-        if (candidateSlot.producerFenceValue == 0 ||
-            completed >= candidateSlot.producerFenceValue) {
+        const bool released =
+            candidateSlot.outputConsumed &&
+            candidateSlot.sync.Valid(kMaxInFlight) &&
+            completed >= candidateSlot.sync.releaseSignalValue;
+        if (!candidateSlot.inUse || released) {
             slotIdx = candidate;
             break;
         }
     }
     if (slotIdx == kMaxInFlight) return handle;
 
+    if (inputs.color.opaqueId >
+        std::numeric_limits<GLuint>::max()) {
+        return handle;
+    }
+
     currentSlot_ = (slotIdx + 1) % kMaxInFlight;
     SharedSlot& slot = sharedSlots_[slotIdx];
-    slot.workId = inputs.ticket.id;
+    slot.sync = {};
+    slot.inputRecorded = false;
+    slot.outputConsumed = false;
     slot.inUse = true;
+    if (!ReserveOpenGlCarrierSyncIdentity(
+            inputs.ticket.id, slotIdx, kMaxInFlight,
+            nextFenceValue_, slot.sync)) {
+        slot.inUse = false;
+        return handle;
+    }
 
-    uint64_t fVal = nextFenceValue_++;
-    slot.producerFenceValue = fVal;
+    const GLuint gameColorTex =
+        static_cast<GLuint>(inputs.color.opaqueId);
+    if (!RecordOpenGlInputCopy(
+            slot, gameColorTex,
+            inputs.renderResolution.width,
+            inputs.renderResolution.height)) {
+        slot.inUse = false;
+        slot.sync = {};
+        return handle;
+    }
+    if (FAILED(d3d12Queue_->Wait(
+            d3d12Fence_.Get(), slot.sync.inputSignalValue))) {
+        return handle;
+    }
 
     SyntheticFrameInputs d12Inputs = inputs;
     d12Inputs.color.opaqueId = reinterpret_cast<uint64_t>(slot.d3d12Color.Get());
     d12Inputs.color.resolution = inputs.renderResolution;
     d12Inputs.color.format = ResourceFormat::Rgba16Float;
 
-    slot.alloc->Reset();
-    d3d12CmdList_->Reset(slot.alloc.Get(), nullptr);
+    if (FAILED(slot.alloc->Reset()) ||
+        FAILED(d3d12CmdList_->Reset(slot.alloc.Get(), nullptr))) {
+        return handle;
+    }
 
     handle = syntheticD3D12_.Submit(d12Inputs, d3d12CmdList_.Get());
+    if (!handle.valid || FAILED(d3d12CmdList_->Close())) {
+        return SyntheticWorkHandle{};
+    }
 
-    d3d12CmdList_->Close();
     ID3D12CommandList* lists[] = { d3d12CmdList_.Get() };
     d3d12Queue_->ExecuteCommandLists(1, lists);
-    d3d12Queue_->Signal(d3d12Fence_.Get(), fVal);
+    if (FAILED(d3d12Queue_->Signal(
+            d3d12Fence_.Get(), slot.sync.outputSignalValue))) {
+        return SyntheticWorkHandle{};
+    }
 
-    handle.fenceValue = fVal;
+    handle.fenceValue = slot.sync.outputSignalValue;
     return handle;
 }
 

@@ -1,6 +1,7 @@
 #include "nrfusion/SyntheticOpenGlProvider.hpp"
 
 #include <bit>
+#include <cstring>
 
 namespace nrfusion {
 namespace {
@@ -9,6 +10,36 @@ template <typename To, typename From>
 To ProcCast(From value) noexcept {
     static_assert(sizeof(To) == sizeof(From));
     return std::bit_cast<To>(value);
+}
+
+bool HasExtension(
+    const OpenGlDispatchTable& gl,
+    const char* expected) noexcept {
+    if (!gl.GetStringi || !expected) return false;
+
+    GLint count = 0;
+    glGetIntegerv(GL_NUM_EXTENSIONS, &count);
+    if (count <= 0) return false;
+
+    for (GLint index = 0; index != count; ++index) {
+        const auto* extension =
+            gl.GetStringi(GL_EXTENSIONS, static_cast<GLuint>(index));
+        if (extension &&
+            std::strcmp(
+                reinterpret_cast<const char*>(extension),
+                expected) == 0) {
+            return true;
+        }
+    }
+    return false;
+}
+
+bool HasRequiredInteropExtensions(
+    const OpenGlDispatchTable& gl) noexcept {
+    return HasExtension(gl, "GL_EXT_memory_object") &&
+           HasExtension(gl, "GL_EXT_memory_object_win32") &&
+           HasExtension(gl, "GL_EXT_semaphore") &&
+           HasExtension(gl, "GL_EXT_semaphore_win32");
 }
 
 } // namespace
@@ -54,6 +85,9 @@ bool SyntheticOpenGlProvider::LoadOpenGl() {
     gl_.ImportSemaphoreWin32HandleEXT =
         ProcCast<PFN_glImportSemaphoreWin32HandleEXT_>(
             gl_.wglGetProcAddress("glImportSemaphoreWin32HandleEXT"));
+    gl_.SemaphoreParameterui64vEXT =
+        ProcCast<PFN_glSemaphoreParameterui64vEXT_>(
+            gl_.wglGetProcAddress("glSemaphoreParameterui64vEXT"));
     gl_.WaitSemaphoreEXT = ProcCast<PFN_glWaitSemaphoreEXT_>(
         gl_.wglGetProcAddress("glWaitSemaphoreEXT"));
     gl_.SignalSemaphoreEXT = ProcCast<PFN_glSignalSemaphoreEXT_>(
@@ -64,6 +98,7 @@ bool SyntheticOpenGlProvider::LoadOpenGl() {
         gl_.wglGetProcAddress("glGetStringi"));
 
     gl_.hasInterop =
+        HasRequiredInteropExtensions(gl_) &&
         gl_.CreateMemoryObjectsEXT &&
         gl_.DeleteMemoryObjectsEXT &&
         gl_.MemoryObjectParameterivEXT &&
@@ -72,6 +107,7 @@ bool SyntheticOpenGlProvider::LoadOpenGl() {
         gl_.GenSemaphoresEXT &&
         gl_.DeleteSemaphoresEXT &&
         gl_.ImportSemaphoreWin32HandleEXT &&
+        gl_.SemaphoreParameterui64vEXT &&
         gl_.WaitSemaphoreEXT &&
         gl_.SignalSemaphoreEXT &&
         gl_.CopyImageSubData;

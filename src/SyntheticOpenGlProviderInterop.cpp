@@ -39,9 +39,10 @@ void SyntheticOpenGlProvider::CloseSharedHandles() {
         slot.glOutputSem = 0;
         slot.d3d12Color.Reset();
         slot.d3d12Residual.Reset();
+        slot.sync = {};
+        slot.inputRecorded = false;
+        slot.outputConsumed = false;
         slot.inUse = false;
-        slot.workId = 0;
-        slot.producerFenceValue = 0;
     }
     currentRes_ = {};
 }
@@ -146,38 +147,89 @@ bool SyntheticOpenGlProvider::CreateSharedResources(
 }
 
 bool SyntheticOpenGlProvider::RecordOpenGlInputCopy(
-    GLuint gameColorTex, uint32_t width, uint32_t height) {
-    if (!ready_ || !gl_.hasInterop || gameColorTex == 0 ||
-        width == 0 || height == 0) {
+    SharedSlot& slot,
+    GLuint gameColorTex,
+    uint32_t width,
+    uint32_t height) {
+    if (!ready_ || !gl_.hasInterop ||
+        !slot.sync.Valid(kMaxInFlight) ||
+        !gl_.wglGetCurrentContext ||
+        gl_.wglGetCurrentContext() == nullptr ||
+        gameColorTex == 0 || width == 0 || height == 0 ||
+        !slot.glColorTex || !slot.glInputSem) {
         return false;
     }
-    SharedSlot& slot = sharedSlots_[currentSlot_];
-    if (!slot.glColorTex || !slot.glInputSem) return false;
 
+    const uint64_t inputValue = slot.sync.inputSignalValue;
+    gl_.SemaphoreParameterui64vEXT(
+        slot.glInputSem, GL_D3D12_FENCE_VALUE_EXT, &inputValue);
     gl_.CopyImageSubData(
         gameColorTex, GL_TEXTURE_2D, 0, 0, 0, 0,
         slot.glColorTex, GL_TEXTURE_2D, 0, 0, 0, 0,
         static_cast<GLsizei>(width), static_cast<GLsizei>(height), 1);
+    const GLenum layout = GL_LAYOUT_GENERAL_EXT;
     gl_.SignalSemaphoreEXT(
-        slot.glInputSem, 0, nullptr, 1, &slot.glColorTex, nullptr);
+        slot.glInputSem, 0, nullptr, 1, &slot.glColorTex, &layout);
+    slot.inputRecorded = true;
     return true;
 }
 
+SyntheticOpenGlProvider::SharedSlot*
+SyntheticOpenGlProvider::FindSlot(
+    const SyntheticWorkHandle& handle) noexcept {
+    if (!handle.valid || handle.workId == 0) return nullptr;
+    for (auto& slot : sharedSlots_) {
+        if (slot.inUse &&
+            slot.sync.workId == handle.workId &&
+            slot.sync.outputSignalValue == handle.fenceValue) {
+            return &slot;
+        }
+    }
+    return nullptr;
+}
+
 bool SyntheticOpenGlProvider::RecordOpenGlOutputConsume(
-    GLuint gameDestTex, uint32_t width, uint32_t height) {
-    if (!ready_ || !gl_.hasInterop || gameDestTex == 0 ||
-        width == 0 || height == 0) {
+    const SyntheticWorkHandle& handle,
+    GLuint gameDestTex,
+    uint32_t width,
+    uint32_t height) {
+    std::scoped_lock lock(mutex_);
+    if (!ready_ || !gl_.hasInterop ||
+        !gl_.wglGetCurrentContext ||
+        gl_.wglGetCurrentContext() == nullptr ||
+        gameDestTex == 0 || width == 0 || height == 0) {
         return false;
     }
-    SharedSlot& slot = sharedSlots_[currentSlot_];
-    if (!slot.glResidualTex || !slot.glOutputSem) return false;
 
+    SharedSlot* slot = FindSlot(handle);
+    if (!slot || slot->outputConsumed ||
+        !slot->glResidualTex || !slot->glOutputSem ||
+        !slot->glInputSem) {
+        return false;
+    }
+
+    const GLenum layout = GL_LAYOUT_GENERAL_EXT;
+    const uint64_t outputValue = slot->sync.outputSignalValue;
+    gl_.SemaphoreParameterui64vEXT(
+        slot->glOutputSem, GL_D3D12_FENCE_VALUE_EXT, &outputValue);
     gl_.WaitSemaphoreEXT(
-        slot.glOutputSem, 0, nullptr, 1, &slot.glResidualTex, nullptr);
+        slot->glOutputSem, 0, nullptr,
+        1, &slot->glResidualTex, &layout);
     gl_.CopyImageSubData(
-        slot.glResidualTex, GL_TEXTURE_2D, 0, 0, 0, 0,
+        slot->glResidualTex, GL_TEXTURE_2D, 0, 0, 0, 0,
         gameDestTex, GL_TEXTURE_2D, 0, 0, 0, 0,
         static_cast<GLsizei>(width), static_cast<GLsizei>(height), 1);
+
+    const uint64_t releaseValue = slot->sync.releaseSignalValue;
+    gl_.SemaphoreParameterui64vEXT(
+        slot->glInputSem, GL_D3D12_FENCE_VALUE_EXT, &releaseValue);
+    const GLuint textures[] = {
+        slot->glColorTex, slot->glResidualTex};
+    const GLenum layouts[] = {
+        GL_LAYOUT_GENERAL_EXT, GL_LAYOUT_GENERAL_EXT};
+    gl_.SignalSemaphoreEXT(
+        slot->glInputSem, 0, nullptr, 2, textures, layouts);
+    slot->outputConsumed = true;
     return true;
 }
 

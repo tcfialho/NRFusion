@@ -14,6 +14,7 @@
 
 #include "nrfusion/SyntheticProvider.hpp"
 #include "nrfusion/SyntheticDx12Provider.hpp"
+#include "nrfusion/OpenGlCarrierSync.hpp"
 #include "nrfusion/MotionVectorResolver.hpp"
 #include "nrfusion/NvofMotionProvider.hpp"
 
@@ -43,8 +44,14 @@ using Microsoft::WRL::ComPtr;
 #ifndef GL_LAYOUT_COLOR_ATTACHMENT_EXT
 #define GL_LAYOUT_COLOR_ATTACHMENT_EXT       0x958E
 #endif
+#ifndef GL_LAYOUT_GENERAL_EXT
+#define GL_LAYOUT_GENERAL_EXT                0x958D
+#endif
 #ifndef GL_LAYOUT_SHADER_READ_ONLY_EXT
 #define GL_LAYOUT_SHADER_READ_ONLY_EXT       0x9591
+#endif
+#ifndef GL_D3D12_FENCE_VALUE_EXT
+#define GL_D3D12_FENCE_VALUE_EXT             0x9595
 #endif
 #ifndef GL_RGBA16F
 #define GL_RGBA16F                           0x881A
@@ -72,6 +79,7 @@ typedef void (APIENTRY *PFN_glImportMemoryWin32HandleEXT_)(GLuint, uint64_t, GLe
 typedef void (APIENTRY *PFN_glGenSemaphoresEXT_)(GLsizei, GLuint*);
 typedef void (APIENTRY *PFN_glDeleteSemaphoresEXT_)(GLsizei, const GLuint*);
 typedef void (APIENTRY *PFN_glImportSemaphoreWin32HandleEXT_)(GLuint, GLenum, void*);
+typedef void (APIENTRY *PFN_glSemaphoreParameterui64vEXT_)(GLuint, GLenum, const uint64_t*);
 typedef void (APIENTRY *PFN_glWaitSemaphoreEXT_)(GLuint, GLuint, const GLuint*, GLuint, const GLuint*, const GLenum*);
 typedef void (APIENTRY *PFN_glSignalSemaphoreEXT_)(GLuint, GLuint, const GLuint*, GLuint, const GLuint*, const GLenum*);
 
@@ -103,6 +111,7 @@ struct OpenGlDispatchTable {
     PFN_glGenSemaphoresEXT_ GenSemaphoresEXT = nullptr;
     PFN_glDeleteSemaphoresEXT_ DeleteSemaphoresEXT = nullptr;
     PFN_glImportSemaphoreWin32HandleEXT_ ImportSemaphoreWin32HandleEXT = nullptr;
+    PFN_glSemaphoreParameterui64vEXT_ SemaphoreParameterui64vEXT = nullptr;
     PFN_glWaitSemaphoreEXT_ WaitSemaphoreEXT = nullptr;
     PFN_glSignalSemaphoreEXT_ SignalSemaphoreEXT = nullptr;
 
@@ -144,19 +153,18 @@ public:
     bool LoadOpenGl();
     bool HasOpenGlInterop() const noexcept { return gl_.hasInterop; }
 
-    // OpenGL side GPU copy: game texture into D3D12-shared texture
-    bool RecordOpenGlInputCopy(GLuint gameColorTex, uint32_t width, uint32_t height);
-
-    // OpenGL side GPU consume: compose imported residual back into game buffer
-    bool RecordOpenGlOutputConsume(GLuint gameDestTex, uint32_t width, uint32_t height);
+    bool RecordOpenGlOutputConsume(
+        const SyntheticWorkHandle& handle,
+        GLuint gameDestTex,
+        uint32_t width,
+        uint32_t height);
 
     ID3D12Device* PrivateD3D12Device() const noexcept { return d3d12Device_.Get(); }
     NvofMotionProvider& OpticalFlow() noexcept { return nvof_; }
 
 private:
     struct SharedSlot {
-        uint64_t workId = 0;
-        uint64_t producerFenceValue = 0;
+        OpenGlCarrierSyncIdentity sync{};
 
         // D3D12 private side
         ComPtr<ID3D12Resource> d3d12Color;
@@ -173,9 +181,18 @@ private:
         GLuint glInputSem = 0;
         GLuint glOutputSem = 0;
 
+        bool inputRecorded = false;
+        bool outputConsumed = false;
         bool inUse = false;
     };
 
+    bool RecordOpenGlInputCopy(
+        SharedSlot& slot,
+        GLuint gameColorTex,
+        uint32_t width,
+        uint32_t height);
+    SharedSlot* FindSlot(
+        const SyntheticWorkHandle& handle) noexcept;
     bool CreatePrivateD3D12();
     bool CreateSharedResources(uint32_t width, uint32_t height);
     void CloseSharedHandles();
