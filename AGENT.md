@@ -137,8 +137,8 @@ Regras obrigatórias:
 
 Date: 2026-09-24 BRT
 Branch: standalone/integration
-Validated code head: e7be568
-Current code head: d49c898 (hosted CI pending)
+Validated code head: d49c898
+Current branch head before closure docs: 21a276b
 
 Phase 06: CLOSED.
 Phase 07: CLOSED, including real Windows compile/harness validation.
@@ -268,12 +268,12 @@ Phase 11 subgate 11f WIP:
 - portable tests cover execution before claim, stale work, generation mismatch, queue/layout/usage/dimension/identity/provenance failures, duplicate claim consumption, abandon and valid local/external plans;
 - new/modified implementation/test files checked manually are all <=300 lines;
 - code commits: ea7098c, c12cb6c, d49c898;
-- focused portable run 36012347260 and Windows run 36012347315 were in progress at session freeze;
+- focused portable run 36012347260 PASS, including source-size and source checkpoint artifact nrfusion-source-d49c898b86e1617dbc025fcf714259e0420a7691;
+- Windows hosted run 36012347315 PASS;
 - local/notebook access remains disabled; no physical Vulkan gate was attempted.
 
 Exact next action:
-- inspect runs 36012347260 and 36012347315 first; fix only a concrete failure and do not duplicate active runs;
-- once hosted CI is green, implement VulkanCarrierExecutor on a caller-owned VkCommandBuffer;
+- implement VulkanCarrierExecutor on a caller-owned VkCommandBuffer;
 - executor must consume the claimed execution exactly once, record commands only, preserve explicit ownership/layout/sync facts, and leave queue submission + retirement to the caller/session;
 - do not add vkQueueWaitIdle, vkWaitForFences normal-path waits, CPU readback, SyntheticDx12Provider fallback or patcher expansion;
 - keep physical Vulkan external-memory/semaphore validation deferred until local access is explicitly available again.

@@ -218,14 +218,16 @@ Source-size manual:
 - `vulkan_carrier_execution_plan_tests.cpp`: 186 linhas;
 - demais arquivos de implementação tocados também permanecem <=300.
 
-Validação no freeze:
-- focused portable run `36012347260`: em andamento;
-- Windows hosted run `36012347315`: em andamento;
+Validação:
+- focused portable run `36012347260`: PASS;
+- Windows hosted run `36012347315`: PASS;
+- source-size: PASS;
+- source checkpoint `nrfusion-source-d49c898b86e1617dbc025fcf714259e0420a7691` publicado;
 - nenhuma evidência física foi produzida; acesso local continua desabilitado.
 
 Próximo incremento:
-1. inspecionar os dois runs acima e corrigir somente falha concreta;
-2. implementar `VulkanCarrierExecutor` nativo sobre `VkCommandBuffer` do caller;
-3. consumir o claim exatamente uma vez no início do recording;
-4. gravar transitions/acquire/compose/release sem assumir queue submission;
-5. manter waits bloqueantes, CPU readback e fallback DX12 fora do caminho standalone.
+1. implementar `VulkanCarrierExecutor` nativo sobre `VkCommandBuffer` do caller;
+2. consumir o claim exatamente uma vez no início do recording;
+3. gravar transitions/acquire/compose/release sem assumir queue submission;
+4. manter waits bloqueantes, CPU readback e fallback DX12 fora do caminho standalone;
+5. manter compose/recreation real e prova física como gates separados.
