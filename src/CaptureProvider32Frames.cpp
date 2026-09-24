@@ -10,7 +10,10 @@ bool CaptureProvider32::StartFrameAckRead() {
     ResetEvent(readEvent_);
     if (ReadFile(pipeHandle_, &pendingFrameAck_, sizeof(pendingFrameAck_), &bytesRead, &readOverlapped_)) {
         readIoPending_ = false;
-        if (bytesRead != sizeof(pendingFrameAck_)) return false;
+        if (bytesRead != sizeof(pendingFrameAck_)) {
+            MarkTransportFailure();
+            return false;
+        }
         ConsumeCompletedFrameAck();
         return true;
     }
@@ -85,7 +88,10 @@ bool CaptureProvider32::SubmitFramePipelinedEx(uint64_t workId,
         if (GetOverlappedResult(pipeHandle_, &readOverlapped_, &bytesRead, FALSE)) {
             frameAckReadPending_ = false;
             readIoPending_ = false;
-            if (bytesRead != sizeof(pendingFrameAck_)) return false;
+            if (bytesRead != sizeof(pendingFrameAck_)) {
+                MarkTransportFailure();
+                return false;
+            }
             ConsumeCompletedFrameAck();
         } else if (GetLastError() != ERROR_IO_INCOMPLETE) {
             frameAckReadPending_ = false;
@@ -128,6 +134,7 @@ bool CaptureProvider32::SubmitFramePipelinedEx(uint64_t workId,
         frameWritePending_ = true;
         writeIoPending_ = true;
     } else if (bytesWritten != sizeof(message)) {
+        MarkTransportFailure();
         return false;
     }
 
