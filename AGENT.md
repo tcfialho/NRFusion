@@ -137,7 +137,7 @@ Regras obrigatórias:
 
 Date: 2026-09-23 BRT
 Branch: standalone/integration
-Validated code head: 35b6272
+Validated code head: e7be568
 
 Phase 06: CLOSED.
 Phase 07: CLOSED, including real Windows compile/harness validation.
@@ -246,8 +246,21 @@ Phase 11 subgate 11d WIP:
 - Windows run 35957702242 PASS;
 - local/notebook access is intentionally unavailable in this session; no physical Vulkan gate was attempted.
 
+Phase 11 subgate 11e:
+- external semaphore importability is validated with vkGetPhysicalDeviceExternalSemaphoreProperties before D3D12_FENCE import;
+- Vulkan external image acquire/release uses explicit VK_QUEUE_FAMILY_EXTERNAL <-> local queue-family ownership barriers;
+- external interop harness records acquire -> GPU copy -> release and 32 recreation cycles, but correctly reports CTest SKIP 77 on hosted runners without matching real external interop;
+- Vulkan Acquire is now a separate portable seam: captured image facts + provenance/layout/usage/queue ownership become FrameContext without inferring facts from opaque handles;
+- VulkanCarrierSession now uses NrSession/WorkTicket claim-submit-abandon semantics, matching the D3D12 carrier ledger model;
+- Windows hosted validation PASS at e7be568;
+- focused portable workflow now builds/runs Vulkan contract/acquire/session tests explicitly;
+- focused portable run 35996493589 PASS: 18/18, source-size PASS and source checkpoint artifact uploaded;
+- workflow duplicate checkpoint blocks were removed in b63d6f6;
+- local/notebook access remained disabled; no physical Vulkan gate was attempted.
+
 Exact next action:
-- add vkGetPhysicalDeviceExternalSemaphoreProperties importability validation for D3D12_FENCE;
-- add explicit AcquireExternalImage/ReleaseExternalImage ownership transfers using VK_QUEUE_FAMILY_EXTERNAL <-> the local queue family;
-- extend the hosted external interop harness to record acquire/use/release and recreation/long-run cycles;
-- keep the physical Vulkan gate deferred until local access is explicitly available again.
+- add a standalone Vulkan carrier execution plan/executor that consumes VulkanCarrierSession + VulkanAcquireResult and records work on a caller-owned VkCommandBuffer without CPU waits;
+- keep external acquire/release and imported timeline semaphore ownership explicit in the execution plan;
+- implement compose-back/recreation ownership in that executor instead of routing Vulkan through SyntheticDx12Provider;
+- extend hosted tests for failure/abandon/slot recreation; external interop runtime may SKIP when the runner lacks matching D3D12/Vulkan support;
+- keep physical Vulkan external-memory/semaphore validation deferred until local access is explicitly available again.

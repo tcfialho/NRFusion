@@ -17,10 +17,10 @@ Fases 07–08.
 
 - [x] Reusar `SyntheticVulkanProvider`; separar contract simulation de VkDevice real.
 - [x] Se provider atual >300 for tocado, dividir loader/capabilities, interop/sync e carrier orchestration.
-- [ ] Definir Acquire seam e ownership de VkImage.
-- [ ] Usar headers Vulkan corretos/memoryTypeIndex real.
-- [ ] External memory/semaphore/handle ownership explícitos.
-- [ ] Layout/access/queue-family ownership.
+- [x] Definir Acquire seam e ownership de VkImage.
+- [x] Usar headers Vulkan corretos/memoryTypeIndex real.
+- [x] External memory/semaphore/handle ownership explícitos.
+- [x] Layout/access/queue-family ownership.
 - [ ] Compose back e recreation.
 - [x] Cada arquivo handwritten <=300 linhas.
 
@@ -28,14 +28,14 @@ Fases 07–08.
 
 - [x] Provider recebe handle != aquisição correta.
 - [x] Fake-handle test é só contract test.
-- [ ] Format/tiling/usage compatíveis.
+- [x] Format/tiling/usage compatíveis.
 - [ ] Sync completo success/failure.
-- [ ] Sem CPU readback.
+- [x] Sem CPU readback.
 
 ## Validação rápida
 
 - [x] Contract tests sem Vulkan real.
-- [ ] VkDevice real quando disponível.
+- [x] VkDevice real quando disponível.
 - [ ] Recreate/semaphore long run.
 - [x] LOC checker.
 
@@ -147,3 +147,38 @@ Próximo incremento hosted:
 3. usar os imports em command buffer real no harness;
 4. stress de recreation/long-run;
 5. manter a prova física separada e pendente.
+
+
+## Subgate 11e — Acquire + ledger + external ownership
+
+Código validado: `e7be568`.
+Gate/workflow head: `b63d6f6`.
+
+Concluído:
+- `vkGetPhysicalDeviceExternalSemaphoreProperties` valida importabilidade de
+  `D3D12_FENCE` antes do import;
+- acquire/release externo usa barriers explícitos
+  `VK_QUEUE_FAMILY_EXTERNAL <-> queue family local`;
+- harness externo grava acquire -> copy GPU -> release e contém 32 ciclos de
+  recreation; em runner sem interop real ele é CTest SKIP 77, não falso PASS;
+- `VulkanCarrierAcquire` separa Acquire de interop e exige fatos explícitos de
+  dimensão, formato, usage, layout, queue family e provenance;
+- `VulkanCarrierSession` integra Vulkan ao mesmo `NrSession/WorkTicket`
+  claim/submit/abandon usado no carrier D3D12;
+- nenhum caminho novo usa CPU readback ou espera de GPU no runtime normal.
+
+Validação:
+- Windows hosted do código `e7be568`: PASS;
+- focused portable final run `35996493589`: 18/18 PASS;
+- contract/acquire/session Vulkan foram construídos e executados explicitamente;
+- source-size: PASS;
+- source checkpoint gerado e enviado como artifact pelo GitHub Actions;
+- external-interoperability runtime continua sem evidência hosted porque o runner
+  não possui combinação D3D12/Vulkan adequada e o teste foi SKIPPED;
+- acesso local permaneceu desabilitado, portanto nenhum gate físico foi tentado.
+
+Próximo subgate:
+1. execução standalone Vulkan sobre caller-owned `VkCommandBuffer`;
+2. execution plan ligado ao `VulkanCarrierWork`;
+3. compose-back/recreation sem fallback DX12;
+4. physical external-memory/semaphore gate somente quando acesso local voltar.
