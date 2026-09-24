@@ -137,11 +137,9 @@ bool SyntheticDx11BridgeProvider::CopyInputToSlot(
     if (slot >= kMaxInFlight || gameColor == nullptr || !d3d11Context_)
         return false;
     SharedSlot& target = sharedSlots_[slot];
-    if (!target.d3d11Color) return false;
-
-    ComPtr<ID3D11Device> sourceDevice;
-    gameColor->GetDevice(&sourceDevice);
-    if (sourceDevice.Get() != d3d11Device_.Get()) return false;
+    if (!D3D11ResourcesCopyCompatible(
+            gameColor, target.d3d11Color.Get(), d3d11Device_.Get()))
+        return false;
     d3d11Context_->CopyResource(target.d3d11Color.Get(), gameColor);
     return true;
 }
@@ -169,7 +167,9 @@ SyntheticWorkHandle SyntheticDx11BridgeProvider::Submit(
     const SyntheticFrameInputs& inputs, void*) {
     std::scoped_lock lock(mutex_);
     SyntheticWorkHandle handle{};
-    if (!ready_ || !inputs.Valid() || !d3d12Fence_) return handle;
+    if (!ready_ || !inputs.Valid() || !d3d12Fence_ ||
+        inputs.color.format != ResourceFormat::Rgba16Float)
+        return handle;
     if (!CreateSharedResources(
             inputs.renderResolution.width, inputs.renderResolution.height))
         return handle;
@@ -228,6 +228,9 @@ bool SyntheticDx11BridgeProvider::RecordD3D11OutputConsume(
         return false;
     const auto slot = slotTracker_.Find(handle.workId);
     if (!slot || !sharedSlots_[*slot].d3d11Residual ||
+        !D3D11ResourcesCopyCompatible(
+            sharedSlots_[*slot].d3d11Residual.Get(), gameDestination,
+            d3d11Device_.Get()) ||
         !sync_.QueueOutputHandoff())
         return false;
     context->CopyResource(gameDestination, sharedSlots_[*slot].d3d11Residual.Get());

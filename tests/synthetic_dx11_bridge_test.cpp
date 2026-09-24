@@ -164,6 +164,20 @@ int main() {
         std::cout << "  [PASS] NvofMotionProvider 180p low-res geometry validated: " << fRes.width << "x" << fRes.height << std::endl;
     }
 
+    {
+        auto incompatible = MakeTexture(d3d11Device.Get(), 320, 180);
+        SyntheticFrameInputs bad{};
+        bad.ticket.id = 1900;
+        bad.ticket.session = 1;
+        bad.frameId = 1900;
+        bad.renderResolution = {320, 180};
+        bad.targetResolution = {320, 180};
+        bad.color.opaqueId = reinterpret_cast<std::uint64_t>(incompatible.Get());
+        bad.color.resolution = {320, 180};
+        bad.color.format = ResourceFormat::Rgba8Unorm;
+        assert(!bridge.Submit(bad, nullptr).valid);
+    }
+
     // 5. GPU-only bridge handoff, retirement and resize/reset stress.
     {
         for (std::uint64_t frame = 1; frame <= 12; ++frame) {

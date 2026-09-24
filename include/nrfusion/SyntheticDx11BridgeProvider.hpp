@@ -12,6 +12,7 @@
 #include <dxgi1_6.h>
 #include <wrl/client.h>
 
+#include "nrfusion/D3D11BridgeResources.hpp"
 #include "nrfusion/D3D11BridgeSlotTracker.hpp"
 #include "nrfusion/D3D11D3D12FenceBridge.hpp"
 #include "nrfusion/MotionVectorResolver.hpp"
