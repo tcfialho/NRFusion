@@ -147,10 +147,11 @@ bool SyntheticDx11BridgeProvider::CopyInputToSlot(
 void SyntheticDx11BridgeProvider::Shutdown() {
     std::scoped_lock lock(mutex_);
     if (!ready_) return;
-    CloseSharedHandles();
-    for (auto& slot : sharedSlots_) slot.alloc.Reset();
     nvof_.Shutdown();
     syntheticD3D12_.Shutdown();
+    // The inner provider drains the shared queue before bridge resources are released.
+    CloseSharedHandles();
+    for (auto& slot : sharedSlots_) slot.alloc.Reset();
     sync_.ResetAfterIdle();
     d3d12Fence_.Reset();
     d3d12CmdList_.Reset();
