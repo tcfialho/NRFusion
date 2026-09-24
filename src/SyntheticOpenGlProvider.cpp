@@ -109,7 +109,7 @@ ResourceRef SyntheticOpenGlProvider::GetResidual(const SyntheticWorkHandle& hand
     if (!ready_ || !handle.valid) return ref;
 
     for (const auto& s : sharedSlots_) {
-        if (s.workId == handle.workId && s.d3d12Residual) {
+        if (s.sync.workId == handle.workId && s.d3d12Residual) {
             ref.opaqueId = reinterpret_cast<uint64_t>(s.d3d12Residual.Get());
             ref.resolution = currentRes_;
             ref.format = ResourceFormat::Rgba16Float;
