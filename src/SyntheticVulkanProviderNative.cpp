@@ -47,15 +47,31 @@ bool SyntheticVulkanProvider::InitializeNativeVulkan(
     if (!ValidateVulkanContextContract(contract)) return false;
 
     const VulkanNativeContext native = MakeVulkanNativeContext(contract);
+    const auto getInstanceProcAddr =
+        Proc<PFN_vkGetInstanceProcAddr>(vk_.getInstanceProcAddr);
     const auto getDeviceProcAddr =
         Proc<PFN_vkGetDeviceProcAddr>(vk_.getDeviceProcAddr);
-    if (!native.Valid() || !getDeviceProcAddr) return false;
+    if (!native.Valid() || !getInstanceProcAddr || !getDeviceProcAddr)
+        return false;
 
     vkInstance_ = context.instance;
     vkPhysicalDevice_ = context.physicalDevice;
     vkDevice_ = context.device;
     vkQueue_ = context.commandQueue;
     vkQueueFamilyIndex_ = context.queueFamilyIndex;
+
+    vk_.getPhysicalDeviceImageFormatProperties2 =
+        reinterpret_cast<FARPROC>(
+            getInstanceProcAddr(
+                native.instance,
+                "vkGetPhysicalDeviceImageFormatProperties2"));
+    if (!vk_.getPhysicalDeviceImageFormatProperties2) {
+        vk_.getPhysicalDeviceImageFormatProperties2 =
+            reinterpret_cast<FARPROC>(
+                getInstanceProcAddr(
+                    native.instance,
+                    "vkGetPhysicalDeviceImageFormatProperties2KHR"));
+    }
 
     vk_.createSemaphore = Resolve(
         getDeviceProcAddr, native.device, "vkCreateSemaphore");
@@ -97,7 +113,9 @@ bool SyntheticVulkanProvider::InitializeNativeVulkan(
     vk_.cmdBlitImage = Resolve(
         getDeviceProcAddr, native.device, "vkCmdBlitImage");
 
-    vk_.nativeResolved = vk_.createSemaphore &&
+    vk_.nativeResolved =
+        vk_.getPhysicalDeviceImageFormatProperties2 &&
+        vk_.createSemaphore &&
         vk_.destroySemaphore &&
         vk_.importSemaphoreWin32Handle &&
         vk_.createImage &&

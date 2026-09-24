@@ -21,6 +21,7 @@ struct VulkanRawDispatch {
     HMODULE libVulkan = nullptr;
     FARPROC getInstanceProcAddr = nullptr;
     FARPROC getDeviceProcAddr = nullptr;
+    FARPROC getPhysicalDeviceImageFormatProperties2 = nullptr;
     FARPROC createSemaphore = nullptr;
     FARPROC destroySemaphore = nullptr;
     FARPROC importSemaphoreWin32Handle = nullptr;

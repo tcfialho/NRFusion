@@ -13,6 +13,7 @@ endif()
 add_library(nrfusion_vulkan_provider_compile OBJECT
     src/SyntheticVulkanProvider.cpp
     src/SyntheticVulkanProviderNative.cpp
+    src/SyntheticVulkanProviderMemory.cpp
     src/SyntheticVulkanProviderInterop.cpp
     src/SyntheticVulkanProviderCommands.cpp
     src/VulkanNativeCommands.cpp
