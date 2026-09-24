@@ -4,6 +4,16 @@
 namespace nrfusion {
 namespace {
 
+bool DuplicateForVulkanImport(
+    HANDLE source, HANDLE& duplicate) noexcept {
+    duplicate = nullptr;
+    return source &&
+        DuplicateHandle(
+            GetCurrentProcess(), source,
+            GetCurrentProcess(), &duplicate,
+            0, FALSE, DUPLICATE_SAME_ACCESS) == TRUE;
+}
+
 template <typename T>
 T Proc(FARPROC proc) noexcept {
     return reinterpret_cast<T>(proc);
