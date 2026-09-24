@@ -55,6 +55,7 @@ VulkanCarrierFramePacket Packet(
     packet.acquire.identity.frameId = frameId;
     packet.acquire.identity.viewId = 1;
     packet.acquire.identity.configurationGeneration = generation;
+    packet.acquire.resourceGeneration = frameId;
     packet.acquire.color.image = ImageFacts(
         color, VulkanUsageTransferSource, queueFamily);
     packet.acquire.color.provenance = ResourceProvenance::GameNative;

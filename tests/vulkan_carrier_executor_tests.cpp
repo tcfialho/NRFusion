@@ -61,6 +61,7 @@ VulkanCarrierFramePacket Packet(std::uint64_t generation) {
     packet.acquire.identity.frameId = 1;
     packet.acquire.identity.viewId = 11;
     packet.acquire.identity.configurationGeneration = generation;
+    packet.acquire.resourceGeneration = 1;
     packet.acquire.color.image = Image(
         0x1001, VulkanUsageSampled | VulkanUsageTransferSource);
     packet.acquire.color.provenance = ResourceProvenance::GameNative;
@@ -88,7 +89,8 @@ VulkanCarrierNativeResources Resources(
     resources.facts.output = frame.acquire.outputFacts;
     resources.facts.colorOwnership = VulkanQueueOwnership::Local;
     resources.facts.outputOwnership = VulkanQueueOwnership::Local;
-    resources.facts.recreationGeneration = 1;
+    resources.facts.recreationGeneration =
+        frame.acquire.resourceGeneration;
     resources.facts.compose = VulkanCarrierComposeIntent::CopyOrBlit;
     resources.color = reinterpret_cast<VkImage>(
         static_cast<std::uintptr_t>(0x1001));

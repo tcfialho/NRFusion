@@ -30,6 +30,7 @@ VulkanCarrierFramePacket Packet(
     packet.acquire.identity.frameId = frameId;
     packet.acquire.identity.viewId = 11;
     packet.acquire.identity.configurationGeneration = generation;
+    packet.acquire.resourceGeneration = frameId;
     packet.acquire.color.image = Image(
         0x1000 + frameId,
         VulkanUsageSampled | VulkanUsageTransferSource);
@@ -58,7 +59,7 @@ VulkanCarrierExecutionResources Resources(
     resources.output = frame.acquire.outputFacts;
     resources.colorOwnership = VulkanQueueOwnership::Local;
     resources.outputOwnership = VulkanQueueOwnership::Local;
-    resources.recreationGeneration = 3;
+    resources.recreationGeneration = frame.acquire.resourceGeneration;
     resources.compose = VulkanCarrierComposeIntent::CopyOrBlit;
     return resources;
 }
@@ -106,7 +107,8 @@ int main() {
     assert(valid.plan.ticket == work->ticket);
     assert(valid.plan.submissionEpoch == work->submissionEpoch);
     assert(valid.plan.queueFamilyIndex == frame.acquire.queueFamilyIndex);
-    assert(valid.plan.recreationGeneration == 3);
+    assert(valid.plan.recreationGeneration ==
+           frame.acquire.resourceGeneration);
     assert(valid.plan.compose == VulkanCarrierComposeIntent::CopyOrBlit);
 
     auto badQueue = resources;
@@ -132,6 +134,12 @@ int main() {
     assert(BuildVulkanCarrierExecutionPlan(
                carrier, frame, *work, badDimensions).failure ==
            VulkanCarrierExecutionFailure::InvalidDimensions);
+
+    auto staleResources = resources;
+    ++staleResources.recreationGeneration;
+    assert(BuildVulkanCarrierExecutionPlan(
+               carrier, frame, *work, staleResources).failure ==
+           VulkanCarrierExecutionFailure::RecreationGenerationMismatch);
 
     auto wrongResource = resources;
     ++wrongResource.output.opaqueId;

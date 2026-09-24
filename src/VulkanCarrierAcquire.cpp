@@ -90,6 +90,10 @@ VulkanAcquireResult AcquireVulkanFrame(
         result.failure = VulkanAcquireFailure::InvalidIdentity;
         return result;
     }
+    if (input.resourceGeneration == 0) {
+        result.failure = VulkanAcquireFailure::InvalidResourceGeneration;
+        return result;
+    }
 
     const auto colorFailure = ValidateCapture(
         input.color, true,
@@ -178,6 +182,7 @@ VulkanAcquireResult AcquireVulkanFrame(
     }
 
     result.outputOpaqueId = input.output.opaqueId;
+    result.resourceGeneration = input.resourceGeneration;
     result.colorFacts = input.color.image;
     result.outputFacts = input.output;
     result.colorLayout = input.color.image.layout;

@@ -32,6 +32,7 @@ struct VulkanNativeResourceCapture {
 
 struct VulkanNativeAcquireInput {
     ProviderInput identity{};
+    std::uint64_t resourceGeneration = 0;
     VulkanNativeResourceCapture color{};
     VulkanNativeResourceCapture depth{};
     VulkanNativeResourceCapture motionVectors{};
@@ -47,6 +48,7 @@ struct VulkanNativeAcquireInput {
 enum class VulkanAcquireFailure : std::uint8_t {
     None,
     InvalidIdentity,
+    InvalidResourceGeneration,
     MissingColor,
     MissingOutput,
     InvalidImage,
@@ -62,6 +64,7 @@ struct VulkanAcquireResult {
     FrameContext frame{};
     ProviderDiagnostics diagnostics{};
     std::uint64_t outputOpaqueId = 0;
+    std::uint64_t resourceGeneration = 0;
     VulkanNativeImageFacts colorFacts{};
     VulkanNativeImageFacts outputFacts{};
     VulkanImageLayoutIntent colorLayout = VulkanImageLayoutIntent::Undefined;

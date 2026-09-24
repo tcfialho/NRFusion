@@ -71,6 +71,11 @@ VulkanCarrierExecutionPlanResult BuildVulkanCarrierExecutionPlan(
             VulkanCarrierExecutionFailure::InvalidRecreationGeneration;
         return result;
     }
+    if (resources.recreationGeneration != frame.acquire.resourceGeneration) {
+        result.failure =
+            VulkanCarrierExecutionFailure::RecreationGenerationMismatch;
+        return result;
+    }
     if (resources.color.image.opaqueId !=
             frame.acquire.colorFacts.opaqueId ||
         resources.output.opaqueId != frame.acquire.outputFacts.opaqueId ||

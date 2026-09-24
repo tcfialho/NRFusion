@@ -32,6 +32,7 @@ enum class VulkanCarrierExecutionFailure : std::uint8_t {
     WorkGenerationMismatch,
     WorkNotClaimed,
     InvalidRecreationGeneration,
+    RecreationGenerationMismatch,
     ResourceIdentityMismatch,
     InvalidQueueFamily,
     InvalidLayout,

@@ -32,6 +32,7 @@ VulkanNativeAcquireInput BaseInput() {
     input.identity.hostFrameToken = 77;
     input.identity.viewId = 5;
     input.identity.configurationGeneration = 9;
+    input.resourceGeneration = 1;
     input.color.image = Image(
         0x1000,
         VulkanUsageSampled | VulkanUsageTransferSource);
@@ -77,6 +78,11 @@ int main() {
     invalidIdentity.identity.configurationGeneration = 0;
     assert(AcquireVulkanFrame(invalidIdentity).failure ==
            VulkanAcquireFailure::InvalidIdentity);
+
+    auto noResourceGeneration = base;
+    noResourceGeneration.resourceGeneration = 0;
+    assert(AcquireVulkanFrame(noResourceGeneration).failure ==
+           VulkanAcquireFailure::InvalidResourceGeneration);
 
     auto noColor = base;
     noColor.color = {};
