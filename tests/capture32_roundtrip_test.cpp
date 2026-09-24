@@ -149,6 +149,8 @@ int main() {
     }
 
     const uint64_t firstSession = NRFusion_Capture32_ActiveSessionId();
+    const uint64_t firstGeneration = NRFusion_Capture32_ActiveConnectionGeneration();
+    if (firstGeneration == 0) return Fail("initial connection generation was zero") ? 0 : 1;
     host.Stop();
 
     // Do not pre-disconnect: the next IPC operation must observe the dead host and invalidate its
@@ -175,6 +177,11 @@ int main() {
     }
     if (NRFusion_Capture32_ActiveSessionId() <= firstSession) {
         return Fail("host restart did not advance the capture session") ? 0 : 1;
+    }
+    const uint64_t restartedGeneration =
+        NRFusion_Capture32_ActiveConnectionGeneration();
+    if (restartedGeneration == 0 || restartedGeneration == firstGeneration) {
+        return Fail("host restart did not establish a fresh connection generation") ? 0 : 1;
     }
 
     constexpr std::array<float, 4> restartedColor = {0.0f, 1.0f, 0.0f, 1.0f};

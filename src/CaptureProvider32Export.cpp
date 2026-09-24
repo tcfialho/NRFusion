@@ -33,6 +33,10 @@ NRFUSION_CAPTURE32_API uint64_t __cdecl NRFusion_Capture32_ActiveSessionId() {
     return g_client ? g_client->ActiveSessionId() : 0;
 }
 
+NRFUSION_CAPTURE32_API uint64_t __cdecl NRFusion_Capture32_ActiveConnectionGeneration() {
+    return g_client ? g_client->ActiveConnectionGeneration() : 0;
+}
+
 NRFUSION_CAPTURE32_API void __cdecl NRFusion_Capture32_SetWorkingScale(float workingScale) {
 #if !defined(NRFUSION_CAPTURE32_STATIC)
     nrfusion::SetCaptureD3D11WorkingScale(workingScale);

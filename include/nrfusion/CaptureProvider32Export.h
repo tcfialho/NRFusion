@@ -23,6 +23,7 @@ NRFUSION_CAPTURE32_API bool __cdecl NRFusion_Capture32_Connect(uint32_t hostPid,
 NRFUSION_CAPTURE32_API void __cdecl NRFusion_Capture32_Disconnect();
 NRFUSION_CAPTURE32_API bool __cdecl NRFusion_Capture32_IsConnected();
 NRFUSION_CAPTURE32_API uint64_t __cdecl NRFusion_Capture32_ActiveSessionId();
+NRFUSION_CAPTURE32_API uint64_t __cdecl NRFusion_Capture32_ActiveConnectionGeneration();
 NRFUSION_CAPTURE32_API void __cdecl NRFusion_Capture32_SetWorkingScale(float workingScale);
 NRFUSION_CAPTURE32_API void __cdecl NRFusion_Capture32_SetProcessingMode(uint32_t mode);
 NRFUSION_CAPTURE32_API bool __cdecl NRFusion_Capture32_GetTransportInfo(
