@@ -42,20 +42,25 @@ bool D3D11CarrierHook::Install(
     context->GetDevice(&contextDevice);
     if (!swapDevice || swapDevice.Get() != contextDevice.Get()) return false;
 
+    void** vtable = *reinterpret_cast<void***>(swapChain);
+    if (!vtable || !vtable[kPresentIndex]) return false;
+
     D3D11CarrierHook* expected = nullptr;
     if (!active_.compare_exchange_strong(expected, this)) return false;
 
-    void** vtable = *reinterpret_cast<void***>(swapChain);
+    context_ = context;
+    swapChainVtable_ = vtable;
+    originalPresent_ = reinterpret_cast<PresentFn>(vtable[kPresentIndex]);
+
     void* previous = nullptr;
-    if (!vtable || !Patch(
+    if (!Patch(
             &vtable[kPresentIndex], reinterpret_cast<void*>(&HookedPresent), previous)) {
+        context_.Reset();
+        swapChainVtable_ = nullptr;
+        originalPresent_ = nullptr;
         active_.store(nullptr);
         return false;
     }
-
-    context_ = context;
-    swapChainVtable_ = vtable;
-    originalPresent_ = reinterpret_cast<PresentFn>(previous);
     return true;
 }
 
@@ -65,7 +70,8 @@ void D3D11CarrierHook::Remove() noexcept {
     if (current == reinterpret_cast<void*>(&HookedPresent))
         Restore(&swapChainVtable_[kPresentIndex],
                 reinterpret_cast<void*>(originalPresent_));
-    active_.compare_exchange_strong(this, nullptr);
+    D3D11CarrierHook* expected = this;
+    active_.compare_exchange_strong(expected, nullptr);
 
     std::scoped_lock lock(mutex_);
     lastColor_.Reset();

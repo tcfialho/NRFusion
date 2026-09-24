@@ -14,6 +14,7 @@
 #include "nrfusion/D3D11CarrierNativeAcquire.hpp"
 
 #include <atomic>
+#include <cstddef>
 #include <cstdint>
 #include <mutex>
 

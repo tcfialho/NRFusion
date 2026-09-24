@@ -72,7 +72,7 @@ int main() {
 
     D3D11CarrierHook hook;
     assert(hook.Install(swapChain.Get(), context.Get()));
-    assert(swapChain->Present(0, 0) == S_OK);
+    assert(SUCCEEDED(swapChain->Present(0, 0)));
     assert(hook.CapturedFrames() == 1);
 
     ProviderInput identity{};
@@ -88,7 +88,7 @@ int main() {
     context->Flush();
     assert(SUCCEEDED(swapChain->ResizeBuffers(
         1, 96, 64, DXGI_FORMAT_R16G16B16A16_FLOAT, 0)));
-    assert(swapChain->Present(0, 0) == S_OK);
+    assert(SUCCEEDED(swapChain->Present(0, 0)));
     assert(hook.CapturedFrames() == 2);
     identity.frameId = 2;
     const auto resized = hook.AcquireLast(identity);
@@ -98,7 +98,7 @@ int main() {
 
     hook.Remove();
     assert(!hook.Installed());
-    assert(swapChain->Present(0, 0) == S_OK);
+    assert(SUCCEEDED(swapChain->Present(0, 0)));
     identity.frameId = 3;
     assert(!hook.AcquireLast(identity));
 
