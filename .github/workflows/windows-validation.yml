@@ -60,7 +60,7 @@ jobs:
         run: |
           if ("${{ github.event_name }}" -eq "push") {
             ./tools/validate_windows.ps1 -Fast `
-              -TargetsCsv "nrfusion_core,nrfusion_d3d11_carrier_native_acquire_tests,nrfusion_synthetic_dx11_bridge_test" `
+              -TargetsCsv "nrfusion_d3d11_carrier_native_acquire_tests,nrfusion_synthetic_dx11_bridge_test" `
               -TestRegex "^(nrfusion_d3d11_carrier_native_acquire_tests|nrfusion_synthetic_dx11_bridge_test)$"
           } elseif ("${{ inputs.scope }}" -eq "fast") {
             ./tools/validate_windows.ps1 -Fast `
