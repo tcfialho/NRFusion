@@ -137,8 +137,8 @@ Regras obrigatórias:
 
 Date: 2026-09-24 BRT
 Branch: standalone/integration
-Validated code head: 3d39e9e
-Current branch head before closure docs: 3d39e9e
+Validated code head: 35af18c (portable PASS; Windows hosted pending)
+Current branch head before closure docs: 35af18c
 
 Phase 06: CLOSED.
 Phase 07: CLOSED, including real Windows compile/harness validation.
@@ -321,3 +321,30 @@ Exact next action when local access is explicitly re-enabled:
 - run tools/validate_phase11_hardware.ps1 with persistent logging outside the worktree;
 - require both binaries to return exit code 0, including the 32 recreation + 128 reuse external cycles;
 - if the script PASSes, record Phase 11 closure; otherwise collect logs and fix via GitHub before rerunning.
+
+
+Phase 12 subgate 12a WIP:
+- Phase 12 started under the explicit Phase 11 physical-hardware blocker; Phase 11 remains IN PROGRESS and is not reclassified as closed;
+- SyntheticOpenGlProvider was split so GL/D3D12 shared-resource import/copy/sync lives in SyntheticOpenGlProviderInterop.cpp;
+- SyntheticOpenGlProvider.cpp is now orchestration-only and no longer waits on the CPU for a busy slot; it scans the fixed in-flight ring and fails closed when no slot is retired;
+- Initialize now requires GraphicsApi::OpenGL, a current HGLRC and the required resolved interop entry points before creating the private D3D12 side;
+- the prior headless test no longer treats private-D3D12 initialization plus texture id 1 as OpenGL interop evidence;
+- nrfusion_synthetic_opengl_test is part of the Windows fast gate and PASSed at code head 875e000;
+- portable OpenGlCarrierAcquire now requires explicit current-context identity, resource generation, memory-object/semaphore Win32 capability facts, copy-image capability, RGBA16F Texture2D facts and provenance/reliability;
+- ProviderPolicy selects Synthetic for OpenGL only when RuntimeCapabilities.openGlCarrier is explicitly true; D3D12/D3D11/Vulkan synthetic capabilities cannot unlock the route;
+- new dedicated portable tests cover OpenGL Acquire fail-closed behavior and ProviderPolicy gating without modifying the grandfathered >300-line game_probe_tests.cpp;
+- initial portable compile failure at ce244cd was a missing SyntheticProvider.hpp include only; fixed at 35af18c;
+- focused portable run 36060926802 PASS with source checkpoint artifact nrfusion-source-35af18c381695413ffe61b9703f25bb38e473322;
+- Windows hosted run 36060926786 was still in progress at session freeze;
+- all new/substantively modified handwritten files remain <=300 lines.
+
+Phase 12 review finding for next subgate:
+- official GL_EXT external-object Win32 semantics require explicit D3D12 fence values for imported GL semaphores;
+- the current provider still lacks explicit GL semaphore fence-value programming plus matching D3D12 queue wait/signal ownership, so real GL<->D3D12 synchronization is not yet qualified;
+- no OpenGL hook/caller or real-context runtime evidence has been claimed.
+
+Exact next action:
+- inspect Windows run 36060926786 first; do not relaunch it if already complete;
+- if green, define explicit OpenGL slot/work synchronization identity before changing runtime behavior;
+- implement advertised-extension validation plus GL_D3D12_FENCE_VALUE_EXT programming and D3D12 queue wait/signal ordering without CPU waits;
+- then add a real-context harness/recreation gate before setting IntegratedCapabilities.openGlCarrier=true.
