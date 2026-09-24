@@ -42,14 +42,12 @@ struct VulkanRawDispatch {
 struct ImportedVulkanResource {
     void* vkImage = nullptr;
     void* vkMemory = nullptr;
-    HANDLE d3d12Handle = nullptr;
     uint32_t width = 0;
     uint32_t height = 0;
 };
 
 struct ImportedVulkanSemaphore {
     void* vkSemaphore = nullptr;
-    HANDLE d3d12FenceHandle = nullptr;
 };
 
 class SyntheticVulkanProvider : public ISyntheticProvider {

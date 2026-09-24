@@ -4,6 +4,16 @@
 namespace nrfusion {
 namespace {
 
+bool DuplicateForVulkanImport(
+    HANDLE source, HANDLE& duplicate) noexcept {
+    duplicate = nullptr;
+    return source &&
+        DuplicateHandle(
+            GetCurrentProcess(), source,
+            GetCurrentProcess(), &duplicate,
+            0, FALSE, DUPLICATE_SAME_ACCESS) == TRUE;
+}
+
 template <typename T>
 T Proc(FARPROC proc) noexcept {
     return reinterpret_cast<T>(proc);
@@ -86,12 +96,19 @@ bool SyntheticVulkanProvider::ImportD3D12Resource(
         return false;
     }
 
+    HANDLE importHandle = nullptr;
+    if (!DuplicateForVulkanImport(sharedHandle, importHandle)) {
+        destroyImage(native.device, image, nullptr);
+        return false;
+    }
+
     VkMemoryRequirements requirements{};
     getRequirements(native.device, image, &requirements);
     const auto memoryType = QueryD3D12ImportedMemoryType(
-        native, getDeviceProcAddr, sharedHandle,
+        native, getDeviceProcAddr, importHandle,
         requirements.memoryTypeBits);
     if (!memoryType) {
+        CloseHandle(importHandle);
         destroyImage(native.device, image, nullptr);
         return false;
     }
@@ -105,7 +122,7 @@ bool SyntheticVulkanProvider::ImportD3D12Resource(
     import.pNext = &dedicated;
     import.handleType =
         VK_EXTERNAL_MEMORY_HANDLE_TYPE_D3D12_RESOURCE_BIT;
-    import.handle = sharedHandle;
+    import.handle = importHandle;
 
     VkMemoryAllocateInfo allocate{
         VK_STRUCTURE_TYPE_MEMORY_ALLOCATE_INFO};
@@ -117,9 +134,12 @@ bool SyntheticVulkanProvider::ImportD3D12Resource(
     VkDeviceMemory memory = VK_NULL_HANDLE;
     if (allocateMemory(
             native.device, &allocate, nullptr, &memory) != VK_SUCCESS) {
+        CloseHandle(importHandle);
         destroyImage(native.device, image, nullptr);
         return false;
     }
+    // Successful Win32 memory import transfers the duplicate to Vulkan.
+    importHandle = nullptr;
     if (bindImageMemory(native.device, image, memory, 0) != VK_SUCCESS) {
         freeMemory(native.device, memory, nullptr);
         destroyImage(native.device, image, nullptr);
@@ -128,7 +148,6 @@ bool SyntheticVulkanProvider::ImportD3D12Resource(
 
     outResource.vkImage = reinterpret_cast<void*>(image);
     outResource.vkMemory = reinterpret_cast<void*>(memory);
-    outResource.d3d12Handle = sharedHandle;
     outResource.width = width;
     outResource.height = height;
     importedResources_.push_back(outResource);
@@ -156,6 +175,10 @@ bool SyntheticVulkanProvider::ImportD3D12Fence(
         return false;
     }
 
+    HANDLE importHandle = nullptr;
+    if (!DuplicateForVulkanImport(sharedFenceHandle, importHandle))
+        return false;
+
     VkSemaphoreTypeCreateInfo typeInfo{
         VK_STRUCTURE_TYPE_SEMAPHORE_TYPE_CREATE_INFO};
     typeInfo.semaphoreType = VK_SEMAPHORE_TYPE_TIMELINE;
@@ -168,6 +191,7 @@ bool SyntheticVulkanProvider::ImportD3D12Fence(
     if (createSemaphore(
             native.device, &createInfo, nullptr, &semaphore) !=
         VK_SUCCESS) {
+        CloseHandle(importHandle);
         return false;
     }
 
@@ -176,14 +200,16 @@ bool SyntheticVulkanProvider::ImportD3D12Fence(
     import.semaphore = semaphore;
     import.handleType =
         VK_EXTERNAL_SEMAPHORE_HANDLE_TYPE_D3D12_FENCE_BIT;
-    import.handle = sharedFenceHandle;
+    import.handle = importHandle;
     if (importSemaphore(native.device, &import) != VK_SUCCESS) {
+        CloseHandle(importHandle);
         destroySemaphore(native.device, semaphore, nullptr);
         return false;
     }
+    // Successful Win32 semaphore import transfers the duplicate to Vulkan.
+    importHandle = nullptr;
 
     outSemaphore.vkSemaphore = reinterpret_cast<void*>(semaphore);
-    outSemaphore.d3d12FenceHandle = sharedFenceHandle;
     importedSemaphores_.push_back(outSemaphore);
     return true;
 }
