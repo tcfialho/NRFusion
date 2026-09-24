@@ -202,10 +202,23 @@ bool VulkanExternalInteropHarness::Open(
         DeviceProc<PFN_vkDestroyDevice>("vkDestroyDevice");
     const auto getDeviceQueue =
         DeviceProc<PFN_vkGetDeviceQueue>("vkGetDeviceQueue");
+    createCommandPool_ =
+        DeviceProc<PFN_vkCreateCommandPool>("vkCreateCommandPool");
+    destroyCommandPool_ =
+        DeviceProc<PFN_vkDestroyCommandPool>("vkDestroyCommandPool");
+    allocateCommands_ =
+        DeviceProc<PFN_vkAllocateCommandBuffers>(
+            "vkAllocateCommandBuffers");
+    beginCommand_ =
+        DeviceProc<PFN_vkBeginCommandBuffer>("vkBeginCommandBuffer");
+    endCommand_ =
+        DeviceProc<PFN_vkEndCommandBuffer>("vkEndCommandBuffer");
     queueSubmit_ = DeviceProc<PFN_vkQueueSubmit>("vkQueueSubmit");
     queueWaitIdle_ =
         DeviceProc<PFN_vkQueueWaitIdle>("vkQueueWaitIdle");
     if (!destroyDevice_ || !getDeviceQueue ||
+        !createCommandPool_ || !destroyCommandPool_ ||
+        !allocateCommands_ || !beginCommand_ || !endCommand_ ||
         !queueSubmit_ || !queueWaitIdle_) {
         return false;
     }
@@ -245,42 +258,5 @@ ProviderContext VulkanExternalInteropHarness::Context() const noexcept {
     return context;
 }
 
-bool VulkanExternalInteropHarness::SubmitWaitSignal(
-    void* waitSemaphore,
-    std::uint64_t waitValue,
-    void* signalSemaphore,
-    std::uint64_t signalValue) noexcept {
-    if (!queue_ || !queueSubmit_ || !queueWaitIdle_ ||
-        !waitSemaphore || !signalSemaphore ||
-        waitValue == 0 || signalValue == 0) {
-        return false;
-    }
-
-    VkSemaphore wait =
-        reinterpret_cast<VkSemaphore>(waitSemaphore);
-    VkSemaphore signal =
-        reinterpret_cast<VkSemaphore>(signalSemaphore);
-    VkPipelineStageFlags waitStage =
-        VK_PIPELINE_STAGE_ALL_COMMANDS_BIT;
-
-    VkTimelineSemaphoreSubmitInfo timeline{
-        VK_STRUCTURE_TYPE_TIMELINE_SEMAPHORE_SUBMIT_INFO};
-    timeline.waitSemaphoreValueCount = 1;
-    timeline.pWaitSemaphoreValues = &waitValue;
-    timeline.signalSemaphoreValueCount = 1;
-    timeline.pSignalSemaphoreValues = &signalValue;
-
-    VkSubmitInfo submit{VK_STRUCTURE_TYPE_SUBMIT_INFO};
-    submit.pNext = &timeline;
-    submit.waitSemaphoreCount = 1;
-    submit.pWaitSemaphores = &wait;
-    submit.pWaitDstStageMask = &waitStage;
-    submit.signalSemaphoreCount = 1;
-    submit.pSignalSemaphores = &signal;
-
-    return queueSubmit_(
-               queue_, 1, &submit, VK_NULL_HANDLE) == VK_SUCCESS &&
-           queueWaitIdle_(queue_) == VK_SUCCESS;
-}
 
 } // namespace nrfusion::test

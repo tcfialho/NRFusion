@@ -83,6 +83,7 @@ add_test(NAME nrfusion_d3d12_external_share_tests
 add_executable(nrfusion_vulkan_external_interop_tests
     tests/vulkan_external_interop_tests.cpp
     tests/VulkanExternalInteropHarness.cpp
+    tests/VulkanExternalInteropCommands.cpp
     tests/D3D12ExternalShareHarness.cpp
     src/SyntheticDx12Provider.cpp
     src/VulkanCarrierContract.cpp
@@ -102,3 +103,5 @@ else()
 endif()
 add_test(NAME nrfusion_vulkan_external_interop_tests
     COMMAND nrfusion_vulkan_external_interop_tests)
+set_tests_properties(nrfusion_vulkan_external_interop_tests PROPERTIES
+    SKIP_RETURN_CODE 77)

@@ -24,7 +24,13 @@ public:
 
     ProviderContext Context() const noexcept;
 
-    bool SubmitWaitSignal(
+    bool CreatePrimaryCommandBuffer(
+        VkCommandPool& pool,
+        VkCommandBuffer& command) noexcept;
+    void DestroyCommandPool(VkCommandPool pool) noexcept;
+    bool Begin(VkCommandBuffer command) noexcept;
+    bool EndSubmitWaitSignal(
+        VkCommandBuffer command,
         void* waitSemaphore,
         std::uint64_t waitValue,
         void* signalSemaphore,
@@ -55,6 +61,11 @@ private:
 
     PFN_vkDestroyInstance destroyInstance_ = nullptr;
     PFN_vkDestroyDevice destroyDevice_ = nullptr;
+    PFN_vkCreateCommandPool createCommandPool_ = nullptr;
+    PFN_vkDestroyCommandPool destroyCommandPool_ = nullptr;
+    PFN_vkAllocateCommandBuffers allocateCommands_ = nullptr;
+    PFN_vkBeginCommandBuffer beginCommand_ = nullptr;
+    PFN_vkEndCommandBuffer endCommand_ = nullptr;
     PFN_vkQueueSubmit queueSubmit_ = nullptr;
     PFN_vkQueueWaitIdle queueWaitIdle_ = nullptr;
 };
