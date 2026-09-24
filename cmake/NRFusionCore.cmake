@@ -76,6 +76,7 @@ if (WIN32)
         src/D3D11BridgeResources.cpp
         src/D3D11CarrierNativeAcquire.cpp
         src/CaptureProvider32.cpp
+        src/CaptureProvider32Io.cpp
         src/CaptureProvider32Frames.cpp
         src/CaptureProvider32Export.cpp
         src/HostServer64.cpp

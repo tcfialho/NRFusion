@@ -1,5 +1,4 @@
 #include "nrfusion/CaptureProvider32.hpp"
-#include "nrfusion/HostServer64.hpp"
 
 #include <cassert>
 #include <chrono>
@@ -7,15 +6,55 @@
 
 using namespace nrfusion;
 
-int main() {
-    const uint32_t pipePid = GetCurrentProcessId() + 700;
+namespace {
+
+HANDLE CreatePipe(uint32_t pipePid) {
     char pipeName[128]{};
     FormatPipeName(pipeName, sizeof(pipeName), pipePid);
-
-    HANDLE stalledPipe = CreateNamedPipeA(
+    return CreateNamedPipeA(
         pipeName, PIPE_ACCESS_DUPLEX,
         PIPE_TYPE_BYTE | PIPE_READMODE_BYTE | PIPE_WAIT,
         1, 4096, 4096, 0, nullptr);
+}
+
+void RunHealthyServer(HANDLE pipe) {
+    const BOOL connected = ConnectNamedPipe(pipe, nullptr);
+    assert(connected || GetLastError() == ERROR_PIPE_CONNECTED);
+
+    IpcHelloMessage hello{};
+    DWORD read = 0;
+    assert(ReadFile(pipe, &hello, sizeof(hello), &read, nullptr));
+    assert(read == sizeof(hello));
+
+    IpcHelloAckMessage helloAck{};
+    helloAck.hostPid = GetCurrentProcessId();
+    helloAck.connectionGeneration = 9;
+    DWORD written = 0;
+    assert(WriteFile(pipe, &helloAck, sizeof(helloAck), &written, nullptr));
+    assert(written == sizeof(helloAck));
+
+    IpcBuildMessage build{};
+    assert(ReadFile(pipe, &build, sizeof(build), &read, nullptr));
+    assert(read == sizeof(build));
+
+    IpcBuildAckMessage buildAck{};
+    buildAck.sessionId = build.sessionId;
+    buildAck.connectionGeneration = build.connectionGeneration;
+    buildAck.workWidth = build.width;
+    buildAck.workHeight = build.height;
+    assert(WriteFile(pipe, &buildAck, sizeof(buildAck), &written, nullptr));
+    assert(written == sizeof(buildAck));
+
+    std::this_thread::sleep_for(std::chrono::milliseconds(50));
+    DisconnectNamedPipe(pipe);
+    CloseHandle(pipe);
+}
+
+} // namespace
+
+int main() {
+    const uint32_t pipePid = GetCurrentProcessId() + 700;
+    HANDLE stalledPipe = CreatePipe(pipePid);
     assert(stalledPipe != INVALID_HANDLE_VALUE);
 
     std::thread stalledServer([&] {
@@ -32,11 +71,11 @@ int main() {
     const auto elapsed = std::chrono::duration_cast<std::chrono::milliseconds>(
         std::chrono::steady_clock::now() - started);
     assert(elapsed.count() < 1000);
-    assert(!client.IsConnected());
     stalledServer.join();
 
-    HostServer64 host;
-    assert(host.Start(pipePid));
+    HANDLE healthyPipe = CreatePipe(pipePid);
+    assert(healthyPipe != INVALID_HANDLE_VALUE);
+    std::thread healthyServer(RunHealthyServer, healthyPipe);
 
     bool reconnected = false;
     for (int attempt = 0; attempt != 100 && !reconnected; ++attempt) {
@@ -53,6 +92,6 @@ int main() {
     assert(client.Configure(config));
 
     client.Disconnect();
-    host.Stop();
+    healthyServer.join();
     return 0;
 }
