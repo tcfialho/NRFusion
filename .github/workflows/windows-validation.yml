@@ -56,6 +56,20 @@ jobs:
         shell: powershell
         run: choco install nsis --no-progress -y
 
+      - name: Parse physical gate scripts
+        shell: powershell
+        run: |
+          $tokens = $null
+          $errors = $null
+          [void][System.Management.Automation.Language.Parser]::ParseFile(
+            (Join-Path $PWD 'tools/validate_phase09_hardware.ps1'),
+            [ref]$tokens,
+            [ref]$errors)
+          if ($errors.Count -ne 0) {
+            $errors | ForEach-Object { Write-Error $_.Message }
+            exit 1
+          }
+
       - name: Validate Windows
         shell: powershell
         run: |
