@@ -178,6 +178,8 @@ VulkanAcquireResult AcquireVulkanFrame(
     }
 
     result.outputOpaqueId = input.output.opaqueId;
+    result.colorFacts = input.color.image;
+    result.outputFacts = input.output;
     result.colorLayout = input.color.image.layout;
     result.outputLayout = input.output.layout;
     result.queueFamilyIndex = input.output.queueFamilyIndex;

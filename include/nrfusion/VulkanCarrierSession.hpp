@@ -52,6 +52,8 @@ public:
 
     bool CanExecuteWork(const VulkanCarrierWork& work) const noexcept;
     bool ClaimExecuteWork(const VulkanCarrierWork& work) noexcept;
+    bool HasClaimedExecution(const VulkanCarrierWork& work) const noexcept;
+    bool ConsumeClaimedExecution(const VulkanCarrierWork& work) noexcept;
     bool SubmitWork(const VulkanCarrierWork& work) noexcept;
     bool AbandonWork(const VulkanCarrierWork& work) noexcept;
     bool MapTimedWork(const VulkanCarrierWork& work) noexcept;

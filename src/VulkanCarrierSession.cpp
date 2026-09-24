@@ -67,6 +67,16 @@ bool VulkanCarrierSession::ClaimExecuteWork(
     return work && session_.ClaimExecuteWork(work.ticket);
 }
 
+bool VulkanCarrierSession::HasClaimedExecution(
+    const VulkanCarrierWork& work) const noexcept {
+    return work && session_.HasClaimedExecution(work.ticket);
+}
+
+bool VulkanCarrierSession::ConsumeClaimedExecution(
+    const VulkanCarrierWork& work) noexcept {
+    return work && session_.ConsumeClaimedExecution(work.ticket);
+}
+
 bool VulkanCarrierSession::SubmitWork(
     const VulkanCarrierWork& work) noexcept {
     return work && session_.SubmitWork(work.ticket);

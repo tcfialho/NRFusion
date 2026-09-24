@@ -62,6 +62,8 @@ struct VulkanAcquireResult {
     FrameContext frame{};
     ProviderDiagnostics diagnostics{};
     std::uint64_t outputOpaqueId = 0;
+    VulkanNativeImageFacts colorFacts{};
+    VulkanNativeImageFacts outputFacts{};
     VulkanImageLayoutIntent colorLayout = VulkanImageLayoutIntent::Undefined;
     VulkanImageLayoutIntent outputLayout = VulkanImageLayoutIntent::Undefined;
     std::uint32_t queueFamilyIndex =
