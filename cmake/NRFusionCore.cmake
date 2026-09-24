@@ -66,6 +66,7 @@ add_library(nrfusion_core STATIC
     src/VulkanCarrierAcquire.cpp
     src/VulkanCarrierSession.cpp
     src/VulkanCarrierExecutionPlan.cpp
+    src/OpenGlCarrierAcquire.cpp
 )
 
 if (WIN32)
