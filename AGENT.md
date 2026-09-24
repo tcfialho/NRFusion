@@ -137,8 +137,8 @@ Regras obrigatórias:
 
 Date: 2026-09-24 BRT
 Branch: standalone/integration
-Validated code head: a4593eb
-Current branch head before closure docs: a4593eb
+Validated code head: 3d39e9e
+Current branch head before closure docs: 3d39e9e
 
 Phase 06: CLOSED.
 Phase 07: CLOSED, including real Windows compile/harness validation.
@@ -302,12 +302,22 @@ Phase 11 subgate 11h — hosted implementation freeze:
 - all files substantively touched in this subgate remain <=300 lines;
 - local/notebook access remains disabled, so no physical Vulkan carrier or D3D12<->Vulkan external-memory/semaphore runtime gate was executed.
 
+Phase 11 subgate 11i — physical gate orchestration ready:
+- tools/validate_phase11_hardware.ps1 configures an x64 build and compiles only nrfusion_vulkan_carrier_device_tests plus nrfusion_vulkan_external_interop_tests;
+- the script sets NRFUSION_TEST_VULKAN_HARDWARE=1 and NRFUSION_TEST_VULKAN_EXTERNAL_HARDWARE=1;
+- it executes both binaries directly instead of through CTest, so exit code 77 cannot be accepted as a skipped-success physical gate;
+- optional -VulkanHeaders points to a directory containing vulkan/vulkan.h; otherwise normal Vulkan SDK/environment discovery is used;
+- the script restores the previous NRFUSION_VULKAN_HEADERS value and both hardware flags after execution;
+- hosted Windows workflow now parses the Phase 11 physical script on every relevant push;
+- Windows hosted run 36053130693 PASS, including PowerShell parser validation and normal Windows regression coverage;
+- validate_phase11_hardware.ps1 is 76 lines and stays under the 300-line limit;
+- no physical gate was executed because local/notebook access remains disabled.
+
 Phase 11 remains IN PROGRESS.
-Hosted/portable implementation work is frozen; closure now depends on physical Vulkan evidence.
+Hosted/portable implementation and the physical gate entrypoint are frozen; closure now depends only on physical Vulkan evidence.
 
 Exact next action when local access is explicitly re-enabled:
 - fast-forward the physical checkout to origin/standalone/integration;
-- run nrfusion_vulkan_carrier_device_tests with NRFUSION_TEST_VULKAN_HARDWARE=1;
-- run nrfusion_vulkan_external_interop_tests with NRFUSION_TEST_VULKAN_EXTERNAL_HARDWARE=1;
-- require the 32 recreation + 128 reuse external cycles to execute, not SKIP;
-- if both physical gates PASS, record Phase 11 closure; otherwise collect logs and fix via GitHub before rerunning.
+- run tools/validate_phase11_hardware.ps1 with persistent logging outside the worktree;
+- require both binaries to return exit code 0, including the 32 recreation + 128 reuse external cycles;
+- if the script PASSes, record Phase 11 closure; otherwise collect logs and fix via GitHub before rerunning.

@@ -307,3 +307,36 @@ físicos que não podem ser executados enquanto o acesso local estiver desabilit
 3. exigir execução real dos 32 ciclos de recreation e 128 ciclos de reuse;
 4. só após PASS físico marcar `Recreate/semaphore long run`,
    `Harness-verified` e a própria Fase 11 como concluídos.
+
+
+## Subgate 11i — physical gate entrypoint
+
+Código validado: `3d39e9e`.
+
+Adicionado `tools/validate_phase11_hardware.ps1`:
+- configura build x64;
+- compila somente `nrfusion_vulkan_carrier_device_tests` e
+  `nrfusion_vulkan_external_interop_tests`;
+- seta os dois flags que tornam hardware obrigatório;
+- executa os binários diretamente, portanto exit code 77 não vira SKIP aceito;
+- aceita `-VulkanHeaders` para um include tree contendo `vulkan/vulkan.h`;
+- restaura as variáveis de ambiente ao sair.
+
+Hosted validation:
+- Windows run `36053130693`: PASS;
+- parser PowerShell do gate físico: PASS;
+- script: 76 linhas;
+- nenhum runtime físico foi executado.
+
+### Ação única para fechamento
+
+Quando o acesso local for explicitamente reabilitado:
+
+`tools/validate_phase11_hardware.ps1`
+
+A execução deve ocorrer após `git fetch` + `git pull --ff-only` da branch
+`standalone/integration`, com log persistente fora do worktree.
+
+A Fase 11 somente fecha se os dois executáveis terminarem com código 0.
+Qualquer ausência de Vulkan físico, external-memory/semaphore incompatível ou falha
+nos ciclos de recreation/reuse deve falhar o gate, nunca ser registrada como PASS.
