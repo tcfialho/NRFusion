@@ -215,8 +215,18 @@ Phase 10 closure:
 - physical Win32 -> x64 Host64 gate PASS after real host restart, fresh connectionGeneration, N/N-1, Neural 1.0 and reduced 0.5;
 - Capture/Host owners touched in Phase 10 remain <=300 lines.
 
+Phase 11 subgate 11a:
+- portable VulkanCarrierContract added with explicit memory, handle, layout, queue and timeline ownership evidence;
+- SyntheticVulkanProvider split from 377 lines into 146-line orchestration and 224-line interop/sync/commands owners;
+- fake-handle Vulkan success paths removed; without a real backend the provider fails closed;
+- ipc_host_test reduced to 248 lines by removing simulated Vulkan interop evidence;
+- patcher compatibility preserved without modifying the grandfathered patcher;
+- portable CI PASS at 3566c14;
+- Windows hosted run 35947607432 was still in progress at session freeze.
+
 Exact next action:
-- start Phase 11 from the existing SyntheticVulkanProvider and Vulkan interop tests;
-- audit Acquire/Normalize/Execute/Compose ownership before adding code;
-- replace simulated Vulkan handle/layout behavior with explicit external-memory/semaphore contracts that remain testable without physical hardware;
-- use hosted validation first and reserve the notebook for the final Vulkan physical/driver gate.
+- inspect Windows run 35947607432 first and do not duplicate it;
+- if green, start Phase 11 native context seam with explicit VkInstance/VkPhysicalDevice/VkDevice/VkQueue/queue-family ownership;
+- compile the native owner only with official Vulkan headers;
+- replace manual ABI and memoryTypeIndex=0 with vkGetMemoryWin32HandlePropertiesKHR plus real memoryTypeBits intersection;
+- keep fake handles confined to portable contract tests and reserve physical Vulkan validation for the final gate.

@@ -15,29 +15,29 @@ Fases 07–08.
 
 ## Implementação
 
-- [ ] Reusar `SyntheticVulkanProvider`; separar contract simulation de VkDevice real.
-- [ ] Se provider atual >300 for tocado, dividir loader/capabilities, interop/sync e carrier orchestration.
+- [x] Reusar `SyntheticVulkanProvider`; separar contract simulation de VkDevice real.
+- [x] Se provider atual >300 for tocado, dividir loader/capabilities, interop/sync e carrier orchestration.
 - [ ] Definir Acquire seam e ownership de VkImage.
 - [ ] Usar headers Vulkan corretos/memoryTypeIndex real.
 - [ ] External memory/semaphore/handle ownership explícitos.
 - [ ] Layout/access/queue-family ownership.
 - [ ] Compose back e recreation.
-- [ ] Cada arquivo handwritten <=300 linhas.
+- [x] Cada arquivo handwritten <=300 linhas.
 
 ## Revisão obrigatória
 
-- [ ] Provider recebe handle != aquisição correta.
-- [ ] Fake-handle test é só contract test.
+- [x] Provider recebe handle != aquisição correta.
+- [x] Fake-handle test é só contract test.
 - [ ] Format/tiling/usage compatíveis.
 - [ ] Sync completo success/failure.
 - [ ] Sem CPU readback.
 
 ## Validação rápida
 
-- [ ] Contract tests sem Vulkan real.
+- [x] Contract tests sem Vulkan real.
 - [ ] VkDevice real quando disponível.
 - [ ] Recreate/semaphore long run.
-- [ ] LOC checker.
+- [x] LOC checker.
 
 ## Gate
 
@@ -48,3 +48,28 @@ Fases 07–08.
 ## Próxima fase
 
 Fase 12.
+
+
+## Subgate 11a — contrato portátil e fail-closed
+
+- `VulkanCarrierContract` separa contract simulation do backend nativo;
+- contrato valida identidade, extent, format, usage, allocation, memoryTypeBits/index,
+  ownership de handle, layout intent, queue ownership e timeline wait/signal;
+- fake handles existem apenas no contract test portátil e não contam como interop real;
+- `SyntheticVulkanProvider.cpp` foi reduzido para 146 linhas;
+- interop/sync/commands ficaram em `SyntheticVulkanProviderInterop.cpp` com 224 linhas;
+- `ipc_host_test.cpp` caiu para 248 linhas ao remover o falso teste de interop;
+- sem VkDevice/backend válido, provider/import/barrier/blit/submit agora falham fechado;
+- o patcher legado continua copiando um `SyntheticVulkanProvider.cpp` autocontido,
+  sem exigir mudança no patcher grandfathered;
+- portable CI PASS no head `3566c14`;
+- Windows hosted run `35947607432` ainda estava em andamento no fechamento desta janela.
+
+## Próximo subgate
+
+1. inspecionar o run Windows `35947607432`; não relançar se ainda estiver ativo;
+2. introduzir um contexto Vulkan nativo explícito com instance, physical device,
+   device, queue e queue family;
+3. usar headers Vulkan oficiais, sem ABI/constantes locais;
+4. consultar `vkGetMemoryWin32HandlePropertiesKHR` e intersectar memoryTypeBits reais;
+5. só então reativar import/layout/compose Vulkan e criar gate VkDevice real.
