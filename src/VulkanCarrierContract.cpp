@@ -14,6 +14,24 @@ VulkanContractValidation Failure(VulkanContractFailure failure) noexcept {
 
 } // namespace
 
+VulkanContractValidation ValidateVulkanContextContract(
+    const VulkanContextContract& context) noexcept {
+    return context.Valid()
+        ? VulkanContractValidation{}
+        : Failure(VulkanContractFailure::InvalidNativeContext);
+}
+
+std::optional<std::uint32_t> SelectVulkanMemoryTypeIndex(
+    std::uint32_t imageMemoryTypeBits,
+    std::uint32_t importMemoryTypeBits) noexcept {
+    const std::uint32_t compatible =
+        imageMemoryTypeBits & importMemoryTypeBits;
+    for (std::uint32_t index = 0; index != 32; ++index) {
+        if ((compatible & (1u << index)) != 0) return index;
+    }
+    return std::nullopt;
+}
+
 VulkanContractValidation ValidateVulkanExternalMemory(
     const VulkanExternalMemoryContract& memory,
     std::uint32_t requiredUsageAny) noexcept {

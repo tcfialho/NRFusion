@@ -57,6 +57,22 @@ int main() {
     static_assert(std::is_trivially_copyable_v<VulkanTimelineContract>);
     static_assert(std::is_trivially_copyable_v<VulkanAcquireContract>);
 
+    VulkanContextContract context{};
+    context.instance = 0x10;
+    context.physicalDevice = 0x20;
+    context.device = 0x30;
+    context.queue = 0x40;
+    context.queueFamilyIndex = 3;
+    assert(ValidateVulkanContextContract(context));
+    auto missingPhysicalDevice = context;
+    missingPhysicalDevice.physicalDevice = 0;
+    assert(ValidateVulkanContextContract(missingPhysicalDevice).failure ==
+           VulkanContractFailure::InvalidNativeContext);
+
+    const auto selected = SelectVulkanMemoryTypeIndex(0b10110u, 0b01100u);
+    assert(selected && *selected == 2u);
+    assert(!SelectVulkanMemoryTypeIndex(0b00010u, 0b00100u));
+
     const auto base = BaseContract();
     assert(ValidateVulkanAcquireContract(base));
 

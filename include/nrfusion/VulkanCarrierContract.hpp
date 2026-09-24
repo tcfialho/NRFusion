@@ -4,6 +4,7 @@
 
 #include <cstdint>
 #include <limits>
+#include <optional>
 
 namespace nrfusion {
 
@@ -51,6 +52,21 @@ struct VulkanExternalMemoryContract {
         std::numeric_limits<std::uint32_t>::max();
 };
 
+struct VulkanContextContract {
+    std::uintptr_t instance = 0;
+    std::uintptr_t physicalDevice = 0;
+    std::uintptr_t device = 0;
+    std::uintptr_t queue = 0;
+    std::uint32_t queueFamilyIndex =
+        std::numeric_limits<std::uint32_t>::max();
+
+    constexpr bool Valid() const noexcept {
+        return instance != 0 && physicalDevice != 0 && device != 0 &&
+               queue != 0 &&
+               queueFamilyIndex != std::numeric_limits<std::uint32_t>::max();
+    }
+};
+
 enum class VulkanTimelineDirection : std::uint8_t {
     Wait,
     Signal
@@ -88,7 +104,8 @@ enum class VulkanContractFailure : std::uint8_t {
     MissingTimelineSemaphore,
     NonTimelineSemaphore,
     InvalidTimelineValue,
-    InvalidTimelineDirection
+    InvalidTimelineDirection,
+    InvalidNativeContext
 };
 
 struct VulkanContractValidation {
@@ -97,6 +114,13 @@ struct VulkanContractValidation {
         return failure == VulkanContractFailure::None;
     }
 };
+
+VulkanContractValidation ValidateVulkanContextContract(
+    const VulkanContextContract& context) noexcept;
+
+std::optional<std::uint32_t> SelectVulkanMemoryTypeIndex(
+    std::uint32_t imageMemoryTypeBits,
+    std::uint32_t importMemoryTypeBits) noexcept;
 
 VulkanContractValidation ValidateVulkanExternalMemory(
     const VulkanExternalMemoryContract& memory,
