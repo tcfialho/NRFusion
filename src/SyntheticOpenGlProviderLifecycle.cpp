@@ -20,64 +20,61 @@ SyntheticOpenGlProvider::~SyntheticOpenGlProvider() {
 }
 
 bool SyntheticOpenGlProvider::LoadOpenGl() {
-    if (gl_.isLoaded) return true;
+    if (!gl_.isLoaded) {
+        gl_.libGl = GetModuleHandleW(L"opengl32.dll");
+        if (!gl_.libGl) gl_.libGl = LoadLibraryW(L"opengl32.dll");
+        if (!gl_.libGl) return false;
 
-    gl_.libGl = GetModuleHandleW(L"opengl32.dll");
-    if (!gl_.libGl) {
-        gl_.libGl = LoadLibraryW(L"opengl32.dll");
+        gl_.wglGetProcAddress = ProcCast<PROC(WINAPI*)(LPCSTR)>(
+            GetProcAddress(gl_.libGl, "wglGetProcAddress"));
+        gl_.wglGetCurrentContext = ProcCast<HGLRC(WINAPI*)(void)>(
+            GetProcAddress(gl_.libGl, "wglGetCurrentContext"));
+        gl_.isLoaded = gl_.wglGetProcAddress && gl_.wglGetCurrentContext;
+        if (!gl_.isLoaded) return false;
     }
-    if (!gl_.libGl) {
-        return false;
-    }
 
-    gl_.wglGetProcAddress = ProcCast<PROC(WINAPI*)(LPCSTR)>(
-        GetProcAddress(gl_.libGl, "wglGetProcAddress"));
-    gl_.wglGetCurrentContext = ProcCast<HGLRC(WINAPI*)(void)>(
-        GetProcAddress(gl_.libGl, "wglGetCurrentContext"));
+    gl_.hasInterop = false;
+    if (gl_.wglGetCurrentContext() == nullptr) return true;
 
-    if (gl_.wglGetProcAddress) {
-        gl_.CreateMemoryObjectsEXT = ProcCast<PFN_glCreateMemoryObjectsEXT_>(
-            gl_.wglGetProcAddress("glCreateMemoryObjectsEXT"));
-        gl_.DeleteMemoryObjectsEXT = ProcCast<PFN_glDeleteMemoryObjectsEXT_>(
-            gl_.wglGetProcAddress("glDeleteMemoryObjectsEXT"));
-        gl_.MemoryObjectParameterivEXT = ProcCast<PFN_glMemoryObjectParameterivEXT_>(
-            gl_.wglGetProcAddress("glMemoryObjectParameterivEXT"));
-        gl_.TexStorageMem2DEXT = ProcCast<PFN_glTexStorageMem2DEXT_>(
-            gl_.wglGetProcAddress("glTexStorageMem2DEXT"));
-        gl_.ImportMemoryWin32HandleEXT = ProcCast<PFN_glImportMemoryWin32HandleEXT_>(
+    gl_.CreateMemoryObjectsEXT = ProcCast<PFN_glCreateMemoryObjectsEXT_>(
+        gl_.wglGetProcAddress("glCreateMemoryObjectsEXT"));
+    gl_.DeleteMemoryObjectsEXT = ProcCast<PFN_glDeleteMemoryObjectsEXT_>(
+        gl_.wglGetProcAddress("glDeleteMemoryObjectsEXT"));
+    gl_.MemoryObjectParameterivEXT = ProcCast<PFN_glMemoryObjectParameterivEXT_>(
+        gl_.wglGetProcAddress("glMemoryObjectParameterivEXT"));
+    gl_.TexStorageMem2DEXT = ProcCast<PFN_glTexStorageMem2DEXT_>(
+        gl_.wglGetProcAddress("glTexStorageMem2DEXT"));
+    gl_.ImportMemoryWin32HandleEXT =
+        ProcCast<PFN_glImportMemoryWin32HandleEXT_>(
             gl_.wglGetProcAddress("glImportMemoryWin32HandleEXT"));
-
-        gl_.GenSemaphoresEXT = ProcCast<PFN_glGenSemaphoresEXT_>(
-            gl_.wglGetProcAddress("glGenSemaphoresEXT"));
-        gl_.DeleteSemaphoresEXT = ProcCast<PFN_glDeleteSemaphoresEXT_>(
-            gl_.wglGetProcAddress("glDeleteSemaphoresEXT"));
-        gl_.ImportSemaphoreWin32HandleEXT = ProcCast<PFN_glImportSemaphoreWin32HandleEXT_>(
+    gl_.GenSemaphoresEXT = ProcCast<PFN_glGenSemaphoresEXT_>(
+        gl_.wglGetProcAddress("glGenSemaphoresEXT"));
+    gl_.DeleteSemaphoresEXT = ProcCast<PFN_glDeleteSemaphoresEXT_>(
+        gl_.wglGetProcAddress("glDeleteSemaphoresEXT"));
+    gl_.ImportSemaphoreWin32HandleEXT =
+        ProcCast<PFN_glImportSemaphoreWin32HandleEXT_>(
             gl_.wglGetProcAddress("glImportSemaphoreWin32HandleEXT"));
-        gl_.WaitSemaphoreEXT = ProcCast<PFN_glWaitSemaphoreEXT_>(
-            gl_.wglGetProcAddress("glWaitSemaphoreEXT"));
-        gl_.SignalSemaphoreEXT = ProcCast<PFN_glSignalSemaphoreEXT_>(
-            gl_.wglGetProcAddress("glSignalSemaphoreEXT"));
+    gl_.WaitSemaphoreEXT = ProcCast<PFN_glWaitSemaphoreEXT_>(
+        gl_.wglGetProcAddress("glWaitSemaphoreEXT"));
+    gl_.SignalSemaphoreEXT = ProcCast<PFN_glSignalSemaphoreEXT_>(
+        gl_.wglGetProcAddress("glSignalSemaphoreEXT"));
+    gl_.CopyImageSubData = ProcCast<PFN_glCopyImageSubData_>(
+        gl_.wglGetProcAddress("glCopyImageSubData"));
+    gl_.GetStringi = ProcCast<PFN_glGetStringi_>(
+        gl_.wglGetProcAddress("glGetStringi"));
 
-        gl_.GenFramebuffers = ProcCast<PFN_glGenFramebuffers_>(
-            gl_.wglGetProcAddress("glGenFramebuffers"));
-        gl_.DeleteFramebuffers = ProcCast<PFN_glDeleteFramebuffers_>(
-            gl_.wglGetProcAddress("glDeleteFramebuffers"));
-        gl_.BindFramebuffer = ProcCast<PFN_glBindFramebuffer_>(
-            gl_.wglGetProcAddress("glBindFramebuffer"));
-        gl_.FramebufferTexture2D = ProcCast<PFN_glFramebufferTexture2D_>(
-            gl_.wglGetProcAddress("glFramebufferTexture2D"));
-        gl_.BlitFramebuffer = ProcCast<PFN_glBlitFramebuffer_>(
-            gl_.wglGetProcAddress("glBlitFramebuffer"));
-        gl_.CopyImageSubData = ProcCast<PFN_glCopyImageSubData_>(
-            gl_.wglGetProcAddress("glCopyImageSubData"));
-
-        if (gl_.CreateMemoryObjectsEXT && gl_.ImportMemoryWin32HandleEXT &&
-            gl_.TexStorageMem2DEXT && gl_.GenSemaphoresEXT && gl_.ImportSemaphoreWin32HandleEXT) {
-            gl_.hasInterop = true;
-        }
-    }
-
-    gl_.isLoaded = true;
+    gl_.hasInterop =
+        gl_.CreateMemoryObjectsEXT &&
+        gl_.DeleteMemoryObjectsEXT &&
+        gl_.MemoryObjectParameterivEXT &&
+        gl_.TexStorageMem2DEXT &&
+        gl_.ImportMemoryWin32HandleEXT &&
+        gl_.GenSemaphoresEXT &&
+        gl_.DeleteSemaphoresEXT &&
+        gl_.ImportSemaphoreWin32HandleEXT &&
+        gl_.WaitSemaphoreEXT &&
+        gl_.SignalSemaphoreEXT &&
+        gl_.CopyImageSubData;
     return true;
 }
 
@@ -116,11 +113,15 @@ bool SyntheticOpenGlProvider::CreatePrivateD3D12() {
 }
 
 bool SyntheticOpenGlProvider::Initialize(const ProviderContext& context) {
-    (void)context;
     std::scoped_lock lock(mutex_);
     if (ready_) return true;
-
-    LoadOpenGl();
+    if (context.api != GraphicsApi::OpenGL ||
+        !LoadOpenGl() ||
+        !gl_.wglGetCurrentContext ||
+        gl_.wglGetCurrentContext() == nullptr ||
+        !gl_.hasInterop) {
+        return false;
+    }
 
     if (!CreatePrivateD3D12()) {
         return false;

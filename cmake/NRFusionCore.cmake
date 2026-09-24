@@ -106,6 +106,7 @@ if (WIN32)
         src/SyntheticVulkanProvider.cpp
         src/SyntheticOpenGlProvider.cpp
         src/SyntheticOpenGlProviderLifecycle.cpp
+        src/SyntheticOpenGlProviderInterop.cpp
     )
 endif()
 

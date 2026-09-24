@@ -83,6 +83,11 @@ typedef void (APIENTRY *PFN_glBlitFramebuffer_)(GLint, GLint, GLint, GLint, GLin
 typedef void (APIENTRY *PFN_glCopyImageSubData_)(GLuint, GLenum, GLint, GLint, GLint, GLint,
                                                  GLuint, GLenum, GLint, GLint, GLint, GLint,
                                                  GLsizei, GLsizei, GLsizei);
+typedef const GLubyte* (APIENTRY *PFN_glGetStringi_)(GLenum, GLuint);
+
+#ifndef GL_NUM_EXTENSIONS
+#define GL_NUM_EXTENSIONS 0x821D
+#endif
 
 struct OpenGlDispatchTable {
     HMODULE libGl = nullptr;
@@ -107,6 +112,7 @@ struct OpenGlDispatchTable {
     PFN_glFramebufferTexture2D_ FramebufferTexture2D = nullptr;
     PFN_glBlitFramebuffer_ BlitFramebuffer = nullptr;
     PFN_glCopyImageSubData_ CopyImageSubData = nullptr;
+    PFN_glGetStringi_ GetStringi = nullptr;
 
     bool isLoaded = false;
     bool hasInterop = false;
