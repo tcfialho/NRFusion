@@ -1,239 +1,367 @@
 #include "nrfusion/SyntheticVulkanProvider.hpp"
-#include "nrfusion/VulkanNativeMemoryQuery.hpp"
+#include "nrfusion/VulkanNativeContext.hpp"
 
 namespace nrfusion {
+namespace {
 
-bool SyntheticVulkanProvider::ImportD3D12Resource(HANDLE sharedHandle,
-                                                 uint32_t width,
-                                                 uint32_t height,
-                                                 uint32_t format,
-                                                 uint64_t allocationSize,
-                                                 ImportedVulkanResource& outResource) {
-    if (!ready_ || !vkDevice_ || !sharedHandle) return false;
+template <typename T>
+T Proc(FARPROC proc) noexcept {
+    return reinterpret_cast<T>(proc);
+}
 
+FARPROC Resolve(
+    PFN_vkGetDeviceProcAddr getDeviceProcAddr,
+    VkDevice device,
+    const char* name) noexcept {
+    return reinterpret_cast<FARPROC>(getDeviceProcAddr(device, name));
+}
+
+VulkanNativeContext NativeContext(
+    void* instance,
+    void* physicalDevice,
+    void* device,
+    void* queue,
+    uint32_t queueFamilyIndex) noexcept {
+    VulkanContextContract contract{};
+    contract.instance = reinterpret_cast<std::uintptr_t>(instance);
+    contract.physicalDevice =
+        reinterpret_cast<std::uintptr_t>(physicalDevice);
+    contract.device = reinterpret_cast<std::uintptr_t>(device);
+    contract.queue = reinterpret_cast<std::uintptr_t>(queue);
+    contract.queueFamilyIndex = queueFamilyIndex;
+    return MakeVulkanNativeContext(contract);
+}
+
+} // namespace
+
+bool SyntheticVulkanProvider::InitializeNativeVulkan(
+    const ProviderContext& context) {
+    VulkanContextContract contract{};
+    contract.instance = reinterpret_cast<std::uintptr_t>(context.instance);
+    contract.physicalDevice =
+        reinterpret_cast<std::uintptr_t>(context.physicalDevice);
+    contract.device = reinterpret_cast<std::uintptr_t>(context.device);
+    contract.queue = reinterpret_cast<std::uintptr_t>(context.commandQueue);
+    contract.queueFamilyIndex = context.queueFamilyIndex;
+    if (!ValidateVulkanContextContract(contract)) return false;
+
+    const VulkanNativeContext native = MakeVulkanNativeContext(contract);
+    const auto getDeviceProcAddr =
+        Proc<PFN_vkGetDeviceProcAddr>(vk_.getDeviceProcAddr);
+    if (!native.Valid() || !getDeviceProcAddr) return false;
+
+    vkInstance_ = context.instance;
+    vkPhysicalDevice_ = context.physicalDevice;
+    vkDevice_ = context.device;
+    vkQueue_ = context.commandQueue;
+    vkQueueFamilyIndex_ = context.queueFamilyIndex;
+
+    vk_.createSemaphore = Resolve(
+        getDeviceProcAddr, native.device, "vkCreateSemaphore");
+    vk_.destroySemaphore = Resolve(
+        getDeviceProcAddr, native.device, "vkDestroySemaphore");
+    vk_.importSemaphoreWin32Handle = Resolve(
+        getDeviceProcAddr, native.device,
+        "vkImportSemaphoreWin32HandleKHR");
+    vk_.createImage = Resolve(
+        getDeviceProcAddr, native.device, "vkCreateImage");
+    vk_.destroyImage = Resolve(
+        getDeviceProcAddr, native.device, "vkDestroyImage");
+    vk_.getImageMemoryRequirements = Resolve(
+        getDeviceProcAddr, native.device,
+        "vkGetImageMemoryRequirements");
+    vk_.allocateMemory = Resolve(
+        getDeviceProcAddr, native.device, "vkAllocateMemory");
+    vk_.freeMemory = Resolve(
+        getDeviceProcAddr, native.device, "vkFreeMemory");
+    vk_.bindImageMemory = Resolve(
+        getDeviceProcAddr, native.device, "vkBindImageMemory");
+    vk_.waitSemaphores = Resolve(
+        getDeviceProcAddr, native.device, "vkWaitSemaphores");
+    if (!vk_.waitSemaphores) {
+        vk_.waitSemaphores = Resolve(
+            getDeviceProcAddr, native.device, "vkWaitSemaphoresKHR");
+    }
+    vk_.getSemaphoreCounterValue = Resolve(
+        getDeviceProcAddr, native.device, "vkGetSemaphoreCounterValue");
+    if (!vk_.getSemaphoreCounterValue) {
+        vk_.getSemaphoreCounterValue = Resolve(
+            getDeviceProcAddr, native.device,
+            "vkGetSemaphoreCounterValueKHR");
+    }
+    vk_.cmdPipelineBarrier = Resolve(
+        getDeviceProcAddr, native.device, "vkCmdPipelineBarrier");
+    vk_.cmdCopyImage = Resolve(
+        getDeviceProcAddr, native.device, "vkCmdCopyImage");
+    vk_.cmdBlitImage = Resolve(
+        getDeviceProcAddr, native.device, "vkCmdBlitImage");
+
+    vk_.nativeResolved = vk_.createSemaphore &&
+        vk_.destroySemaphore &&
+        vk_.importSemaphoreWin32Handle &&
+        vk_.createImage &&
+        vk_.destroyImage &&
+        vk_.getImageMemoryRequirements &&
+        vk_.allocateMemory &&
+        vk_.freeMemory &&
+        vk_.bindImageMemory &&
+        vk_.waitSemaphores &&
+        vk_.getSemaphoreCounterValue &&
+        vk_.cmdPipelineBarrier &&
+        (vk_.cmdCopyImage || vk_.cmdBlitImage);
+    return vk_.nativeResolved;
+}
+
+void SyntheticVulkanProvider::ShutdownNativeVulkan() noexcept {
+    const VulkanNativeContext native = NativeContext(
+        vkInstance_, vkPhysicalDevice_, vkDevice_,
+        vkQueue_, vkQueueFamilyIndex_);
+    const auto destroySemaphore =
+        Proc<PFN_vkDestroySemaphore>(vk_.destroySemaphore);
+    const auto destroyImage =
+        Proc<PFN_vkDestroyImage>(vk_.destroyImage);
+    const auto freeMemory =
+        Proc<PFN_vkFreeMemory>(vk_.freeMemory);
+
+    if (native.Valid()) {
+        for (auto& semaphore : importedSemaphores_) {
+            if (semaphore.vkSemaphore && destroySemaphore) {
+                destroySemaphore(
+                    native.device,
+                    reinterpret_cast<VkSemaphore>(
+                        semaphore.vkSemaphore),
+                    nullptr);
+            }
+        }
+        for (auto& resource : importedResources_) {
+            if (resource.vkImage && destroyImage) {
+                destroyImage(
+                    native.device,
+                    reinterpret_cast<VkImage>(resource.vkImage),
+                    nullptr);
+            }
+            if (resource.vkMemory && freeMemory) {
+                freeMemory(
+                    native.device,
+                    reinterpret_cast<VkDeviceMemory>(
+                        resource.vkMemory),
+                    nullptr);
+            }
+        }
+    }
+
+    importedSemaphores_.clear();
+    importedResources_.clear();
+    vkInstance_ = nullptr;
+    vkPhysicalDevice_ = nullptr;
+    vkDevice_ = nullptr;
+    vkQueue_ = nullptr;
+    vkQueueFamilyIndex_ = UINT32_MAX;
+    vk_.nativeResolved = false;
+}
+
+bool SyntheticVulkanProvider::ImportD3D12Resource(
+    HANDLE sharedHandle,
+    uint32_t width,
+    uint32_t height,
+    uint32_t format,
+    uint64_t allocationSize,
+    ImportedVulkanResource& outResource) {
+    if (!ready_ || !vk_.nativeResolved || !sharedHandle ||
+        width == 0 || height == 0) {
+        return false;
+    }
+
+    const VulkanNativeContext native = NativeContext(
+        vkInstance_, vkPhysicalDevice_, vkDevice_,
+        vkQueue_, vkQueueFamilyIndex_);
+    const auto createImage = Proc<PFN_vkCreateImage>(vk_.createImage);
+    const auto destroyImage = Proc<PFN_vkDestroyImage>(vk_.destroyImage);
+    const auto getRequirements =
+        Proc<PFN_vkGetImageMemoryRequirements>(
+            vk_.getImageMemoryRequirements);
+    const auto allocateMemory =
+        Proc<PFN_vkAllocateMemory>(vk_.allocateMemory);
+    const auto freeMemory = Proc<PFN_vkFreeMemory>(vk_.freeMemory);
+    const auto bindImageMemory =
+        Proc<PFN_vkBindImageMemory>(vk_.bindImageMemory);
+    const auto getDeviceProcAddr =
+        Proc<PFN_vkGetDeviceProcAddr>(vk_.getDeviceProcAddr);
+    if (!native.Valid() || !createImage || !destroyImage ||
+        !getRequirements || !allocateMemory || !freeMemory ||
+        !bindImageMemory || !getDeviceProcAddr) {
+        return false;
+    }
+
+    VkExternalMemoryImageCreateInfo external{
+        VK_STRUCTURE_TYPE_EXTERNAL_MEMORY_IMAGE_CREATE_INFO};
+    external.handleTypes =
+        VK_EXTERNAL_MEMORY_HANDLE_TYPE_D3D12_RESOURCE_BIT;
+
+    VkImageCreateInfo imageInfo{VK_STRUCTURE_TYPE_IMAGE_CREATE_INFO};
+    imageInfo.pNext = &external;
+    imageInfo.imageType = VK_IMAGE_TYPE_2D;
+    imageInfo.format = static_cast<VkFormat>(format);
+    imageInfo.extent = {width, height, 1};
+    imageInfo.mipLevels = 1;
+    imageInfo.arrayLayers = 1;
+    imageInfo.samples = VK_SAMPLE_COUNT_1_BIT;
+    imageInfo.tiling = VK_IMAGE_TILING_OPTIMAL;
+    imageInfo.usage = VK_IMAGE_USAGE_TRANSFER_SRC_BIT |
+        VK_IMAGE_USAGE_TRANSFER_DST_BIT |
+        VK_IMAGE_USAGE_SAMPLED_BIT;
+    imageInfo.sharingMode = VK_SHARING_MODE_EXCLUSIVE;
+    imageInfo.initialLayout = VK_IMAGE_LAYOUT_UNDEFINED;
+
+    VkImage image = VK_NULL_HANDLE;
+    if (createImage(native.device, &imageInfo, nullptr, &image) !=
+        VK_SUCCESS) {
+        return false;
+    }
+
+    VkMemoryRequirements requirements{};
+    getRequirements(native.device, image, &requirements);
+    const auto memoryType = QueryD3D12ImportedMemoryType(
+        native, getDeviceProcAddr, sharedHandle,
+        requirements.memoryTypeBits);
+    if (!memoryType) {
+        destroyImage(native.device, image, nullptr);
+        return false;
+    }
+
+    VkMemoryDedicatedAllocateInfo dedicated{
+        VK_STRUCTURE_TYPE_MEMORY_DEDICATED_ALLOCATE_INFO};
+    dedicated.image = image;
+
+    VkImportMemoryWin32HandleInfoKHR import{
+        VK_STRUCTURE_TYPE_IMPORT_MEMORY_WIN32_HANDLE_INFO_KHR};
+    import.pNext = &dedicated;
+    import.handleType =
+        VK_EXTERNAL_MEMORY_HANDLE_TYPE_D3D12_RESOURCE_BIT;
+    import.handle = sharedHandle;
+
+    VkMemoryAllocateInfo allocate{
+        VK_STRUCTURE_TYPE_MEMORY_ALLOCATE_INFO};
+    allocate.pNext = &import;
+    allocate.allocationSize =
+        allocationSize != 0 ? allocationSize : requirements.size;
+    allocate.memoryTypeIndex = memoryType->memoryTypeIndex;
+
+    VkDeviceMemory memory = VK_NULL_HANDLE;
+    if (allocateMemory(
+            native.device, &allocate, nullptr, &memory) != VK_SUCCESS) {
+        destroyImage(native.device, image, nullptr);
+        return false;
+    }
+    if (bindImageMemory(native.device, image, memory, 0) != VK_SUCCESS) {
+        freeMemory(native.device, memory, nullptr);
+        destroyImage(native.device, image, nullptr);
+        return false;
+    }
+
+    outResource.vkImage = reinterpret_cast<void*>(image);
+    outResource.vkMemory = reinterpret_cast<void*>(memory);
     outResource.d3d12Handle = sharedHandle;
     outResource.width = width;
     outResource.height = height;
-
-    if (vkDevice_ && vk_.vkCreateImage && vk_.vkAllocateMemory && vk_.vkBindImageMemory) {
-        VkExternalMemoryImageCreateInfo ext{};
-        ext.sType = VK_STRUCTURE_TYPE_EXTERNAL_MEMORY_IMAGE_CREATE_INFO;
-        ext.handleTypes = VK_EXTERNAL_MEMORY_HANDLE_TYPE_D3D12_RESOURCE_BIT;
-
-        VkImageCreateInfo ici{};
-        ici.sType = VK_STRUCTURE_TYPE_IMAGE_CREATE_INFO;
-        ici.pNext = &ext;
-        ici.imageType = 1; // 2D
-        ici.format = format;
-        ici.extent = { width, height, 1 };
-        ici.mipLevels = 1;
-        ici.arrayLayers = 1;
-        ici.samples = 1;
-        ici.tiling = 0; // OPTIMAL
-        ici.usage = 0x00000001 | 0x00000002 | 0x00000004; // SRC | DST | SAMPLED
-        ici.sharingMode = 0; // EXCLUSIVE
-
-        void* image = nullptr;
-        if (vk_.vkCreateImage(vkDevice_, &ici, nullptr, &image) != 0) {
-            return false;
-        }
-
-        VkMemoryRequirements req{};
-        vk_.vkGetImageMemoryRequirements(vkDevice_, image, &req);
-
-        VkMemoryDedicatedAllocateInfo ded{};
-        ded.sType = VK_STRUCTURE_TYPE_MEMORY_DEDICATED_ALLOCATE_INFO;
-        ded.image = image;
-
-        VkImportMemoryWin32HandleInfoKHR imp{};
-        imp.sType = VK_STRUCTURE_TYPE_IMPORT_MEMORY_WIN32_HANDLE_INFO_KHR;
-        imp.pNext = &ded;
-        imp.handleType = VK_EXTERNAL_MEMORY_HANDLE_TYPE_D3D12_RESOURCE_BIT;
-        imp.handle = sharedHandle;
-
-        VulkanImportedMemoryTypeFacts memoryType{};
-        if (!QueryD3D12ImportedMemoryTypeOpaque(
-                reinterpret_cast<std::uintptr_t>(vkInstance_),
-                reinterpret_cast<std::uintptr_t>(vkPhysicalDevice_),
-                reinterpret_cast<std::uintptr_t>(vkDevice_),
-                reinterpret_cast<std::uintptr_t>(vkQueue_),
-                vkQueueFamilyIndex_,
-                reinterpret_cast<FARPROC>(vk_.vkGetDeviceProcAddr),
-                sharedHandle,
-                req.memoryTypeBits,
-                memoryType)) {
-            vk_.vkDestroyImage(vkDevice_, image, nullptr);
-            return false;
-        }
-
-        VkMemoryAllocateInfo mai{};
-        mai.sType = VK_STRUCTURE_TYPE_MEMORY_ALLOCATE_INFO;
-        mai.pNext = &imp;
-        mai.allocationSize = (allocationSize != 0) ? allocationSize : req.size;
-        mai.memoryTypeIndex = memoryType.memoryTypeIndex;
-
-        void* mem = nullptr;
-        if (vk_.vkAllocateMemory(vkDevice_, &mai, nullptr, &mem) != 0) {
-            vk_.vkDestroyImage(vkDevice_, image, nullptr);
-            return false;
-        }
-
-        if (vk_.vkBindImageMemory(vkDevice_, image, mem, 0) != 0) {
-            vk_.vkFreeMemory(vkDevice_, mem, nullptr);
-            vk_.vkDestroyImage(vkDevice_, image, nullptr);
-            return false;
-        }
-
-        outResource.vkImage = image;
-        outResource.vkMemory = mem;
-    }
-
     importedResources_.push_back(outResource);
     return true;
 }
 
-bool SyntheticVulkanProvider::ImportD3D12Fence(HANDLE sharedFenceHandle,
-                                              ImportedVulkanSemaphore& outSemaphore) {
-    if (!ready_ || !vkDevice_ || !sharedFenceHandle) return false;
+bool SyntheticVulkanProvider::ImportD3D12Fence(
+    HANDLE sharedFenceHandle,
+    ImportedVulkanSemaphore& outSemaphore) {
+    if (!ready_ || !vk_.nativeResolved || !sharedFenceHandle)
+        return false;
 
-    outSemaphore.d3d12FenceHandle = sharedFenceHandle;
-
-    if (vkDevice_ && vk_.vkCreateSemaphore && vk_.vkImportSemaphoreWin32HandleKHR) {
-        VkSemaphoreTypeCreateInfo tci{};
-        tci.sType = VK_STRUCTURE_TYPE_SEMAPHORE_TYPE_CREATE_INFO;
-        tci.semaphoreType = VK_SEMAPHORE_TYPE_TIMELINE;
-        tci.initialValue = 0;
-
-        VkSemaphoreCreateInfo sci{};
-        sci.sType = VK_STRUCTURE_TYPE_SEMAPHORE_CREATE_INFO;
-        sci.pNext = &tci;
-
-        void* sem = nullptr;
-        if (vk_.vkCreateSemaphore(vkDevice_, &sci, nullptr, &sem) != 0) {
-            return false;
-        }
-
-        VkImportSemaphoreWin32HandleInfoKHR imp{};
-        imp.sType = VK_STRUCTURE_TYPE_IMPORT_SEMAPHORE_WIN32_HANDLE_INFO_KHR;
-        imp.semaphore = sem;
-        imp.handleType = VK_EXTERNAL_SEMAPHORE_HANDLE_TYPE_D3D12_FENCE_BIT;
-        imp.handle = sharedFenceHandle;
-
-        if (vk_.vkImportSemaphoreWin32HandleKHR(vkDevice_, &imp) != 0) {
-            vk_.vkDestroySemaphore(vkDevice_, sem, nullptr);
-            return false;
-        }
-
-        outSemaphore.vkSemaphore = sem;
+    const VulkanNativeContext native = NativeContext(
+        vkInstance_, vkPhysicalDevice_, vkDevice_,
+        vkQueue_, vkQueueFamilyIndex_);
+    const auto createSemaphore =
+        Proc<PFN_vkCreateSemaphore>(vk_.createSemaphore);
+    const auto destroySemaphore =
+        Proc<PFN_vkDestroySemaphore>(vk_.destroySemaphore);
+    const auto importSemaphore =
+        Proc<PFN_vkImportSemaphoreWin32HandleKHR>(
+            vk_.importSemaphoreWin32Handle);
+    if (!native.Valid() || !createSemaphore ||
+        !destroySemaphore || !importSemaphore) {
+        return false;
     }
 
+    VkSemaphoreTypeCreateInfo typeInfo{
+        VK_STRUCTURE_TYPE_SEMAPHORE_TYPE_CREATE_INFO};
+    typeInfo.semaphoreType = VK_SEMAPHORE_TYPE_TIMELINE;
+
+    VkSemaphoreCreateInfo createInfo{
+        VK_STRUCTURE_TYPE_SEMAPHORE_CREATE_INFO};
+    createInfo.pNext = &typeInfo;
+
+    VkSemaphore semaphore = VK_NULL_HANDLE;
+    if (createSemaphore(
+            native.device, &createInfo, nullptr, &semaphore) !=
+        VK_SUCCESS) {
+        return false;
+    }
+
+    VkImportSemaphoreWin32HandleInfoKHR import{
+        VK_STRUCTURE_TYPE_IMPORT_SEMAPHORE_WIN32_HANDLE_INFO_KHR};
+    import.semaphore = semaphore;
+    import.handleType =
+        VK_EXTERNAL_SEMAPHORE_HANDLE_TYPE_D3D12_FENCE_BIT;
+    import.handle = sharedFenceHandle;
+    if (importSemaphore(native.device, &import) != VK_SUCCESS) {
+        destroySemaphore(native.device, semaphore, nullptr);
+        return false;
+    }
+
+    outSemaphore.vkSemaphore = reinterpret_cast<void*>(semaphore);
+    outSemaphore.d3d12FenceHandle = sharedFenceHandle;
     importedSemaphores_.push_back(outSemaphore);
     return true;
 }
 
-bool SyntheticVulkanProvider::WaitTimelineSemaphore(void* vkSemaphore, uint64_t value, uint32_t timeoutMs) {
-    if (!vkDevice_ || !vk_.vkWaitSemaphores || !vkSemaphore) {
+bool SyntheticVulkanProvider::WaitTimelineSemaphore(
+    void* vkSemaphore, uint64_t value, uint32_t timeoutMs) {
+    const auto waitSemaphores =
+        Proc<PFN_vkWaitSemaphores>(vk_.waitSemaphores);
+    if (!ready_ || !vk_.nativeResolved ||
+        !vkDevice_ || !vkSemaphore || !waitSemaphores) {
         return false;
     }
 
-    VkSemaphoreWaitInfo waitInfo{};
-    waitInfo.sType = VK_STRUCTURE_TYPE_SEMAPHORE_WAIT_INFO;
+    VkSemaphore semaphore =
+        reinterpret_cast<VkSemaphore>(vkSemaphore);
+    VkSemaphoreWaitInfo waitInfo{
+        VK_STRUCTURE_TYPE_SEMAPHORE_WAIT_INFO};
     waitInfo.semaphoreCount = 1;
-    waitInfo.pSemaphores = &vkSemaphore;
+    waitInfo.pSemaphores = &semaphore;
     waitInfo.pValues = &value;
 
-    uint64_t timeoutNs = static_cast<uint64_t>(timeoutMs) * 1000000ULL;
-    return (vk_.vkWaitSemaphores(vkDevice_, &waitInfo, timeoutNs) == 0);
+    const uint64_t timeoutNs =
+        static_cast<uint64_t>(timeoutMs) * 1000000ULL;
+    return waitSemaphores(
+        reinterpret_cast<VkDevice>(vkDevice_),
+        &waitInfo, timeoutNs) == VK_SUCCESS;
 }
 
-uint64_t SyntheticVulkanProvider::QueryTimelineSemaphore(void* vkSemaphore) {
-    if (!vkDevice_ || !vk_.vkGetSemaphoreCounterValue || !vkSemaphore) {
+uint64_t SyntheticVulkanProvider::QueryTimelineSemaphore(
+    void* vkSemaphore) {
+    const auto query =
+        Proc<PFN_vkGetSemaphoreCounterValue>(
+            vk_.getSemaphoreCounterValue);
+    if (!ready_ || !vk_.nativeResolved ||
+        !vkDevice_ || !vkSemaphore || !query) {
         return 0;
     }
 
-    uint64_t val = 0;
-    if (vk_.vkGetSemaphoreCounterValue(vkDevice_, vkSemaphore, &val) == 0) {
-        return val;
-    }
-    return 0;
-}
-
-bool SyntheticVulkanProvider::TransitionImageLayout(void* cmdBuffer, void* image, uint32_t oldLayout, uint32_t newLayout) {
-    if (!ready_ || !vkDevice_ || !vk_.vkCmdPipelineBarrier ||
-        !cmdBuffer || !image) {
-        return false;
-    }
-    {
-        struct LocalVkImageMemoryBarrier {
-            uint32_t sType = 45; // VK_STRUCTURE_TYPE_IMAGE_MEMORY_BARRIER
-            const void* pNext = nullptr;
-            uint32_t srcAccessMask = 0;
-            uint32_t dstAccessMask = 0;
-            uint32_t oldLayout = 0;
-            uint32_t newLayout = 0;
-            uint32_t srcQueueFamilyIndex = ~0u;
-            uint32_t dstQueueFamilyIndex = ~0u;
-            void* image = nullptr;
-            struct {
-                uint32_t aspectMask = 1;
-                uint32_t baseMipLevel = 0;
-                uint32_t levelCount = 1;
-                uint32_t baseArrayLayer = 0;
-                uint32_t layerCount = 1;
-            } subresourceRange;
-        } barrier{};
-
-        barrier.oldLayout = oldLayout;
-        barrier.newLayout = newLayout;
-        barrier.image = image;
-
-        // Stage masks: ALL_COMMANDS (0x00010000)
-        uint32_t stageMask = 0x00010000;
-        vk_.vkCmdPipelineBarrier(cmdBuffer, stageMask, stageMask, 0, 0, nullptr, 0, nullptr, 1, &barrier);
-    }
-    return true;
-}
-
-bool SyntheticVulkanProvider::BlitOrCopy(void* cmdBuffer, void* srcImage, uint32_t srcWidth, uint32_t srcHeight,
-                                        void* dstImage, uint32_t dstWidth, uint32_t dstHeight) {
-    if (!ready_ || !vkDevice_ || (!vk_.vkCmdCopyImage && !vk_.vkCmdBlitImage) ||
-        !cmdBuffer || !srcImage || !dstImage) {
-        return false;
-    }
-
-    {
-        if (srcWidth == dstWidth && srcHeight == dstHeight && vk_.vkCmdCopyImage) {
-            struct LocalVkImageCopy {
-                struct { uint32_t aspectMask = 1; uint32_t mipLevel = 0; uint32_t baseArrayLayer = 0; uint32_t layerCount = 1; } srcSubresource;
-                struct { int32_t x = 0; int32_t y = 0; int32_t z = 0; } srcOffset;
-                struct { uint32_t aspectMask = 1; uint32_t mipLevel = 0; uint32_t baseArrayLayer = 0; uint32_t layerCount = 1; } dstSubresource;
-                struct { int32_t x = 0; int32_t y = 0; int32_t z = 0; } dstOffset;
-                struct { uint32_t width = 0; uint32_t height = 0; uint32_t depth = 1; } extent;
-            } region{};
-            region.extent.width = srcWidth;
-            region.extent.height = srcHeight;
-
-            // VK_IMAGE_LAYOUT_GENERAL = 1
-            vk_.vkCmdCopyImage(cmdBuffer, srcImage, 1, dstImage, 1, 1, &region);
-            return true;
-        } else if (vk_.vkCmdBlitImage) {
-            struct LocalVkImageBlit {
-                struct { uint32_t aspectMask = 1; uint32_t mipLevel = 0; uint32_t baseArrayLayer = 0; uint32_t layerCount = 1; } srcSubresource;
-                struct { int32_t x; int32_t y; int32_t z; } srcOffsets[2];
-                struct { uint32_t aspectMask = 1; uint32_t mipLevel = 0; uint32_t baseArrayLayer = 0; uint32_t layerCount = 1; } dstSubresource;
-                struct { int32_t x; int32_t y; int32_t z; } dstOffsets[2];
-            } blitRegion{};
-            blitRegion.srcOffsets[0] = { 0, 0, 0 };
-            blitRegion.srcOffsets[1] = { static_cast<int32_t>(srcWidth), static_cast<int32_t>(srcHeight), 1 };
-            blitRegion.dstOffsets[0] = { 0, 0, 0 };
-            blitRegion.dstOffsets[1] = { static_cast<int32_t>(dstWidth), static_cast<int32_t>(dstHeight), 1 };
-
-            // VK_FILTER_LINEAR = 1
-            vk_.vkCmdBlitImage(cmdBuffer, srcImage, 1, dstImage, 1, 1, &blitRegion, 1);
-            return true;
-        }
-    }
-    return true;
+    uint64_t value = 0;
+    return query(
+               reinterpret_cast<VkDevice>(vkDevice_),
+               reinterpret_cast<VkSemaphore>(vkSemaphore),
+               &value) == VK_SUCCESS
+        ? value
+        : 0;
 }
 
 } // namespace nrfusion
