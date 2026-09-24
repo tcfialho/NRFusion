@@ -15,35 +15,35 @@ Fases 07–08.
 
 ## Implementação
 
-- [ ] Partir de `SyntheticDx11BridgeProvider` e testes existentes.
-- [ ] Separar hook/acquisition D3D11 do bridge D3D11→D3D12.
-- [ ] Se `CaptureD3D11.cpp` for reutilizado, fazer split mecânico antes de evolução funcional.
-- [ ] Separar acquisition, shared-resource sync, bridge e compose por ownership.
-- [ ] Definir slot/fence reuse.
-- [ ] Capturar color; guides só com provenance válida.
-- [ ] Tratar resize/device/context destruction.
-- [ ] Cada source/header <=300 linhas.
+- [x] Partir de `SyntheticDx11BridgeProvider` e testes existentes.
+- [x] Separar hook/acquisition D3D11 do bridge D3D11→D3D12.
+- [x] `CaptureD3D11.cpp` não foi reutilizado; o hook x64 ficou em owner novo e pequeno.
+- [x] Separar acquisition, shared-resource sync, bridge e compose por ownership.
+- [x] Definir slot/fence reuse.
+- [x] Capturar color; guides só com provenance válida.
+- [x] Tratar resize/device/context destruction.
+- [x] Cada source/header <=300 linhas.
 
 ## Revisão obrigatória
 
-- [ ] Bridge funcional não prova Acquire.
-- [ ] Keyed mutex/fence ordering.
-- [ ] Slot só reutiliza após retirement.
-- [ ] Cada full-frame copy é identificada.
-- [ ] Split não duplica device/context ownership.
+- [x] Bridge funcional não prova Acquire.
+- [x] Keyed mutex/fence ordering.
+- [x] Slot só reutiliza após retirement.
+- [x] Cada full-frame copy é identificada.
+- [x] Split não duplica device/context ownership.
 
 ## Validação rápida
 
-- [ ] Teste atual antes/depois do split.
-- [ ] Hook/acquisition controlado no harness.
-- [ ] Stress in-flight/resize/reset.
-- [ ] LOC checker.
+- [x] Teste atual antes/depois do split.
+- [x] Hook/acquisition controlado no harness.
+- [x] Stress in-flight/resize/reset.
+- [x] LOC checker.
 
 ## Gate
 
-- [ ] Acquire e bridge demonstrados.
-- [ ] Transporte GPU-resident.
-- [ ] Nenhum arquivo tocado do carrier >300 linhas.
+- [x] Acquire e bridge demonstrados.
+- [x] Transporte GPU-resident.
+- [x] Nenhum arquivo tocado do carrier >300 linhas.
 
 ## Próxima fase
 
@@ -57,3 +57,12 @@ Fase 10.
 - Notebook Windows: somente gate físico final de hook/acquisition D3D11 x64, ordering de sync e transporte GPU-resident.
 - Falha no gate físico gera log; a correção volta ao GitHub e ao CI antes de repetir o hardware gate.
 - Não editar o código no notebook durante o loop normal da fase.
+
+## Fechamento
+
+- Hosted portable e Windows fast: PASS no código validado.
+- Gate físico x64 em hardware real: Acquire PASS, bridge D3D11→D3D12 PASS e hook x64 controlado PASS.
+- O hook legado de `CaptureD3D11.cpp` permanece x86 por design e não foi expandido.
+- `SyntheticDx11BridgeProvider.cpp` foi dividido por ownership; provider e resources ficaram abaixo do soft limit.
+- O caminho normal usa shared resources + fences GPU; não há transporte full-frame por CPU.
+- Código validado: `25ee4835d4e45bb446f48e8d640d6ce1b6aaa777`.

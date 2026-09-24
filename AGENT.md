@@ -137,7 +137,7 @@ Regras obrigatórias:
 
 Date: 2026-09-23 BRT
 Branch: standalone/integration
-Validated code head: e845b14
+Validated code head: 25ee483
 
 Phase 06: CLOSED.
 Phase 07: CLOSED, including real Windows compile/harness validation.
@@ -185,7 +185,8 @@ Phase 08 closure:
 - timing/diagnostics first-party files remain <=300 lines;
 - physical provider/Host64/patcher cutover remains deferred to the global cutover phase.
 
-Phase 09: IN PROGRESS.
+Phase 09: CLOSED.
+Phase 10: IN PROGRESS.
 
 Source-size vendor handling:
 - tools/check_source_size.py exempts shaders/vendor/optiscaler_dlssnr/dlssnr.hlsl only while its Git blob SHA matches the locked upstream vendor blob;
@@ -194,8 +195,14 @@ Source-size vendor handling:
 Remaining global gate:
 - real-game execution and physical provider/Host64/patcher cutover.
 
+Phase 09 closure:
+- hosted portable and Windows fast validation PASS;
+- physical x64 D3D11 Acquire/bridge/hook gate PASS on real hardware;
+- x64 hook is isolated from the legacy x86 CaptureD3D11 monolith;
+- D3D11 carrier files touched in Phase 09 remain <=300 lines.
+
 Exact next action:
-- baseline Phase 09 through GitHub-first CI from SyntheticDx11BridgeProvider and the current D3D11 bridge tests;
-- audit acquisition/hook versus bridge ownership without touching the physical notebook;
-- split/implement portable and hosted-Windows-verifiable responsibilities first;
-- use the notebook only for the final x64 D3D11 physical hook/acquisition and GPU-resident bridge gate.
+- start Phase 10 with a GitHub-first audit of CaptureProvider32/HostServer64 ownership;
+- verify IPC/session generation and HANDLE creator/target/consumer/close paths;
+- keep the API-specific D3D11 x86 hook outside the common IPC owner;
+- implement the smallest portable lifecycle/stale-generation subgate before any physical Win32→x64 gate.
