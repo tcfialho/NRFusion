@@ -112,7 +112,7 @@ Harness real em `0470771`:
 - grava transitions + copy pelo owner `VulkanNativeCommands`;
 - submete na queue e espera apenas no harness de validação;
 - portable CI PASS;
-- Windows run `35952257874` ainda estava ativo no freeze.
+- Windows hosted run `35952257874`: PASS.
 
 O harness VkDevice não substitui a evidência de external-memory/semaphore;
 essa prova fica para o próximo subgate.

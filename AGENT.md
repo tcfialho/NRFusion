@@ -137,7 +137,7 @@ Regras obrigatórias:
 
 Date: 2026-09-23 BRT
 Branch: standalone/integration
-Validated code head: 47536ba
+Validated code head: 0470771
 
 Phase 06: CLOSED.
 Phase 07: CLOSED, including real Windows compile/harness validation.
@@ -232,12 +232,11 @@ Phase 11 subgates 11b/11c:
 - provider native lifecycle, interop and commands are split into owners <=300 lines;
 - provider commands delegate to VulkanNativeCommands using official VkImageMemoryBarrier/VkImageCopy/VkImageBlit types;
 - code head 47536ba passed portable and Windows hosted validation;
-- real VkDevice/resource harness is implemented at 0470771 and portable validation PASS;
-- Windows run 35952257874 for 0470771 was still active at session freeze.
+- real VkDevice/resource harness is implemented at 0470771;
+- portable and Windows hosted validation PASS for 0470771, including source-size and native harness build/run.
 
 Exact next action:
-- inspect Windows run 35952257874 first; do not duplicate it;
-- if green, run nrfusion_vulkan_native_device_tests on the notebook with NRFUSION_TEST_VULKAN_HARDWARE=1;
+- run nrfusion_vulkan_native_device_tests on the notebook with NRFUSION_TEST_VULKAN_HARDWARE=1;
 - treat that as native VkDevice/resource evidence only, separate from external-memory interop evidence;
 - after the physical VkDevice gate, add the D3D12 shared-resource/fence import harness for external memory + timeline semaphore ownership;
 - do not mark Phase 11 closed until acquire, interop, sync, compose/recreation and long-run evidence are all distinct and real.
