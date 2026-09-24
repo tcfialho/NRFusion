@@ -144,6 +144,18 @@ add_executable(nrfusion_harness_3d
             -Wall -Wextra -Wpedantic -Werror)
     endif()
 
+    add_executable(nrfusion_d3d11_carrier_hook_tests
+        tests/d3d11_carrier_hook_tests.cpp
+        src/D3D11CarrierHook.cpp
+        src/D3D11CarrierNativeAcquire.cpp)
+    target_include_directories(nrfusion_d3d11_carrier_hook_tests PRIVATE include)
+    target_link_libraries(nrfusion_d3d11_carrier_hook_tests PRIVATE d3d11 dxgi)
+    if (MSVC)
+        target_compile_options(nrfusion_d3d11_carrier_hook_tests PRIVATE
+            /W4 /permissive- /UNDEBUG)
+    else()
+        target_compile_options(nrfusion_d3d11_carrier_hook_tests PRIVATE -UNDEBUG)
+    endif()
     add_executable(nrfusion_d3d11_carrier_native_acquire_tests
         tests/d3d11_carrier_native_acquire_tests.cpp)
     target_link_libraries(nrfusion_d3d11_carrier_native_acquire_tests PRIVATE nrfusion_d3d11_carrier_slice)
