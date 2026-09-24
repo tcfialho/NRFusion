@@ -177,7 +177,6 @@ add_executable(nrfusion_harness_3d
 
     add_library(nrfusion_vulkan_provider_compile OBJECT
         src/SyntheticVulkanProvider.cpp
-        src/SyntheticVulkanProviderLoader.cpp
         src/SyntheticVulkanProviderInterop.cpp)
     target_include_directories(nrfusion_vulkan_provider_compile PRIVATE include)
     if (MSVC)

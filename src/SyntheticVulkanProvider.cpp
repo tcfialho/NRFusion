@@ -1,8 +1,42 @@
-#include "nrfusion/SyntheticVulkanProvider.hpp"\n\nnamespace nrfusion {\n\nSyntheticVulkanProvider::SyntheticVulkanProvider() = default;
+#include "nrfusion/SyntheticVulkanProvider.hpp"
+
+namespace nrfusion {
+
+SyntheticVulkanProvider::SyntheticVulkanProvider() = default;
 
 SyntheticVulkanProvider::~SyntheticVulkanProvider() {
     Shutdown();
-}\n\nbool SyntheticVulkanProvider::Initialize(const ProviderContext& context) {
+}
+
+bool SyntheticVulkanProvider::LoadVulkanLoader() {
+    if (vk_.isLoaded) return true;
+
+    vk_.libVulkan = LoadLibraryW(L"vulkan-1.dll");
+    if (!vk_.libVulkan) {
+        return false;
+    }
+
+    // Going straight from what the loader returns to the signature wanted is a cast between two
+    // unrelated function types, which some compilers refuse. Through a plain function pointer the
+    // conversion is the one the platform already promises.
+    const auto entry = [this](const char* name) {
+        return reinterpret_cast<void* (*)(void*, const char*)>(
+            reinterpret_cast<void (*)()>(GetProcAddress(vk_.libVulkan, name)));
+    };
+    vk_.vkGetInstanceProcAddr = entry("vkGetInstanceProcAddr");
+    vk_.vkGetDeviceProcAddr = entry("vkGetDeviceProcAddr");
+
+    if (!vk_.vkGetInstanceProcAddr || !vk_.vkGetDeviceProcAddr) {
+        FreeLibrary(vk_.libVulkan);
+        vk_.libVulkan = nullptr;
+        return false;
+    }
+
+    vk_.isLoaded = true;
+    return true;
+}
+
+bool SyntheticVulkanProvider::Initialize(const ProviderContext& context) {
     LoadVulkanLoader();
 
     if (context.device && context.api == GraphicsApi::Vulkan && vk_.isLoaded) {
@@ -78,7 +112,9 @@ void SyntheticVulkanProvider::Shutdown() {
     vk_ = {};
     vkDevice_ = nullptr;
     ready_ = false;
-}\n\nSyntheticWorkHandle SyntheticVulkanProvider::Submit(const SyntheticFrameInputs& inputs, void* commandList) {
+}
+
+SyntheticWorkHandle SyntheticVulkanProvider::Submit(const SyntheticFrameInputs& inputs, void* commandList) {
     currentWorkId_++;
     if (dx12Backend_) {
         return dx12Backend_->Submit(inputs, commandList);
@@ -121,4 +157,6 @@ bool SyntheticVulkanProvider::ComposeNative(const SyntheticWorkHandle& handle,
         return dx12Backend_->ComposeNative(handle, originalNative, destinationNative, commandList, residualWeight);
     }
     return true;
-}\n\n} // namespace nrfusion\n
+}
+
+} // namespace nrfusion

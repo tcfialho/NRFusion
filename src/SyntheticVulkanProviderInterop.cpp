@@ -1,4 +1,8 @@
-#include "nrfusion/SyntheticVulkanProvider.hpp"\n\nnamespace nrfusion {\n\nbool SyntheticVulkanProvider::ImportD3D12Resource(HANDLE sharedHandle,
+#include "nrfusion/SyntheticVulkanProvider.hpp"
+
+namespace nrfusion {
+
+bool SyntheticVulkanProvider::ImportD3D12Resource(HANDLE sharedHandle,
                                                  uint32_t width,
                                                  uint32_t height,
                                                  uint32_t format,
@@ -136,7 +140,9 @@ uint64_t SyntheticVulkanProvider::QueryTimelineSemaphore(void* vkSemaphore) {
         return val;
     }
     return 0;
-}\n\nbool SyntheticVulkanProvider::TransitionImageLayout(void* cmdBuffer, void* image, uint32_t oldLayout, uint32_t newLayout) {
+}
+
+bool SyntheticVulkanProvider::TransitionImageLayout(void* cmdBuffer, void* image, uint32_t oldLayout, uint32_t newLayout) {
     if (!cmdBuffer || !image) return false;
     if (vkDevice_ && vk_.vkCmdPipelineBarrier) {
         struct LocalVkImageMemoryBarrier {
@@ -206,4 +212,6 @@ bool SyntheticVulkanProvider::BlitOrCopy(void* cmdBuffer, void* srcImage, uint32
         }
     }
     return true;
-}\n\n} // namespace nrfusion\n
+}
+
+} // namespace nrfusion

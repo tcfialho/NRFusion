@@ -1,4 +1,8 @@
-#include "nrfusion/SyntheticVulkanProvider.hpp"\n\nnamespace nrfusion {\n\nbool SyntheticVulkanProvider::LoadVulkanLoader() {
+#include "nrfusion/SyntheticVulkanProvider.hpp"
+
+namespace nrfusion {
+
+bool SyntheticVulkanProvider::LoadVulkanLoader() {
     if (vk_.isLoaded) return true;
 
     vk_.libVulkan = LoadLibraryW(L"vulkan-1.dll");
@@ -24,4 +28,6 @@
 
     vk_.isLoaded = true;
     return true;
-}\n\n} // namespace nrfusion\n
+}
+
+} // namespace nrfusion
