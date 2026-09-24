@@ -137,7 +137,7 @@ Regras obrigatórias:
 
 Date: 2026-09-23 BRT
 Branch: standalone/integration
-Validated code head: 0470771
+Validated code head: 35b6272
 
 Phase 06: CLOSED.
 Phase 07: CLOSED, including real Windows compile/harness validation.
@@ -243,12 +243,11 @@ Phase 11 subgate 11d WIP:
 - external interop harness matches Vulkan and D3D12 devices by LUID, enables Win32 external-memory/semaphore plus timeline semaphore support, imports two textures and two fences, and tests producer-wait -> consumer-signal;
 - latest link fix at 35b6272 adds only SyntheticDx12Provider.cpp + d3dcompiler to the focused external interop test target;
 - portable run 35957702217 PASS, including source-size and source checkpoint artifact;
-- Windows run 35957702242 was still active at session freeze;
+- Windows run 35957702242 PASS;
 - local/notebook access is intentionally unavailable in this session; no physical Vulkan gate was attempted.
 
 Exact next action:
-- inspect Windows run 35957702242 first and do not duplicate it;
-- if green, add vkGetPhysicalDeviceExternalSemaphoreProperties importability validation for D3D12_FENCE;
+- add vkGetPhysicalDeviceExternalSemaphoreProperties importability validation for D3D12_FENCE;
 - add explicit AcquireExternalImage/ReleaseExternalImage ownership transfers using VK_QUEUE_FAMILY_EXTERNAL <-> the local queue family;
 - extend the hosted external interop harness to record acquire/use/release and recreation/long-run cycles;
 - keep the physical Vulkan gate deferred until local access is explicitly available again.

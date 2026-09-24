@@ -120,7 +120,7 @@ essa prova fica para o próximo subgate.
 
 ## Subgate 11d — external memory/semaphore hosted interop (WIP)
 
-Head submetido: `35b6272`.
+Código validado: `35b6272`.
 
 Implementado:
 - produtor D3D12 real com duas textures compartilháveis, producer/consumer fences,
@@ -138,7 +138,7 @@ Implementado:
 
 Validação no freeze:
 - portable run `35957702217`: PASS, incluindo LOC/checkpoint artifact;
-- Windows run `35957702242`: ainda em execução;
+- Windows run `35957702242`: PASS;
 - nenhum gate físico foi executado porque o acesso local está desabilitado.
 
 Próximo incremento hosted:
