@@ -106,11 +106,13 @@ void HostServer64::ServerLoop() {
             continue;
         }
 
+        const uint64_t connectionGeneration = nextConnectionGeneration_++;
         IpcHelloAckMessage helloAck{};
         helloAck.magic = NRFUSION_IPC_MAGIC;
         helloAck.version = NRFUSION_IPC_VERSION;
         helloAck.hostPid = GetCurrentProcessId();
         helloAck.status = 0;
+        helloAck.connectionGeneration = connectionGeneration;
         if (!writeExact(&helloAck, sizeof(helloAck))) {
             DisconnectNamedPipe(pipeHandle_);
             clientConnected_ = false;
@@ -120,7 +122,8 @@ void HostServer64::ServerLoop() {
         // 2. Build configuration
         IpcBuildMessage build{};
         if (!readExact(&build, sizeof(build)) || build.magic != NRFUSION_IPC_MAGIC ||
-            build.version != NRFUSION_IPC_VERSION || build.sessionId == 0) {
+            build.version != NRFUSION_IPC_VERSION || build.sessionId == 0 ||
+            !IpcConnectionMatches(connectionGeneration, build.connectionGeneration)) {
             DisconnectNamedPipe(pipeHandle_);
             clientConnected_ = false;
             continue;
@@ -158,6 +161,7 @@ void HostServer64::ServerLoop() {
         buildAck.magic = NRFUSION_IPC_MAGIC;
         buildAck.version = NRFUSION_IPC_VERSION;
         buildAck.sessionId = build.sessionId;
+        buildAck.connectionGeneration = connectionGeneration;
         const bool dummyRequiresTransport = build.processingMode == static_cast<uint32_t>(IpcProcessingMode::DummyCopy);
         buildAck.status = handlesOpened && transportComplete && modeKnown &&
             (!dummyRequiresTransport || carriesSharedTransport) ? 0u : 1u;
@@ -183,7 +187,10 @@ void HostServer64::ServerLoop() {
             }
 
             if (frameMsg.magic != NRFUSION_IPC_MAGIC || frameMsg.version != NRFUSION_IPC_VERSION ||
-                frameMsg.sessionId != currentBuild_.sessionId) {
+                !IpcSessionMatches(currentBuild_.connectionGeneration,
+                                   currentBuild_.sessionId,
+                                   frameMsg.connectionGeneration,
+                                   frameMsg.sessionId)) {
                 break;
             }
 

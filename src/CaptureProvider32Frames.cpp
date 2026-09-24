@@ -23,7 +23,9 @@ bool CaptureProvider32::StartFrameAckRead() {
 
 void CaptureProvider32::ConsumeCompletedFrameAck() {
     if (pendingFrameAck_.magic != NRFUSION_IPC_MAGIC || pendingFrameAck_.version != NRFUSION_IPC_VERSION ||
-        pendingFrameAck_.sessionId != sessionId_ ||
+        !IpcSessionMatches(connectionGeneration_, sessionId_,
+                           pendingFrameAck_.connectionGeneration,
+                           pendingFrameAck_.sessionId) ||
         pendingFrameAck_.status != static_cast<uint32_t>(IpcFrameStatus::Complete)) {
         return;
     }
@@ -66,7 +68,8 @@ bool CaptureProvider32::SubmitFramePipelinedEx(uint64_t workId,
                                                PipelinedFrameResult& outResult) {
     std::scoped_lock lock(mutex_);
     outResult = {};
-    if (!connected_ || pipeHandle_ == INVALID_HANDLE_VALUE || workId == 0 || producerFenceValue == 0 ||
+    if (!connected_ || connectionGeneration_ == 0 || pipeHandle_ == INVALID_HANDLE_VALUE ||
+        workId == 0 || producerFenceValue == 0 ||
         consumerFenceValue == 0) {
         return false;
     }
@@ -99,6 +102,7 @@ bool CaptureProvider32::SubmitFramePipelinedEx(uint64_t workId,
 
     IpcFrameMessage message{};
     message.sessionId = sessionId_;
+    message.connectionGeneration = connectionGeneration_;
     message.workId = workId;
     message.featureId = featureId;
     message.viewId = viewId;

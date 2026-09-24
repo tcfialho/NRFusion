@@ -214,6 +214,7 @@ IpcFrameAckMessage HostServer64::ProcessFrame(const IpcFrameMessage& frameMsg) {
     frameAck.magic = NRFUSION_IPC_MAGIC;
     frameAck.version = NRFUSION_IPC_VERSION;
     frameAck.sessionId = currentBuild_.sessionId;
+    frameAck.connectionGeneration = currentBuild_.connectionGeneration;
     frameAck.workId = frameMsg.workId;
     frameAck.completedFenceValue = frameStatus == IpcFrameStatus::Complete
         ? frameMsg.consumerFenceValue : 0;

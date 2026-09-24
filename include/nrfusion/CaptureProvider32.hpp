@@ -68,6 +68,7 @@ public:
                                 PipelinedFrameResult& outResult);
 
     uint64_t ActiveSessionId() const noexcept { return sessionId_; }
+    uint64_t ActiveConnectionGeneration() const noexcept { return connectionGeneration_; }
 
 private:
     bool DuplicateBuildHandlesForHost(const CaptureClientConfig& source, IpcBuildMessage& build) const;
@@ -90,6 +91,7 @@ private:
     bool frameAckReadPending_ = false;
     bool frameWritePending_ = false;
     uint64_t sessionId_ = 1;
+    uint64_t connectionGeneration_ = 0;
     uint64_t lastSubmittedWorkId_ = 0;
     uint64_t lastCompletedWorkId_ = 0;
     uint64_t lastCompletedFenceValue_ = 0;

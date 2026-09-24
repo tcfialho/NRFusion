@@ -98,7 +98,8 @@ bool CaptureProvider32::Connect(uint32_t requestedPipePid, uint32_t timeoutMs) {
     if (!CompleteSetupIo(pipeHandle_, readOverlapped_,
                          ReadFile(pipeHandle_, &ack, sizeof(ack), &bytesRead, &readOverlapped_),
                          bytesRead) || bytesRead != sizeof(ack) || ack.magic != NRFUSION_IPC_MAGIC ||
-        ack.version != NRFUSION_IPC_VERSION || ack.status != 0 || ack.hostPid == 0) {
+        ack.version != NRFUSION_IPC_VERSION || ack.status != 0 || ack.hostPid == 0 ||
+        ack.connectionGeneration == 0) {
         CloseHandle(pipeHandle_);
         pipeHandle_ = INVALID_HANDLE_VALUE;
         return false;
@@ -111,6 +112,7 @@ bool CaptureProvider32::Connect(uint32_t requestedPipePid, uint32_t timeoutMs) {
         return false;
     }
 
+    connectionGeneration_ = ack.connectionGeneration;
     connected_ = true;
     frameAckReadPending_ = false;
     frameWritePending_ = false;
@@ -140,6 +142,7 @@ void CaptureProvider32::MarkTransportFailure() {
     }
 
     connected_ = false;
+    connectionGeneration_ = 0;
     frameAckReadPending_ = false;
     frameWritePending_ = false;
     lastSubmittedWorkId_ = 0;
@@ -200,6 +203,7 @@ bool CaptureProvider32::Configure(const CaptureClientConfig& config) {
 
     IpcBuildMessage build{};
     build.sessionId = ++sessionId_;
+    build.connectionGeneration = connectionGeneration_;
     build.width = config.width;
     build.height = config.height;
     build.targetWidth = config.targetWidth != 0 ? config.targetWidth : config.width;
@@ -230,7 +234,10 @@ bool CaptureProvider32::Configure(const CaptureClientConfig& config) {
     if (!CompleteSetupIo(pipeHandle_, readOverlapped_,
                          ReadFile(pipeHandle_, &ack, sizeof(ack), &bytesRead, &readOverlapped_),
                          bytesRead) || bytesRead != sizeof(ack) || ack.magic != NRFUSION_IPC_MAGIC ||
-        ack.version != NRFUSION_IPC_VERSION || ack.sessionId != build.sessionId || ack.status != 0) {
+        ack.version != NRFUSION_IPC_VERSION ||
+        !IpcSessionMatches(connectionGeneration_, build.sessionId,
+                           ack.connectionGeneration, ack.sessionId) ||
+        ack.status != 0) {
         return false;
     }
 

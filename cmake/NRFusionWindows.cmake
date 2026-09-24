@@ -188,6 +188,29 @@ add_executable(nrfusion_harness_3d
     target_link_libraries(nrfusion_host64 PRIVATE nrfusion_core d3d12 dxgi d3dcompiler)
     set_target_properties(nrfusion_host64 PROPERTIES OUTPUT_NAME "NRFusionHost64")
 
+    add_library(nrfusion_ipc_host_compile OBJECT
+        src/HostServer64.cpp
+        src/HostServer64Lifecycle.cpp
+        src/HostServer64Guides.cpp
+        src/HostServer64Frame.cpp)
+    target_include_directories(nrfusion_ipc_host_compile PRIVATE include)
+    if (MSVC)
+        target_compile_options(nrfusion_ipc_host_compile PRIVATE /W4 /permissive-)
+    else()
+        target_compile_options(nrfusion_ipc_host_compile PRIVATE -Wall -Wextra -Wpedantic -Werror)
+    endif()
+
+    add_executable(nrfusion_ipc_generation_contract_tests
+        tests/ipc_generation_contract_tests.cpp)
+    target_include_directories(nrfusion_ipc_generation_contract_tests PRIVATE include)
+    if (MSVC)
+        target_compile_options(nrfusion_ipc_generation_contract_tests PRIVATE /W4 /permissive- /UNDEBUG)
+    else()
+        target_compile_options(nrfusion_ipc_generation_contract_tests PRIVATE -UNDEBUG)
+    endif()
+    add_test(NAME nrfusion_ipc_generation_contract_tests
+        COMMAND nrfusion_ipc_generation_contract_tests)
+
     add_executable(nrfusion_ipc_host_test tests/ipc_host_test.cpp)
     target_link_libraries(nrfusion_ipc_host_test PRIVATE nrfusion_core d3d12 dxgi d3dcompiler)
     if (MSVC)
