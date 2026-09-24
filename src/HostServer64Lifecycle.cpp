@@ -130,12 +130,8 @@ void HostServer64::Stop() {
     }
 
     clientConnected_ = false;
-    importedColor_.Reset();
-    importedResidual_.Reset();
-    importedDepth_.Reset();
-    importedMotion_.Reset();
-    importedProducerFence_.Reset();
-    importedConsumerFence_.Reset();
+    RetireImportedTransport();
+    CollectRetiredTransport();
 }
 
 } // namespace nrfusion

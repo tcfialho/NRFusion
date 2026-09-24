@@ -33,6 +33,7 @@ void TransitionSharedResource(ID3D12GraphicsCommandList* commandList, ID3D12Reso
 IpcFrameAckMessage HostServer64::ProcessFrame(const IpcFrameMessage& frameMsg) {
     IpcFrameStatus frameStatus = IpcFrameStatus::InvalidResources;
     bool submittedGpuWork = false;
+    bool usedZeroGuides = false;
     const bool hasSharedTransport = importedColor_ && importedResidual_ &&
         importedProducerFence_ && importedConsumerFence_;
 
@@ -57,12 +58,20 @@ IpcFrameAckMessage HostServer64::ProcessFrame(const IpcFrameMessage& frameMsg) {
             frameStatus = IpcFrameStatus::DroppedBackpressure;
         } else {
             auto& allocator = d3d12Allocs_[slot] ? d3d12Allocs_[slot] : d3d12Alloc_;
+            bool commandListOpen = false;
             bool commandListReady = false;
-            if (FAILED(allocator->Reset()) || FAILED(d3d12CmdList_->Reset(allocator.Get(), nullptr)) ||
-                FAILED(d3d12Queue_->Wait(importedProducerFence_.Get(), frameMsg.producerFenceValue))) {
+            if (FAILED(allocator->Reset())) {
+                frameStatus = IpcFrameStatus::InvalidResources;
+            } else if (FAILED(d3d12CmdList_->Reset(allocator.Get(), nullptr))) {
                 frameStatus = IpcFrameStatus::InvalidResources;
             } else {
-                commandListReady = true;
+                commandListOpen = true;
+                if (FAILED(d3d12Queue_->Wait(
+                        importedProducerFence_.Get(), frameMsg.producerFenceValue))) {
+                    frameStatus = IpcFrameStatus::InvalidResources;
+                } else {
+                    commandListReady = true;
+                }
             }
             if (commandListReady && currentBuild_.processingMode == static_cast<uint32_t>(IpcProcessingMode::DummyCopy)) {
                 if (CopyCompatible(importedColor_.Get(), importedResidual_.Get())) {
@@ -110,7 +119,10 @@ IpcFrameAckMessage HostServer64::ProcessFrame(const IpcFrameMessage& frameMsg) {
                             const bool featureReady = dlssNr_->EnsureFeature(d3d12CmdList_.Get(), workRes.width,
                                                                              workRes.height);
                             const bool shouldEvaluate = featureReady && !dlssNr_->JustBuilt();
-                            if (shouldEvaluate) dlssNrAttemptedFrames_++;
+                            if (shouldEvaluate) {
+                                dlssNrAttemptedFrames_++;
+                                usedZeroGuides = !importedDepth_ || !importedMotion_;
+                            }
 
                             ID3D12Resource* depthRes = importedDepth_ ? importedDepth_.Get() : lowGuideDepth_.Get();
                             ID3D12Resource* motionRes = importedMotion_ ? importedMotion_.Get() : lowGuideMotion_.Get();
@@ -190,17 +202,30 @@ IpcFrameAckMessage HostServer64::ProcessFrame(const IpcFrameMessage& frameMsg) {
                 submittedGpuWork = true;
             }
 
-            if (submittedGpuWork && SUCCEEDED(d3d12CmdList_->Close())) {
-                ID3D12CommandList* lists[] = { d3d12CmdList_.Get() };
-                d3d12Queue_->ExecuteCommandLists(1, lists);
-                const uint64_t hostFence = ++fenceValue_;
-                if (SUCCEEDED(d3d12Queue_->Signal(d3d12Fence_.Get(), hostFence)) &&
-                    SUCCEEDED(d3d12Queue_->Signal(importedConsumerFence_.Get(),
-                                                  frameMsg.consumerFenceValue))) {
-                    allocFenceValues_[slot] = hostFence;
-                    frameStatus = IpcFrameStatus::Complete;
+            if (submittedGpuWork && commandListOpen) {
+                const HRESULT closeHr = d3d12CmdList_->Close();
+                commandListOpen = false;
+                if (SUCCEEDED(closeHr)) {
+                    ID3D12CommandList* lists[] = { d3d12CmdList_.Get() };
+                    d3d12Queue_->ExecuteCommandLists(1, lists);
+
+                    // Consumer completion must precede the host retirement marker on this queue.
+                    if (SUCCEEDED(d3d12Queue_->Signal(
+                            importedConsumerFence_.Get(),
+                            frameMsg.consumerFenceValue))) {
+                        const uint64_t hostFence = fenceValue_ + 1;
+                        if (SUCCEEDED(d3d12Queue_->Signal(
+                                d3d12Fence_.Get(), hostFence))) {
+                            fenceValue_ = hostFence;
+                            importedTransportFenceValue_ = hostFence;
+                            allocFenceValues_[slot] = hostFence;
+                            if (usedZeroGuides) guideUseFenceValue_ = hostFence;
+                            frameStatus = IpcFrameStatus::Complete;
+                        }
+                    }
                 }
-            } else if (commandListReady) {
+            }
+            if (commandListOpen) {
                 d3d12CmdList_->Close();
             }
         }

@@ -6,6 +6,19 @@
 namespace nrfusion {
 namespace {
 
+void CloseIncomingBuildHandles(const IpcBuildMessage& build) {
+    const uint64_t handles[] = {
+        build.colorSharedHandle, build.depthSharedHandle,
+        build.motionSharedHandle, build.residualSharedHandle,
+        build.producerFenceHandle, build.consumerFenceHandle
+    };
+    for (uint64_t raw : handles) {
+        if (raw != 0) {
+            CloseHandle(reinterpret_cast<HANDLE>(static_cast<uintptr_t>(raw)));
+        }
+    }
+}
+
 template <typename Interface>
 bool OpenAndReleaseTargetHandle(ID3D12Device* device, uint64_t rawHandle,
                                 Microsoft::WRL::ComPtr<Interface>& destination) {
@@ -121,23 +134,24 @@ void HostServer64::ServerLoop() {
 
         // 2. Build configuration
         IpcBuildMessage build{};
-        if (!readExact(&build, sizeof(build)) || build.magic != NRFUSION_IPC_MAGIC ||
-            build.version != NRFUSION_IPC_VERSION || build.sessionId == 0 ||
+        if (!readExact(&build, sizeof(build))) {
+            DisconnectNamedPipe(pipeHandle_);
+            clientConnected_ = false;
+            continue;
+        }
+        const bool buildHeaderValid =
+            build.magic == NRFUSION_IPC_MAGIC &&
+            build.version == NRFUSION_IPC_VERSION;
+        if (!buildHeaderValid || build.sessionId == 0 ||
             !IpcConnectionMatches(connectionGeneration, build.connectionGeneration)) {
+            if (buildHeaderValid) CloseIncomingBuildHandles(build);
             DisconnectNamedPipe(pipeHandle_);
             clientConnected_ = false;
             continue;
         }
 
-        // These handles were duplicated into this process by CaptureProvider32. They are one-shot
-        // transport handles: after OpenSharedHandle succeeds or fails, this host must close them.
-        // Keeping the raw client values would only work in an in-process test, not across x86/x64.
-        importedColor_.Reset();
-        importedResidual_.Reset();
-        importedDepth_.Reset();
-        importedMotion_.Reset();
-        importedProducerFence_.Reset();
-        importedConsumerFence_.Reset();
+        // Imported COM objects may still be referenced by queued GPU work from the prior session.
+        RetireImportedTransport();
 
         const bool carriesSharedTransport = build.colorSharedHandle != 0 || build.residualSharedHandle != 0 ||
             build.producerFenceHandle != 0 || build.consumerFenceHandle != 0 ||
@@ -168,11 +182,13 @@ void HostServer64::ServerLoop() {
         buildAck.workWidth = static_cast<uint32_t>(build.width * build.workingScale);
         buildAck.workHeight = static_cast<uint32_t>(build.height * build.workingScale);
         if (!writeExact(&buildAck, sizeof(buildAck))) {
+            RetireImportedTransport();
             DisconnectNamedPipe(pipeHandle_);
             clientConnected_ = false;
             continue;
         }
         if (buildAck.status != 0) {
+            RetireImportedTransport();
             DisconnectNamedPipe(pipeHandle_);
             clientConnected_ = false;
             continue;
@@ -203,12 +219,7 @@ void HostServer64::ServerLoop() {
 
         DisconnectNamedPipe(pipeHandle_);
         clientConnected_ = false;
-        importedColor_.Reset();
-        importedResidual_.Reset();
-        importedDepth_.Reset();
-        importedMotion_.Reset();
-        importedProducerFence_.Reset();
-        importedConsumerFence_.Reset();
+        RetireImportedTransport();
     }
 }
 

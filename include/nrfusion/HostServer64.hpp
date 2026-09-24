@@ -6,6 +6,7 @@
 
 #include <atomic>
 #include <cstdint>
+#include <deque>
 #include <memory>
 #include <mutex>
 #include <string>
@@ -37,6 +38,8 @@ private:
     void ServerLoop();
     IpcFrameAckMessage ProcessFrame(const IpcFrameMessage& frameMsg);
     bool EnsureZeroGuides(uint32_t width, uint32_t height);
+    void CollectRetiredTransport();
+    void RetireImportedTransport();
 
     HANDLE pipeHandle_ = INVALID_HANDLE_VALUE;
     OVERLAPPED overlapped_{};
@@ -69,6 +72,18 @@ private:
     ComPtr<ID3D12Resource> importedMotion_;
     ComPtr<ID3D12Fence> importedProducerFence_;
     ComPtr<ID3D12Fence> importedConsumerFence_;
+    uint64_t importedTransportFenceValue_ = 0;
+
+    struct RetiredTransport {
+        ComPtr<ID3D12Resource> color;
+        ComPtr<ID3D12Resource> residual;
+        ComPtr<ID3D12Resource> depth;
+        ComPtr<ID3D12Resource> motion;
+        ComPtr<ID3D12Fence> producerFence;
+        ComPtr<ID3D12Fence> consumerFence;
+        uint64_t fenceValue = 0;
+    };
+    std::deque<RetiredTransport> retiredTransports_;
     std::unique_ptr<SyntheticDx12Provider> syntheticProvider_;
 
     // Missing depth/motion inputs use zero-filled guides. Imported guides, when present, bypass
@@ -85,6 +100,7 @@ private:
     ComPtr<ID3D12GraphicsCommandList> guideCmdList_;
     ComPtr<ID3D12Fence> guideFence_;
     uint64_t guideFenceValue_ = 0;
+    uint64_t guideUseFenceValue_ = 0;
     std::unique_ptr<HostDlssNr> dlssNr_;
 };
 

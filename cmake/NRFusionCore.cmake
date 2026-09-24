@@ -80,6 +80,7 @@ if (WIN32)
         src/CaptureProvider32Export.cpp
         src/HostServer64.cpp
         src/HostServer64Lifecycle.cpp
+        src/HostServer64Transport.cpp
         src/HostServer64Guides.cpp
         src/HostServer64Frame.cpp
         src/D3D12NrExecutorLoader.cpp

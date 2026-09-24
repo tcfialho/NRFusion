@@ -191,6 +191,7 @@ add_executable(nrfusion_harness_3d
     add_library(nrfusion_ipc_host_compile OBJECT
         src/HostServer64.cpp
         src/HostServer64Lifecycle.cpp
+        src/HostServer64Transport.cpp
         src/HostServer64Guides.cpp
         src/HostServer64Frame.cpp)
     target_include_directories(nrfusion_ipc_host_compile PRIVATE include)
