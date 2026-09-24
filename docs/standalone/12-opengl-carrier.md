@@ -15,33 +15,33 @@ Fases 07–08.
 
 ## Implementação
 
-- [ ] Reusar provider/teste existentes.
-- [ ] Antes de expansão, dividir loader/extensions, GL-D3D12 interop/sync e carrier orchestration.
+- [x] Reusar provider/teste existentes.
+- [x] Antes de expansão, dividir loader/extensions, GL-D3D12 interop/sync e carrier orchestration.
 - [ ] Definir Acquire seam em contexto GL real.
-- [ ] ProviderPolicy só atrás de capability comprovada.
+- [x] ProviderPolicy só atrás de capability comprovada.
 - [ ] Validar extensions, size/alignment e handle ownership.
 - [ ] Capturar/compose GPU-side.
 - [ ] Context recreation/resize.
-- [ ] Cada arquivo <=300 linhas.
+- [x] Cada arquivo <=300 linhas.
 
 ## Revisão obrigatória
 
-- [ ] Initialize sem contexto GL não prova interop.
-- [ ] GL objects/HANDLEs têm lifetime pareado.
-- [ ] Sem CPU stall como normal.
-- [ ] Extension ausente = Blocked.
-- [ ] Split segue lifetime GL/D3D12, não tamanho arbitrário.
+- [x] Initialize sem contexto GL não prova interop.
+- [x] GL objects/HANDLEs têm lifetime pareado no owner atual.
+- [x] Sem CPU stall como normal.
+- [x] Extension ausente = Blocked.
+- [x] Split segue lifetime GL/D3D12, não tamanho arbitrário.
 
 ## Validação rápida
 
-- [ ] Teste lógico barato.
+- [x] Teste lógico barato.
 - [ ] Contexto real quando disponível.
 - [ ] Recreate/semaphore long run.
-- [ ] LOC checker.
+- [x] LOC checker.
 
 ## Gate
 
-- [ ] ProviderPolicy só seleciona rota comprovada.
+- [x] ProviderPolicy só seleciona rota comprovada.
 - [ ] Acquire/interop GPU-resident.
 - [ ] OpenGL tocado respeita <=300 linhas por arquivo.
 
@@ -94,3 +94,50 @@ semaphore importado de `D3D12_FENCE`. O provider atual ainda precisa:
 
 Até esse subgate e um harness com contexto GL real passarem,
 `IntegratedCapabilities().openGlCarrier` deve continuar `false`.
+
+
+## Subgate 12b — explicit GL/D3D12 fence synchronization
+
+Código validado: `1c4eff5`.
+
+Implementado:
+- identidade explícita `OpenGlCarrierSyncIdentity` por work/slot;
+- três valores de fence por work: GL input-ready, D3D12 output-ready e GL release;
+- validação dos nomes anunciados `GL_EXT_memory_object`,
+  `GL_EXT_memory_object_win32`, `GL_EXT_semaphore` e
+  `GL_EXT_semaphore_win32`;
+- `GL_D3D12_FENCE_VALUE_EXT` programado antes de signal/wait;
+- input: GL GPU copy -> GL signal -> D3D12 queue wait -> D3D12 work;
+- output: D3D12 queue signal -> GL wait -> GL GPU copy -> GL release signal;
+- um `ID3D12Fence` compartilhado por slot, evitando retirement cruzado;
+- slot sem output consume não é reutilizado;
+- nenhum `WaitForSingleObject`, readback ou wait de CPU foi reintroduzido.
+
+Correções durante validação:
+- `3e10c91`: implementação inicial;
+- Windows detectou referência stale a `SharedSlot::workId`;
+- `6ae7647`: correção mecânica;
+- revisão estática detectou que um fence global permitia avanço por outro slot;
+- `1c4eff5`: fence/handle isolados por slot.
+
+Validação:
+- focused portable `36074539887`: PASS;
+- source-size: PASS;
+- checkpoint:
+  `nrfusion-source-1c4eff5f9cee76dd3a88d65dfcfe339c47191c3f`;
+- Windows hosted `36074539924`: PASS;
+- `nrfusion_synthetic_opengl_test`: PASS;
+- 10/10 testes targeted: PASS;
+- nenhum contexto WGL com external objects foi usado como evidência.
+
+A semântica implementada segue a especificação Khronos EXT: semaphore importado de
+D3D12 fence usa valor explícito de fence, e wait/signal GL permanecem operações
+server/GPU-side.
+
+### Próximo subgate
+
+1. criar harness de contexto WGL real e verificar extensions anunciadas;
+2. provar GL input copy -> D3D12 result -> GL output consume;
+3. exercitar resize/context recreation e long-run;
+4. criar gate físico Phase 12 que não aceite SKIP;
+5. somente depois habilitar `IntegratedCapabilities().openGlCarrier`.

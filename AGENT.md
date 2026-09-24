@@ -137,8 +137,8 @@ Regras obrigatórias:
 
 Date: 2026-09-24 BRT
 Branch: standalone/integration
-Validated code head: 35af18c (portable PASS; Windows hosted pending)
-Current branch head before closure docs: 35af18c
+Validated code head: 1c4eff5
+Current branch head before closure docs: 1c4eff5
 
 Phase 06: CLOSED.
 Phase 07: CLOSED, including real Windows compile/harness validation.
@@ -338,13 +338,29 @@ Phase 12 subgate 12a WIP:
 - Windows hosted run 36060926786 was still in progress at session freeze;
 - all new/substantively modified handwritten files remain <=300 lines.
 
+Phase 12 subgate 12b:
+- previous Windows run 36060926786 completed PASS before this subgate;
+- OpenGlCarrierSyncIdentity binds each workId to an explicit slot plus GL-input, D3D12-output and GL-release fence values;
+- GL_EXT_memory_object, GL_EXT_memory_object_win32, GL_EXT_semaphore and GL_EXT_semaphore_win32 must be advertised, not merely expose non-null PFNs;
+- glSemaphoreParameterui64vEXT programs GL_D3D12_FENCE_VALUE_EXT before every imported D3D12-fence signal/wait operation;
+- input path is GPU-only: GL copy -> GL fence signal -> ID3D12CommandQueue::Wait -> D3D12 work -> queue Signal;
+- output path is GPU-only: GL wait on D3D12 completion -> GL copy -> GL release signal;
+- each in-flight slot now owns its own shared ID3D12Fence/HANDLE, so an unrelated slot cannot advance retirement state;
+- slot reuse requires the GL release value to be visible on that slot's fence; missing output consume leaves the slot occupied and fails closed;
+- Shutdown cleans partially initialized D3D12/fence state even when Initialize never reached ready_;
+- initial Windows compile failure at 3e10c91 was one stale SharedSlot::workId reference; fixed in 6ae7647;
+- static review then found the cross-slot shared-fence retirement hazard; fixed structurally in 1c4eff5;
+- focused portable run 36074539887 PASS, including source-size and source checkpoint nrfusion-source-1c4eff5f9cee76dd3a88d65dfcfe339c47191c3f;
+- Windows hosted run 36074539924 PASS; nrfusion_synthetic_opengl_test PASS and all 10 targeted tests PASS;
+- touched OpenGL files remain <=300 lines: provider header 220, lifecycle 205, interop 241, orchestration 142, sync header 54, sync test 51;
+- no real WGL external-object runtime evidence has been claimed and IntegratedCapabilities().openGlCarrier must remain false.
+
 Phase 12 review finding for next subgate:
-- official GL_EXT external-object Win32 semantics require explicit D3D12 fence values for imported GL semaphores;
-- the current provider still lacks explicit GL semaphore fence-value programming plus matching D3D12 queue wait/signal ownership, so real GL<->D3D12 synchronization is not yet qualified;
-- no OpenGL hook/caller or real-context runtime evidence has been claimed.
+- shared d3d12Residual is still a synchronization/storage endpoint; a real-context harness must prove that the D3D12 result is actually written before GL consumes it;
+- hosted fail-closed tests are not evidence of GL_EXT memory/semaphore interoperability.
 
 Exact next action:
-- inspect Windows run 36060926786 first; do not relaunch it if already complete;
-- if green, define explicit OpenGL slot/work synchronization identity before changing runtime behavior;
-- implement advertised-extension validation plus GL_D3D12_FENCE_VALUE_EXT programming and D3D12 queue wait/signal ordering without CPU waits;
-- then add a real-context harness/recreation gate before setting IntegratedCapabilities.openGlCarrier=true.
+- add a dedicated real-WGL-context OpenGL/D3D12 interop harness with explicit extension checks and SKIP 77 only when the hosted runner lacks required GL_EXT support;
+- exercise input copy, D3D12 work/result into the shared output, GL output consume and context/resource recreation;
+- add a physical Phase 12 gate that turns missing extension/runtime support into failure rather than SKIP;
+- only after that evidence set IntegratedCapabilities().openGlCarrier=true.
