@@ -137,8 +137,8 @@ Regras obrigatórias:
 
 Date: 2026-09-24 BRT
 Branch: standalone/integration
-Validated code head: d49c898
-Current code head: 9958475 (Windows hosted validation pending)
+Validated code head: 9958475
+Current branch head before closure docs: c870cce
 
 Phase 06: CLOSED.
 Phase 07: CLOSED, including real Windows compile/harness validation.
@@ -286,11 +286,10 @@ Phase 11 subgate 11g WIP:
 - code commit 92411f1 initially exposed a target-link composition failure only: executor object leaked into the external interop object library;
 - fix 9958475 isolates the executor to its dedicated target;
 - focused portable run 36023547892 PASS with source checkpoint artifact nrfusion-source-9958475155e0f9c0000f9f20f8a8973770842bfd;
-- Windows hosted run 36023547968 was still in progress at session freeze;
+- Windows hosted run 36023547968 PASS, including nrfusion_vulkan_carrier_executor_tests;
 - local/notebook access remains disabled; no physical Vulkan gate was attempted.
 
 Exact next action:
-- inspect Windows run 36023547968 first and fix only a concrete failure if present;
-- after hosted executor validation is green, extend the existing VkDevice harness to invoke VulkanCarrierExecutor on a real caller-owned VkCommandBuffer;
+- extend the existing VkDevice harness to invoke VulkanCarrierExecutor on a real caller-owned VkCommandBuffer;
 - keep caller-owned queue submission separate, then advance native compose/recreation ownership;
 - keep physical external-memory/semaphore validation deferred until local access is explicitly available again.

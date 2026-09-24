@@ -256,11 +256,11 @@ Hosted evidence:
 - primeira Windows run `36023092730`: FAIL somente por link do external interop,
   porque o executor foi incluído no object library compartilhado;
 - causa corrigida em `9958475`, sem mudança de runtime;
-- Windows run `36023547968`: em andamento no freeze;
+- Windows run `36023547968`: PASS, incluindo `nrfusion_vulkan_carrier_executor_tests`;
 - external physical runtime continua sem evidência nesta sessão.
 
 Próximo incremento:
-1. inspecionar `36023547968` antes de qualquer novo push;
-2. se verde, usar o harness `VkDevice` real existente para gravar pelo executor;
-3. manter submit/wait apenas no harness de validação, fora do executor;
-4. depois avançar compose/recreation nativo como responsabilidade separada.
+1. usar o harness `VkDevice` real existente para gravar pelo executor;
+2. manter submit/wait apenas no harness de validação, fora do executor;
+3. depois avançar compose/recreation nativo como responsabilidade separada;
+4. manter external-memory/semaphore físico como gate separado.
