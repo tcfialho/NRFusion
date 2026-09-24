@@ -7,7 +7,6 @@
 namespace nrfusion {
 
 std::optional<SyntheticFrameInputs> BuildD3D11CarrierWork(
-    const FrameContext& frame, const WorkTicket& ticket,
-    float workingScale = 1.0f) noexcept;
+    const FrameContext& frame, const WorkTicket& ticket) noexcept;
 
 } // namespace nrfusion

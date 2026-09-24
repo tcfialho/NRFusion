@@ -29,7 +29,8 @@ WorkTicket Ticket() {
     WorkTicket ticket{};
     ticket.id = 11;
     ticket.session = 2;
-    ticket.frameId = 10;
+    ticket.sourceFrame = 10;
+    ticket.viewKey = 0;
     ticket.configurationGeneration = 3;
     ticket.workingScale = 0.75f;
     return ticket;
@@ -40,7 +41,7 @@ WorkTicket Ticket() {
 int main() {
     const auto frame = Frame();
     const auto ticket = Ticket();
-    const auto work = BuildD3D11CarrierWork(frame, ticket, 0.75f);
+    const auto work = BuildD3D11CarrierWork(frame, ticket);
     assert(work);
     assert(work->ticket == ticket);
     assert(work->frameId == frame.frameId);
@@ -74,9 +75,18 @@ int main() {
     auto invalidTicket = ticket;
     invalidTicket.id = 0;
     assert(!BuildD3D11CarrierWork(frame, invalidTicket));
-    assert(!BuildD3D11CarrierWork(frame, ticket, 0.0f));
-    assert(!BuildD3D11CarrierWork(frame, ticket, 1.1f));
-    assert(!BuildD3D11CarrierWork(
-        frame, ticket, (std::numeric_limits<float>::quiet_NaN)()));
+    assert(!BuildD3D11CarrierWork(frame, WorkTicket{ticket.id, ticket.session, ticket.sourceFrame, ticket.viewKey, ticket.configurationGeneration, 0.0f, ticket.precisionTag}));
+    assert(!BuildD3D11CarrierWork(frame, WorkTicket{ticket.id, ticket.session, ticket.sourceFrame, ticket.viewKey, ticket.configurationGeneration, 1.1f, ticket.precisionTag}));
+    auto nanScale = ticket;
+    nanScale.workingScale = (std::numeric_limits<float>::quiet_NaN)();
+    assert(!BuildD3D11CarrierWork(frame, nanScale));
+
+    auto staleTicket = ticket;
+    staleTicket.sourceFrame = frame.frameId - 1;
+    assert(!BuildD3D11CarrierWork(frame, staleTicket));
+
+    auto staleGeneration = ticket;
+    staleGeneration.configurationGeneration = frame.configurationGeneration + 1;
+    assert(!BuildD3D11CarrierWork(frame, staleGeneration));
     return 0;
 }

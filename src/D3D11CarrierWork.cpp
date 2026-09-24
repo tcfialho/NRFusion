@@ -14,12 +14,14 @@ bool TrustedOptionalResource(const ResourceRef& resource, FrameId frameId) noexc
 } // namespace
 
 std::optional<SyntheticFrameInputs> BuildD3D11CarrierWork(
-    const FrameContext& frame, const WorkTicket& ticket,
-    float workingScale) noexcept {
+    const FrameContext& frame, const WorkTicket& ticket) noexcept {
     if (frame.api != GraphicsApi::D3D11 || !frame.ReadyForCore() ||
         ticket.id == 0 || ticket.session == 0 ||
-        !std::isfinite(workingScale) || workingScale <= 0.0f ||
-        workingScale > 1.0f)
+        ticket.sourceFrame != frame.frameId ||
+        ticket.viewKey != frame.viewId ||
+        ticket.configurationGeneration != frame.configurationGeneration ||
+        !std::isfinite(ticket.workingScale) || ticket.workingScale <= 0.0f ||
+        ticket.workingScale > 1.0f)
         return std::nullopt;
     if (frame.color.provenance != ResourceProvenance::GameNative ||
         frame.color.reliability != ResourceReliability::Reliable ||
@@ -41,7 +43,7 @@ std::optional<SyntheticFrameInputs> BuildD3D11CarrierWork(
     inputs.renderResolution = frame.renderResolution;
     inputs.targetResolution = frame.outputResolution;
     inputs.jitter = frame.jitter;
-    inputs.workingScale = workingScale;
+    inputs.workingScale = ticket.workingScale;
     inputs.reset = frame.resetHistory;
     inputs.hdr = frame.hdr;
     inputs.cameraCut = frame.cameraCut;

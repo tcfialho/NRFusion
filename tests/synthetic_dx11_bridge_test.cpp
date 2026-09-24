@@ -177,10 +177,10 @@ int main() {
             WorkTicket ticket{};
             ticket.id = 2000 + frame;
             ticket.session = 1;
-            ticket.frameId = acquired.frame.frameId;
+            ticket.sourceFrame = acquired.frame.frameId;
             ticket.configurationGeneration = 1;
             ticket.workingScale = 0.75f;
-            const auto work = BuildD3D11CarrierWork(acquired.frame, ticket, 0.75f);
+            const auto work = BuildD3D11CarrierWork(acquired.frame, ticket);
             assert(work);
 
             const SyntheticWorkHandle handle = bridge.Submit(*work, nullptr);
