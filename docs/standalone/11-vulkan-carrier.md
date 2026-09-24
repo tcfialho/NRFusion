@@ -73,3 +73,22 @@ Fase 12.
 3. usar headers Vulkan oficiais, sem ABI/constantes locais;
 4. consultar `vkGetMemoryWin32HandlePropertiesKHR` e intersectar memoryTypeBits reais;
 5. só então reativar import/layout/compose Vulkan e criar gate VkDevice real.
+
+
+## Subgate 11b — contexto nativo e memory type real (WIP)
+
+Head submetido: `1d7d62a`.
+
+Implementado:
+- contexto explícito: instance, physical device, device, queue e queue family;
+- owner nativo compilado contra `KhronosGroup/Vulkan-Headers` oficial;
+- consulta de `vkGetMemoryWin32HandlePropertiesKHR`;
+- seleção de memory type pela interseção entre requirements da imagem e bits do handle importado;
+- removido o fallback `memoryTypeIndex = 0` do import;
+- provider Vulkan só reporta ready com contexto completo e PFNs obrigatórios.
+
+Validação pendente no freeze:
+- portable run `35948880898`;
+- Windows hosted run `35948880921`.
+
+Não relançar esses runs sem antes inspecionar o estado existente.

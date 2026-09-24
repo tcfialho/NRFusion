@@ -224,9 +224,19 @@ Phase 11 subgate 11a:
 - portable CI PASS at 3566c14;
 - Windows hosted run 35947607432 was still in progress at session freeze.
 
+Phase 11 subgate 11b WIP:
+- official Khronos Vulkan-Headers are pinned in Windows hosted validation without installing a full SDK;
+- VulkanContextContract now carries instance, physical device, device, queue and queue-family identity;
+- VulkanNativeContext compiles against official Vulkan types;
+- vkGetMemoryWin32HandlePropertiesKHR is wired through an opaque bridge so the legacy public header need not include Vulkan headers yet;
+- SyntheticVulkanProvider now requires a complete Vulkan context before reporting ready;
+- imported D3D12 memory no longer hardcodes memoryTypeIndex=0; it intersects image requirements with Win32-handle memoryTypeBits;
+- code head 1d7d62a is NOT YET VALIDATED: portable run 35948880898 and Windows run 35948880921 were still active at session freeze;
+- last validated Phase 11 code remains 3566c14.
+
 Exact next action:
-- inspect Windows run 35947607432 first and do not duplicate it;
-- if green, start Phase 11 native context seam with explicit VkInstance/VkPhysicalDevice/VkDevice/VkQueue/queue-family ownership;
-- compile the native owner only with official Vulkan headers;
-- replace manual ABI and memoryTypeIndex=0 with vkGetMemoryWin32HandlePropertiesKHR plus real memoryTypeBits intersection;
-- keep fake handles confined to portable contract tests and reserve physical Vulkan validation for the final gate.
+- inspect runs 35948880898 and 35948880921 first; do not duplicate them;
+- if either failed, fix only that concrete failure and rerun through hosted CI;
+- if both passed, mark 1d7d62a validated and remove the remaining manual Vulkan ABI/constants from SyntheticVulkanProvider.hpp;
+- migrate interop/barrier/blit structures to official Vulkan headers behind the native compile path;
+- then add a VkDevice-real harness before any physical notebook Vulkan gate.
