@@ -64,6 +64,7 @@ add_library(nrfusion_core STATIC
     src/D3D11CarrierWork.cpp
     src/VulkanCarrierContract.cpp
     src/VulkanCarrierAcquire.cpp
+    src/VulkanCarrierSession.cpp
 )
 
 if (WIN32)
