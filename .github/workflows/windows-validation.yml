@@ -12,6 +12,7 @@ on:
       - 'tests/**'
       - 'tools/validate_windows.ps1'
       - 'tools/validate_phase09_hardware.ps1'
+      - 'tools/validate_phase10_hardware.ps1'
       - '.github/workflows/windows-validation.yml'
   workflow_dispatch:
     inputs:
@@ -61,13 +62,20 @@ jobs:
         run: |
           $tokens = $null
           $errors = $null
-          [void][System.Management.Automation.Language.Parser]::ParseFile(
-            (Join-Path $PWD 'tools/validate_phase09_hardware.ps1'),
-            [ref]$tokens,
-            [ref]$errors)
-          if ($errors.Count -ne 0) {
-            $errors | ForEach-Object { Write-Error $_.Message }
-            exit 1
+          @(
+            'tools/validate_phase09_hardware.ps1',
+            'tools/validate_phase10_hardware.ps1'
+          ) | ForEach-Object {
+            $tokens = $null
+            $errors = $null
+            [void][System.Management.Automation.Language.Parser]::ParseFile(
+              (Join-Path $PWD $_),
+              [ref]$tokens,
+              [ref]$errors)
+            if ($errors.Count -ne 0) {
+              $errors | ForEach-Object { Write-Error $_.Message }
+              exit 1
+            }
           }
 
       - name: Validate Windows
