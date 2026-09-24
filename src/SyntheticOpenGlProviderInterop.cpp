@@ -132,12 +132,16 @@ bool SyntheticOpenGlProvider::CreateSharedResources(
             CloseSharedHandles();
             return false;
         }
+        if (!slot.fence || !slot.fenceSharedHandle) {
+            CloseSharedHandles();
+            return false;
+        }
         gl_.ImportSemaphoreWin32HandleEXT(
             slot.glInputSem, GL_HANDLE_TYPE_D3D12_FENCE_EXT,
-            d3d12FenceSharedHandle_);
+            slot.fenceSharedHandle);
         gl_.ImportSemaphoreWin32HandleEXT(
             slot.glOutputSem, GL_HANDLE_TYPE_D3D12_FENCE_EXT,
-            d3d12FenceSharedHandle_);
+            slot.fenceSharedHandle);
     }
 
     currentRes_ = {width, height};

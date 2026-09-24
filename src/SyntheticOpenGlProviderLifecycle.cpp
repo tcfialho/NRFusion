@@ -127,7 +127,15 @@ bool SyntheticOpenGlProvider::CreatePrivateD3D12() {
     }
 
     for (auto& s : sharedSlots_) {
-        if (FAILED(d3d12Device_->CreateCommandAllocator(D3D12_COMMAND_LIST_TYPE_DIRECT, IID_PPV_ARGS(&s.alloc)))) {
+        if (FAILED(d3d12Device_->CreateCommandAllocator(
+                D3D12_COMMAND_LIST_TYPE_DIRECT,
+                IID_PPV_ARGS(&s.alloc))) ||
+            FAILED(d3d12Device_->CreateFence(
+                0, D3D12_FENCE_FLAG_SHARED,
+                IID_PPV_ARGS(&s.fence))) ||
+            FAILED(d3d12Device_->CreateSharedHandle(
+                s.fence.Get(), nullptr, GENERIC_ALL, nullptr,
+                &s.fenceSharedHandle))) {
             return false;
         }
     }
@@ -136,14 +144,6 @@ bool SyntheticOpenGlProvider::CreatePrivateD3D12() {
         return false;
     }
     d3d12CmdList_->Close();
-
-    if (FAILED(d3d12Device_->CreateFence(0, D3D12_FENCE_FLAG_SHARED, IID_PPV_ARGS(&d3d12Fence_)))) {
-        return false;
-    }
-
-    if (FAILED(d3d12Device_->CreateSharedHandle(d3d12Fence_.Get(), nullptr, GENERIC_ALL, nullptr, &d3d12FenceSharedHandle_))) {
-        return false;
-    }
 
     return true;
 }
@@ -179,22 +179,21 @@ bool SyntheticOpenGlProvider::Initialize(const ProviderContext& context) {
 
 void SyntheticOpenGlProvider::Shutdown() {
     std::scoped_lock lock(mutex_);
-    if (!ready_) return;
 
     CloseSharedHandles();
     for (auto& s : sharedSlots_) {
+        if (s.fenceSharedHandle) {
+            CloseHandle(s.fenceSharedHandle);
+            s.fenceSharedHandle = nullptr;
+        }
+        s.fence.Reset();
         s.alloc.Reset();
+        s.nextFenceValue = 1;
     }
 
     nvof_.Shutdown();
     syntheticD3D12_.Shutdown();
 
-    if (d3d12FenceSharedHandle_) {
-        CloseHandle(d3d12FenceSharedHandle_);
-        d3d12FenceSharedHandle_ = nullptr;
-    }
-
-    d3d12Fence_.Reset();
     d3d12CmdList_.Reset();
     d3d12Queue_.Reset();
     d3d12Device_.Reset();

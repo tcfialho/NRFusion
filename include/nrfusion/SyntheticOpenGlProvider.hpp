@@ -170,8 +170,11 @@ private:
         ComPtr<ID3D12Resource> d3d12Color;
         ComPtr<ID3D12Resource> d3d12Residual;
         ComPtr<ID3D12CommandAllocator> alloc;
+        ComPtr<ID3D12Fence> fence;
         HANDLE colorSharedHandle = nullptr;
         HANDLE residualSharedHandle = nullptr;
+        HANDLE fenceSharedHandle = nullptr;
+        uint64_t nextFenceValue = 1;
 
         // OpenGL import side
         GLuint glColorMem = 0;
@@ -202,9 +205,6 @@ private:
     ComPtr<ID3D12Device> d3d12Device_;
     ComPtr<ID3D12CommandQueue> d3d12Queue_;
     ComPtr<ID3D12GraphicsCommandList> d3d12CmdList_;
-    ComPtr<ID3D12Fence> d3d12Fence_;
-    HANDLE d3d12FenceSharedHandle_ = nullptr;
-    uint64_t nextFenceValue_ = 1;
 
     SyntheticDx12Provider syntheticD3D12_;
     NvofMotionProvider nvof_;

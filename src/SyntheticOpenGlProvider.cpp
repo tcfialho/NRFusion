@@ -23,7 +23,6 @@ SyntheticWorkHandle SyntheticOpenGlProvider::Submit(const SyntheticFrameInputs& 
     }
 
     uint32_t slotIdx = kMaxInFlight;
-    const uint64_t completed = d3d12Fence_->GetCompletedValue();
     for (uint32_t offset = 0; offset != kMaxInFlight; ++offset) {
         const uint32_t candidate =
             (currentSlot_ + offset) % kMaxInFlight;
@@ -31,7 +30,9 @@ SyntheticWorkHandle SyntheticOpenGlProvider::Submit(const SyntheticFrameInputs& 
         const bool released =
             candidateSlot.outputConsumed &&
             candidateSlot.sync.Valid(kMaxInFlight) &&
-            completed >= candidateSlot.sync.releaseSignalValue;
+            candidateSlot.fence &&
+            candidateSlot.fence->GetCompletedValue() >=
+                candidateSlot.sync.releaseSignalValue;
         if (!candidateSlot.inUse || released) {
             slotIdx = candidate;
             break;
@@ -52,7 +53,7 @@ SyntheticWorkHandle SyntheticOpenGlProvider::Submit(const SyntheticFrameInputs& 
     slot.inUse = true;
     if (!ReserveOpenGlCarrierSyncIdentity(
             inputs.ticket.id, slotIdx, kMaxInFlight,
-            nextFenceValue_, slot.sync)) {
+            slot.nextFenceValue, slot.sync)) {
         slot.inUse = false;
         return handle;
     }
@@ -67,8 +68,9 @@ SyntheticWorkHandle SyntheticOpenGlProvider::Submit(const SyntheticFrameInputs& 
         slot.sync = {};
         return handle;
     }
-    if (FAILED(d3d12Queue_->Wait(
-            d3d12Fence_.Get(), slot.sync.inputSignalValue))) {
+    if (!slot.fence ||
+        FAILED(d3d12Queue_->Wait(
+            slot.fence.Get(), slot.sync.inputSignalValue))) {
         return handle;
     }
 
@@ -90,7 +92,7 @@ SyntheticWorkHandle SyntheticOpenGlProvider::Submit(const SyntheticFrameInputs& 
     ID3D12CommandList* lists[] = { d3d12CmdList_.Get() };
     d3d12Queue_->ExecuteCommandLists(1, lists);
     if (FAILED(d3d12Queue_->Signal(
-            d3d12Fence_.Get(), slot.sync.outputSignalValue))) {
+            slot.fence.Get(), slot.sync.outputSignalValue))) {
         return SyntheticWorkHandle{};
     }
 
@@ -99,8 +101,17 @@ SyntheticWorkHandle SyntheticOpenGlProvider::Submit(const SyntheticFrameInputs& 
 }
 
 bool SyntheticOpenGlProvider::Poll(const SyntheticWorkHandle& handle) {
-    if (!ready_ || !handle.valid || !d3d12Fence_) return false;
-    return d3d12Fence_->GetCompletedValue() >= handle.fenceValue;
+    if (!ready_ || !handle.valid || handle.workId == 0)
+        return false;
+    for (const auto& slot : sharedSlots_) {
+        if (slot.inUse &&
+            slot.sync.workId == handle.workId &&
+            slot.sync.outputSignalValue == handle.fenceValue &&
+            slot.fence) {
+            return slot.fence->GetCompletedValue() >= handle.fenceValue;
+        }
+    }
+    return false;
 }
 
 ResourceRef SyntheticOpenGlProvider::GetResidual(const SyntheticWorkHandle& handle) {
