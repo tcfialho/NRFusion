@@ -175,17 +175,7 @@ add_executable(nrfusion_harness_3d
     endif()
     add_test(NAME nrfusion_synthetic_dx11_bridge_test COMMAND nrfusion_synthetic_dx11_bridge_test)
 
-    add_library(nrfusion_vulkan_provider_compile OBJECT
-        src/SyntheticVulkanProvider.cpp
-        src/SyntheticVulkanProviderInterop.cpp)
-    target_include_directories(nrfusion_vulkan_provider_compile PRIVATE include)
-    if (MSVC)
-        target_compile_options(nrfusion_vulkan_provider_compile PRIVATE
-            /W4 /permissive-)
-    else()
-        target_compile_options(nrfusion_vulkan_provider_compile PRIVATE
-            -Wall -Wextra -Wpedantic -Werror)
-    endif()
+    include(${CMAKE_CURRENT_LIST_DIR}/NRFusionVulkanWindows.cmake)
 
     add_executable(nrfusion_synthetic_opengl_test tests/synthetic_opengl_test.cpp)
     target_link_libraries(nrfusion_synthetic_opengl_test PRIVATE nrfusion_core d3d12 dxgi d3dcompiler opengl32)
