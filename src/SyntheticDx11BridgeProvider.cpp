@@ -33,7 +33,9 @@ bool SyntheticDx11BridgeProvider::Initialize(const ProviderContext& context) {
     d12Ctx.preferSameDevice = true;
     if (!syntheticD3D12_.Initialize(d12Ctx)) return false;
 
-    nvof_.Initialize(d3d12Device_.Get(), d3d12Queue_.Get(), 1920, 1080);
+    if (!nvof_.Initialize(
+            d3d12Device_.Get(), d3d12Queue_.Get(), 1920, 1080))
+        return false;
     ready_ = true;
     return true;
 }
@@ -222,6 +224,7 @@ SyntheticWorkHandle SyntheticDx11BridgeProvider::Submit(
 }
 
 bool SyntheticDx11BridgeProvider::Poll(const SyntheticWorkHandle& handle) {
+    std::scoped_lock lock(mutex_);
     return ready_ && handle.valid && d3d12Fence_ &&
         d3d12Fence_->GetCompletedValue() >= handle.fenceValue;
 }
@@ -229,6 +232,7 @@ bool SyntheticDx11BridgeProvider::Poll(const SyntheticWorkHandle& handle) {
 bool SyntheticDx11BridgeProvider::RecordD3D11OutputConsume(
     const SyntheticWorkHandle& handle, ID3D11DeviceContext* context,
     ID3D11Resource* gameDestination) {
+    std::scoped_lock lock(mutex_);
     if (!context || !gameDestination || context != d3d11Context_.Get() ||
         !handle.valid)
         return false;
