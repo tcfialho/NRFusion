@@ -11,6 +11,7 @@ on:
       - 'src/**'
       - 'tests/**'
       - 'tools/validate_windows.ps1'
+      - 'tools/validate_phase09_hardware.ps1'
       - '.github/workflows/windows-validation.yml'
   workflow_dispatch:
     inputs:
