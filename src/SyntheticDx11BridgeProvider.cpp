@@ -16,7 +16,8 @@ SyntheticDx11BridgeProvider::~SyntheticDx11BridgeProvider() {
 bool SyntheticDx11BridgeProvider::Initialize(const ProviderContext& context) {
     std::scoped_lock lock(mutex_);
     if (ready_) return true;
-    if (!context.device) return false;
+    if (context.api != GraphicsApi::D3D11 || context.is32Bit || !context.device)
+        return false;
 
     d3d11Device_ = static_cast<ID3D11Device*>(context.device);
     d3d11Device_->GetImmediateContext(&d3d11Context_);

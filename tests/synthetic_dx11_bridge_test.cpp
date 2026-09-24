@@ -142,6 +142,17 @@ int main() {
         return 1;
     }
 
+    {
+        SyntheticDx11BridgeProvider rejected;
+        ProviderContext bad{};
+        bad.api = GraphicsApi::D3D12;
+        bad.device = d3d11Device.Get();
+        assert(!rejected.Initialize(bad));
+        bad.api = GraphicsApi::D3D11;
+        bad.is32Bit = true;
+        assert(!rejected.Initialize(bad));
+    }
+
     // 3. SyntheticDx11BridgeProvider Initialization
     SyntheticDx11BridgeProvider bridge;
     ProviderContext ctx{};
