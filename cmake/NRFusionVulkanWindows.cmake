@@ -15,6 +15,7 @@ add_library(nrfusion_vulkan_provider_compile OBJECT
     src/SyntheticVulkanProviderNative.cpp
     src/SyntheticVulkanProviderInterop.cpp
     src/SyntheticVulkanProviderCommands.cpp
+    src/VulkanNativeCommands.cpp
     src/VulkanNativeContext.cpp)
 target_include_directories(nrfusion_vulkan_provider_compile PRIVATE
     include
@@ -41,3 +42,21 @@ else()
     target_compile_options(nrfusion_vulkan_native_compile PRIVATE
         -Wall -Wextra -Wpedantic -Werror)
 endif()
+
+add_executable(nrfusion_vulkan_native_device_tests
+    tests/vulkan_native_device_tests.cpp
+    src/VulkanNativeCommands.cpp
+    src/VulkanNativeContext.cpp
+    src/VulkanCarrierContract.cpp)
+target_include_directories(nrfusion_vulkan_native_device_tests PRIVATE
+    include
+    "${NRFUSION_VULKAN_INCLUDE_DIR}")
+if (MSVC)
+    target_compile_options(nrfusion_vulkan_native_device_tests PRIVATE
+        /W4 /permissive- /UNDEBUG)
+else()
+    target_compile_options(nrfusion_vulkan_native_device_tests PRIVATE
+        -Wall -Wextra -Wpedantic -Werror -UNDEBUG)
+endif()
+add_test(NAME nrfusion_vulkan_native_device_tests
+    COMMAND nrfusion_vulkan_native_device_tests)
