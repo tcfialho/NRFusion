@@ -103,7 +103,9 @@ bool RecordVulkanCopyOrBlit(
     uint32_t sourceHeight,
     VkImage destination,
     uint32_t destinationWidth,
-    uint32_t destinationHeight) noexcept {
+    uint32_t destinationHeight,
+    VkImageLayout sourceLayout,
+    VkImageLayout destinationLayout) noexcept {
     if (!dispatch.Valid() ||
         commandBuffer == VK_NULL_HANDLE ||
         source == VK_NULL_HANDLE ||
@@ -122,8 +124,8 @@ bool RecordVulkanCopyOrBlit(
         region.extent = {sourceWidth, sourceHeight, 1};
         dispatch.copyImage(
             commandBuffer,
-            source, VK_IMAGE_LAYOUT_GENERAL,
-            destination, VK_IMAGE_LAYOUT_GENERAL,
+            source, sourceLayout,
+            destination, destinationLayout,
             1, &region);
         return true;
     }
@@ -141,8 +143,8 @@ bool RecordVulkanCopyOrBlit(
         static_cast<int32_t>(destinationHeight), 1};
     dispatch.blitImage(
         commandBuffer,
-        source, VK_IMAGE_LAYOUT_GENERAL,
-        destination, VK_IMAGE_LAYOUT_GENERAL,
+        source, sourceLayout,
+        destination, destinationLayout,
         1, &region, VK_FILTER_LINEAR);
     return true;
 }

@@ -47,6 +47,8 @@ bool RecordVulkanCopyOrBlit(
     uint32_t sourceHeight,
     VkImage destination,
     uint32_t destinationWidth,
-    uint32_t destinationHeight) noexcept;
+    uint32_t destinationHeight,
+    VkImageLayout sourceLayout = VK_IMAGE_LAYOUT_GENERAL,
+    VkImageLayout destinationLayout = VK_IMAGE_LAYOUT_GENERAL) noexcept;
 
 } // namespace nrfusion
