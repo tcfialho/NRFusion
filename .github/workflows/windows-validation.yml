@@ -13,6 +13,7 @@ on:
       - 'tools/validate_windows.ps1'
       - 'tools/validate_phase09_hardware.ps1'
       - 'tools/validate_phase10_hardware.ps1'
+      - 'tools/validate_phase11_hardware.ps1'
       - '.github/workflows/windows-validation.yml'
   workflow_dispatch:
     inputs:
@@ -79,7 +80,8 @@ jobs:
           $errors = $null
           @(
             'tools/validate_phase09_hardware.ps1',
-            'tools/validate_phase10_hardware.ps1'
+            'tools/validate_phase10_hardware.ps1',
+            'tools/validate_phase11_hardware.ps1'
           ) | ForEach-Object {
             $tokens = $null
             $errors = $null
