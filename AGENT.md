@@ -137,7 +137,7 @@ Regras obrigatórias:
 
 Date: 2026-09-23 BRT
 Branch: standalone/integration
-Validated code head: 25ee483
+Validated code head: de62b05
 
 Phase 06: CLOSED.
 Phase 07: CLOSED, including real Windows compile/harness validation.
@@ -201,8 +201,15 @@ Phase 09 closure:
 - x64 hook is isolated from the legacy x86 CaptureD3D11 monolith;
 - D3D11 carrier files touched in Phase 09 remain <=300 lines.
 
+Phase 10 subgates 10a/10b:
+- CaptureProvider32 split into connection/config/HANDLE ownership and pipelined frame/ack owners;
+- IPC v3 carries explicit connectionGeneration and validates generation + session on both sides;
+- Host64 guide upload no longer waits on the CPU; resize only reuses retired guide work;
+- focused Windows gate now compiles Host64 IPC translation units without linking the full core;
+- portable and Windows hosted validation PASS at de62b05.
+
 Exact next action:
-- start Phase 10 with a GitHub-first audit of CaptureProvider32/HostServer64 ownership;
-- verify IPC/session generation and HANDLE creator/target/consumer/close paths;
-- keep the API-specific D3D11 x86 hook outside the common IPC owner;
-- implement the smallest portable lifecycle/stale-generation subgate before any physical Win32→x64 gate.
+- fix Host64 imported-resource retirement across disconnect/reconnect;
+- signal the imported consumer fence before the host retirement fence so host completion proves all queue uses retired;
+- retain imported resources/fences until that retirement marker completes;
+- keep the new ownership outside HostServer64Frame.cpp, then remove remaining unbounded setup waits before Win32→x64 physical validation.
