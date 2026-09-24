@@ -137,8 +137,8 @@ Regras obrigatórias:
 
 Date: 2026-09-24 BRT
 Branch: standalone/integration
-Validated code head: 9958475
-Current branch head before closure docs: c870cce
+Validated code head: a4593eb
+Current branch head before closure docs: a4593eb
 
 Phase 06: CLOSED.
 Phase 07: CLOSED, including real Windows compile/harness validation.
@@ -289,7 +289,25 @@ Phase 11 subgate 11g WIP:
 - Windows hosted run 36023547968 PASS, including nrfusion_vulkan_carrier_executor_tests;
 - local/notebook access remains disabled; no physical Vulkan gate was attempted.
 
-Exact next action:
-- extend the existing VkDevice harness to invoke VulkanCarrierExecutor on a real caller-owned VkCommandBuffer;
-- keep caller-owned queue submission separate, then advance native compose/recreation ownership;
-- keep physical external-memory/semaphore validation deferred until local access is explicitly available again.
+Phase 11 subgate 11h — hosted implementation freeze:
+- nrfusion_vulkan_carrier_device_tests uses real VkImage/VkCommandBuffer objects when a usable Vulkan runtime exists and runs 32 create -> initialize-layout -> executor -> caller-submit/wait -> destroy cycles;
+- Acquire now carries explicit resourceGeneration; execution rejects recreation-generation mismatch before recording;
+- compose-back is Vulkan-native copy/blit to the caller output image, with caller-owned resource recreation and no DX12 fallback;
+- external sync failure coverage includes missing producer handle and wrong consumer direction;
+- external interop harness now runs 32 full recreation cycles plus 128 submissions reusing the same imported images and timeline semaphores;
+- focused portable run 36035658289 PASS with source checkpoint artifact nrfusion-source-a4593eb934027f8c3ff9572b22f43ae0e9647f40;
+- Windows hosted run 36035658103 PASS overall;
+- on that Windows run, nrfusion_vulkan_native_device_tests and nrfusion_vulkan_carrier_executor_tests PASS;
+- nrfusion_vulkan_carrier_device_tests and nrfusion_vulkan_external_interop_tests correctly report SKIP 77 on hosted Windows, so they are not physical runtime evidence;
+- all files substantively touched in this subgate remain <=300 lines;
+- local/notebook access remains disabled, so no physical Vulkan carrier or D3D12<->Vulkan external-memory/semaphore runtime gate was executed.
+
+Phase 11 remains IN PROGRESS.
+Hosted/portable implementation work is frozen; closure now depends on physical Vulkan evidence.
+
+Exact next action when local access is explicitly re-enabled:
+- fast-forward the physical checkout to origin/standalone/integration;
+- run nrfusion_vulkan_carrier_device_tests with NRFUSION_TEST_VULKAN_HARDWARE=1;
+- run nrfusion_vulkan_external_interop_tests with NRFUSION_TEST_VULKAN_EXTERNAL_HARDWARE=1;
+- require the 32 recreation + 128 reuse external cycles to execute, not SKIP;
+- if both physical gates PASS, record Phase 11 closure; otherwise collect logs and fix via GitHub before rerunning.

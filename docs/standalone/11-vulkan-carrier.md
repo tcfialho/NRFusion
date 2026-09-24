@@ -21,7 +21,7 @@ Fases 07–08.
 - [x] Usar headers Vulkan corretos/memoryTypeIndex real.
 - [x] External memory/semaphore/handle ownership explícitos.
 - [x] Layout/access/queue-family ownership.
-- [ ] Compose back e recreation.
+- [x] Compose back e recreation implementados; prova física continua pendente.
 - [x] Cada arquivo handwritten <=300 linhas.
 
 ## Revisão obrigatória
@@ -29,7 +29,7 @@ Fases 07–08.
 - [x] Provider recebe handle != aquisição correta.
 - [x] Fake-handle test é só contract test.
 - [x] Format/tiling/usage compatíveis.
-- [ ] Sync completo success/failure.
+- [x] Sync success/failure implementado no contrato/harness; runtime físico pendente.
 - [x] Sem CPU readback.
 
 ## Validação rápida
@@ -42,8 +42,8 @@ Fases 07–08.
 ## Gate
 
 - [ ] Harness-verified exige resources Vulkan reais.
-- [ ] Acquire e interop têm evidência separada.
-- [ ] Vulkan tocado respeita <=300 linhas por arquivo.
+- [x] Acquire e interop têm evidência separada.
+- [x] Vulkan tocado respeita <=300 linhas por arquivo.
 
 ## Próxima fase
 
@@ -264,3 +264,46 @@ Próximo incremento:
 2. manter submit/wait apenas no harness de validação, fora do executor;
 3. depois avançar compose/recreation nativo como responsabilidade separada;
 4. manter external-memory/semaphore físico como gate separado.
+
+
+## Subgate 11h — recreation generation + physical-ready gates
+
+Código hosted-validado: `a4593eb`.
+
+Implementado:
+- `resourceGeneration` nasce no Acquire e é preservado no `VulkanAcquireResult`;
+- o execution plan rejeita `recreationGeneration` diferente da geração adquirida;
+- `nrfusion_vulkan_carrier_device_tests` usa `VkImage`/`VkCommandBuffer`
+  reais quando existe runtime Vulkan e executa 32 ciclos de criação, recording,
+  submission pelo caller e destruição;
+- o executor continua sem queue submission, wait bloqueante ou CPU readback;
+- compose-back é Vulkan nativo por copy/blit para a imagem output do caller;
+- o external harness mantém 32 ciclos de reimport/recreation e adiciona
+  128 submissões reutilizando os mesmos imports e timeline semaphores;
+- timeline inválida é coberta por falha explícita no plan.
+
+Hosted validation:
+- focused portable `36035658289`: PASS;
+- Windows `36035658103`: PASS geral;
+- `nrfusion_vulkan_native_device_tests`: PASS;
+- `nrfusion_vulkan_carrier_executor_tests`: PASS;
+- `nrfusion_vulkan_carrier_device_tests`: SKIP 77;
+- `nrfusion_vulkan_external_interop_tests`: SKIP 77;
+- source checkpoint:
+  `nrfusion-source-a4593eb934027f8c3ff9572b22f43ae0e9647f40`;
+- nenhum SKIP conta como evidência de runtime físico.
+
+## Estado da Fase 11
+
+A Fase 11 **não está encerrada**.
+
+O trabalho de implementação verificável em hosted CI está congelado. Restam gates
+físicos que não podem ser executados enquanto o acesso local estiver desabilitado:
+
+1. executar `nrfusion_vulkan_carrier_device_tests` com
+   `NRFUSION_TEST_VULKAN_HARDWARE=1`;
+2. executar `nrfusion_vulkan_external_interop_tests` com
+   `NRFUSION_TEST_VULKAN_EXTERNAL_HARDWARE=1`;
+3. exigir execução real dos 32 ciclos de recreation e 128 ciclos de reuse;
+4. só após PASS físico marcar `Recreate/semaphore long run`,
+   `Harness-verified` e a própria Fase 11 como concluídos.
