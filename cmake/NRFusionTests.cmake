@@ -111,3 +111,5 @@ add_test(NAME nrfusion_d3d12_nr_frame_plan_tests
     COMMAND nrfusion_d3d12_nr_frame_plan_tests)
 
 nrfusion_test(nrfusion_vulkan_carrier_contract_tests tests/vulkan_carrier_contract_tests.cpp)
+
+nrfusion_test(nrfusion_vulkan_carrier_acquire_tests tests/vulkan_carrier_acquire_tests.cpp)

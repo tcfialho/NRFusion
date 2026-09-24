@@ -63,6 +63,7 @@ add_library(nrfusion_core STATIC
     src/D3D11BridgeSlotTracker.cpp
     src/D3D11CarrierWork.cpp
     src/VulkanCarrierContract.cpp
+    src/VulkanCarrierAcquire.cpp
 )
 
 if (WIN32)
