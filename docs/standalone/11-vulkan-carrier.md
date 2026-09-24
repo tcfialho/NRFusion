@@ -231,3 +231,36 @@ Próximo incremento:
 3. gravar transitions/acquire/compose/release sem assumir queue submission;
 4. manter waits bloqueantes, CPU readback e fallback DX12 fora do caminho standalone;
 5. manter compose/recreation real e prova física como gates separados.
+
+
+## Subgate 11g — VulkanCarrierExecutor nativo (WIP)
+
+Código:
+- `92411f1` — executor + layouts explícitos + dedicated Windows test;
+- `9958475` — isola o executor do object library usado pelo external interop.
+
+Implementado:
+- recebe `VkCommandBuffer` do caller e não assume queue submission;
+- valida plan/context/command buffer/dispatch/images/queue family antes de recording;
+- consome o claim do `NrSession` exatamente uma vez no início do recording;
+- falha antes do recording preserva o claim para abandon/retry controlado pelo caller;
+- local: transition -> copy/blit -> restore;
+- external: acquire de `VK_QUEUE_FAMILY_EXTERNAL` -> copy/blit -> release externo;
+- source/destination layouts do copy/blit são explícitos;
+- producer wait e consumer signal permanecem no plan para a submissão do caller;
+- nenhum wait de queue/fence, CPU readback ou fallback DX12 foi adicionado.
+
+Hosted evidence:
+- focused portable run `36023547892`: PASS;
+- source checkpoint `nrfusion-source-9958475155e0f9c0000f9f20f8a8973770842bfd` publicado;
+- primeira Windows run `36023092730`: FAIL somente por link do external interop,
+  porque o executor foi incluído no object library compartilhado;
+- causa corrigida em `9958475`, sem mudança de runtime;
+- Windows run `36023547968`: em andamento no freeze;
+- external physical runtime continua sem evidência nesta sessão.
+
+Próximo incremento:
+1. inspecionar `36023547968` antes de qualquer novo push;
+2. se verde, usar o harness `VkDevice` real existente para gravar pelo executor;
+3. manter submit/wait apenas no harness de validação, fora do executor;
+4. depois avançar compose/recreation nativo como responsabilidade separada.

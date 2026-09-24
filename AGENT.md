@@ -138,7 +138,7 @@ Regras obrigatórias:
 Date: 2026-09-24 BRT
 Branch: standalone/integration
 Validated code head: d49c898
-Current branch head before closure docs: 21a276b
+Current code head: 9958475 (Windows hosted validation pending)
 
 Phase 06: CLOSED.
 Phase 07: CLOSED, including real Windows compile/harness validation.
@@ -272,8 +272,25 @@ Phase 11 subgate 11f WIP:
 - Windows hosted run 36012347315 PASS;
 - local/notebook access remains disabled; no physical Vulkan gate was attempted.
 
+Phase 11 subgate 11g WIP:
+- VulkanCarrierExecutor now receives caller-owned VkCommandBuffer and records commands only;
+- executor validates execution plan, native context, command buffer, dispatch, image presence and queue-family identity before consuming the claim;
+- claimed execution is consumed exactly once immediately before recording; validation failures leave the claim available, duplicate execution fails closed;
+- local resources record layout transition -> copy/blit -> layout restore;
+- external resources record VK_QUEUE_FAMILY_EXTERNAL acquire -> copy/blit -> external release;
+- VulkanNativeCommands copy/blit now receives explicit source/destination layouts instead of assuming GENERAL;
+- producer wait / consumer signal contracts remain in the execution plan for caller-owned submission; executor does not submit queues or wait;
+- dedicated Windows test covers invalid command buffer, one-shot claim consumption, explicit transfer layouts, duplicate execution and external recording;
+- no vkQueueWaitIdle, vkWaitForFences, CPU readback, SyntheticDx12Provider fallback or patcher expansion was added;
+- new/modified handwritten files remain <=300 lines;
+- code commit 92411f1 initially exposed a target-link composition failure only: executor object leaked into the external interop object library;
+- fix 9958475 isolates the executor to its dedicated target;
+- focused portable run 36023547892 PASS with source checkpoint artifact nrfusion-source-9958475155e0f9c0000f9f20f8a8973770842bfd;
+- Windows hosted run 36023547968 was still in progress at session freeze;
+- local/notebook access remains disabled; no physical Vulkan gate was attempted.
+
 Exact next action:
-- implement VulkanCarrierExecutor on a caller-owned VkCommandBuffer;
-- executor must consume the claimed execution exactly once, record commands only, preserve explicit ownership/layout/sync facts, and leave queue submission + retirement to the caller/session;
-- do not add vkQueueWaitIdle, vkWaitForFences normal-path waits, CPU readback, SyntheticDx12Provider fallback or patcher expansion;
-- keep physical Vulkan external-memory/semaphore validation deferred until local access is explicitly available again.
+- inspect Windows run 36023547968 first and fix only a concrete failure if present;
+- after hosted executor validation is green, extend the existing VkDevice harness to invoke VulkanCarrierExecutor on a real caller-owned VkCommandBuffer;
+- keep caller-owned queue submission separate, then advance native compose/recreation ownership;
+- keep physical external-memory/semaphore validation deferred until local access is explicitly available again.
