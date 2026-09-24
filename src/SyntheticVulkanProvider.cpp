@@ -39,8 +39,15 @@ bool SyntheticVulkanProvider::LoadVulkanLoader() {
 bool SyntheticVulkanProvider::Initialize(const ProviderContext& context) {
     LoadVulkanLoader();
 
-    if (context.device && context.api == GraphicsApi::Vulkan && vk_.isLoaded) {
+    bool vulkanReady = false;
+    if (context.device && context.commandQueue && context.instance &&
+        context.physicalDevice && context.queueFamilyIndex != UINT32_MAX &&
+        context.api == GraphicsApi::Vulkan && vk_.isLoaded) {
+        vkInstance_ = context.instance;
+        vkPhysicalDevice_ = context.physicalDevice;
         vkDevice_ = context.device;
+        vkQueue_ = context.commandQueue;
+        vkQueueFamilyIndex_ = context.queueFamilyIndex;
 
         #define RESOLVE_VK(member, name) \
             vk_.member = reinterpret_cast<decltype(vk_.member)>(vk_.vkGetDeviceProcAddr(vkDevice_, name));
@@ -67,6 +74,15 @@ bool SyntheticVulkanProvider::Initialize(const ProviderContext& context) {
         RESOLVE_VK(vkCmdBlitImage, "vkCmdBlitImage");
 
         #undef RESOLVE_VK
+
+        vulkanReady = vk_.vkCreateSemaphore && vk_.vkDestroySemaphore &&
+            vk_.vkImportSemaphoreWin32HandleKHR &&
+            vk_.vkCreateImage && vk_.vkDestroyImage &&
+            vk_.vkGetImageMemoryRequirements &&
+            vk_.vkAllocateMemory && vk_.vkFreeMemory &&
+            vk_.vkBindImageMemory && vk_.vkWaitSemaphores &&
+            vk_.vkGetSemaphoreCounterValue && vk_.vkCmdPipelineBarrier &&
+            (vk_.vkCmdCopyImage || vk_.vkCmdBlitImage);
     }
 
     if (context.device && context.api == GraphicsApi::D3D12) {
@@ -74,13 +90,11 @@ bool SyntheticVulkanProvider::Initialize(const ProviderContext& context) {
         dx12Backend_->Initialize(context);
     }
 
-    ready_ = dx12Backend_ && dx12Backend_->IsReady();
+    ready_ = vulkanReady || (dx12Backend_ && dx12Backend_->IsReady());
     return ready_;
 }
 
 void SyntheticVulkanProvider::Shutdown() {
-    if (!ready_) return;
-
     if (vkDevice_ && vk_.isLoaded) {
         for (auto& sem : importedSemaphores_) {
             if (sem.vkSemaphore && vk_.vkDestroySemaphore) {
@@ -110,7 +124,11 @@ void SyntheticVulkanProvider::Shutdown() {
         vk_.libVulkan = nullptr;
     }
     vk_ = {};
+    vkInstance_ = nullptr;
+    vkPhysicalDevice_ = nullptr;
     vkDevice_ = nullptr;
+    vkQueue_ = nullptr;
+    vkQueueFamilyIndex_ = UINT32_MAX;
     ready_ = false;
 }
 

@@ -220,7 +220,11 @@ public:
 
 private:
     bool ready_ = false;
+    void* vkInstance_ = nullptr;
+    void* vkPhysicalDevice_ = nullptr;
     void* vkDevice_ = nullptr;
+    void* vkQueue_ = nullptr;
+    uint32_t vkQueueFamilyIndex_ = UINT32_MAX;
     VulkanDispatchTable vk_{};
 
     std::unique_ptr<SyntheticDx12Provider> dx12Backend_;

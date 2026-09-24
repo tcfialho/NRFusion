@@ -1,4 +1,5 @@
 #include "nrfusion/SyntheticVulkanProvider.hpp"
+#include "nrfusion/VulkanNativeMemoryQuery.hpp"
 
 namespace nrfusion {
 
@@ -50,11 +51,26 @@ bool SyntheticVulkanProvider::ImportD3D12Resource(HANDLE sharedHandle,
         imp.handleType = VK_EXTERNAL_MEMORY_HANDLE_TYPE_D3D12_RESOURCE_BIT;
         imp.handle = sharedHandle;
 
+        VulkanImportedMemoryTypeFacts memoryType{};
+        if (!QueryD3D12ImportedMemoryTypeOpaque(
+                reinterpret_cast<std::uintptr_t>(vkInstance_),
+                reinterpret_cast<std::uintptr_t>(vkPhysicalDevice_),
+                reinterpret_cast<std::uintptr_t>(vkDevice_),
+                reinterpret_cast<std::uintptr_t>(vkQueue_),
+                vkQueueFamilyIndex_,
+                reinterpret_cast<FARPROC>(vk_.vkGetDeviceProcAddr),
+                sharedHandle,
+                req.memoryTypeBits,
+                memoryType)) {
+            vk_.vkDestroyImage(vkDevice_, image, nullptr);
+            return false;
+        }
+
         VkMemoryAllocateInfo mai{};
         mai.sType = VK_STRUCTURE_TYPE_MEMORY_ALLOCATE_INFO;
         mai.pNext = &imp;
         mai.allocationSize = (allocationSize != 0) ? allocationSize : req.size;
-        mai.memoryTypeIndex = 0;
+        mai.memoryTypeIndex = memoryType.memoryTypeIndex;
 
         void* mem = nullptr;
         if (vk_.vkAllocateMemory(vkDevice_, &mai, nullptr, &mem) != 0) {
