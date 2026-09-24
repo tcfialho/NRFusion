@@ -126,10 +126,15 @@ int main() {
                                    D3D11_CREATE_DEVICE_BGRA_SUPPORT, nullptr, 0,
                                    D3D11_SDK_VERSION, &d3d11Device, &fl, &d3d11Context);
     if (FAILED(hr)) {
-        // Fallback to WARP for test coverage if hardware device not granted
-        hr = D3D11CreateDevice(nullptr, D3D_DRIVER_TYPE_WARP, nullptr,
-                               D3D11_CREATE_DEVICE_BGRA_SUPPORT, nullptr, 0,
-                               D3D11_SDK_VERSION, &d3d11Device, &fl, &d3d11Context);
+        char requireHardware[2]{};
+        const bool hardwareRequired = GetEnvironmentVariableA(
+            "NRFUSION_TEST_D3D11_HARDWARE", requireHardware,
+            static_cast<DWORD>(sizeof(requireHardware))) != 0;
+        if (!hardwareRequired) {
+            hr = D3D11CreateDevice(nullptr, D3D_DRIVER_TYPE_WARP, nullptr,
+                                   D3D11_CREATE_DEVICE_BGRA_SUPPORT, nullptr, 0,
+                                   D3D11_SDK_VERSION, &d3d11Device, &fl, &d3d11Context);
+        }
     }
     if (FAILED(hr) || !d3d11Device) {
         std::cerr << "Failed to create D3D11 device" << std::endl;

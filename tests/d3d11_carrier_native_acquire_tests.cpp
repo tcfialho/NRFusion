@@ -25,6 +25,11 @@ bool CreateDevice(
         nullptr, D3D_DRIVER_TYPE_HARDWARE, nullptr, 0, nullptr, 0,
         D3D11_SDK_VERSION, &device, &feature, &context);
     if (SUCCEEDED(hr)) return true;
+    char requireHardware[2]{};
+    if (GetEnvironmentVariableA(
+            "NRFUSION_TEST_D3D11_HARDWARE", requireHardware,
+            static_cast<DWORD>(sizeof(requireHardware))) != 0)
+        return false;
     return SUCCEEDED(D3D11CreateDevice(
         nullptr, D3D_DRIVER_TYPE_WARP, nullptr, 0, nullptr, 0,
         D3D11_SDK_VERSION, &device, &feature, &context));
