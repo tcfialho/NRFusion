@@ -127,8 +127,13 @@ bool SyntheticDx11BridgeProvider::CreateSharedResources(
             return false;
     }
 
+    nvof_.Shutdown();
+    if (!nvof_.Initialize(
+            d3d12Device_.Get(), d3d12Queue_.Get(), width, height)) {
+        CloseSharedHandles();
+        return false;
+    }
     currentRes_ = {width, height};
-    nvof_.Initialize(d3d12Device_.Get(), d3d12Queue_.Get(), width, height);
     return true;
 }
 

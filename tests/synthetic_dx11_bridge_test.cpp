@@ -204,7 +204,7 @@ int main() {
     {
         for (std::uint64_t frame = 1; frame <= 12; ++frame) {
             const UINT width = (frame & 1u) ? 640u : 800u;
-            const UINT height = (frame & 1u) ? 360u : 450u;
+            const UINT height = (frame & 1u) ? 360u : 600u;
             auto gameColor = MakeTexture(d3d11Device.Get(), width, height);
             auto gameDest = MakeTexture(d3d11Device.Get(), width, height);
             D3D11NativeAcquireInput acquire{};
@@ -227,6 +227,9 @@ int main() {
             const SyntheticWorkHandle handle = bridge.Submit(*work, nullptr);
             assert(handle.valid);
             assert(handle.workId == work->ticket.id);
+            const Resolution flow = bridge.OpticalFlow().FlowResolution();
+            assert(flow.height == 180);
+            assert(flow.width == ((frame & 1u) ? 320u : 240u));
             auto badDest = MakeTexture(
                 d3d11Device.Get(), width, height, DXGI_FORMAT_R8G8B8A8_UNORM);
             assert(!bridge.RecordD3D11OutputConsume(
