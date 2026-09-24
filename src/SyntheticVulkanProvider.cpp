@@ -74,8 +74,8 @@ bool SyntheticVulkanProvider::Initialize(const ProviderContext& context) {
         dx12Backend_->Initialize(context);
     }
 
-    ready_ = true;
-    return true;
+    ready_ = dx12Backend_ && dx12Backend_->IsReady();
+    return ready_;
 }
 
 void SyntheticVulkanProvider::Shutdown() {
@@ -114,38 +114,22 @@ void SyntheticVulkanProvider::Shutdown() {
     ready_ = false;
 }
 
-SyntheticWorkHandle SyntheticVulkanProvider::Submit(const SyntheticFrameInputs& inputs, void* commandList) {
+SyntheticWorkHandle SyntheticVulkanProvider::Submit(
+    const SyntheticFrameInputs& inputs, void* commandList) {
     currentWorkId_++;
     if (dx12Backend_) {
         return dx12Backend_->Submit(inputs, commandList);
     }
-    SyntheticWorkHandle handle{};
-    handle.workId = inputs.ticket.id ? inputs.ticket.id : currentWorkId_;
-    handle.fenceValue = currentWorkId_;
-    handle.valid = true;
-    handle.completed = true;
-    handle.workingScale = inputs.workingScale;
-    handle.workResolution = inputs.renderResolution;
-    handle.nativeResolution = inputs.targetResolution;
-    return handle;
+    return {};
 }
 
 bool SyntheticVulkanProvider::Poll(const SyntheticWorkHandle& handle) {
-    if (dx12Backend_) {
-        return dx12Backend_->Poll(handle);
-    }
-    return true;
+    return dx12Backend_ ? dx12Backend_->Poll(handle) : false;
 }
 
-ResourceRef SyntheticVulkanProvider::GetResidual(const SyntheticWorkHandle& handle) {
-    if (dx12Backend_) {
-        return dx12Backend_->GetResidual(handle);
-    }
-    ResourceRef ref{};
-    ref.opaqueId = 0x0000BAAD;
-    ref.resolution = handle.workResolution;
-    ref.format = ResourceFormat::Rgba16Float;
-    return ref;
+ResourceRef SyntheticVulkanProvider::GetResidual(
+    const SyntheticWorkHandle& handle) {
+    return dx12Backend_ ? dx12Backend_->GetResidual(handle) : ResourceRef{};
 }
 
 bool SyntheticVulkanProvider::ComposeNative(const SyntheticWorkHandle& handle,
@@ -153,10 +137,9 @@ bool SyntheticVulkanProvider::ComposeNative(const SyntheticWorkHandle& handle,
                                            const ResourceRef& destinationNative,
                                            void* commandList,
                                            float residualWeight) {
-    if (dx12Backend_) {
-        return dx12Backend_->ComposeNative(handle, originalNative, destinationNative, commandList, residualWeight);
-    }
-    return true;
+    if (!dx12Backend_) return false;
+    return dx12Backend_->ComposeNative(
+        handle, originalNative, destinationNative, commandList, residualWeight);
 }
 
 } // namespace nrfusion

@@ -8,7 +8,7 @@ bool SyntheticVulkanProvider::ImportD3D12Resource(HANDLE sharedHandle,
                                                  uint32_t format,
                                                  uint64_t allocationSize,
                                                  ImportedVulkanResource& outResource) {
-    if (!sharedHandle) return false;
+    if (!ready_ || !vkDevice_ || !sharedHandle) return false;
 
     outResource.d3d12Handle = sharedHandle;
     outResource.width = width;
@@ -78,7 +78,7 @@ bool SyntheticVulkanProvider::ImportD3D12Resource(HANDLE sharedHandle,
 
 bool SyntheticVulkanProvider::ImportD3D12Fence(HANDLE sharedFenceHandle,
                                               ImportedVulkanSemaphore& outSemaphore) {
-    if (!sharedFenceHandle) return false;
+    if (!ready_ || !vkDevice_ || !sharedFenceHandle) return false;
 
     outSemaphore.d3d12FenceHandle = sharedFenceHandle;
 
@@ -143,8 +143,11 @@ uint64_t SyntheticVulkanProvider::QueryTimelineSemaphore(void* vkSemaphore) {
 }
 
 bool SyntheticVulkanProvider::TransitionImageLayout(void* cmdBuffer, void* image, uint32_t oldLayout, uint32_t newLayout) {
-    if (!cmdBuffer || !image) return false;
-    if (vkDevice_ && vk_.vkCmdPipelineBarrier) {
+    if (!ready_ || !vkDevice_ || !vk_.vkCmdPipelineBarrier ||
+        !cmdBuffer || !image) {
+        return false;
+    }
+    {
         struct LocalVkImageMemoryBarrier {
             uint32_t sType = 45; // VK_STRUCTURE_TYPE_IMAGE_MEMORY_BARRIER
             const void* pNext = nullptr;
@@ -177,9 +180,12 @@ bool SyntheticVulkanProvider::TransitionImageLayout(void* cmdBuffer, void* image
 
 bool SyntheticVulkanProvider::BlitOrCopy(void* cmdBuffer, void* srcImage, uint32_t srcWidth, uint32_t srcHeight,
                                         void* dstImage, uint32_t dstWidth, uint32_t dstHeight) {
-    if (!cmdBuffer || !srcImage || !dstImage) return false;
+    if (!ready_ || !vkDevice_ || (!vk_.vkCmdCopyImage && !vk_.vkCmdBlitImage) ||
+        !cmdBuffer || !srcImage || !dstImage) {
+        return false;
+    }
 
-    if (vkDevice_) {
+    {
         if (srcWidth == dstWidth && srcHeight == dstHeight && vk_.vkCmdCopyImage) {
             struct LocalVkImageCopy {
                 struct { uint32_t aspectMask = 1; uint32_t mipLevel = 0; uint32_t baseArrayLayer = 0; uint32_t layerCount = 1; } srcSubresource;
