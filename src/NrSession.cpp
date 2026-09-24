@@ -114,6 +114,16 @@ bool NrSession::ClaimExecuteWork(const WorkTicket& ticket) noexcept {
            works_.ClaimExecution(ticket);
 }
 
+bool NrSession::HasClaimedExecution(const WorkTicket& ticket) const noexcept {
+    return ticket.configurationGeneration == state_.runtimeGeneration &&
+           works_.HasClaimedExecution(ticket);
+}
+
+bool NrSession::ConsumeClaimedExecution(const WorkTicket& ticket) noexcept {
+    return ticket.configurationGeneration == state_.runtimeGeneration &&
+           works_.ConsumeClaimedExecution(ticket);
+}
+
 bool NrSession::SubmitWork(const WorkTicket& ticket) noexcept {
     return ticket.configurationGeneration == state_.runtimeGeneration &&
            works_.Submit(ticket);

@@ -43,7 +43,7 @@ std::optional<WorkTicket> NrSessionWorkTracker::Begin(
     WorkTicket ticket{
         id, session_, sourceFrame, viewKey, configurationGeneration,
         workingScale, precisionTag};
-    *entry = {ticket, WorkState::Started, true, false, false};
+    *entry = {ticket, WorkState::Started, true, false, false, false};
     ++size_;
     return ticket;
 }
@@ -74,15 +74,32 @@ bool NrSessionWorkTracker::Abandon(const WorkTicket& ticket) noexcept {
 bool NrSessionWorkTracker::IsStarted(const WorkTicket& ticket) const noexcept {
     const Entry* entry = Find(ticket);
     return entry != nullptr && entry->state == WorkState::Started &&
-           !entry->executionClaimed;
+           !entry->executionClaimed && !entry->executionConsumed;
 }
 
 bool NrSessionWorkTracker::ClaimExecution(const WorkTicket& ticket) noexcept {
     Entry* entry = Find(ticket);
     if (entry == nullptr || entry->state != WorkState::Started ||
-        entry->executionClaimed)
+        entry->executionClaimed || entry->executionConsumed)
         return false;
     entry->executionClaimed = true;
+    return true;
+}
+
+bool NrSessionWorkTracker::HasClaimedExecution(
+    const WorkTicket& ticket) const noexcept {
+    const Entry* entry = Find(ticket);
+    return entry != nullptr && entry->state == WorkState::Started &&
+           entry->executionClaimed && !entry->executionConsumed;
+}
+
+bool NrSessionWorkTracker::ConsumeClaimedExecution(
+    const WorkTicket& ticket) noexcept {
+    Entry* entry = Find(ticket);
+    if (entry == nullptr || entry->state != WorkState::Started ||
+        !entry->executionClaimed || entry->executionConsumed)
+        return false;
+    entry->executionConsumed = true;
     return true;
 }
 

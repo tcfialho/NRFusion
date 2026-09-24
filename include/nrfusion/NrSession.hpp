@@ -21,6 +21,8 @@ public:
         const NrSessionFrameResult& frame, std::uint64_t viewKey = 0) noexcept;
     bool CanExecuteWork(const WorkTicket& ticket) const noexcept;
     bool ClaimExecuteWork(const WorkTicket& ticket) noexcept;
+    bool HasClaimedExecution(const WorkTicket& ticket) const noexcept;
+    bool ConsumeClaimedExecution(const WorkTicket& ticket) noexcept;
     bool SubmitWork(const WorkTicket& ticket) noexcept;
     bool AbandonWork(const WorkTicket& ticket) noexcept;
     bool MapTimedWork(const WorkTicket& ticket) noexcept;

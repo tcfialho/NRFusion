@@ -27,6 +27,8 @@ public:
     bool Abandon(const WorkTicket& ticket) noexcept;
     bool IsStarted(const WorkTicket& ticket) const noexcept;
     bool ClaimExecution(const WorkTicket& ticket) noexcept;
+    bool HasClaimedExecution(const WorkTicket& ticket) const noexcept;
+    bool ConsumeClaimedExecution(const WorkTicket& ticket) noexcept;
     bool IsSubmitted(const WorkTicket& ticket) const noexcept;
     bool MarkTimingMapped(const WorkTicket& ticket) noexcept;
     void ResetSession() noexcept;
@@ -41,6 +43,7 @@ private:
         bool occupied = false;
         bool timingMapped = false;
         bool executionClaimed = false;
+        bool executionConsumed = false;
     };
 
     Entry* Find(const WorkTicket& ticket) noexcept;
