@@ -7,6 +7,10 @@ bool HostServer64::EnsureZeroGuides(uint32_t width, uint32_t height) {
         return true;
     }
     if (width == 0 || height == 0 || !d3d12Device_) return false;
+    if (guideFence_ && guideFenceValue_ != 0 &&
+        guideFence_->GetCompletedValue() < guideFenceValue_) {
+        return false;
+    }
 
     D3D12_RESOURCE_DESC texDesc{};
     texDesc.Dimension = D3D12_RESOURCE_DIMENSION_TEXTURE2D;
@@ -101,14 +105,9 @@ bool HostServer64::EnsureZeroGuides(uint32_t width, uint32_t height) {
     ID3D12CommandList* lists[] = { guideCmdList_.Get() };
     d3d12Queue_->ExecuteCommandLists(1, lists);
 
-    const uint64_t fenceVal = ++guideFenceValue_;
-    d3d12Queue_->Signal(guideFence_.Get(), fenceVal);
-    HANDLE evt = CreateEventW(nullptr, FALSE, FALSE, nullptr);
-    if (evt) {
-        guideFence_->SetEventOnCompletion(fenceVal, evt);
-        WaitForSingleObject(evt, INFINITE);
-        CloseHandle(evt);
-    }
+    const uint64_t fenceVal = guideFenceValue_ + 1;
+    if (FAILED(d3d12Queue_->Signal(guideFence_.Get(), fenceVal))) return false;
+    guideFenceValue_ = fenceVal;
 
     guideWidth_ = width;
     guideHeight_ = height;

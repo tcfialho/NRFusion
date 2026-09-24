@@ -70,10 +70,8 @@ private:
     ComPtr<ID3D12Fence> importedConsumerFence_;
     std::unique_ptr<SyntheticDx12Provider> syntheticProvider_;
 
-    // The 32-bit client has no depth/motion channel wired yet (CaptureClientConfig carries the
-    // handles, HostServer64 does not import them). DLSS-NR still needs something in those slots,
-    // so a zero-filled placeholder goes in -- the same fallback the D3D12 in-process route uses
-    // when a game does not supply real guides. Zero guides cost quality, not correctness.
+    // Missing depth/motion inputs use zero-filled guides. Imported guides, when present, bypass
+    // these resources; the fallback costs quality but preserves transport correctness.
     ComPtr<ID3D12Resource> zeroGuideUpload_;
     ComPtr<ID3D12Resource> lowGuideDepth_;
     ComPtr<ID3D12Resource> lowGuideMotion_;
