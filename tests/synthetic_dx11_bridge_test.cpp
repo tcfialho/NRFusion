@@ -29,13 +29,14 @@ using namespace nrfusion;
 namespace {
 
 ComPtr<ID3D11Texture2D> MakeTexture(
-    ID3D11Device* device, UINT width, UINT height) {
+    ID3D11Device* device, UINT width, UINT height,
+    DXGI_FORMAT format = DXGI_FORMAT_R16G16B16A16_FLOAT) {
     D3D11_TEXTURE2D_DESC desc{};
     desc.Width = width;
     desc.Height = height;
     desc.MipLevels = 1;
     desc.ArraySize = 1;
-    desc.Format = DXGI_FORMAT_R16G16B16A16_FLOAT;
+    desc.Format = format;
     desc.SampleDesc.Count = 1;
     desc.Usage = D3D11_USAGE_DEFAULT;
     desc.BindFlags = D3D11_BIND_SHADER_RESOURCE | D3D11_BIND_RENDER_TARGET;
@@ -178,6 +179,27 @@ int main() {
         assert(!bridge.Submit(bad, nullptr).valid);
     }
 
+    {
+        ComPtr<ID3D11Device> otherDevice;
+        ComPtr<ID3D11DeviceContext> otherContext;
+        D3D_FEATURE_LEVEL otherFeature{};
+        assert(SUCCEEDED(D3D11CreateDevice(
+            nullptr, D3D_DRIVER_TYPE_WARP, nullptr, 0, nullptr, 0,
+            D3D11_SDK_VERSION, &otherDevice, &otherFeature, &otherContext)));
+        auto foreignColor = MakeTexture(otherDevice.Get(), 320, 180);
+        SyntheticFrameInputs foreign{};
+        foreign.ticket.id = 1950;
+        foreign.ticket.session = 1;
+        foreign.frameId = 1950;
+        foreign.renderResolution = {320, 180};
+        foreign.targetResolution = {320, 180};
+        foreign.color.opaqueId =
+            reinterpret_cast<std::uint64_t>(foreignColor.Get());
+        foreign.color.resolution = {320, 180};
+        foreign.color.format = ResourceFormat::Rgba16Float;
+        assert(!bridge.Submit(foreign, nullptr).valid);
+    }
+
     // 5. GPU-only bridge handoff, retirement and resize/reset stress.
     {
         for (std::uint64_t frame = 1; frame <= 12; ++frame) {
@@ -205,6 +227,10 @@ int main() {
             const SyntheticWorkHandle handle = bridge.Submit(*work, nullptr);
             assert(handle.valid);
             assert(handle.workId == work->ticket.id);
+            auto badDest = MakeTexture(
+                d3d11Device.Get(), width, height, DXGI_FORMAT_R8G8B8A8_UNORM);
+            assert(!bridge.RecordD3D11OutputConsume(
+                handle, d3d11Context.Get(), badDest.Get()));
             assert(bridge.RecordD3D11OutputConsume(
                 handle, d3d11Context.Get(), gameDest.Get()));
             assert(WaitForD3D11(d3d11Device.Get(), d3d11Context.Get()));
