@@ -174,6 +174,18 @@ int main() {
     assert(externalPlan);
     assert(externalPlan.plan.externalInterop);
 
+    auto missingProducer = external;
+    missingProducer.producer.handle = 0;
+    assert(BuildVulkanCarrierExecutionPlan(
+               carrier, frame, *work, missingProducer).failure ==
+           VulkanCarrierExecutionFailure::InvalidTimeline);
+
+    auto wrongSignal = external;
+    wrongSignal.consumer.direction = VulkanTimelineDirection::Wait;
+    assert(BuildVulkanCarrierExecutionPlan(
+               carrier, frame, *work, wrongSignal).failure ==
+           VulkanCarrierExecutionFailure::InvalidTimeline);
+
     assert(carrier.ConsumeClaimedExecution(*work));
     assert(!carrier.ConsumeClaimedExecution(*work));
     assert(BuildVulkanCarrierExecutionPlan(

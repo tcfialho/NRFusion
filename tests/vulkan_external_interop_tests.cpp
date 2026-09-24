@@ -14,7 +14,8 @@ using namespace nrfusion::test;
 namespace {
 
 constexpr int kSkip = 77;
-constexpr std::uint32_t kCycles = 32;
+constexpr std::uint32_t kRecreationCycles = 32;
+constexpr std::uint32_t kReuseCycles = 128;
 
 bool HardwareRequired() {
     char value[2]{};
@@ -37,55 +38,33 @@ int Unsupported(bool required, int code) {
     return required ? code : kSkip;
 }
 
-bool RunInteropCycle(
+bool SubmitImportedCycle(
     D3D12ExternalShareHarness& d3d12,
     VulkanExternalInteropHarness& vulkan,
-    std::uint64_t value) {
-    SyntheticVulkanProvider provider;
-    if (!provider.Initialize(vulkan.Context())) return false;
-
-    ImportedVulkanResource color{};
-    ImportedVulkanResource output{};
-    if (!provider.ImportD3D12Resource(
-            d3d12.ColorHandle(), 64, 64,
-            VK_FORMAT_R16G16B16A16_SFLOAT,
-            d3d12.AllocationSize(), color) ||
-        !provider.ImportD3D12Resource(
-            d3d12.OutputHandle(), 64, 64,
-            VK_FORMAT_R16G16B16A16_SFLOAT,
-            d3d12.AllocationSize(), output)) {
-        provider.Shutdown();
-        return false;
-    }
-
-    ImportedVulkanSemaphore producer{};
-    ImportedVulkanSemaphore consumer{};
-    if (!provider.ImportD3D12Fence(
-            d3d12.ProducerFenceHandle(), producer) ||
-        !provider.ImportD3D12Fence(
-            d3d12.ConsumerFenceHandle(), consumer)) {
-        provider.Shutdown();
-        return false;
-    }
-
+    SyntheticVulkanProvider& provider,
+    const ImportedVulkanResource& color,
+    const ImportedVulkanResource& output,
+    const ImportedVulkanSemaphore& producer,
+    const ImportedVulkanSemaphore& consumer,
+    std::uint64_t value,
+    bool firstUse) {
     VkCommandPool pool = VK_NULL_HANDLE;
     VkCommandBuffer command = VK_NULL_HANDLE;
     if (!vulkan.CreatePrimaryCommandBuffer(pool, command) ||
         !vulkan.Begin(command)) {
         vulkan.DestroyCommandPool(pool);
-        provider.Shutdown();
         return false;
     }
 
     const auto general =
         static_cast<std::uint32_t>(VK_IMAGE_LAYOUT_GENERAL);
-    const auto undefined =
-        static_cast<std::uint32_t>(VK_IMAGE_LAYOUT_UNDEFINED);
+    const auto incoming = static_cast<std::uint32_t>(
+        firstUse ? VK_IMAGE_LAYOUT_UNDEFINED : VK_IMAGE_LAYOUT_GENERAL);
     const bool recorded =
         provider.AcquireExternalImage(
-            command, color.vkImage, undefined, general) &&
+            command, color.vkImage, incoming, general) &&
         provider.AcquireExternalImage(
-            command, output.vkImage, undefined, general) &&
+            command, output.vkImage, incoming, general) &&
         provider.BlitOrCopy(
             command,
             color.vkImage, color.width, color.height,
@@ -105,10 +84,78 @@ bool RunInteropCycle(
         d3d12.WaitConsumer(value, 5000) &&
         provider.QueryTimelineSemaphore(
             consumer.vkSemaphore) >= value;
-
     vulkan.DestroyCommandPool(pool);
+    return submitted;
+}
+
+bool ImportInteropResources(
+    D3D12ExternalShareHarness& d3d12,
+    SyntheticVulkanProvider& provider,
+    ImportedVulkanResource& color,
+    ImportedVulkanResource& output,
+    ImportedVulkanSemaphore& producer,
+    ImportedVulkanSemaphore& consumer) {
+    return provider.ImportD3D12Resource(
+               d3d12.ColorHandle(), 64, 64,
+               VK_FORMAT_R16G16B16A16_SFLOAT,
+               d3d12.AllocationSize(), color) &&
+           provider.ImportD3D12Resource(
+               d3d12.OutputHandle(), 64, 64,
+               VK_FORMAT_R16G16B16A16_SFLOAT,
+               d3d12.AllocationSize(), output) &&
+           provider.ImportD3D12Fence(
+               d3d12.ProducerFenceHandle(), producer) &&
+           provider.ImportD3D12Fence(
+               d3d12.ConsumerFenceHandle(), consumer);
+}
+
+bool RunRecreationCycle(
+    D3D12ExternalShareHarness& d3d12,
+    VulkanExternalInteropHarness& vulkan,
+    std::uint64_t value) {
+    SyntheticVulkanProvider provider;
+    if (!provider.Initialize(vulkan.Context())) return false;
+
+    ImportedVulkanResource color{};
+    ImportedVulkanResource output{};
+    ImportedVulkanSemaphore producer{};
+    ImportedVulkanSemaphore consumer{};
+    const bool imported = ImportInteropResources(
+        d3d12, provider, color, output, producer, consumer);
+    const bool submitted =
+        imported && SubmitImportedCycle(
+            d3d12, vulkan, provider,
+            color, output, producer, consumer, value, true);
     provider.Shutdown();
     return submitted;
+}
+
+bool RunReuseCycles(
+    D3D12ExternalShareHarness& d3d12,
+    VulkanExternalInteropHarness& vulkan,
+    std::uint64_t firstValue) {
+    SyntheticVulkanProvider provider;
+    if (!provider.Initialize(vulkan.Context())) return false;
+
+    ImportedVulkanResource color{};
+    ImportedVulkanResource output{};
+    ImportedVulkanSemaphore producer{};
+    ImportedVulkanSemaphore consumer{};
+    if (!ImportInteropResources(
+            d3d12, provider, color, output, producer, consumer)) {
+        provider.Shutdown();
+        return false;
+    }
+
+    bool ok = true;
+    for (std::uint32_t cycle = 0; cycle != kReuseCycles && ok; ++cycle) {
+        ok = SubmitImportedCycle(
+            d3d12, vulkan, provider,
+            color, output, producer, consumer,
+            firstValue + cycle, cycle == 0);
+    }
+    provider.Shutdown();
+    return ok;
 }
 
 } // namespace
@@ -129,14 +176,18 @@ int main() {
     assert(HandleStillCallerOwned(d3d12.ProducerFenceHandle()));
     assert(HandleStillCallerOwned(d3d12.ConsumerFenceHandle()));
 
-    for (std::uint32_t cycle = 0; cycle != kCycles; ++cycle) {
-        if (!RunInteropCycle(d3d12, vulkan, cycle + 1))
+    for (std::uint32_t cycle = 0;
+         cycle != kRecreationCycles; ++cycle) {
+        if (!RunRecreationCycle(d3d12, vulkan, cycle + 1))
             return Unsupported(required, 3);
         assert(HandleStillCallerOwned(d3d12.ColorHandle()));
         assert(HandleStillCallerOwned(d3d12.OutputHandle()));
         assert(HandleStillCallerOwned(d3d12.ProducerFenceHandle()));
         assert(HandleStillCallerOwned(d3d12.ConsumerFenceHandle()));
     }
+
+    if (!RunReuseCycles(d3d12, vulkan, 1000))
+        return Unsupported(required, 4);
 
     vulkan.Close();
     d3d12.Close();
