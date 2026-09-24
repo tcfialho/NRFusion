@@ -84,6 +84,7 @@ add_executable(nrfusion_vulkan_external_interop_tests
     tests/vulkan_external_interop_tests.cpp
     tests/VulkanExternalInteropHarness.cpp
     tests/D3D12ExternalShareHarness.cpp
+    src/SyntheticDx12Provider.cpp
     src/VulkanCarrierContract.cpp
     $<TARGET_OBJECTS:nrfusion_vulkan_provider_compile>)
 target_include_directories(nrfusion_vulkan_external_interop_tests PRIVATE
@@ -91,7 +92,7 @@ target_include_directories(nrfusion_vulkan_external_interop_tests PRIVATE
     tests
     "${NRFUSION_VULKAN_INCLUDE_DIR}")
 target_link_libraries(nrfusion_vulkan_external_interop_tests PRIVATE
-    d3d12 dxgi)
+    d3d12 dxgi d3dcompiler)
 if (MSVC)
     target_compile_options(nrfusion_vulkan_external_interop_tests PRIVATE
         /W4 /permissive- /UNDEBUG)
