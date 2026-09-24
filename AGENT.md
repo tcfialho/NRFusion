@@ -137,7 +137,7 @@ Regras obrigatórias:
 
 Date: 2026-09-23 BRT
 Branch: standalone/integration
-Validated code head: f57e6d7
+Validated code head: 47536ba
 
 Phase 06: CLOSED.
 Phase 07: CLOSED, including real Windows compile/harness validation.
@@ -224,19 +224,20 @@ Phase 11 subgate 11a:
 - portable CI PASS at 3566c14;
 - Windows hosted run 35947607432 was still in progress at session freeze.
 
-Phase 11 subgate 11b WIP:
-- official Khronos Vulkan-Headers are pinned in Windows hosted validation without installing a full SDK;
-- VulkanContextContract now carries instance, physical device, device, queue and queue-family identity;
-- VulkanNativeContext compiles against official Vulkan types;
-- vkGetMemoryWin32HandlePropertiesKHR is wired through an opaque bridge so the legacy public header need not include Vulkan headers yet;
-- SyntheticVulkanProvider now requires a complete Vulkan context before reporting ready;
-- imported D3D12 memory no longer hardcodes memoryTypeIndex=0; it intersects image requirements with Win32-handle memoryTypeBits;
-- code head 1d7d62a is NOT YET VALIDATED: portable run 35948880898 and Windows run 35948880921 were still active at session freeze;
-- last validated Phase 11 code remains 3566c14.
+Phase 11 subgates 11b/11c:
+- official Khronos Vulkan-Headers are pinned in Windows hosted validation without a full SDK install;
+- VulkanContextContract carries instance, physical device, device, queue and queue-family identity;
+- native owners compile against official Vulkan types; the public provider header no longer declares invented Vulkan ABI structs/constants;
+- imported D3D12 memory selects memoryTypeIndex from image requirements intersected with vkGetMemoryWin32HandlePropertiesKHR;
+- provider native lifecycle, interop and commands are split into owners <=300 lines;
+- provider commands delegate to VulkanNativeCommands using official VkImageMemoryBarrier/VkImageCopy/VkImageBlit types;
+- code head 47536ba passed portable and Windows hosted validation;
+- real VkDevice/resource harness is implemented at 0470771 and portable validation PASS;
+- Windows run 35952257874 for 0470771 was still active at session freeze.
 
 Exact next action:
-- inspect runs 35948880898 and 35948880921 first; do not duplicate them;
-- if either failed, fix only that concrete failure and rerun through hosted CI;
-- if both passed, mark 1d7d62a validated and remove the remaining manual Vulkan ABI/constants from SyntheticVulkanProvider.hpp;
-- migrate interop/barrier/blit structures to official Vulkan headers behind the native compile path;
-- then add a VkDevice-real harness before any physical notebook Vulkan gate.
+- inspect Windows run 35952257874 first; do not duplicate it;
+- if green, run nrfusion_vulkan_native_device_tests on the notebook with NRFUSION_TEST_VULKAN_HARDWARE=1;
+- treat that as native VkDevice/resource evidence only, separate from external-memory interop evidence;
+- after the physical VkDevice gate, add the D3D12 shared-resource/fence import harness for external memory + timeline semaphore ownership;
+- do not mark Phase 11 closed until acquire, interop, sync, compose/recreation and long-run evidence are all distinct and real.

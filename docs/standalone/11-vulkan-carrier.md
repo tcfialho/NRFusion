@@ -92,3 +92,27 @@ Validação pendente no freeze:
 - Windows hosted run `35948880921`.
 
 Não relançar esses runs sem antes inspecionar o estado existente.
+
+
+## Subgate 11c — ABI oficial e VkDevice real (WIP)
+
+Código totalmente validado: `47536ba`.
+
+Concluído:
+- removidas as structs/enums Vulkan inventadas do header público;
+- lifecycle/dispatch, interop/sync e commands nativos estão em owners separados <=300 linhas;
+- barrier/copy/blit usam tipos oficiais `VkImageMemoryBarrier`, `VkImageCopy` e `VkImageBlit`;
+- import de memória usa `vkGetMemoryWin32HandlePropertiesKHR` e interseção real de memory type;
+- patcher legado continua compilável sem SDK e fail-closed fora do build nativo;
+- portable + Windows hosted: PASS em `47536ba`.
+
+Harness real em `0470771`:
+- cria VkInstance/VkPhysicalDevice/VkDevice/VkQueue reais;
+- cria e aloca duas VkImages reais;
+- grava transitions + copy pelo owner `VulkanNativeCommands`;
+- submete na queue e espera apenas no harness de validação;
+- portable CI PASS;
+- Windows run `35952257874` ainda estava ativo no freeze.
+
+O harness VkDevice não substitui a evidência de external-memory/semaphore;
+essa prova fica para o próximo subgate.
