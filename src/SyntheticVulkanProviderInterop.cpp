@@ -79,7 +79,8 @@ bool SyntheticVulkanProvider::ImportD3D12Fence(
         destroySemaphore(native.device, semaphore, nullptr);
         return false;
     }
-    // Successful Win32 semaphore import transfers the duplicate to Vulkan.
+    // Vulkan retains the imported payload, but Win32 HANDLE ownership stays here.
+    CloseHandle(importHandle);
     importHandle = nullptr;
 
     outSemaphore.vkSemaphore = reinterpret_cast<void*>(semaphore);

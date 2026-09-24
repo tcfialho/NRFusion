@@ -195,7 +195,8 @@ bool SyntheticVulkanProvider::ImportD3D12Resource(
         destroyImage(native.device, image, nullptr);
         return false;
     }
-    // Successful Win32 memory import transfers the duplicate to Vulkan.
+    // Vulkan retains the imported payload, but Win32 HANDLE ownership stays here.
+    CloseHandle(importHandle);
     importHandle = nullptr;
     if (bindImageMemory(native.device, image, memory, 0) != VK_SUCCESS) {
         freeMemory(native.device, memory, nullptr);
