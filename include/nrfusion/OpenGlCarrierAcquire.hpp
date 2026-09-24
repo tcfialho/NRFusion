@@ -1,6 +1,7 @@
 #pragma once
 
 #include "nrfusion/FrameContractProvider.hpp"
+#include "nrfusion/SyntheticProvider.hpp"
 
 #include <cstdint>
 #include <optional>
