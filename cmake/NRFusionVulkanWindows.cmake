@@ -45,6 +45,7 @@ endif()
 
 add_executable(nrfusion_vulkan_native_device_tests
     tests/vulkan_native_device_tests.cpp
+    tests/VulkanNativeHarness.cpp
     src/VulkanNativeCommands.cpp
     src/VulkanNativeContext.cpp
     src/VulkanCarrierContract.cpp)
