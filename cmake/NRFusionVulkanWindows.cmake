@@ -12,7 +12,10 @@ endif()
 
 find_path(NRFUSION_VULKAN_INCLUDE_DIR
     NAMES vulkan/vulkan.h
-    HINTS "$ENV{VULKAN_SDK}/Include"
+    HINTS
+        "$ENV{NRFUSION_VULKAN_HEADERS}"
+        "$ENV{VULKAN_SDK}/Include"
+        "$ENV{VULKAN_SDK}/include"
 )
 if (NOT NRFUSION_VULKAN_INCLUDE_DIR)
     message(FATAL_ERROR

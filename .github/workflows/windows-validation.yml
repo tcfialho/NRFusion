@@ -52,6 +52,21 @@ jobs:
         with:
           python-version: '3.12'
 
+      - name: Checkout official Vulkan headers
+        uses: actions/checkout@v4
+        with:
+          repository: KhronosGroup/Vulkan-Headers
+          ref: v1.3.296
+          path: .deps/Vulkan-Headers
+          fetch-depth: 1
+          persist-credentials: false
+
+      - name: Configure Vulkan headers
+        shell: powershell
+        run: |
+          "NRFUSION_VULKAN_HEADERS=$PWD\.deps\Vulkan-Headers\include" |
+            Out-File -FilePath $env:GITHUB_ENV -Encoding utf8 -Append
+
       - name: Install NSIS
         if: github.event_name == 'workflow_dispatch' && inputs.scope == 'full'
         shell: powershell
