@@ -137,7 +137,7 @@ Regras obrigatórias:
 
 Date: 2026-09-23 BRT
 Branch: standalone/integration
-Validated code head: de62b05
+Validated code head: f57e6d7
 
 Phase 06: CLOSED.
 Phase 07: CLOSED, including real Windows compile/harness validation.
@@ -186,7 +186,8 @@ Phase 08 closure:
 - physical provider/Host64/patcher cutover remains deferred to the global cutover phase.
 
 Phase 09: CLOSED.
-Phase 10: IN PROGRESS.
+Phase 10: CLOSED.
+Phase 11: IN PROGRESS.
 
 Source-size vendor handling:
 - tools/check_source_size.py exempts shaders/vendor/optiscaler_dlssnr/dlssnr.hlsl only while its Git blob SHA matches the locked upstream vendor blob;
@@ -208,8 +209,14 @@ Phase 10 subgates 10a/10b:
 - focused Windows gate now compiles Host64 IPC translation units without linking the full core;
 - portable and Windows hosted validation PASS at de62b05.
 
+Phase 10 closure:
+- review findings for Host64 GPU lifetime, fence ordering, guide lifetime, bounded setup IO, reconnect OVERLAPPED reuse, partial IO and stale HANDLE ownership are fixed;
+- portable and Windows hosted validation PASS;
+- physical Win32 -> x64 Host64 gate PASS after real host restart, fresh connectionGeneration, N/N-1, Neural 1.0 and reduced 0.5;
+- Capture/Host owners touched in Phase 10 remain <=300 lines.
+
 Exact next action:
-- fix Host64 imported-resource retirement across disconnect/reconnect;
-- signal the imported consumer fence before the host retirement fence so host completion proves all queue uses retired;
-- retain imported resources/fences until that retirement marker completes;
-- keep the new ownership outside HostServer64Frame.cpp, then remove remaining unbounded setup waits before Win32→x64 physical validation.
+- start Phase 11 from the existing SyntheticVulkanProvider and Vulkan interop tests;
+- audit Acquire/Normalize/Execute/Compose ownership before adding code;
+- replace simulated Vulkan handle/layout behavior with explicit external-memory/semaphore contracts that remain testable without physical hardware;
+- use hosted validation first and reserve the notebook for the final Vulkan physical/driver gate.
