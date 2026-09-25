@@ -138,7 +138,7 @@ Regras obrigatórias:
 Date: 2026-09-24 BRT
 Branch: standalone/integration
 Validated code head: 1c4eff5
-Current branch head before closure docs: 1c4eff5
+Current code head: 043c414 (hosted validation pending)
 
 Phase 06: CLOSED.
 Phase 07: CLOSED, including real Windows compile/harness validation.
@@ -355,12 +355,29 @@ Phase 12 subgate 12b:
 - touched OpenGL files remain <=300 lines: provider header 220, lifecycle 205, interop 241, orchestration 142, sync header 54, sync test 51;
 - no real WGL external-object runtime evidence has been claimed and IntegratedCapabilities().openGlCarrier must remain false.
 
-Phase 12 review finding for next subgate:
-- shared d3d12Residual is still a synchronization/storage endpoint; a real-context harness must prove that the D3D12 result is actually written before GL consumes it;
-- hosted fail-closed tests are not evidence of GL_EXT memory/semaphore interoperability.
+Phase 12 subgate 12c WIP:
+- real WGL-context harness creates a hidden CS_OWNDC window/context and fails closed when required GL_EXT external-object entry points are unavailable;
+- production provider now queries GL_DEVICE_LUID_EXT and creates its private D3D12 device on the matching DXGI adapter instead of using the default adapter;
+- D3D12_RESOURCE imports pass size=0 for broader compatibility, matching the Khronos EXT_external_objects_win32 guidance;
+- harness creates real shared RGBA16F D3D12 input/output resources plus a shared D3D12 fence and imports them into GL memory/semaphore objects;
+- validation path is GL texture copy -> GL fence signal -> D3D12 queue wait/copy -> D3D12 fence signal -> GL wait/copy -> GL release signal;
+- validation-only CPU readback checks the copied RGBA16F pattern; no CPU pixel path was added to production runtime;
+- harness contains 32 resource/resize recreation cycles, 128 reuse cycles and a full WGL context close/reopen cycle;
+- tools/validate_phase12_hardware.ps1 builds only the OpenGL external interop target, sets NRFUSION_TEST_OPENGL_HARDWARE=1 and executes the binary directly so SKIP 77 cannot count as physical PASS;
+- cmake/NRFusionWindows.cmake was reduced to 293 lines by moving OpenGL Windows targets into cmake/NRFusionOpenGlWindows.cmake;
+- all new/substantively modified handwritten files are <=300 lines; largest touched OpenGL file is SyntheticOpenGlProviderLifecycle.cpp at 263 lines;
+- wglGetProcAddress sentinel values 1/2/3/-1 are now rejected fail-closed by the production loader;
+- code sequence: ad639e3 harness, ef726da source split, 043c414 WGL sentinel hardening;
+- focused portable run 36076073284 and Windows run 36076073277 were still in progress at session freeze.
+
+Phase 12 production finding that remains:
+- SyntheticOpenGlProvider::Submit still signals its output-ready fence after SyntheticDx12Provider::Submit, but that inner Submit only prepares lowColor and does not write slot.d3d12Residual;
+- the new native harness proves the GL_EXT/D3D12 transport path independently, not that the provider's shared residual currently contains a neural result;
+- IntegratedCapabilities().openGlCarrier must therefore remain false even if the physical transport harness passes.
 
 Exact next action:
-- add a dedicated real-WGL-context OpenGL/D3D12 interop harness with explicit extension checks and SKIP 77 only when the hosted runner lacks required GL_EXT support;
-- exercise input copy, D3D12 work/result into the shared output, GL output consume and context/resource recreation;
-- add a physical Phase 12 gate that turns missing extension/runtime support into failure rather than SKIP;
-- only after that evidence set IntegratedCapabilities().openGlCarrier=true.
+- inspect runs 36076073284 and 36076073277 first and fix only concrete failures;
+- if hosted validation is green, add an explicit work-bound D3D12 result publish step that writes the real result into the matching shared OpenGL slot before signaling output-ready;
+- keep output signal/Poll tied to that publish step, not to input preparation;
+- then run tools/validate_phase12_hardware.ps1 when local hardware access is explicitly re-enabled;
+- only after provider result publication plus physical PASS consider IntegratedCapabilities().openGlCarrier=true.

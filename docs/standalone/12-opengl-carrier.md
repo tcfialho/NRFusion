@@ -43,7 +43,7 @@ Fases 07–08.
 
 - [x] ProviderPolicy só seleciona rota comprovada.
 - [ ] Acquire/interop GPU-resident.
-- [ ] OpenGL tocado respeita <=300 linhas por arquivo.
+- [x] OpenGL tocado respeita <=300 linhas por arquivo.
 
 ## Próxima fase
 
@@ -141,3 +141,63 @@ server/GPU-side.
 3. exercitar resize/context recreation e long-run;
 4. criar gate físico Phase 12 que não aceite SKIP;
 5. somente depois habilitar `IntegratedCapabilities().openGlCarrier`.
+
+
+## Subgate 12c — real WGL external-object harness (WIP)
+
+Código:
+- `ad639e3` — harness WGL real + gate físico + same-adapter LUID;
+- `ef726da` — split do harness para respeitar <=300 linhas;
+- `043c414` — rejeita sentinelas inválidas de `wglGetProcAddress`.
+
+Implementado:
+- contexto WGL real em hidden window `CS_OWNDC`;
+- query `GL_DEVICE_LUID_EXT` e seleção do `IDXGIAdapter1` correspondente;
+- provider OpenGL cria D3D12 no mesmo adapter do contexto GL;
+- import de `D3D12_RESOURCE` usa `size=0`;
+- recursos RGBA16F D3D12 compartilhados são importados como GL textures;
+- D3D12 fence compartilhado é importado como GL semaphores;
+- ciclo real do harness:
+  GL copy -> GL signal -> D3D12 queue wait -> D3D12 copy ->
+  D3D12 signal -> GL wait -> GL copy -> GL release signal;
+- 32 ciclos de resource/resize recreation;
+- 128 ciclos reutilizando os mesmos imports;
+- fechamento e recriação completa do contexto WGL;
+- readback existe somente no harness para validação de conteúdo, não no runtime;
+- `validate_phase12_hardware.ps1` torna hardware obrigatório e executa o
+  binário diretamente, portanto exit 77 não pode virar PASS físico.
+
+Source-size:
+- `SyntheticOpenGlProvider.hpp`: 228;
+- lifecycle: 263;
+- interop: 237;
+- context harness: 238;
+- resources harness: 206;
+- run harness: 176;
+- `NRFusionWindows.cmake`: 293;
+- novo CMake OpenGL: 35;
+- gate PowerShell: 40.
+
+Validação no freeze:
+- focused portable `36076073284`: em andamento;
+- Windows hosted `36076073277`: em andamento;
+- não relançar esses workflows sem primeiro inspecionar o estado existente.
+
+### Finding de produção ainda aberto
+
+O harness prova a infraestrutura de external objects com um D3D12 copy real, mas
+o provider ainda não publica o resultado neural em `slot.d3d12Residual`.
+`SyntheticDx12Provider::Submit` prepara `lowColor`; ele não produz o residual
+final. Portanto o output-ready do provider não deve ser tratado como resultado
+válido até existir um passo explícito, work-bound, que copie/publique o resultado
+D3D12 real no shared output e só então sinalize o fence de saída.
+
+`IntegratedCapabilities().openGlCarrier` continua obrigatoriamente `false`.
+
+### Próximo subgate
+
+1. inspecionar `36076073284` e `36076073277`;
+2. introduzir publicação D3D12 do resultado real ligada ao work/slot;
+3. mover o output-ready signal para depois dessa publicação;
+4. executar o gate físico Phase 12 quando hardware local voltar;
+5. só depois avaliar capability integrada.
