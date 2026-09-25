@@ -1,6 +1,7 @@
 #include "D3D10ExternalBridgeHarness.hpp"
 
 #include <cstring>
+#include <iostream>
 
 namespace nrfusion::test {
 namespace {
@@ -35,51 +36,69 @@ bool D3D10ExternalBridgeHarness::ExecuteRoundTrip(
         return false;
     }
 
-    if (!AcquireZero(resources.inputMutex10.Get(), 0))
+    if (!AcquireZero(resources.inputMutex10.Get(), 0)) {
+        std::cerr << "d3d10 bridge: input D3D10 acquire failed\n";
         return false;
+    }
     device10_->CopyResource(
         resources.legacyInput10.Get(),
         resources.source10.Get());
     ++carrierCopies_;
-    if (!Release(resources.inputMutex10.Get(), 1))
+    if (!Release(resources.inputMutex10.Get(), 1)) {
+        std::cerr << "d3d10 bridge: input D3D10 release failed\n";
         return false;
+    }
 
-    if (!AcquireZero(resources.inputMutex11.Get(), 1))
+    if (!AcquireZero(resources.inputMutex11.Get(), 1)) {
+        std::cerr << "d3d10 bridge: input D3D11 acquire failed\n";
         return false;
+    }
     context11_->CopyResource(
         resources.ntShared11.Get(),
         resources.legacyInput11.Get());
     ++carrierCopies_;
     if (!Release(resources.inputMutex11.Get(), 0) ||
         !fenceBridge_.QueueInputHandoff()) {
+        std::cerr << "d3d10 bridge: input release/fence handoff failed\n";
         return false;
     }
 
     // Identity model for the proof: no D3D12 data mutation is needed.
     // QueueInputHandoff proves D3D12 waits until the inbound copies retire,
     // and QueueOutputHandoff proves the reverse queue ordering.
-    if (!fenceBridge_.QueueOutputHandoff())
+    if (!fenceBridge_.QueueOutputHandoff()) {
+        std::cerr << "d3d10 bridge: output fence handoff failed\n";
         return false;
+    }
 
     if (!AcquireZero(resources.outputMutex10.Get(), 0) ||
         !Release(resources.outputMutex10.Get(), 1) ||
         !AcquireZero(resources.outputMutex11.Get(), 1)) {
+        std::cerr << "d3d10 bridge: output initial keyed handoff failed\n";
         return false;
     }
     context11_->CopyResource(
         resources.legacyOutput11.Get(),
         resources.ntShared11.Get());
     ++carrierCopies_;
-    if (!Release(resources.outputMutex11.Get(), 2))
+    if (!Release(resources.outputMutex11.Get(), 2)) {
+        std::cerr << "d3d10 bridge: output D3D11 release failed\n";
         return false;
+    }
 
-    if (!AcquireZero(resources.outputMutex10.Get(), 2))
+    if (!AcquireZero(resources.outputMutex10.Get(), 2)) {
+        std::cerr << "d3d10 bridge: output D3D10 acquire failed\n";
         return false;
+    }
     device10_->CopyResource(
         resources.destination10.Get(),
         resources.legacyOutput10.Get());
     ++carrierCopies_;
-    return Release(resources.outputMutex10.Get(), 0);
+    if (!Release(resources.outputMutex10.Get(), 0)) {
+        std::cerr << "d3d10 bridge: output D3D10 release failed\n";
+        return false;
+    }
+    return true;
 }
 
 bool D3D10ExternalBridgeHarness::VerifyRoundTrip(
@@ -97,6 +116,7 @@ bool D3D10ExternalBridgeHarness::VerifyRoundTrip(
     D3D10_MAPPED_TEXTURE2D mapped{};
     if (FAILED(resources.readback10->Map(
             0, D3D10_MAP_READ, 0, &mapped))) {
+        std::cerr << "d3d10 bridge: validation map failed\n";
         return false;
     }
 
@@ -121,6 +141,8 @@ bool D3D10ExternalBridgeHarness::VerifyRoundTrip(
         }
     }
     resources.readback10->Unmap(0);
+    if (!equal)
+        std::cerr << "d3d10 bridge: validation payload mismatch\n";
     return equal;
 }
 

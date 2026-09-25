@@ -2,6 +2,8 @@
 
 #include <windows.h>
 
+#include <iostream>
+
 using namespace nrfusion::test;
 
 namespace {
@@ -23,10 +25,14 @@ int main() {
     if (!harness.Open())
         return required ? 1 : kSkip;
 
-    if (!harness.RunReuseCycles(64))
+    if (!harness.RunReuseCycles(64)) {
+        std::cerr << "d3d10 bridge: reuse cycles failed\n";
         return 2;
-    if (!harness.RunRecreationCycles(16))
+    }
+    if (!harness.RunRecreationCycles(16)) {
+        std::cerr << "d3d10 bridge: recreation cycles failed\n";
         return 3;
+    }
     if (harness.CarrierCopyCount() != (64u + 16u) * 4u)
         return 4;
 

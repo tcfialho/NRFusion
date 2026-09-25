@@ -2,6 +2,8 @@
 
 #include <DirectXPackedVector.h>
 
+#include <iostream>
+
 namespace nrfusion::test {
 namespace {
 
@@ -61,6 +63,7 @@ bool D3D10ExternalBridgeHarness::CreateResources(
     D3D10BridgeCycleResources& resources) {
     if (!device10_ || !device11_ || !device12_ ||
         width == 0 || height == 0) {
+        std::cerr << "d3d10 bridge: invalid resource context\n";
         return false;
     }
 
@@ -96,6 +99,7 @@ bool D3D10ExternalBridgeHarness::CreateResources(
             &baseDesc, &initial, &resources.source10)) ||
         FAILED(device10_->CreateTexture2D(
             &baseDesc, nullptr, &resources.destination10))) {
+        std::cerr << "d3d10 bridge: source/destination create failed\n";
         return false;
     }
 
@@ -105,6 +109,7 @@ bool D3D10ExternalBridgeHarness::CreateResources(
     readbackDesc.CPUAccessFlags = D3D10_CPU_ACCESS_READ;
     if (FAILED(device10_->CreateTexture2D(
             &readbackDesc, nullptr, &resources.readback10))) {
+        std::cerr << "d3d10 bridge: readback create failed\n";
         return false;
     }
 
@@ -115,6 +120,7 @@ bool D3D10ExternalBridgeHarness::CreateResources(
             &legacyDesc, nullptr, &resources.legacyInput10)) ||
         FAILED(device10_->CreateTexture2D(
             &legacyDesc, nullptr, &resources.legacyOutput10))) {
+        std::cerr << "d3d10 bridge: legacy texture create failed\n";
         return false;
     }
 
@@ -138,6 +144,7 @@ bool D3D10ExternalBridgeHarness::CreateResources(
             outputLegacyHandle,
             resources.legacyOutput11,
             resources.outputMutex11)) {
+        std::cerr << "d3d10 bridge: legacy handle/open failed\n";
         return false;
     }
 
@@ -156,6 +163,7 @@ bool D3D10ExternalBridgeHarness::CreateResources(
         D3D11_RESOURCE_MISC_SHARED_NTHANDLE;
     if (FAILED(device11_->CreateTexture2D(
             &shared11, nullptr, &resources.ntShared11))) {
+        std::cerr << "d3d10 bridge: D3D11 NT texture create failed\n";
         return false;
     }
 
@@ -164,21 +172,31 @@ bool D3D10ExternalBridgeHarness::CreateResources(
     if (FAILED(resources.ntShared11.As(&ntResource)) ||
         FAILED(ntResource->CreateSharedHandle(
             nullptr, GENERIC_ALL, nullptr, &ntHandle))) {
+        std::cerr << "d3d10 bridge: D3D11 NT handle create failed\n";
         return false;
     }
     const HRESULT opened = device12_->OpenSharedHandle(
         ntHandle, IID_PPV_ARGS(&resources.ntShared12));
     CloseHandle(ntHandle);
-    if (FAILED(opened) || !resources.ntShared12) return false;
+    if (FAILED(opened) || !resources.ntShared12) {
+        std::cerr << "d3d10 bridge: D3D12 NT open failed hr=0x"
+                  << std::hex << static_cast<unsigned long>(opened)
+                  << std::dec << "\n";
+        return false;
+    }
 
     const D3D12_RESOURCE_DESC openedDesc =
         resources.ntShared12->GetDesc();
-    return openedDesc.Dimension ==
-               D3D12_RESOURCE_DIMENSION_TEXTURE2D &&
-           openedDesc.Width == width &&
-           openedDesc.Height == height &&
-           openedDesc.Format ==
-               DXGI_FORMAT_R16G16B16A16_FLOAT;
+    const bool valid =
+        openedDesc.Dimension ==
+            D3D12_RESOURCE_DIMENSION_TEXTURE2D &&
+        openedDesc.Width == width &&
+        openedDesc.Height == height &&
+        openedDesc.Format ==
+            DXGI_FORMAT_R16G16B16A16_FLOAT;
+    if (!valid)
+        std::cerr << "d3d10 bridge: opened D3D12 desc mismatch\n";
+    return valid;
 }
 
 } // namespace nrfusion::test
