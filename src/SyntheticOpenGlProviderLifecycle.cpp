@@ -3,6 +3,7 @@
 #include <array>
 #include <bit>
 #include <cstring>
+#include <limits>
 
 namespace nrfusion {
 namespace {
@@ -11,6 +12,21 @@ template <typename To, typename From>
 To ProcCast(From value) noexcept {
     static_assert(sizeof(To) == sizeof(From));
     return std::bit_cast<To>(value);
+}
+
+template <typename To>
+To WglProc(
+    PROC (WINAPI *getProc)(LPCSTR),
+    const char* name) noexcept {
+    if (!getProc || !name) return nullptr;
+    const PROC proc = getProc(name);
+    if (!proc) return nullptr;
+    const auto raw = std::bit_cast<std::uintptr_t>(proc);
+    if (raw <= 3 ||
+        raw == std::numeric_limits<std::uintptr_t>::max()) {
+        return nullptr;
+    }
+    return std::bit_cast<To>(proc);
 }
 
 bool HasExtension(
@@ -110,38 +126,24 @@ bool SyntheticOpenGlProvider::LoadOpenGl() {
     gl_.hasInterop = false;
     if (gl_.wglGetCurrentContext() == nullptr) return true;
 
-    gl_.CreateMemoryObjectsEXT = ProcCast<PFN_glCreateMemoryObjectsEXT_>(
-        gl_.wglGetProcAddress("glCreateMemoryObjectsEXT"));
-    gl_.DeleteMemoryObjectsEXT = ProcCast<PFN_glDeleteMemoryObjectsEXT_>(
-        gl_.wglGetProcAddress("glDeleteMemoryObjectsEXT"));
-    gl_.MemoryObjectParameterivEXT = ProcCast<PFN_glMemoryObjectParameterivEXT_>(
-        gl_.wglGetProcAddress("glMemoryObjectParameterivEXT"));
-    gl_.TexStorageMem2DEXT = ProcCast<PFN_glTexStorageMem2DEXT_>(
-        gl_.wglGetProcAddress("glTexStorageMem2DEXT"));
+    gl_.CreateMemoryObjectsEXT = WglProc<PFN_glCreateMemoryObjectsEXT_>(gl_.wglGetProcAddress, "glCreateMemoryObjectsEXT");
+    gl_.DeleteMemoryObjectsEXT = WglProc<PFN_glDeleteMemoryObjectsEXT_>(gl_.wglGetProcAddress, "glDeleteMemoryObjectsEXT");
+    gl_.MemoryObjectParameterivEXT = WglProc<PFN_glMemoryObjectParameterivEXT_>(gl_.wglGetProcAddress, "glMemoryObjectParameterivEXT");
+    gl_.TexStorageMem2DEXT = WglProc<PFN_glTexStorageMem2DEXT_>(gl_.wglGetProcAddress, "glTexStorageMem2DEXT");
     gl_.ImportMemoryWin32HandleEXT =
-        ProcCast<PFN_glImportMemoryWin32HandleEXT_>(
-            gl_.wglGetProcAddress("glImportMemoryWin32HandleEXT"));
-    gl_.GenSemaphoresEXT = ProcCast<PFN_glGenSemaphoresEXT_>(
-        gl_.wglGetProcAddress("glGenSemaphoresEXT"));
-    gl_.DeleteSemaphoresEXT = ProcCast<PFN_glDeleteSemaphoresEXT_>(
-        gl_.wglGetProcAddress("glDeleteSemaphoresEXT"));
+        WglProc<PFN_glImportMemoryWin32HandleEXT_>(gl_.wglGetProcAddress, "glImportMemoryWin32HandleEXT");
+    gl_.GenSemaphoresEXT = WglProc<PFN_glGenSemaphoresEXT_>(gl_.wglGetProcAddress, "glGenSemaphoresEXT");
+    gl_.DeleteSemaphoresEXT = WglProc<PFN_glDeleteSemaphoresEXT_>(gl_.wglGetProcAddress, "glDeleteSemaphoresEXT");
     gl_.ImportSemaphoreWin32HandleEXT =
-        ProcCast<PFN_glImportSemaphoreWin32HandleEXT_>(
-            gl_.wglGetProcAddress("glImportSemaphoreWin32HandleEXT"));
+        WglProc<PFN_glImportSemaphoreWin32HandleEXT_>(gl_.wglGetProcAddress, "glImportSemaphoreWin32HandleEXT");
     gl_.SemaphoreParameterui64vEXT =
-        ProcCast<PFN_glSemaphoreParameterui64vEXT_>(
-            gl_.wglGetProcAddress("glSemaphoreParameterui64vEXT"));
-    gl_.WaitSemaphoreEXT = ProcCast<PFN_glWaitSemaphoreEXT_>(
-        gl_.wglGetProcAddress("glWaitSemaphoreEXT"));
-    gl_.SignalSemaphoreEXT = ProcCast<PFN_glSignalSemaphoreEXT_>(
-        gl_.wglGetProcAddress("glSignalSemaphoreEXT"));
-    gl_.CopyImageSubData = ProcCast<PFN_glCopyImageSubData_>(
-        gl_.wglGetProcAddress("glCopyImageSubData"));
-    gl_.GetStringi = ProcCast<PFN_glGetStringi_>(
-        gl_.wglGetProcAddress("glGetStringi"));
+        WglProc<PFN_glSemaphoreParameterui64vEXT_>(gl_.wglGetProcAddress, "glSemaphoreParameterui64vEXT");
+    gl_.WaitSemaphoreEXT = WglProc<PFN_glWaitSemaphoreEXT_>(gl_.wglGetProcAddress, "glWaitSemaphoreEXT");
+    gl_.SignalSemaphoreEXT = WglProc<PFN_glSignalSemaphoreEXT_>(gl_.wglGetProcAddress, "glSignalSemaphoreEXT");
+    gl_.CopyImageSubData = WglProc<PFN_glCopyImageSubData_>(gl_.wglGetProcAddress, "glCopyImageSubData");
+    gl_.GetStringi = WglProc<PFN_glGetStringi_>(gl_.wglGetProcAddress, "glGetStringi");
     gl_.GetUnsignedBytevEXT =
-        ProcCast<PFN_glGetUnsignedBytevEXT_>(
-            gl_.wglGetProcAddress("glGetUnsignedBytevEXT"));
+        WglProc<PFN_glGetUnsignedBytevEXT_>(gl_.wglGetProcAddress, "glGetUnsignedBytevEXT");
 
     gl_.hasInterop =
         HasRequiredInteropExtensions(gl_) &&
