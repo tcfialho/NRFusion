@@ -178,6 +178,7 @@ add_executable(nrfusion_harness_3d
     include(${CMAKE_CURRENT_LIST_DIR}/NRFusionVulkanWindows.cmake)
 
     include(${CMAKE_CURRENT_LIST_DIR}/NRFusionOpenGlWindows.cmake)
+    include(${CMAKE_CURRENT_LIST_DIR}/NRFusionD3D10Windows.cmake)
 
     add_executable(nrfusion_host64 host/NRFusionHost64.cpp)
     target_link_libraries(nrfusion_host64 PRIVATE nrfusion_core d3d12 dxgi d3dcompiler)
