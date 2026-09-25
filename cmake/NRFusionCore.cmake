@@ -82,6 +82,7 @@ if (WIN32)
         src/D3D11D3D12FenceBridge.cpp
         src/D3D11BridgeResources.cpp
         src/D3D11CarrierNativeAcquire.cpp
+        src/D3D9ExEventHandoff.cpp
         src/CaptureProvider32.cpp
         src/CaptureProvider32Io.cpp
         src/CaptureProvider32Frames.cpp

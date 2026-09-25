@@ -16,13 +16,19 @@ bool D3D9ExShareHarness::ProveResetPersistence() {
     D3D11_TEXTURE2D_DESC before11{};
     sharedTexture11_->GetDesc(&before11);
 
+    eventHandoff_.Reset();
     auto params = PresentParameters();
     if (FAILED(device9_->ResetEx(
             &params, nullptr))) {
         return false;
     }
-    if (device9_->CheckDeviceState(window_) != S_OK)
+    if (device9_->CheckDeviceState(window_) != S_OK ||
+        !eventHandoff_.Bind(
+            device9_.Get(),
+            device11_.Get(),
+            context11_.Get())) {
         return false;
+    }
 
     D3DSURFACE_DESC after9{};
     if (FAILED(sharedTexture9_->GetLevelDesc(

@@ -2,6 +2,7 @@ add_executable(nrfusion_d3d9ex_share_tests
     tests/d3d9ex_share_tests.cpp
     tests/D3D9ExShareHarnessDevices.cpp
     tests/D3D9ExShareHarnessShare.cpp
+    tests/D3D9ExShareHarnessSync.cpp
     tests/D3D9ExShareHarnessReset.cpp)
 target_include_directories(nrfusion_d3d9ex_share_tests PRIVATE
     include tests)

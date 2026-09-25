@@ -138,8 +138,12 @@ bool D3D9ExShareHarness::CreateDxgiDevices() {
         }
         adapter_ = candidate;
         return fenceBridge_.BindAfterIdle(
-            device11_.Get(), context11_.Get(),
-            device12_.Get(), queue12_.Get());
+                   device11_.Get(), context11_.Get(),
+                   device12_.Get(), queue12_.Get()) &&
+               eventHandoff_.Bind(
+                   device9_.Get(),
+                   device11_.Get(),
+                   context11_.Get());
     }
     return false;
 }
@@ -155,6 +159,7 @@ bool D3D9ExShareHarness::Open() {
 }
 
 void D3D9ExShareHarness::Close() noexcept {
+    eventHandoff_.Reset();
     fenceBridge_.ResetAfterIdle();
     ntBridge12_.Reset();
     ntMutex11_.Reset();

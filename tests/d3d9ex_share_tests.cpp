@@ -24,8 +24,12 @@ int main() {
         return required ? 1 : kSkip;
     if (!harness.ProveSharedTexture(64, 64))
         return 2;
-    if (!harness.ProveResetPersistence())
+    if (!harness.ProveNonBlockingHandoff())
         return 3;
+    if (!harness.ProveResetPersistence())
+        return 4;
+    if (!harness.ProveNonBlockingHandoff())
+        return 5;
     harness.Close();
     return 0;
 }

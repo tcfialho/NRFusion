@@ -14,6 +14,7 @@
 #include <wrl/client.h>
 
 #include "nrfusion/D3D11D3D12FenceBridge.hpp"
+#include "nrfusion/D3D9ExEventHandoff.hpp"
 
 #include <cstdint>
 
@@ -29,6 +30,7 @@ public:
     bool ProveSharedTexture(
         std::uint32_t width,
         std::uint32_t height);
+    bool ProveNonBlockingHandoff();
     bool ProveResetPersistence();
 
 private:
@@ -57,6 +59,7 @@ private:
     ComPtr<ID3D12Resource> ntBridge12_;
     ComPtr<ID3D12CommandQueue> queue12_;
     D3D11D3D12FenceBridge fenceBridge_{};
+    D3D9ExEventHandoff eventHandoff_{};
 
     std::uint32_t width_ = 0;
     std::uint32_t height_ = 0;
