@@ -92,7 +92,7 @@ int main() {
         assert(r2.category == ResolvedMotionCategory::DlssContract);
         assert(!r2.requiresNvofCompute);
 
-        // Case 3: Contract missing, Shader estimated present
+        // Case 3: NVOF outranks shader fallback.
         c.contractReliable = false;
         c.shaderEstimatedMv.opaqueId = 3;
         c.shaderEstimatedMv.resolution = { 960, 540 };
@@ -100,17 +100,19 @@ int main() {
         c.shaderReliable = true;
 
         auto r3 = MotionVectorResolver::Resolve(c, fullRes);
-        assert(r3.category == ResolvedMotionCategory::ShaderEstimated);
-        assert(r3.scaleX == 2.0f);
-        assert(!r3.requiresNvofCompute);
+        assert(r3.category ==
+               ResolvedMotionCategory::NvidiaOpticalFlow);
+        assert(r3.requiresNvofCompute);
 
-        // Case 4: No engine vectors, NVOF available
-        c.shaderReliable = false;
+        // Case 4: Shader is selected only when NVOF is unavailable.
+        c.nvofHardwareAvailable = false;
         auto r4 = MotionVectorResolver::Resolve(c, fullRes);
-        assert(r4.category == ResolvedMotionCategory::NvidiaOpticalFlow);
-        assert(r4.requiresNvofCompute);
+        assert(r4.category ==
+               ResolvedMotionCategory::ShaderEstimated);
+        assert(r4.scaleX == 2.0f);
+        assert(!r4.requiresNvofCompute);
 
-        // Case 5: Camera cut
+        // Case 5: Camera cut forces explicit zero.
         c.cameraCut = true;
         auto r5 = MotionVectorResolver::Resolve(c, fullRes);
         assert(r5.category == ResolvedMotionCategory::ZeroFallback);

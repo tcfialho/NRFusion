@@ -1,19 +1,29 @@
 #include "nrfusion/PipelinePolicy.hpp"
+#include "nrfusion/MotionGuideSelection.hpp"
 
 namespace nrfusion {
 namespace {
 
-MotionSource ChooseMotion(const FrameContext& frame, const RuntimeCapabilities& caps) noexcept {
-    if (caps.nativeMotion && frame.HasNativeMotion() && frame.MotionReliable(MotionSource::Native))
-        return MotionSource::Native;
-    if (caps.dlssContractMotion && frame.HasDlssContractMotion() &&
-        frame.MotionReliable(MotionSource::DlssContract))
-        return MotionSource::DlssContract;
-    if (caps.nvof)
-        return MotionSource::NvidiaOpticalFlow;
-    if (caps.shaderMotion && frame.HasDepth() && frame.DepthReliable())
-        return MotionSource::ShaderEstimated;
-    return MotionSource::Zero;
+MotionSource ChooseMotion(
+    const FrameContext& frame,
+    const RuntimeCapabilities& caps) noexcept {
+    MotionGuideAvailability guides{};
+    guides.nativeReliable =
+        caps.nativeMotion &&
+        frame.HasNativeMotion() &&
+        frame.MotionReliable(MotionSource::Native);
+    guides.dlssContractReliable =
+        caps.dlssContractMotion &&
+        frame.HasDlssContractMotion() &&
+        frame.MotionReliable(MotionSource::DlssContract);
+    guides.nvofAvailable = caps.nvof;
+    guides.shaderReliable =
+        caps.shaderMotion &&
+        frame.HasDepth() &&
+        frame.DepthReliable();
+    guides.cameraCut = frame.cameraCut;
+    guides.resetHistory = frame.resetHistory;
+    return SelectMotionGuide(guides);
 }
 
 NrPlacement ChoosePlacement(const GameContext& game, FrameProvider provider,

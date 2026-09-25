@@ -1,6 +1,7 @@
 #pragma once
 
 #include "nrfusion/Types.hpp"
+#include "nrfusion/MotionGuideSelection.hpp"
 
 #include <cstdint>
 
@@ -40,76 +41,76 @@ struct MotionCandidates {
 
 class MotionVectorResolver {
 public:
-    // Resolves motion vector according to the strict priority hierarchy:
-    // 1. Native engine MV
-    // 2. Existing DLSS contract MV
-    // 3. Shader / ReShade temporal MV
-    // 4. Low-res async NVOF
-    // 5. Zero / static fallback
-    static MotionResolutionResult Resolve(const MotionCandidates& candidates,
-                                          Resolution fullResolution) noexcept {
+    static MotionResolutionResult Resolve(
+        const MotionCandidates& candidates,
+        Resolution fullResolution) noexcept {
+        MotionGuideAvailability guides{};
+        guides.nativeReliable =
+            candidates.nativeEngineMv.Valid() &&
+            candidates.nativeReliable;
+        guides.dlssContractReliable =
+            candidates.dlssContractMv.Valid() &&
+            candidates.contractReliable;
+        guides.nvofAvailable =
+            candidates.nvofHardwareAvailable;
+        guides.shaderReliable =
+            candidates.shaderEstimatedMv.Valid() &&
+            candidates.shaderReliable;
+        guides.cameraCut = candidates.cameraCut;
+
         MotionResolutionResult result{};
-
-        // If camera cut occurred, force static zero vectors
-        if (candidates.cameraCut) {
-            result.category = ResolvedMotionCategory::ZeroFallback;
-            result.source = MotionSource::Zero;
-            result.scaleX = 1.0f;
-            result.scaleY = 1.0f;
+        result.source = SelectMotionGuide(guides);
+        switch (result.source) {
+        case MotionSource::Native:
+            result.category =
+                ResolvedMotionCategory::NativeEngine;
+            result.motionVectors =
+                candidates.nativeEngineMv;
             result.isReliable = true;
-            result.requiresNvofCompute = false;
-            return result;
-        }
-
-        // 1. Native Engine MV
-        if (candidates.nativeEngineMv.Valid() && candidates.nativeReliable) {
-            result.category = ResolvedMotionCategory::NativeEngine;
-            result.source = MotionSource::Native;
-            result.motionVectors = candidates.nativeEngineMv;
+            CalculateScale(
+                result.motionVectors.resolution,
+                fullResolution,
+                result.scaleX,
+                result.scaleY);
+            break;
+        case MotionSource::DlssContract:
+            result.category =
+                ResolvedMotionCategory::DlssContract;
+            result.motionVectors =
+                candidates.dlssContractMv;
             result.isReliable = true;
-            result.requiresNvofCompute = false;
-            CalculateScale(candidates.nativeEngineMv.resolution, fullResolution, result.scaleX, result.scaleY);
-            return result;
-        }
-
-        // 2. Existing DLSS Contract MV
-        if (candidates.dlssContractMv.Valid() && candidates.contractReliable) {
-            result.category = ResolvedMotionCategory::DlssContract;
-            result.source = MotionSource::DlssContract;
-            result.motionVectors = candidates.dlssContractMv;
-            result.isReliable = true;
-            result.requiresNvofCompute = false;
-            CalculateScale(candidates.dlssContractMv.resolution, fullResolution, result.scaleX, result.scaleY);
-            return result;
-        }
-
-        // 3. Shader / Temporal MV
-        if (candidates.shaderEstimatedMv.Valid() && candidates.shaderReliable) {
-            result.category = ResolvedMotionCategory::ShaderEstimated;
-            result.source = MotionSource::ShaderEstimated;
-            result.motionVectors = candidates.shaderEstimatedMv;
-            result.isReliable = true;
-            result.requiresNvofCompute = false;
-            CalculateScale(candidates.shaderEstimatedMv.resolution, fullResolution, result.scaleX, result.scaleY);
-            return result;
-        }
-
-        // 4. Low-Res Async NVOF
-        if (candidates.nvofHardwareAvailable) {
-            result.category = ResolvedMotionCategory::NvidiaOpticalFlow;
-            result.source = MotionSource::NvidiaOpticalFlow;
+            CalculateScale(
+                result.motionVectors.resolution,
+                fullResolution,
+                result.scaleX,
+                result.scaleY);
+            break;
+        case MotionSource::NvidiaOpticalFlow:
+            result.category =
+                ResolvedMotionCategory::NvidiaOpticalFlow;
             result.isReliable = true;
             result.requiresNvofCompute = true;
-            return result;
+            break;
+        case MotionSource::ShaderEstimated:
+            result.category =
+                ResolvedMotionCategory::ShaderEstimated;
+            result.motionVectors =
+                candidates.shaderEstimatedMv;
+            result.isReliable = true;
+            CalculateScale(
+                result.motionVectors.resolution,
+                fullResolution,
+                result.scaleX,
+                result.scaleY);
+            break;
+        case MotionSource::Zero:
+            result.category =
+                ResolvedMotionCategory::ZeroFallback;
+            result.scaleX = 1.0f;
+            result.scaleY = 1.0f;
+            result.isReliable = candidates.cameraCut;
+            break;
         }
-
-        // 5. Zero Fallback
-        result.category = ResolvedMotionCategory::ZeroFallback;
-        result.source = MotionSource::Zero;
-        result.isReliable = false;
-        result.requiresNvofCompute = false;
-        result.scaleX = 1.0f;
-        result.scaleY = 1.0f;
         return result;
     }
 
