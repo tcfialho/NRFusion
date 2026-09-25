@@ -24,15 +24,17 @@ int main() {
         return required ? 1 : kSkip;
     if (!harness.ProveSharedTexture(64, 64))
         return 2;
-    if (!harness.RunRoundTrips(64))
+    if (!harness.ProveAcquireContract())
         return 3;
-    if (!harness.RunResetCycles(16))
+    if (!harness.RunRoundTrips(64))
         return 4;
-    if (!harness.RunRecreationCycles(16))
+    if (!harness.RunResetCycles(16))
         return 5;
+    if (!harness.RunRecreationCycles(16))
+        return 6;
     if (harness.CarrierCopyCount() !=
         static_cast<std::uint64_t>(64 + 16 + 16) * 4) {
-        return 6;
+        return 7;
     }
     harness.Close();
     return 0;

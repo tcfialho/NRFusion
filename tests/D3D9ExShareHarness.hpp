@@ -15,6 +15,7 @@
 
 #include "nrfusion/D3D11D3D12FenceBridge.hpp"
 #include "nrfusion/D3D9ExEventHandoff.hpp"
+#include "nrfusion/D3D9ExCarrierAcquire.hpp"
 
 #include <cstdint>
 
@@ -30,6 +31,7 @@ public:
     bool ProveSharedTexture(
         std::uint32_t width,
         std::uint32_t height);
+    bool ProveAcquireContract();
     bool ProveNonBlockingHandoff();
     bool ProveResetPersistence();
     bool RunRoundTrips(std::uint32_t count);
