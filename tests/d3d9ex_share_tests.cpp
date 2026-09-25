@@ -24,12 +24,16 @@ int main() {
         return required ? 1 : kSkip;
     if (!harness.ProveSharedTexture(64, 64))
         return 2;
-    if (!harness.ProveNonBlockingHandoff())
+    if (!harness.RunRoundTrips(64))
         return 3;
-    if (!harness.ProveResetPersistence())
+    if (!harness.RunResetCycles(16))
         return 4;
-    if (!harness.ProveNonBlockingHandoff())
+    if (!harness.RunRecreationCycles(16))
         return 5;
+    if (harness.CarrierCopyCount() !=
+        static_cast<std::uint64_t>(64 + 16 + 16) * 4) {
+        return 6;
+    }
     harness.Close();
     return 0;
 }

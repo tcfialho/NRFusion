@@ -164,10 +164,14 @@ void D3D9ExShareHarness::Close() noexcept {
     ntBridge12_.Reset();
     ntMutex11_.Reset();
     ntBridge11_.Reset();
-    sharedTexture11_.Reset();
-    eventQuery9_.Reset();
-    sharedTexture9_.Reset();
-    sharedHandle9_ = nullptr;
+    sharedOutput11_.Reset();
+    sharedInput11_.Reset();
+    sharedOutput9_.Reset();
+    sharedInput9_.Reset();
+    gameDestination9_.Reset();
+    gameSource9_.Reset();
+    sharedOutputHandle9_ = nullptr;
+    sharedInputHandle9_ = nullptr;
     queue12_.Reset();
     device12_.Reset();
     context11_.Reset();
@@ -177,6 +181,7 @@ void D3D9ExShareHarness::Close() noexcept {
     d3d9_.Reset();
     width_ = 0;
     height_ = 0;
+    carrierCopies_ = 0;
 
     if (window_) {
         DestroyWindow(window_);

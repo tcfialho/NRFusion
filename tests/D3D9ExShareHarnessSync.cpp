@@ -31,53 +31,97 @@ bool PollReadyForD3D9(
     return false;
 }
 
+bool AcquireZero(
+    IDXGIKeyedMutex* mutex,
+    std::uint64_t key) noexcept {
+    return mutex &&
+           mutex->AcquireSync(key, 0) == S_OK;
+}
+
+bool Release(
+    IDXGIKeyedMutex* mutex,
+    std::uint64_t key) noexcept {
+    return mutex &&
+           SUCCEEDED(mutex->ReleaseSync(key));
+}
+
 } // namespace
 
 bool D3D9ExShareHarness::ProveNonBlockingHandoff() {
-    if (!device9_ || !device11_ || !context11_ ||
-        !sharedTexture9_ || !sharedTexture11_) {
+    if (!device9_ || !context11_ ||
+        !gameSource9_ || !gameDestination9_ ||
+        !sharedInput9_ || !sharedOutput9_ ||
+        !sharedInput11_ || !sharedOutput11_ ||
+        !ntBridge11_ || !ntMutex11_) {
         return false;
     }
 
-    ComPtr<IDirect3DSurface9> surface9;
+    ComPtr<IDirect3DSurface9> source9;
+    ComPtr<IDirect3DSurface9> input9;
+    ComPtr<IDirect3DSurface9> output9;
+    ComPtr<IDirect3DSurface9> destination9;
     ComPtr<IDirect3DSurface9> previousTarget;
-    if (FAILED(sharedTexture9_->GetSurfaceLevel(
-            0, &surface9)) ||
+    if (FAILED(gameSource9_->GetSurfaceLevel(0, &source9)) ||
+        FAILED(sharedInput9_->GetSurfaceLevel(0, &input9)) ||
+        FAILED(sharedOutput9_->GetSurfaceLevel(0, &output9)) ||
+        FAILED(gameDestination9_->GetSurfaceLevel(
+            0, &destination9)) ||
         FAILED(device9_->GetRenderTarget(
             0, &previousTarget)) ||
         FAILED(device9_->SetRenderTarget(
-            0, surface9.Get())) ||
+            0, source9.Get())) ||
         FAILED(device9_->Clear(
             0, nullptr, D3DCLEAR_TARGET,
             D3DCOLOR_ARGB(255, 32, 64, 96),
-            1.0f, 0))) {
+            1.0f, 0)) ||
+        FAILED(device9_->SetRenderTarget(
+            0, previousTarget.Get()))) {
         return false;
     }
-    const HRESULT restored =
-        device9_->SetRenderTarget(
-            0, previousTarget.Get());
-    if (FAILED(restored) ||
-        !eventHandoff_.SignalD3D9Producer() ||
+
+    if (FAILED(device9_->StretchRect(
+            source9.Get(), nullptr,
+            input9.Get(), nullptr,
+            D3DTEXF_NONE))) {
+        return false;
+    }
+    ++carrierCopies_;
+    if (!eventHandoff_.SignalD3D9Producer() ||
         !PollReadyForD3D11(eventHandoff_)) {
         return false;
     }
 
-    D3D11_RENDER_TARGET_VIEW_DESC viewDesc{};
-    viewDesc.Format = DXGI_FORMAT_R16G16B16A16_FLOAT;
-    viewDesc.ViewDimension = D3D11_RTV_DIMENSION_TEXTURE2D;
-    ComPtr<ID3D11RenderTargetView> target11;
-    if (FAILED(device11_->CreateRenderTargetView(
-            sharedTexture11_.Get(),
-            &viewDesc, &target11))) {
+    if (!AcquireZero(ntMutex11_.Get(), 0))
+        return false;
+    context11_->CopyResource(
+        ntBridge11_.Get(), sharedInput11_.Get());
+    ++carrierCopies_;
+    if (!Release(ntMutex11_.Get(), 1) ||
+        !fenceBridge_.QueueInputHandoff() ||
+        !fenceBridge_.QueueOutputHandoff() ||
+        !AcquireZero(ntMutex11_.Get(), 1)) {
         return false;
     }
 
-    const float color[4] = {
-        0.25f, 0.5f, 0.75f, 1.0f};
-    context11_->ClearRenderTargetView(
-        target11.Get(), color);
-    return eventHandoff_.SignalD3D11Producer() &&
-           PollReadyForD3D9(eventHandoff_);
+    context11_->CopyResource(
+        sharedOutput11_.Get(), ntBridge11_.Get());
+    ++carrierCopies_;
+    if (!Release(ntMutex11_.Get(), 0) ||
+        !eventHandoff_.SignalD3D11Producer() ||
+        !PollReadyForD3D9(eventHandoff_)) {
+        return false;
+    }
+
+    if (FAILED(device9_->StretchRect(
+            output9.Get(), nullptr,
+            destination9.Get(), nullptr,
+            D3DTEXF_NONE))) {
+        return false;
+    }
+    ++carrierCopies_;
+
+    return eventHandoff_.SignalD3D9Producer() &&
+           PollReadyForD3D11(eventHandoff_);
 }
 
 } // namespace nrfusion::test

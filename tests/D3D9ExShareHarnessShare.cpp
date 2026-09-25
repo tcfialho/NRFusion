@@ -1,6 +1,50 @@
 #include "D3D9ExShareHarness.hpp"
 
 namespace nrfusion::test {
+namespace {
+
+bool CreateD3D9Texture(
+    IDirect3DDevice9Ex* device,
+    std::uint32_t width,
+    std::uint32_t height,
+    ComPtr<IDirect3DTexture9>& texture,
+    HANDLE* sharedHandle) {
+    return device &&
+           SUCCEEDED(device->CreateTexture(
+               width, height, 1,
+               D3DUSAGE_RENDERTARGET,
+               D3DFMT_A16B16G16R16F,
+               D3DPOOL_DEFAULT,
+               &texture, sharedHandle)) &&
+           texture != nullptr;
+}
+
+bool OpenD3D11Shared(
+    ID3D11Device* device,
+    HANDLE sharedHandle,
+    std::uint32_t width,
+    std::uint32_t height,
+    ComPtr<ID3D11Texture2D>& texture) {
+    if (!device || !sharedHandle ||
+        FAILED(device->OpenSharedResource(
+            sharedHandle,
+            IID_PPV_ARGS(&texture))) ||
+        !texture) {
+        return false;
+    }
+
+    D3D11_TEXTURE2D_DESC desc{};
+    texture->GetDesc(&desc);
+    return desc.Width == width &&
+           desc.Height == height &&
+           desc.MipLevels == 1 &&
+           desc.ArraySize == 1 &&
+           desc.Format ==
+               DXGI_FORMAT_R16G16B16A16_FLOAT &&
+           desc.SampleDesc.Count == 1;
+}
+
+} // namespace
 
 bool D3D9ExShareHarness::CreateD3D11NtBridge(
     std::uint32_t width,
@@ -57,63 +101,41 @@ bool D3D9ExShareHarness::ProveSharedTexture(
         return false;
     }
 
-    sharedTexture11_.Reset();
-    sharedTexture9_.Reset();
-    eventQuery9_.Reset();
+    sharedOutput11_.Reset();
+    sharedInput11_.Reset();
+    sharedOutput9_.Reset();
+    sharedInput9_.Reset();
+    gameDestination9_.Reset();
+    gameSource9_.Reset();
     ntBridge12_.Reset();
     ntMutex11_.Reset();
     ntBridge11_.Reset();
-    sharedHandle9_ = nullptr;
+    sharedOutputHandle9_ = nullptr;
+    sharedInputHandle9_ = nullptr;
 
-    HANDLE shared = nullptr;
-    if (FAILED(device9_->CreateTexture(
-            width, height, 1,
-            D3DUSAGE_RENDERTARGET,
-            D3DFMT_A16B16G16R16F,
-            D3DPOOL_DEFAULT,
-            &sharedTexture9_,
-            &shared)) ||
-        !sharedTexture9_ || !shared) {
-        return false;
-    }
-    sharedHandle9_ = shared;
-
-    if (FAILED(device11_->OpenSharedResource(
-            sharedHandle9_,
-            IID_PPV_ARGS(&sharedTexture11_))) ||
-        !sharedTexture11_) {
+    if (!CreateD3D9Texture(
+            device9_.Get(), width, height,
+            gameSource9_, nullptr) ||
+        !CreateD3D9Texture(
+            device9_.Get(), width, height,
+            gameDestination9_, nullptr) ||
+        !CreateD3D9Texture(
+            device9_.Get(), width, height,
+            sharedInput9_, &sharedInputHandle9_) ||
+        !CreateD3D9Texture(
+            device9_.Get(), width, height,
+            sharedOutput9_, &sharedOutputHandle9_) ||
+        !sharedInputHandle9_ || !sharedOutputHandle9_) {
         return false;
     }
 
-    D3D11_TEXTURE2D_DESC desc11{};
-    sharedTexture11_->GetDesc(&desc11);
-    if (desc11.Width != width ||
-        desc11.Height != height ||
-        desc11.MipLevels != 1 ||
-        desc11.ArraySize != 1 ||
-        desc11.Format !=
-            DXGI_FORMAT_R16G16B16A16_FLOAT ||
-        desc11.SampleDesc.Count != 1) {
-        return false;
-    }
-
-    if (FAILED(device9_->CreateQuery(
-            D3DQUERYTYPE_EVENT,
-            &eventQuery9_)) ||
-        !eventQuery9_ ||
-        FAILED(eventQuery9_->Issue(D3DISSUE_END))) {
-        return false;
-    }
-
-    const HRESULT queryState =
-        eventQuery9_->GetData(nullptr, 0, 0);
-    if (queryState != S_OK && queryState != S_FALSE)
-        return false;
-
-    if (!CreateD3D11NtBridge(width, height))
-        return false;
-    if (!fenceBridge_.QueueInputHandoff() ||
-        !fenceBridge_.QueueOutputHandoff()) {
+    if (!OpenD3D11Shared(
+            device11_.Get(), sharedInputHandle9_,
+            width, height, sharedInput11_) ||
+        !OpenD3D11Shared(
+            device11_.Get(), sharedOutputHandle9_,
+            width, height, sharedOutput11_) ||
+        !CreateD3D11NtBridge(width, height)) {
         return false;
     }
 

@@ -3,18 +3,19 @@
 namespace nrfusion::test {
 
 bool D3D9ExShareHarness::ProveResetPersistence() {
-    if (!device9_ || !sharedTexture9_ ||
-        !sharedTexture11_ || width_ == 0 || height_ == 0) {
+    if (!device9_ || !sharedInput9_ ||
+        !sharedOutput9_ || !sharedInput11_ ||
+        !sharedOutput11_ || width_ == 0 || height_ == 0) {
         return false;
     }
 
     D3DSURFACE_DESC before9{};
-    if (FAILED(sharedTexture9_->GetLevelDesc(
+    if (FAILED(sharedInput9_->GetLevelDesc(
             0, &before9))) {
         return false;
     }
     D3D11_TEXTURE2D_DESC before11{};
-    sharedTexture11_->GetDesc(&before11);
+    sharedInput11_->GetDesc(&before11);
 
     eventHandoff_.Reset();
     auto params = PresentParameters();
@@ -31,12 +32,12 @@ bool D3D9ExShareHarness::ProveResetPersistence() {
     }
 
     D3DSURFACE_DESC after9{};
-    if (FAILED(sharedTexture9_->GetLevelDesc(
+    if (FAILED(sharedInput9_->GetLevelDesc(
             0, &after9))) {
         return false;
     }
     D3D11_TEXTURE2D_DESC after11{};
-    sharedTexture11_->GetDesc(&after11);
+    sharedInput11_->GetDesc(&after11);
 
     return before9.Width == after9.Width &&
            before9.Height == after9.Height &&
