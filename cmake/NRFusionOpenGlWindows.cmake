@@ -15,6 +15,7 @@ add_test(NAME nrfusion_synthetic_opengl_test
 add_executable(nrfusion_opengl_external_interop_tests
     tests/opengl_external_interop_tests.cpp
     tests/OpenGlExternalInteropHarnessContext.cpp
+    tests/OpenGlExternalInteropHarnessResources.cpp
     tests/OpenGlExternalInteropHarnessRun.cpp)
 target_include_directories(nrfusion_opengl_external_interop_tests PRIVATE
     include tests)
