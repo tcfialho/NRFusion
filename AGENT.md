@@ -399,3 +399,29 @@ Exact next action when local access is explicitly re-enabled:
 - require direct exit code 0, including 32 transport recreation cycles, 128 transport reuse cycles, full WGL context recreation and 32 production-provider publish cycles;
 - if PASS, record Phase 12 carrier closure while leaving IntegratedCapabilities().openGlCarrier=false until an actual shipped OpenGL hook/cutover exists;
 - if FAIL, collect logs and fix via GitHub before rerunning.
+
+Phase 13 subgate 13a — route contract:
+- Phase 13 started under the explicit physical blockers for Phases 11 and 12; neither prior phase is reclassified as closed;
+- repository audit found no existing D3D10 runtime owner, hook or bridge; D3D10 is currently detection-only and explicitly unsupported;
+- official DXGI sharing semantics require treating D3D10.1 shared handles as legacy non-NT handles; they are suitable for D3D10/D3D11 OpenSharedResource but not as the NT-handle contract expected by D3D12 OpenSharedHandle;
+- the qualified proof route is therefore D3D10.1 keyed-mutex shared surface -> D3D11 legacy OpenSharedResource -> GPU copy into a D3D11.1 NT-shared surface -> D3D12 OpenSharedHandle;
+- compose-back is the reverse bridge and requires two more full-frame GPU copies, for an explicit worst-case total of two inbound and two outbound copies;
+- D3D10.1/D3D11 synchronization is required to use keyed mutex AcquireSync with timeout 0 so backpressure fails closed instead of blocking the CPU;
+- D3D11/D3D12 synchronization should reuse the existing fence bridge rather than creating another policy/ledger;
+- portable D3D10CarrierRoute contract encodes D3D10.1 availability, same-adapter requirement, RGBA16F Texture2D evidence, legacy shared surface, keyed mutex, zero-timeout policy, D3D11 legacy open, D3D11 NT share, D3D12 NT import, GPU copies and compose-back;
+- valid route reports exactly 2 inbound + 2 outbound full-frame copies;
+- code commit e69731c;
+- focused portable run 36078628140 PASS with source checkpoint nrfusion-source-e69731c9a52f56ebcafdb94a50e4659602fc04cb;
+- Windows hosted run 36078628160 PASS;
+- new route files are 63/80/94 lines and remain under the 300-line cap.
+
+Phase 13 remains IN PROGRESS.
+No D3D10 runtime or hardware evidence has been claimed.
+
+Exact next action:
+- add a focused Windows micro-harness that creates same-adapter D3D10.1, D3D11.1 and D3D12 devices;
+- prove D3D10.1 keyed shared RGBA16F -> D3D11 legacy open;
+- copy GPU-side into a D3D11.1 SHARED_NTHANDLE + SHARED_KEYEDMUTEX surface and open it on D3D12;
+- use timeout-0 keyed mutex acquisition and existing D3D11/D3D12 fence semantics;
+- exercise the reverse compose-back path and count the four full-frame copies;
+- SKIP 77 is acceptable hosted evidence only for target availability, never as physical route PASS.
