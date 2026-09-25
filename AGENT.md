@@ -137,8 +137,8 @@ Regras obrigatórias:
 
 Date: 2026-09-25 BRT
 Branch: standalone/integration
-Validated code head: a6882cb
-Current branch head before closure docs: a6882cb
+Validated code head: 268d49b
+Current branch head before closure docs: 268d49b
 
 Phase 06: CLOSED.
 Phase 07: CLOSED, including real Windows compile/harness validation.
@@ -501,3 +501,32 @@ Exact next action when local access is explicitly re-enabled:
 - capture sync/CPU timing separately from carrier copy accounting;
 - if PASS, record D3D9Ex Qualified and D3D9 classic Blocked, then close Phase 14 explicitly;
 - if FAIL, collect physical logs and fix only via GitHub + hosted CI before rerunning.
+
+
+Phase 15: CLOSED.
+
+Phase 15 closure:
+- existing PipelinePolicy, MotionVectorResolver, GuideValidation, FrameContext reliability accessors and NVOF owners were reused instead of introducing a GuideManager;
+- MotionGuideSelection is the single portable motion-source hierarchy owner:
+  Native -> DLSS contract -> NVOF -> shader -> Zero;
+- cameraCut or resetHistory forces Zero at selection time;
+- PipelinePolicy and MotionVectorResolver both consume that hierarchy, eliminating the prior divergence where the resolver preferred shader before NVOF;
+- MotionGuideValidator remains the whole-field validation/hysteresis owner and NvofMotionProvider remains the generation owner;
+- FrameContext::DepthReliable() and ExposureReliable() remain the central depth/exposure evidence checks; no duplicate wrappers were added;
+- GuideHistoryState records selected motion source/reliability plus depth/exposure provenance/reliability for temporal compatibility;
+- TemporalHistoryRegistry now requests a fresh history identity when those persistent guide facts change, while cameraCut/resetHistory forces a one-shot reset without causing a second reset on the next stable frame;
+- MotionGuideBinding materializes non-zero motion guides into FrameContext only when reliability, ownership, lifetime and sourceFrameId are explicit; source determines the only valid provenance mapping;
+- Zero binding is explicit and requires no resource;
+- conflicting provenance, missing evidence and stale sourceFrameId fail closed;
+- fallback remains observable through PipelineDecision.motion / FrameContext motion source and existing diagnostics;
+- guide strategy for color-only carriers is explicit: NVOF when qualified/available, shader only with reliable depth, otherwise Zero; no native guide is inferred;
+- D3D12 and Vulkan Acquire seams can accept explicit optional depth/motion/exposure guides; D3D11, OpenGL and D3D9Ex current native proofs are color-only; D3D10 remains a color-only bridge proof without a native Acquire owner;
+- code commits: 5030b38 (selection), d87cc23 (history invalidation), 268d49b (FrameContract binding);
+- focused portable runs 36110092702, 36110707277 and 36111227431 PASS;
+- Windows hosted runs 36110092730, 36110707430 and 36111227420 PASS;
+- source checkpoint nrfusion-source-268d49bc592340edf894aca6d3c08a961acabfe3;
+- changed-source size checks PASS; all Phase 15 touched first-party files remain <=300 lines.
+
+Exact next action:
+- start Phase 16 MFG from docs/standalone/16-mfg.md;
+- keep Phases 11–14 physical gates unchanged and do not treat their hosted proofs as physical closure.
