@@ -29,6 +29,7 @@ add_library(nrfusion_core STATIC
     src/NvofWrapper.cpp
     src/TelemetryTracker.cpp
     src/GuideValidation.cpp
+    src/MotionGuideBinding.cpp
     src/MotionNormalization.cpp
     src/MotionConfidence.cpp
     src/TemporalHistoryRegistry.cpp
