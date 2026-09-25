@@ -177,14 +177,7 @@ add_executable(nrfusion_harness_3d
 
     include(${CMAKE_CURRENT_LIST_DIR}/NRFusionVulkanWindows.cmake)
 
-    add_executable(nrfusion_synthetic_opengl_test tests/synthetic_opengl_test.cpp)
-    target_link_libraries(nrfusion_synthetic_opengl_test PRIVATE nrfusion_core d3d12 dxgi d3dcompiler opengl32)
-    if (MSVC)
-        target_compile_options(nrfusion_synthetic_opengl_test PRIVATE /UNDEBUG)
-    else()
-        target_compile_options(nrfusion_synthetic_opengl_test PRIVATE -UNDEBUG)
-    endif()
-    add_test(NAME nrfusion_synthetic_opengl_test COMMAND nrfusion_synthetic_opengl_test)
+    include(${CMAKE_CURRENT_LIST_DIR}/NRFusionOpenGlWindows.cmake)
 
     add_executable(nrfusion_host64 host/NRFusionHost64.cpp)
     target_link_libraries(nrfusion_host64 PRIVATE nrfusion_core d3d12 dxgi d3dcompiler)

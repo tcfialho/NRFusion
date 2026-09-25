@@ -53,6 +53,12 @@ using Microsoft::WRL::ComPtr;
 #ifndef GL_D3D12_FENCE_VALUE_EXT
 #define GL_D3D12_FENCE_VALUE_EXT             0x9595
 #endif
+#ifndef GL_DEVICE_LUID_EXT
+#define GL_DEVICE_LUID_EXT                    0x9599
+#endif
+#ifndef GL_LUID_SIZE_EXT
+#define GL_LUID_SIZE_EXT                      8
+#endif
 #ifndef GL_RGBA16F
 #define GL_RGBA16F                           0x881A
 #endif
@@ -92,6 +98,7 @@ typedef void (APIENTRY *PFN_glCopyImageSubData_)(GLuint, GLenum, GLint, GLint, G
                                                  GLuint, GLenum, GLint, GLint, GLint, GLint,
                                                  GLsizei, GLsizei, GLsizei);
 typedef const GLubyte* (APIENTRY *PFN_glGetStringi_)(GLenum, GLuint);
+typedef void (APIENTRY *PFN_glGetUnsignedBytevEXT_)(GLenum, GLubyte*);
 
 #ifndef GL_NUM_EXTENSIONS
 #define GL_NUM_EXTENSIONS 0x821D
@@ -122,6 +129,7 @@ struct OpenGlDispatchTable {
     PFN_glBlitFramebuffer_ BlitFramebuffer = nullptr;
     PFN_glCopyImageSubData_ CopyImageSubData = nullptr;
     PFN_glGetStringi_ GetStringi = nullptr;
+    PFN_glGetUnsignedBytevEXT_ GetUnsignedBytevEXT = nullptr;
 
     bool isLoaded = false;
     bool hasInterop = false;

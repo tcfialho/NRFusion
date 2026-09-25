@@ -14,6 +14,7 @@ on:
       - 'tools/validate_phase09_hardware.ps1'
       - 'tools/validate_phase10_hardware.ps1'
       - 'tools/validate_phase11_hardware.ps1'
+      - 'tools/validate_phase12_hardware.ps1'
       - '.github/workflows/windows-validation.yml'
   workflow_dispatch:
     inputs:
@@ -81,7 +82,8 @@ jobs:
           @(
             'tools/validate_phase09_hardware.ps1',
             'tools/validate_phase10_hardware.ps1',
-            'tools/validate_phase11_hardware.ps1'
+            'tools/validate_phase11_hardware.ps1',
+            'tools/validate_phase12_hardware.ps1'
           ) | ForEach-Object {
             $tokens = $null
             $errors = $null
@@ -100,8 +102,8 @@ jobs:
         run: |
           if ("${{ github.event_name }}" -eq "push") {
             ./tools/validate_windows.ps1 -Fast `
-              -TargetsCsv "nrfusion_d3d11_carrier_hook_tests,nrfusion_d3d11_carrier_native_acquire_tests,nrfusion_synthetic_dx11_bridge_test,nrfusion_capture32,nrfusion_ipc_host_compile,nrfusion_ipc_generation_contract_tests,nrfusion_capture32_transport_timeout_tests,nrfusion_vulkan_provider_compile,nrfusion_vulkan_native_compile,nrfusion_vulkan_native_device_tests,nrfusion_vulkan_carrier_executor_tests,nrfusion_vulkan_carrier_device_tests,nrfusion_d3d12_external_share_tests,nrfusion_vulkan_external_interop_tests,nrfusion_synthetic_opengl_test" `
-              -TestRegex "^(nrfusion_d3d11_carrier_native_acquire_tests|nrfusion_synthetic_dx11_bridge_test|nrfusion_ipc_generation_contract_tests|nrfusion_capture32_transport_timeout_tests|nrfusion_vulkan_native_device_tests|nrfusion_vulkan_carrier_executor_tests|nrfusion_vulkan_carrier_device_tests|nrfusion_d3d12_external_share_tests|nrfusion_vulkan_external_interop_tests|nrfusion_synthetic_opengl_test)$"
+              -TargetsCsv "nrfusion_d3d11_carrier_hook_tests,nrfusion_d3d11_carrier_native_acquire_tests,nrfusion_synthetic_dx11_bridge_test,nrfusion_capture32,nrfusion_ipc_host_compile,nrfusion_ipc_generation_contract_tests,nrfusion_capture32_transport_timeout_tests,nrfusion_vulkan_provider_compile,nrfusion_vulkan_native_compile,nrfusion_vulkan_native_device_tests,nrfusion_vulkan_carrier_executor_tests,nrfusion_vulkan_carrier_device_tests,nrfusion_d3d12_external_share_tests,nrfusion_vulkan_external_interop_tests,nrfusion_synthetic_opengl_test,nrfusion_opengl_external_interop_tests" `
+              -TestRegex "^(nrfusion_d3d11_carrier_native_acquire_tests|nrfusion_synthetic_dx11_bridge_test|nrfusion_ipc_generation_contract_tests|nrfusion_capture32_transport_timeout_tests|nrfusion_vulkan_native_device_tests|nrfusion_vulkan_carrier_executor_tests|nrfusion_vulkan_carrier_device_tests|nrfusion_d3d12_external_share_tests|nrfusion_vulkan_external_interop_tests|nrfusion_synthetic_opengl_test|nrfusion_opengl_external_interop_tests)$"
           } elseif ("${{ inputs.scope }}" -eq "fast") {
             ./tools/validate_windows.ps1 -Fast `
               -TargetsCsv "${{ inputs.targets }}" `

@@ -1,5 +1,6 @@
 #include "nrfusion/SyntheticOpenGlProvider.hpp"
 
+#include <array>
 #include <bit>
 #include <cstring>
 
@@ -40,6 +41,48 @@ bool HasRequiredInteropExtensions(
            HasExtension(gl, "GL_EXT_memory_object_win32") &&
            HasExtension(gl, "GL_EXT_semaphore") &&
            HasExtension(gl, "GL_EXT_semaphore_win32");
+}
+
+bool QueryGlAdapterLuid(
+    const OpenGlDispatchTable& gl,
+    LUID& luid) noexcept {
+    if (!gl.GetUnsignedBytevEXT) return false;
+    std::array<GLubyte, GL_LUID_SIZE_EXT> bytes{};
+    while (glGetError() != GL_NO_ERROR) {}
+    gl.GetUnsignedBytevEXT(GL_DEVICE_LUID_EXT, bytes.data());
+    if (glGetError() != GL_NO_ERROR) return false;
+    static_assert(sizeof(LUID) == GL_LUID_SIZE_EXT);
+    std::memcpy(&luid, bytes.data(), sizeof(luid));
+    return true;
+}
+
+bool SameLuid(const LUID& left, const LUID& right) noexcept {
+    return left.LowPart == right.LowPart &&
+           left.HighPart == right.HighPart;
+}
+
+bool FindDxgiAdapter(
+    const LUID& luid,
+    ComPtr<IDXGIAdapter1>& adapter) noexcept {
+    ComPtr<IDXGIFactory4> factory;
+    if (FAILED(CreateDXGIFactory1(IID_PPV_ARGS(&factory))))
+        return false;
+
+    for (UINT index = 0;; ++index) {
+        ComPtr<IDXGIAdapter1> candidate;
+        const HRESULT enumResult =
+            factory->EnumAdapters1(index, &candidate);
+        if (enumResult == DXGI_ERROR_NOT_FOUND) break;
+        if (FAILED(enumResult)) return false;
+
+        DXGI_ADAPTER_DESC1 desc{};
+        if (SUCCEEDED(candidate->GetDesc1(&desc)) &&
+            SameLuid(desc.AdapterLuid, luid)) {
+            adapter = candidate;
+            return true;
+        }
+    }
+    return false;
 }
 
 } // namespace
@@ -96,6 +139,9 @@ bool SyntheticOpenGlProvider::LoadOpenGl() {
         gl_.wglGetProcAddress("glCopyImageSubData"));
     gl_.GetStringi = ProcCast<PFN_glGetStringi_>(
         gl_.wglGetProcAddress("glGetStringi"));
+    gl_.GetUnsignedBytevEXT =
+        ProcCast<PFN_glGetUnsignedBytevEXT_>(
+            gl_.wglGetProcAddress("glGetUnsignedBytevEXT"));
 
     gl_.hasInterop =
         HasRequiredInteropExtensions(gl_) &&
@@ -110,14 +156,24 @@ bool SyntheticOpenGlProvider::LoadOpenGl() {
         gl_.SemaphoreParameterui64vEXT &&
         gl_.WaitSemaphoreEXT &&
         gl_.SignalSemaphoreEXT &&
-        gl_.CopyImageSubData;
+        gl_.CopyImageSubData &&
+        gl_.GetUnsignedBytevEXT;
     return true;
 }
 
 bool SyntheticOpenGlProvider::CreatePrivateD3D12() {
     if (d3d12Device_) return true;
 
-    HRESULT hr = D3D12CreateDevice(nullptr, D3D_FEATURE_LEVEL_11_0, IID_PPV_ARGS(&d3d12Device_));
+    LUID glLuid{};
+    ComPtr<IDXGIAdapter1> adapter;
+    if (!QueryGlAdapterLuid(gl_, glLuid) ||
+        !FindDxgiAdapter(glLuid, adapter)) {
+        return false;
+    }
+
+    const HRESULT hr = D3D12CreateDevice(
+        adapter.Get(), D3D_FEATURE_LEVEL_11_0,
+        IID_PPV_ARGS(&d3d12Device_));
     if (FAILED(hr)) return false;
 
     D3D12_COMMAND_QUEUE_DESC qDesc{};

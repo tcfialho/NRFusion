@@ -72,10 +72,6 @@ bool SyntheticOpenGlProvider::CreateSharedResources(
     desc.SampleDesc.Count = 1;
     desc.Flags = D3D12_RESOURCE_FLAG_ALLOW_UNORDERED_ACCESS;
 
-    const auto allocation =
-        d3d12Device_->GetResourceAllocationInfo(0, 1, &desc);
-    if (allocation.SizeInBytes == 0) return false;
-
     for (auto& slot : sharedSlots_) {
         if (FAILED(d3d12Device_->CreateCommittedResource(
                 &heapProps, D3D12_HEAP_FLAG_SHARED, &desc,
@@ -108,10 +104,10 @@ bool SyntheticOpenGlProvider::CreateSharedResources(
         gl_.MemoryObjectParameterivEXT(
             slot.glResidualMem, GL_DEDICATED_MEMORY_OBJECT_EXT, &dedicated);
         gl_.ImportMemoryWin32HandleEXT(
-            slot.glColorMem, allocation.SizeInBytes,
+            slot.glColorMem, 0,
             GL_HANDLE_TYPE_D3D12_RESOURCE_EXT, slot.colorSharedHandle);
         gl_.ImportMemoryWin32HandleEXT(
-            slot.glResidualMem, allocation.SizeInBytes,
+            slot.glResidualMem, 0,
             GL_HANDLE_TYPE_D3D12_RESOURCE_EXT, slot.residualSharedHandle);
 
         glGenTextures(1, &slot.glColorTex);
