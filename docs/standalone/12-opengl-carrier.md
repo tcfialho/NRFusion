@@ -19,9 +19,9 @@ Fases 07–08.
 - [x] Antes de expansão, dividir loader/extensions, GL-D3D12 interop/sync e carrier orchestration.
 - [ ] Definir Acquire seam em contexto GL real.
 - [x] ProviderPolicy só atrás de capability comprovada.
-- [ ] Validar extensions, size/alignment e handle ownership.
-- [ ] Capturar/compose GPU-side.
-- [ ] Context recreation/resize.
+- [x] Validar extensions, size/alignment e handle ownership.
+- [x] Capturar/compose GPU-side.
+- [x] Context recreation/resize implementado; evidência física pendente.
 - [x] Cada arquivo <=300 linhas.
 
 ## Revisão obrigatória
@@ -42,7 +42,7 @@ Fases 07–08.
 ## Gate
 
 - [x] ProviderPolicy só seleciona rota comprovada.
-- [ ] Acquire/interop GPU-resident.
+- [x] Acquire/interop GPU-resident; qualificação física pendente.
 - [x] OpenGL tocado respeita <=300 linhas por arquivo.
 
 ## Próxima fase
@@ -201,3 +201,63 @@ D3D12 real no shared output e só então sinalize o fence de saída.
 3. mover o output-ready signal para depois dessa publicação;
 4. executar o gate físico Phase 12 quando hardware local voltar;
 5. só depois avaliar capability integrada.
+
+
+## Subgate 12d — publish do resultado D3D12 real
+
+Código validado: `fdec6dc`.
+
+Mudança de ownership:
+- `Submit` faz apenas acquisition/cópia de input e prepara o work D3D12;
+- `GetD3D12Work` entrega device/queue, `lowColor` e `lowNeuralOut`
+  ligados ao mesmo work/slot;
+- o caller executa o modelo real na mesma queue;
+- `PublishD3D12Result` executa `ExtractResidual`, compõe o resultado
+  native-resolution no recurso compartilhado com GL e só então sinaliza
+  `outputSignalValue`;
+- `Poll`, `GetResidual` e output consume falham antes do publish.
+
+Correctness:
+- outer slot segue o próximo ring slot do `SyntheticDx12Provider`, evitando
+  overwrite de um inner slot ainda vivo quando a liberação externa ocorre fora
+  de ordem;
+- cada slot possui allocator separado para publish;
+- resize/recreation retorna blocked enquanto qualquer release GL anterior não
+  estiver aposentado;
+- shared output representa resultado composto final; `GetResidual` continua
+  expondo o residual interno correto;
+- nenhum wait/readback de CPU foi introduzido no runtime normal.
+
+Harness físico:
+- além do transporte independente, executa 32 ciclos pelo
+  `SyntheticOpenGlProvider` real;
+- usa copy D3D12 como modelo identidade para escrever `lowNeuralOut`;
+- publica pelo novo método e valida o resultado após o consume GL;
+- o readback continua restrito ao harness.
+
+Validação:
+- focused portable `36077955388`: PASS;
+- source-size: PASS;
+- checkpoint:
+  `nrfusion-source-fdec6dcae9a6de16137c45c7c90ba9d1c2800d94`;
+- Windows hosted `36077955377`: PASS;
+- `nrfusion_synthetic_opengl_test`: PASS;
+- `nrfusion_opengl_external_interop_tests`: SKIP 77;
+- o SKIP hosted não é evidência física.
+
+## Estado da Fase 12
+
+A implementação verificável sem hardware está congelada. A Fase 12 permanece
+**IN PROGRESS** somente pela ausência do gate WGL/D3D12 físico.
+
+Ação física única:
+`tools/validate_phase12_hardware.ps1`
+
+O script executa o binário diretamente com hardware obrigatório; exit 77 não é
+aceito como sucesso.
+
+Nota de capability: `GameProbe::IntegratedCapabilities()` descreve hooks
+realmente distribuídos. Como ainda não existe hook OpenGL enviado pelo patcher,
+`openGlCarrier` deve permanecer `false` mesmo se o carrier da Fase 12 passar
+fisicamente. A habilitação anunciada pertence ao gate posterior de hook/cutover,
+não à prova isolada do carrier.

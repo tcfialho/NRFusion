@@ -137,8 +137,8 @@ Regras obrigatórias:
 
 Date: 2026-09-24 BRT
 Branch: standalone/integration
-Validated code head: 1c4eff5
-Current code head: 043c414 (hosted validation pending)
+Validated code head: fdec6dc
+Current branch head before closure docs: fdec6dc
 
 Phase 06: CLOSED.
 Phase 07: CLOSED, including real Windows compile/harness validation.
@@ -370,14 +370,32 @@ Phase 12 subgate 12c WIP:
 - code sequence: ad639e3 harness, ef726da source split, 043c414 WGL sentinel hardening;
 - focused portable run 36076073284 and Windows run 36076073277 were still in progress at session freeze.
 
-Phase 12 production finding that remains:
-- SyntheticOpenGlProvider::Submit still signals its output-ready fence after SyntheticDx12Provider::Submit, but that inner Submit only prepares lowColor and does not write slot.d3d12Residual;
-- the new native harness proves the GL_EXT/D3D12 transport path independently, not that the provider's shared residual currently contains a neural result;
-- IntegratedCapabilities().openGlCarrier must therefore remain false even if the physical transport harness passes.
+Phase 12 subgate 12d — production result publication:
+- hosted 12c validation closed green: focused portable 36076073284 PASS and Windows 36076073277 PASS; the real external-object harness correctly SKIPped 77 on hosted Windows;
+- SyntheticOpenGlProvider::Submit now prepares the GPU input only and does not signal output-ready;
+- GetD3D12Work(handle) exposes the work-bound private D3D12 device/queue plus lowColor and lowNeuralOut resources so the caller can execute the real model on the provider queue;
+- PublishD3D12Result(handle) validates the exact outer/inner slot identity, extracts residual from the caller-written lowNeuralOut, composes the final native-resolution result into the GL-shared output resource, submits that publish pass and only then signals output-ready;
+- Poll, GetResidual and RecordOpenGlOutputConsume all fail closed before output publication;
+- shared resource naming now distinguishes final D3D12/GL output from the inner lowResidual;
+- OpenGL outer slot selection follows SyntheticDx12Provider::NextSlotForSubmit so an out-of-order outer retirement cannot overwrite a still-live inner ring slot;
+- resize/recreation fails closed while any prior GL release value is not retired; no CPU wait was added to the normal path;
+- each slot has a separate publish allocator so publishing cannot reset an allocator still used by input preparation;
+- physical harness now adds 32 cycles through the actual SyntheticOpenGlProvider: GL source -> provider Submit -> identity-model D3D12 copy into lowNeuralOut -> PublishD3D12Result -> GL output consume -> validation readback;
+- focused portable run 36077955388 PASS, source-size PASS, source checkpoint nrfusion-source-fdec6dcae9a6de16137c45c7c90ba9d1c2800d94;
+- Windows hosted run 36077955377 PASS; nrfusion_synthetic_opengl_test PASS and nrfusion_opengl_external_interop_tests SKIP 77 as expected without required real external-object support;
+- all substantively modified files remain <=300 lines.
 
-Exact next action:
-- inspect runs 36076073284 and 36076073277 first and fix only concrete failures;
-- if hosted validation is green, add an explicit work-bound D3D12 result publish step that writes the real result into the matching shared OpenGL slot before signaling output-ready;
-- keep output signal/Poll tied to that publish step, not to input preparation;
-- then run tools/validate_phase12_hardware.ps1 when local hardware access is explicitly re-enabled;
-- only after provider result publication plus physical PASS consider IntegratedCapabilities().openGlCarrier=true.
+Phase 12 remains IN PROGRESS only because the real WGL/D3D12 external-object gate has not executed on physical hardware.
+Hosted/portable implementation is frozen.
+
+Capability note:
+- GameProbe::IntegratedCapabilities() describes hooks actually shipped by the patcher/distribution, not standalone carrier capability;
+- no OpenGL hook is shipped today, so IntegratedCapabilities().openGlCarrier must remain false even after a future Phase 12 physical PASS;
+- physical Phase 12 PASS qualifies the carrier implementation; advertised/shipped OpenGL support belongs to the later real hook/cutover gate.
+
+Exact next action when local access is explicitly re-enabled:
+- fast-forward the physical checkout to origin/standalone/integration;
+- run tools/validate_phase12_hardware.ps1 with persistent logging outside the worktree;
+- require direct exit code 0, including 32 transport recreation cycles, 128 transport reuse cycles, full WGL context recreation and 32 production-provider publish cycles;
+- if PASS, record Phase 12 carrier closure while leaving IntegratedCapabilities().openGlCarrier=false until an actual shipped OpenGL hook/cutover exists;
+- if FAIL, collect logs and fix via GitHub before rerunning.
