@@ -24,7 +24,10 @@ std::uint64_t TemporalHistoryRegistry::AllocateHistoryId() {
     return id;
 }
 
-HistoryLease TemporalHistoryRegistry::Acquire(const ViewDescriptor& view, std::uint64_t frameNumber) {
+HistoryLease TemporalHistoryRegistry::Acquire(
+    const ViewDescriptor& view,
+    std::uint64_t frameNumber,
+    const GuideHistoryState& guides) {
     // featureKey==0 cannot safely share history across unknown callers: issue a fresh identity.
     if (view.featureKey == 0) return {AllocateHistoryId(), true};
 
@@ -35,6 +38,8 @@ HistoryLease TemporalHistoryRegistry::Acquire(const ViewDescriptor& view, std::u
         e.descriptor = view;
         e.historyId = AllocateHistoryId();
         e.lastSeenFrame = frameNumber;
+        e.guides = guides;
+        e.guides.resetRequested = false;
         return {e.historyId, true};
     }
 
@@ -44,13 +49,22 @@ HistoryLease TemporalHistoryRegistry::Acquire(const ViewDescriptor& view, std::u
         return {AllocateHistoryId(), true};
     }
 
-    const bool shapeChanged = !SameShape(e.descriptor, view);
-    if (shapeChanged) {
+    const bool shapeChanged =
+        !SameShape(e.descriptor, view);
+    const bool guideChanged =
+        !e.guides.SamePersistentGuides(guides);
+    const bool resetRequired =
+        guides.resetRequested ||
+        shapeChanged ||
+        guideChanged;
+    if (resetRequired) {
         e.descriptor = view;
         e.historyId = AllocateHistoryId();
     }
+    e.guides = guides;
+    e.guides.resetRequested = false;
     e.lastSeenFrame = frameNumber;
-    return {e.historyId, shapeChanged};
+    return {e.historyId, resetRequired};
 }
 
 void TemporalHistoryRegistry::InvalidateFeature(std::uint64_t featureKey) {

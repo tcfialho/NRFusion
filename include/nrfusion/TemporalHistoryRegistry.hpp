@@ -4,6 +4,8 @@
 #include <cstdint>
 #include <unordered_map>
 
+#include "nrfusion/GuideHistoryState.hpp"
+
 namespace nrfusion {
 
 struct ViewDescriptor {
@@ -26,7 +28,10 @@ struct HistoryLease {
 // when that view changes shape. GPU resources remain owned by the host; historyId is the host key.
 class TemporalHistoryRegistry {
 public:
-    HistoryLease Acquire(const ViewDescriptor& view, std::uint64_t frameNumber);
+    HistoryLease Acquire(
+        const ViewDescriptor& view,
+        std::uint64_t frameNumber,
+        const GuideHistoryState& guides = {});
     void InvalidateFeature(std::uint64_t featureKey);
     void Prune(std::uint64_t frameNumber, std::uint64_t maxIdleFrames = 600);
     void Clear();
@@ -37,6 +42,7 @@ private:
         ViewDescriptor descriptor{};
         std::uint64_t historyId = 0;
         std::uint64_t lastSeenFrame = 0;
+        GuideHistoryState guides{};
     };
 
     struct RegistryKey {
