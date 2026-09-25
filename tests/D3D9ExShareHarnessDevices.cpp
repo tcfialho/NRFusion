@@ -1,5 +1,7 @@
 #include "D3D9ExShareHarness.hpp"
 
+#include <iterator>
+
 namespace nrfusion::test {
 namespace {
 
