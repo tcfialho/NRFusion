@@ -415,13 +415,33 @@ Phase 13 subgate 13a — route contract:
 - Windows hosted run 36078628160 PASS;
 - new route files are 63/80/94 lines and remain under the 300-line cap.
 
-Phase 13 remains IN PROGRESS.
-No D3D10 runtime or hardware evidence has been claimed.
+Phase 13 subgate 13b — cross-API micro-harness:
+- code head 8a23d4c;
+- dedicated Windows harness creates D3D10.1, D3D11.1 and D3D12 on the same non-software DXGI adapter;
+- D3D10 creates legacy keyed-mutex shared RGBA16F input/output surfaces; D3D11 opens them via OpenSharedResource;
+- the D3D11->D3D12 stage uses a D3D11.1 Texture2D created with SHARED_NTHANDLE | SHARED_KEYEDMUTEX, obtains an NT handle with IDXGIResource1::CreateSharedHandle, and opens it on D3D12;
+- D3D10.1/D3D11 keyed mutex acquisitions use timeout 0 and accept only S_OK, so WAIT_TIMEOUT cannot be misclassified as success;
+- D3D11/D3D12 ordering reuses D3D11D3D12FenceBridge;
+- the identity proof performs exactly four carrier full-frame GPU copies per roundtrip: D3D10 source -> legacy input, D3D11 legacy input -> NT bridge, D3D11 NT bridge -> legacy output, D3D10 legacy output -> destination;
+- D3D12 opens and participates in the queue handoff but the proof deliberately uses an identity/no-op model, so there is no fifth model copy hidden in carrier accounting;
+- validation-only D3D10 staging copy + Map verifies the RGBA16F payload and is excluded explicitly from carrierCopies_;
+- hosted harness executes 64 reuse roundtrips plus 16 resource/resize recreation roundtrips;
+- first Windows run 36080242669 failed after successful compile because D3D11 NT texture was created without SHARED_KEYEDMUTEX;
+- diagnostic run 36080655085 isolated that creation failure; official CreateSharedHandle semantics require SHARED_NTHANDLE + SHARED_KEYEDMUTEX;
+- run 36081014555 then reached payload validation and exposed missing keyed ownership around the D3D11 NT resource;
+- final fix 8a23d4c honors that mutex around the two D3D11 access windows while D3D12 access remains ordered by shared fences;
+- focused portable run 36081364306 PASS, including source-size;
+- Windows hosted run 36081364289 PASS; nrfusion_d3d10_external_bridge_tests executed and Passed (not SKIP);
+- source checkpoint nrfusion-source-8a23d4c3a3879915fe24b575ab524e2a7c810b63;
+- tools/validate_phase13_hardware.ps1 builds only this target, sets NRFUSION_TEST_D3D10_HARDWARE=1 and executes it directly so SKIP 77 cannot become physical PASS;
+- all new/substantively modified files remain <=300 lines; cmake/NRFusionWindows.cmake is 294 lines.
 
-Exact next action:
-- add a focused Windows micro-harness that creates same-adapter D3D10.1, D3D11.1 and D3D12 devices;
-- prove D3D10.1 keyed shared RGBA16F -> D3D11 legacy open;
-- copy GPU-side into a D3D11.1 SHARED_NTHANDLE + SHARED_KEYEDMUTEX surface and open it on D3D12;
-- use timeout-0 keyed mutex acquisition and existing D3D11/D3D12 fence semantics;
-- exercise the reverse compose-back path and count the four full-frame copies;
-- SKIP 77 is acceptable hosted evidence only for target availability, never as physical route PASS.
+Phase 13 remains IN PROGRESS.
+The route is runtime-demonstrated on hosted Windows, but the physical GPU/driver gate and explicit sync/CPU measurement remain open.
+
+Exact next action when local access is explicitly re-enabled:
+- fast-forward the physical checkout to origin/standalone/integration;
+- run tools/validate_phase13_hardware.ps1 with persistent logging outside the worktree;
+- require direct exit code 0 for 64 reuse + 16 recreation cycles and exact four-copy carrier accounting;
+- collect CPU/sync timing for the physical run, keeping validation-only readback separate from steady-state carrier cost;
+- if the physical gate and measurement pass, record Phase 13 closure; otherwise collect logs and fix through GitHub before rerunning.
