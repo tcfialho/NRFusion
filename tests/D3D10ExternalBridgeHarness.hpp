@@ -37,6 +37,7 @@ struct D3D10BridgeCycleResources {
     ComPtr<IDXGIKeyedMutex> inputMutex11;
     ComPtr<IDXGIKeyedMutex> outputMutex11;
     ComPtr<ID3D11Texture2D> ntShared11;
+    ComPtr<IDXGIKeyedMutex> ntMutex11;
     ComPtr<ID3D12Resource> ntShared12;
 
     std::vector<std::uint16_t> expected;

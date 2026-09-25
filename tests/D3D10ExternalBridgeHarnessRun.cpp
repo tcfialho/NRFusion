@@ -53,11 +53,17 @@ bool D3D10ExternalBridgeHarness::ExecuteRoundTrip(
         std::cerr << "d3d10 bridge: input D3D11 acquire failed\n";
         return false;
     }
+    if (!AcquireZero(resources.ntMutex11.Get(), 0)) {
+        Release(resources.inputMutex11.Get(), 0);
+        std::cerr << "d3d10 bridge: NT inbound acquire failed\n";
+        return false;
+    }
     context11_->CopyResource(
         resources.ntShared11.Get(),
         resources.legacyInput11.Get());
     ++carrierCopies_;
-    if (!Release(resources.inputMutex11.Get(), 0) ||
+    if (!Release(resources.ntMutex11.Get(), 1) ||
+        !Release(resources.inputMutex11.Get(), 0) ||
         !fenceBridge_.QueueInputHandoff()) {
         std::cerr << "d3d10 bridge: input release/fence handoff failed\n";
         return false;
@@ -73,7 +79,8 @@ bool D3D10ExternalBridgeHarness::ExecuteRoundTrip(
 
     if (!AcquireZero(resources.outputMutex10.Get(), 0) ||
         !Release(resources.outputMutex10.Get(), 1) ||
-        !AcquireZero(resources.outputMutex11.Get(), 1)) {
+        !AcquireZero(resources.outputMutex11.Get(), 1) ||
+        !AcquireZero(resources.ntMutex11.Get(), 1)) {
         std::cerr << "d3d10 bridge: output initial keyed handoff failed\n";
         return false;
     }
@@ -81,7 +88,8 @@ bool D3D10ExternalBridgeHarness::ExecuteRoundTrip(
         resources.legacyOutput11.Get(),
         resources.ntShared11.Get());
     ++carrierCopies_;
-    if (!Release(resources.outputMutex11.Get(), 2)) {
+    if (!Release(resources.ntMutex11.Get(), 0) ||
+        !Release(resources.outputMutex11.Get(), 2)) {
         std::cerr << "d3d10 bridge: output D3D11 release failed\n";
         return false;
     }
