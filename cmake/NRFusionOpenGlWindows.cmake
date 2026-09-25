@@ -16,7 +16,8 @@ add_executable(nrfusion_opengl_external_interop_tests
     tests/opengl_external_interop_tests.cpp
     tests/OpenGlExternalInteropHarnessContext.cpp
     tests/OpenGlExternalInteropHarnessResources.cpp
-    tests/OpenGlExternalInteropHarnessRun.cpp)
+    tests/OpenGlExternalInteropHarnessRun.cpp
+    tests/OpenGlExternalInteropHarnessProvider.cpp)
 target_include_directories(nrfusion_opengl_external_interop_tests PRIVATE
     include tests)
 target_link_libraries(nrfusion_opengl_external_interop_tests PRIVATE

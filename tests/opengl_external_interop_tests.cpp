@@ -24,7 +24,8 @@ int main() {
         return required ? 1 : kSkip;
 
     if (!harness.RunRecreationCycles(32) ||
-        !harness.RunReuseCycles(128)) {
+        !harness.RunReuseCycles(128) ||
+        !harness.RunProviderCycles(32)) {
         harness.Close();
         return 2;
     }

@@ -108,6 +108,7 @@ if (WIN32)
         src/SyntheticOpenGlProvider.cpp
         src/SyntheticOpenGlProviderLifecycle.cpp
         src/SyntheticOpenGlProviderInterop.cpp
+        src/SyntheticOpenGlProviderPublish.cpp
     )
 endif()
 

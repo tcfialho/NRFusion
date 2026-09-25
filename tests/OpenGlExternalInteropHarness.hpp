@@ -34,6 +34,7 @@ public:
 
     bool RunRecreationCycles(std::uint32_t count);
     bool RunReuseCycles(std::uint32_t count);
+    bool RunProviderCycles(std::uint32_t count);
 
 private:
     bool CreateContext();

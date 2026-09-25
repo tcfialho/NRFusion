@@ -60,6 +60,9 @@ public:
     // Ring slot index actively holding this handle's resources, or kRingSlots if none matches
     // (the ticket was never submitted here, or its slot has since been recycled).
     uint32_t SlotForWork(uint64_t workId) const;
+    uint32_t NextSlotForSubmit() const noexcept {
+        return currentSlot_;
+    }
     uint64_t CompletedFenceValue() const;
 
 private:

@@ -188,6 +188,9 @@ bool SyntheticOpenGlProvider::CreatePrivateD3D12() {
         if (FAILED(d3d12Device_->CreateCommandAllocator(
                 D3D12_COMMAND_LIST_TYPE_DIRECT,
                 IID_PPV_ARGS(&s.alloc))) ||
+            FAILED(d3d12Device_->CreateCommandAllocator(
+                D3D12_COMMAND_LIST_TYPE_DIRECT,
+                IID_PPV_ARGS(&s.publishAlloc))) ||
             FAILED(d3d12Device_->CreateFence(
                 0, D3D12_FENCE_FLAG_SHARED,
                 IID_PPV_ARGS(&s.fence))) ||
@@ -245,6 +248,7 @@ void SyntheticOpenGlProvider::Shutdown() {
             s.fenceSharedHandle = nullptr;
         }
         s.fence.Reset();
+        s.publishAlloc.Reset();
         s.alloc.Reset();
         s.nextFenceValue = 1;
     }

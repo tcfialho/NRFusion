@@ -22,33 +22,28 @@ SyntheticWorkHandle SyntheticOpenGlProvider::Submit(const SyntheticFrameInputs& 
         return handle;
     }
 
-    uint32_t slotIdx = kMaxInFlight;
-    for (uint32_t offset = 0; offset != kMaxInFlight; ++offset) {
-        const uint32_t candidate =
-            (currentSlot_ + offset) % kMaxInFlight;
-        const auto& candidateSlot = sharedSlots_[candidate];
-        const bool released =
-            candidateSlot.outputConsumed &&
-            candidateSlot.sync.Valid(kMaxInFlight) &&
-            candidateSlot.fence &&
-            candidateSlot.fence->GetCompletedValue() >=
-                candidateSlot.sync.releaseSignalValue;
-        if (!candidateSlot.inUse || released) {
-            slotIdx = candidate;
-            break;
-        }
-    }
-    if (slotIdx == kMaxInFlight) return handle;
+    const uint32_t slotIdx =
+        syntheticD3D12_.NextSlotForSubmit();
+    if (slotIdx >= kMaxInFlight) return handle;
+    const auto& selectedSlot = sharedSlots_[slotIdx];
+    const bool released =
+        selectedSlot.outputConsumed &&
+        selectedSlot.sync.Valid(kMaxInFlight) &&
+        selectedSlot.fence &&
+        selectedSlot.fence->GetCompletedValue() >=
+            selectedSlot.sync.releaseSignalValue;
+    if (selectedSlot.inUse && !released) return handle;
 
     if (inputs.color.opaqueId >
         std::numeric_limits<GLuint>::max()) {
         return handle;
     }
 
-    currentSlot_ = (slotIdx + 1) % kMaxInFlight;
     SharedSlot& slot = sharedSlots_[slotIdx];
     slot.sync = {};
+    slot.innerSlot = SyntheticDx12Provider::kRingSlots;
     slot.inputRecorded = false;
+    slot.outputPublished = false;
     slot.outputConsumed = false;
     slot.inUse = true;
     if (!ReserveOpenGlCarrierSyncIdentity(
@@ -88,30 +83,25 @@ SyntheticWorkHandle SyntheticOpenGlProvider::Submit(const SyntheticFrameInputs& 
     if (!handle.valid || FAILED(d3d12CmdList_->Close())) {
         return SyntheticWorkHandle{};
     }
+    slot.innerSlot = syntheticD3D12_.SlotForWork(handle.workId);
+    if (slot.innerSlot != slotIdx) {
+        return SyntheticWorkHandle{};
+    }
 
     ID3D12CommandList* lists[] = { d3d12CmdList_.Get() };
     d3d12Queue_->ExecuteCommandLists(1, lists);
-    if (FAILED(d3d12Queue_->Signal(
-            slot.fence.Get(), slot.sync.outputSignalValue))) {
-        return SyntheticWorkHandle{};
-    }
 
     handle.fenceValue = slot.sync.outputSignalValue;
     return handle;
 }
 
 bool SyntheticOpenGlProvider::Poll(const SyntheticWorkHandle& handle) {
+    std::scoped_lock lock(mutex_);
     if (!ready_ || !handle.valid || handle.workId == 0)
         return false;
-    for (const auto& slot : sharedSlots_) {
-        if (slot.inUse &&
-            slot.sync.workId == handle.workId &&
-            slot.sync.outputSignalValue == handle.fenceValue &&
-            slot.fence) {
-            return slot.fence->GetCompletedValue() >= handle.fenceValue;
-        }
-    }
-    return false;
+    const SharedSlot* slot = FindSlot(handle);
+    return slot && slot->outputPublished && slot->fence &&
+           slot->fence->GetCompletedValue() >= handle.fenceValue;
 }
 
 ResourceRef SyntheticOpenGlProvider::GetResidual(const SyntheticWorkHandle& handle) {
@@ -119,15 +109,9 @@ ResourceRef SyntheticOpenGlProvider::GetResidual(const SyntheticWorkHandle& hand
     ResourceRef ref{};
     if (!ready_ || !handle.valid) return ref;
 
-    for (const auto& s : sharedSlots_) {
-        if (s.sync.workId == handle.workId && s.d3d12Residual) {
-            ref.opaqueId = reinterpret_cast<uint64_t>(s.d3d12Residual.Get());
-            ref.resolution = currentRes_;
-            ref.format = ResourceFormat::Rgba16Float;
-            return ref;
-        }
-    }
-    return ref;
+    SharedSlot* slot = FindSlot(handle);
+    if (!slot || !slot->outputPublished) return ref;
+    return syntheticD3D12_.GetResidual(handle);
 }
 
 bool SyntheticOpenGlProvider::ComposeNative(const SyntheticWorkHandle& handle,

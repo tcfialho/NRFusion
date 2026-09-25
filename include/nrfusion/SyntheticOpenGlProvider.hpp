@@ -22,6 +22,7 @@
 #include <cstdint>
 #include <memory>
 #include <mutex>
+#include <optional>
 #include <string>
 
 namespace nrfusion {
@@ -104,6 +105,22 @@ typedef void (APIENTRY *PFN_glGetUnsignedBytevEXT_)(GLenum, GLubyte*);
 #define GL_NUM_EXTENSIONS 0x821D
 #endif
 
+struct OpenGlD3D12WorkView {
+    ID3D12Device* device = nullptr;
+    ID3D12CommandQueue* queue = nullptr;
+    ID3D12Resource* inputColor = nullptr;
+    ID3D12Resource* neuralOutput = nullptr;
+    Resolution workingResolution{};
+
+    constexpr bool Valid() const noexcept {
+        return device != nullptr &&
+               queue != nullptr &&
+               inputColor != nullptr &&
+               neuralOutput != nullptr &&
+               workingResolution.Valid();
+    }
+};
+
 struct OpenGlDispatchTable {
     HMODULE libGl = nullptr;
     PROC (WINAPI *wglGetProcAddress)(LPCSTR) = nullptr;
@@ -161,6 +178,10 @@ public:
     bool LoadOpenGl();
     bool HasOpenGlInterop() const noexcept { return gl_.hasInterop; }
 
+    std::optional<OpenGlD3D12WorkView> GetD3D12Work(
+        const SyntheticWorkHandle& handle);
+    bool PublishD3D12Result(
+        const SyntheticWorkHandle& handle);
     bool RecordOpenGlOutputConsume(
         const SyntheticWorkHandle& handle,
         GLuint gameDestTex,
@@ -176,23 +197,26 @@ private:
 
         // D3D12 private side
         ComPtr<ID3D12Resource> d3d12Color;
-        ComPtr<ID3D12Resource> d3d12Residual;
+        ComPtr<ID3D12Resource> d3d12Output;
         ComPtr<ID3D12CommandAllocator> alloc;
+        ComPtr<ID3D12CommandAllocator> publishAlloc;
         ComPtr<ID3D12Fence> fence;
         HANDLE colorSharedHandle = nullptr;
-        HANDLE residualSharedHandle = nullptr;
+        HANDLE outputSharedHandle = nullptr;
         HANDLE fenceSharedHandle = nullptr;
         uint64_t nextFenceValue = 1;
 
         // OpenGL import side
         GLuint glColorMem = 0;
         GLuint glColorTex = 0;
-        GLuint glResidualMem = 0;
-        GLuint glResidualTex = 0;
+        GLuint glOutputMem = 0;
+        GLuint glOutputTex = 0;
         GLuint glInputSem = 0;
         GLuint glOutputSem = 0;
 
+        uint32_t innerSlot = SyntheticDx12Provider::kRingSlots;
         bool inputRecorded = false;
+        bool outputPublished = false;
         bool outputConsumed = false;
         bool inUse = false;
     };
@@ -206,6 +230,7 @@ private:
         const SyntheticWorkHandle& handle) noexcept;
     bool CreatePrivateD3D12();
     bool CreateSharedResources(uint32_t width, uint32_t height);
+    bool CanRecreateSharedResources() const noexcept;
     void CloseSharedHandles();
 
     OpenGlDispatchTable gl_{};
@@ -219,7 +244,6 @@ private:
 
     Resolution currentRes_{};
     std::array<SharedSlot, kMaxInFlight> sharedSlots_{};
-    uint32_t currentSlot_ = 0;
     bool ready_ = false;
     mutable std::mutex mutex_;
 };

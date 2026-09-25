@@ -12,19 +12,19 @@ void SyntheticOpenGlProvider::CloseSharedHandles() {
             CloseHandle(slot.colorSharedHandle);
             slot.colorSharedHandle = nullptr;
         }
-        if (slot.residualSharedHandle) {
-            CloseHandle(slot.residualSharedHandle);
-            slot.residualSharedHandle = nullptr;
+        if (slot.outputSharedHandle) {
+            CloseHandle(slot.outputSharedHandle);
+            slot.outputSharedHandle = nullptr;
         }
 
         if (gl_.hasInterop && contextCurrent) {
             if (slot.glColorTex) glDeleteTextures(1, &slot.glColorTex);
             if (slot.glColorMem)
                 gl_.DeleteMemoryObjectsEXT(1, &slot.glColorMem);
-            if (slot.glResidualTex)
-                glDeleteTextures(1, &slot.glResidualTex);
-            if (slot.glResidualMem)
-                gl_.DeleteMemoryObjectsEXT(1, &slot.glResidualMem);
+            if (slot.glOutputTex)
+                glDeleteTextures(1, &slot.glOutputTex);
+            if (slot.glOutputMem)
+                gl_.DeleteMemoryObjectsEXT(1, &slot.glOutputMem);
             if (slot.glInputSem)
                 gl_.DeleteSemaphoresEXT(1, &slot.glInputSem);
             if (slot.glOutputSem)
@@ -33,18 +33,34 @@ void SyntheticOpenGlProvider::CloseSharedHandles() {
 
         slot.glColorTex = 0;
         slot.glColorMem = 0;
-        slot.glResidualTex = 0;
-        slot.glResidualMem = 0;
+        slot.glOutputTex = 0;
+        slot.glOutputMem = 0;
         slot.glInputSem = 0;
         slot.glOutputSem = 0;
         slot.d3d12Color.Reset();
-        slot.d3d12Residual.Reset();
+        slot.d3d12Output.Reset();
         slot.sync = {};
+        slot.innerSlot = SyntheticDx12Provider::kRingSlots;
         slot.inputRecorded = false;
+        slot.outputPublished = false;
         slot.outputConsumed = false;
         slot.inUse = false;
     }
     currentRes_ = {};
+}
+
+bool SyntheticOpenGlProvider::CanRecreateSharedResources() const noexcept {
+    for (const auto& slot : sharedSlots_) {
+        if (!slot.inUse) continue;
+        if (!slot.outputConsumed ||
+            !slot.sync.Valid(kMaxInFlight) ||
+            !slot.fence ||
+            slot.fence->GetCompletedValue() <
+                slot.sync.releaseSignalValue) {
+            return false;
+        }
+    }
+    return true;
 }
 
 bool SyntheticOpenGlProvider::CreateSharedResources(
@@ -57,6 +73,8 @@ bool SyntheticOpenGlProvider::CreateSharedResources(
     }
     if (currentRes_.width == width && currentRes_.height == height)
         return true;
+    if (currentRes_.Valid() && !CanRecreateSharedResources())
+        return false;
 
     CloseSharedHandles();
 
@@ -83,17 +101,17 @@ bool SyntheticOpenGlProvider::CreateSharedResources(
             FAILED(d3d12Device_->CreateCommittedResource(
                 &heapProps, D3D12_HEAP_FLAG_SHARED, &desc,
                 D3D12_RESOURCE_STATE_COMMON, nullptr,
-                IID_PPV_ARGS(&slot.d3d12Residual))) ||
+                IID_PPV_ARGS(&slot.d3d12Output))) ||
             FAILED(d3d12Device_->CreateSharedHandle(
-                slot.d3d12Residual.Get(), nullptr, GENERIC_ALL, nullptr,
-                &slot.residualSharedHandle))) {
+                slot.d3d12Output.Get(), nullptr, GENERIC_ALL, nullptr,
+                &slot.outputSharedHandle))) {
             CloseSharedHandles();
             return false;
         }
 
         gl_.CreateMemoryObjectsEXT(1, &slot.glColorMem);
-        gl_.CreateMemoryObjectsEXT(1, &slot.glResidualMem);
-        if (!slot.glColorMem || !slot.glResidualMem) {
+        gl_.CreateMemoryObjectsEXT(1, &slot.glOutputMem);
+        if (!slot.glColorMem || !slot.glOutputMem) {
             CloseSharedHandles();
             return false;
         }
@@ -102,24 +120,24 @@ bool SyntheticOpenGlProvider::CreateSharedResources(
         gl_.MemoryObjectParameterivEXT(
             slot.glColorMem, GL_DEDICATED_MEMORY_OBJECT_EXT, &dedicated);
         gl_.MemoryObjectParameterivEXT(
-            slot.glResidualMem, GL_DEDICATED_MEMORY_OBJECT_EXT, &dedicated);
+            slot.glOutputMem, GL_DEDICATED_MEMORY_OBJECT_EXT, &dedicated);
         gl_.ImportMemoryWin32HandleEXT(
             slot.glColorMem, 0,
             GL_HANDLE_TYPE_D3D12_RESOURCE_EXT, slot.colorSharedHandle);
         gl_.ImportMemoryWin32HandleEXT(
-            slot.glResidualMem, 0,
-            GL_HANDLE_TYPE_D3D12_RESOURCE_EXT, slot.residualSharedHandle);
+            slot.glOutputMem, 0,
+            GL_HANDLE_TYPE_D3D12_RESOURCE_EXT, slot.outputSharedHandle);
 
         glGenTextures(1, &slot.glColorTex);
         glBindTexture(GL_TEXTURE_2D, slot.glColorTex);
         gl_.TexStorageMem2DEXT(
             GL_TEXTURE_2D, 1, GL_RGBA16F,
             width, height, slot.glColorMem, 0);
-        glGenTextures(1, &slot.glResidualTex);
-        glBindTexture(GL_TEXTURE_2D, slot.glResidualTex);
+        glGenTextures(1, &slot.glOutputTex);
+        glBindTexture(GL_TEXTURE_2D, slot.glOutputTex);
         gl_.TexStorageMem2DEXT(
             GL_TEXTURE_2D, 1, GL_RGBA16F,
-            width, height, slot.glResidualMem, 0);
+            width, height, slot.glOutputMem, 0);
         glBindTexture(GL_TEXTURE_2D, 0);
 
         gl_.GenSemaphoresEXT(1, &slot.glInputSem);
@@ -202,8 +220,8 @@ bool SyntheticOpenGlProvider::RecordOpenGlOutputConsume(
     }
 
     SharedSlot* slot = FindSlot(handle);
-    if (!slot || slot->outputConsumed ||
-        !slot->glResidualTex || !slot->glOutputSem ||
+    if (!slot || !slot->outputPublished || slot->outputConsumed ||
+        !slot->glOutputTex || !slot->glOutputSem ||
         !slot->glInputSem) {
         return false;
     }
@@ -214,9 +232,9 @@ bool SyntheticOpenGlProvider::RecordOpenGlOutputConsume(
         slot->glOutputSem, GL_D3D12_FENCE_VALUE_EXT, &outputValue);
     gl_.WaitSemaphoreEXT(
         slot->glOutputSem, 0, nullptr,
-        1, &slot->glResidualTex, &layout);
+        1, &slot->glOutputTex, &layout);
     gl_.CopyImageSubData(
-        slot->glResidualTex, GL_TEXTURE_2D, 0, 0, 0, 0,
+        slot->glOutputTex, GL_TEXTURE_2D, 0, 0, 0, 0,
         gameDestTex, GL_TEXTURE_2D, 0, 0, 0, 0,
         static_cast<GLsizei>(width), static_cast<GLsizei>(height), 1);
 
@@ -224,7 +242,7 @@ bool SyntheticOpenGlProvider::RecordOpenGlOutputConsume(
     gl_.SemaphoreParameterui64vEXT(
         slot->glInputSem, GL_D3D12_FENCE_VALUE_EXT, &releaseValue);
     const GLuint textures[] = {
-        slot->glColorTex, slot->glResidualTex};
+        slot->glColorTex, slot->glOutputTex};
     const GLenum layouts[] = {
         GL_LAYOUT_GENERAL_EXT, GL_LAYOUT_GENERAL_EXT};
     gl_.SignalSemaphoreEXT(

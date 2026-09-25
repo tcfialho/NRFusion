@@ -28,6 +28,10 @@ int main() {
     assert(!provider.HasOpenGlInterop());
     assert(provider.PrivateD3D12Device() == nullptr);
 
+    SyntheticWorkHandle invalid{};
+    assert(!provider.GetD3D12Work(invalid).has_value());
+    assert(!provider.PublishD3D12Result(invalid));
+
     provider.Shutdown();
     assert(!provider.IsReady());
     return 0;
