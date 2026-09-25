@@ -135,10 +135,10 @@ Regras obrigatórias:
 
 ## Current session
 
-Date: 2026-09-24 BRT
+Date: 2026-09-25 BRT
 Branch: standalone/integration
-Validated code head: fdec6dc
-Current branch head before closure docs: fdec6dc
+Validated code head: a6882cb
+Current branch head before closure docs: a6882cb
 
 Phase 06: CLOSED.
 Phase 07: CLOSED, including real Windows compile/harness validation.
@@ -445,3 +445,59 @@ Exact next action when local access is explicitly re-enabled:
 - require direct exit code 0 for 64 reuse + 16 recreation cycles and exact four-copy carrier accounting;
 - collect CPU/sync timing for the physical run, keeping validation-only readback separate from steady-state carrier cost;
 - if the physical gate and measurement pass, record Phase 13 closure; otherwise collect logs and fix through GitHub before rerunning.
+
+
+Phase 14 subgate 14a — variant route contract:
+- Phase 14 started while Phases 11–13 remain open on physical gates; none is reclassified as closed;
+- repository audit found no existing D3D9 runtime owner/hook; support remains detection-only;
+- D3D9 classic and D3D9Ex are qualified separately;
+- classic D3D9 is Blocked for the normal GPU-resident carrier because classic D3D9 lacks the shared-surface route required for GPU interop; a system-memory bridge is not accepted as the normal path;
+- D3D9Ex is only eligible with WDDM, same-adapter ownership, single-mip non-MSAA default-pool RGBA16F shared textures, D3D11 shared-resource open, nonblocking handoff, D3D11 NT share, D3D12 NT import, GPU copies, compose-back and defined reset ownership;
+- D3D9CarrierRoute reports exactly two inbound + two outbound full-frame copies for the Ex route;
+- code commit 29dc41f; portable coverage remained green in later combined runs.
+
+Phase 14 subgate 14b — hosted D3D9Ex transport/sync proof:
+- hidden-window harness creates D3D9Ex, D3D11.1 and D3D12 on the same adapter via D3D9Ex adapter LUID;
+- shared RGBA16F D3D9Ex textures open successfully in D3D11;
+- D3D11 creates a SHARED_NTHANDLE | SHARED_KEYEDMUTEX bridge resource and D3D12 opens the NT handle;
+- D3D9ExEventHandoff provides one-shot Signal/Poll ownership; no loop exists inside the helper;
+- D3D9 producer signal uses D3DQUERYTYPE_EVENT + D3DGETDATA_FLUSH;
+- D3D11 producer signal uses D3D11_QUERY_EVENT + Flush; poll uses D3D11_ASYNC_GETDATA_DONOTFLUSH;
+- bounded polling exists only in the harness for eventual-completion validation;
+- ResetEx resets/rebinds the handoff queries explicitly;
+- Windows hosted run 36084240714 PASS; nrfusion_d3d9ex_share_tests executed and Passed, not SKIP;
+- code sequence 05e8447 -> caef792 -> f2c0b7d.
+
+Phase 14 subgate 14c — color-only carrier proof:
+- code a336473 expands the path to D3D9 game source -> D3D9 shared input -> D3D11 NT bridge -> D3D9 shared output -> D3D9 game destination;
+- D3D12 participates in input/output fence ordering as an identity/no-op model, so carrier accounting stays exactly four full-frame GPU copies per roundtrip;
+- harness executes 64 steady roundtrips + 16 ResetEx cycles + 16 recreation/resize cycles = 96 total roundtrips;
+- exact carrier-copy accounting is 384;
+- focused portable run 36085316003 PASS including source-size;
+- Windows hosted run 36085315884 PASS; nrfusion_d3d9ex_share_tests executed and Passed, not SKIP;
+- source checkpoint nrfusion-source-a336473cc72d074b62198144aaeca19ce9117977.
+
+Phase 14 subgate 14d — physical gate + Acquire seam:
+- tools/validate_phase14_hardware.ps1 was added in 41b01c1; it builds only nrfusion_d3d9ex_share_tests, sets NRFUSION_TEST_D3D9EX_HARDWARE=1 and executes the binary directly so exit 77 cannot count as physical PASS;
+- Windows hosted run 36085665378 PASS, including PowerShell parser validation and nrfusion_d3d9ex_share_tests PASS;
+- concurrent commit a6882cb adds D3D9ExCarrierAcquire as a native color Acquire seam bound to the same IDirect3DDevice9Ex;
+- Acquire validates identity, device ownership, RGBA16F format, default pool, non-MSAA surface, jitter finiteness and emits explicit GameNative/Borrowed/Frame provenance/lifetime facts;
+- no depth or motion resource is inferred; both remain invalid until a real hook supplies them;
+- the physical harness now proves this Acquire contract before the 96 roundtrips;
+- focused portable run 36086039485 PASS;
+- Windows hosted run 36086039483 PASS; nrfusion_d3d9ex_share_tests executed and Passed, not SKIP;
+- source checkpoint nrfusion-source-a6882cb2388eee0692dd768aaec36706b270c53c;
+- all D3D9 files touched by this phase remain <=300 physical lines; cmake/NRFusionWindows.cmake is 295 lines.
+
+Phase 14 remains IN PROGRESS.
+Hosted implementation is frozen.
+D3D9 classic is Blocked by the missing GPU shared-surface route.
+D3D9Ex has a hosted runtime proof plus native Acquire seam, but physical GPU/driver confirmation is still required.
+
+Exact next action when local access is explicitly re-enabled:
+- fast-forward the physical checkout to origin/standalone/integration;
+- run tools/validate_phase14_hardware.ps1 with persistent logging outside the worktree;
+- require direct exit code 0 for Acquire + 64 steady + 16 ResetEx + 16 recreation cycles and exact 384-copy accounting;
+- capture sync/CPU timing separately from carrier copy accounting;
+- if PASS, record D3D9Ex Qualified and D3D9 classic Blocked, then close Phase 14 explicitly;
+- if FAIL, collect physical logs and fix only via GitHub + hosted CI before rerunning.
