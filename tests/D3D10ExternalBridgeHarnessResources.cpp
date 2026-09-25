@@ -160,7 +160,8 @@ bool D3D10ExternalBridgeHarness::CreateResources(
         D3D11_BIND_SHADER_RESOURCE |
         D3D11_BIND_RENDER_TARGET;
     shared11.MiscFlags =
-        D3D11_RESOURCE_MISC_SHARED_NTHANDLE;
+        D3D11_RESOURCE_MISC_SHARED_NTHANDLE |
+        D3D11_RESOURCE_MISC_SHARED_KEYEDMUTEX;
     if (FAILED(device11_->CreateTexture2D(
             &shared11, nullptr, &resources.ntShared11))) {
         std::cerr << "d3d10 bridge: D3D11 NT texture create failed\n";
