@@ -92,11 +92,10 @@ bool SyntheticDx11BridgeProvider::CreateSharedResources(
     }
 
     nvof_.Shutdown();
-    if (!nvof_.Initialize(
-            d3d12Device_.Get(), d3d12Queue_.Get(), width, height)) {
-        CloseSharedHandles();
-        return false;
-    }
+    // NVOF is optional until a real dispatch/completion backend is integrated.
+    // Its fail-closed state must not disable the independent D3D11/D3D12 bridge.
+    (void)nvof_.Initialize(
+        d3d12Device_.Get(), d3d12Queue_.Get(), width, height);
     currentRes_ = {width, height};
     return true;
 }

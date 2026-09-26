@@ -131,7 +131,7 @@ for cpp in "$TMP"/OptiScaler/nrfusion/*.cpp; do
     case "$cpp" in
         *AdaW4A8Interceptor.cpp|*DlssgTransfusion.cpp|*SyntheticDx12Provider.cpp|\
         *NvofMotionProvider.cpp|*SyntheticDx11BridgeProvider.cpp|*SyntheticVulkanProvider.cpp|\
-        *NrD3D12Diagnostics.cpp)
+        *D3D11BridgeResources.cpp|*D3D11D3D12FenceBridge.cpp|*NrD3D12Diagnostics.cpp)
             continue
             ;;
     esac
