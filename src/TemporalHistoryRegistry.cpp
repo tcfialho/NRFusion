@@ -38,6 +38,7 @@ HistoryLease TemporalHistoryRegistry::Acquire(
         e.descriptor = view;
         e.historyId = AllocateHistoryId();
         e.lastSeenFrame = frameNumber;
+        e.lastResetFrame = frameNumber;
         e.guides = guides;
         e.guides.resetRequested = false;
         return {e.historyId, true};
@@ -59,7 +60,10 @@ HistoryLease TemporalHistoryRegistry::Acquire(
         guideChanged;
     if (resetRequired) {
         e.descriptor = view;
-        e.historyId = AllocateHistoryId();
+        if (e.lastResetFrame != frameNumber) {
+            e.historyId = AllocateHistoryId();
+            e.lastResetFrame = frameNumber;
+        }
     }
     e.guides = guides;
     e.guides.resetRequested = false;

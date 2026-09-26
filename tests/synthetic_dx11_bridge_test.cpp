@@ -74,7 +74,7 @@ int main() {
         c.nativeEngineMv.resolution = { 1920, 1080 };
         c.nativeEngineMv.format = ResourceFormat::Rg16Float;
         c.nativeReliable = true;
-        c.nvofHardwareAvailable = true;
+        c.nvofGuideAvailable = true;
 
         auto r1 = MotionVectorResolver::Resolve(c, fullRes);
         assert(r1.category == ResolvedMotionCategory::NativeEngine);
@@ -102,10 +102,10 @@ int main() {
         auto r3 = MotionVectorResolver::Resolve(c, fullRes);
         assert(r3.category ==
                ResolvedMotionCategory::NvidiaOpticalFlow);
-        assert(r3.requiresNvofCompute);
+        assert(!r3.requiresNvofCompute);
 
         // Case 4: Shader is selected only when NVOF is unavailable.
-        c.nvofHardwareAvailable = false;
+        c.nvofGuideAvailable = false;
         auto r4 = MotionVectorResolver::Resolve(c, fullRes);
         assert(r4.category ==
                ResolvedMotionCategory::ShaderEstimated);

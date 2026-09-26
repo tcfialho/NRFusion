@@ -1,48 +1,88 @@
 #include "nrfusion/MotionGuideBinding.hpp"
 
 namespace nrfusion {
+namespace {
+
+void ClearMotion(FrameContext& frame) noexcept {
+    frame.motionVectors = {};
+    frame.motionVectorSource = MotionSource::Zero;
+    frame.motionVectorsReliable = false;
+}
+
+bool EvidenceConflicts(
+    ResourceReliability existingReliability,
+    ResourceOwnership existingOwnership,
+    ResourceLifetime existingLifetime,
+    const MotionGuideBinding& binding) noexcept {
+    return (existingReliability != ResourceReliability::Unknown &&
+            existingReliability != binding.reliability) ||
+           (existingOwnership != ResourceOwnership::Unknown &&
+            existingOwnership != binding.ownership) ||
+           (existingLifetime != ResourceLifetime::Unknown &&
+            existingLifetime != binding.lifetime);
+}
+
+} // namespace
 
 MotionGuideBindingResult BindMotionGuide(
     FrameContext& frame,
     const MotionGuideBinding& binding) noexcept {
-    if (frame.frameId == 0)
-        return {MotionGuideBindingFailure::InvalidFrame};
+    auto fail = [&](MotionGuideBindingFailure failure) noexcept {
+        ClearMotion(frame);
+        return MotionGuideBindingResult{failure};
+    };
 
-    if (binding.source == MotionSource::Zero) {
-        if (binding.resource.Valid() ||
-            binding.sourceFrameId != 0 ||
+    if (frame.frameId == 0)
+        return fail(MotionGuideBindingFailure::InvalidFrame);
+    if (binding.configurationGeneration !=
+        frame.configurationGeneration) {
+        return fail(
+            MotionGuideBindingFailure::ConfigurationGenerationMismatch);
+    }
+
+    if (binding.source == MotionSource::Zero &&
+        !binding.resource.Valid()) {
+        if (binding.sourceFrameId != 0 ||
             binding.reliability != ResourceReliability::Unknown ||
             binding.ownership != ResourceOwnership::Unknown ||
             binding.lifetime != ResourceLifetime::Unknown) {
-            return {MotionGuideBindingFailure::InvalidZeroBinding};
+            return fail(
+                MotionGuideBindingFailure::InvalidZeroBinding);
         }
-        frame.motionVectors = {};
-        frame.motionVectorSource = MotionSource::Zero;
-        frame.motionVectorsReliable = false;
+        ClearMotion(frame);
         return {};
     }
 
     if (!binding.resource.Valid())
-        return {MotionGuideBindingFailure::MissingResource};
+        return fail(MotionGuideBindingFailure::MissingResource);
+    if (!MotionGuideFormatSupported(binding.resource.format))
+        return fail(MotionGuideBindingFailure::UnsupportedFormat);
     if (binding.reliability == ResourceReliability::Unknown ||
         binding.ownership == ResourceOwnership::Unknown ||
         binding.lifetime == ResourceLifetime::Unknown) {
-        return {MotionGuideBindingFailure::MissingEvidence};
+        return fail(MotionGuideBindingFailure::MissingEvidence);
+    }
+    if (EvidenceConflicts(
+            binding.resource.reliability,
+            binding.resource.ownership,
+            binding.resource.lifetime,
+            binding)) {
+        return fail(MotionGuideBindingFailure::EvidenceMismatch);
     }
     if (binding.sourceFrameId == 0 ||
         binding.sourceFrameId != frame.frameId) {
-        return {MotionGuideBindingFailure::SourceFrameMismatch};
+        return fail(MotionGuideBindingFailure::SourceFrameMismatch);
     }
 
     const ResourceProvenance expected =
         MotionGuideProvenance(binding.source);
     if (binding.resource.provenance != ResourceProvenance::Unknown &&
         binding.resource.provenance != expected) {
-        return {MotionGuideBindingFailure::ProvenanceMismatch};
+        return fail(MotionGuideBindingFailure::ProvenanceMismatch);
     }
     if (binding.resource.sourceFrameId != 0 &&
         binding.resource.sourceFrameId != binding.sourceFrameId) {
-        return {MotionGuideBindingFailure::SourceFrameMismatch};
+        return fail(MotionGuideBindingFailure::SourceFrameMismatch);
     }
 
     ResourceRef resource = binding.resource;

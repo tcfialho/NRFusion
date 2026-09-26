@@ -99,9 +99,12 @@ int main() {
 
     frame.cameraCut = true;
     const auto cut = DescribeGuideHistory(
-        frame, MotionSource::NvidiaOpticalFlow);
+        frame, MotionSource::Zero);
     const auto cutReset = histories.Acquire(view, 14, cut);
     assert(cutReset.resetRequired);
+    const auto sameCut = histories.Acquire(view, 14, cut);
+    assert(sameCut.resetRequired);
+    assert(sameCut.historyId == cutReset.historyId);
 
     frame.cameraCut = false;
     const auto afterCut = DescribeGuideHistory(
@@ -126,5 +129,17 @@ int main() {
         frame, MotionSource::NvidiaOpticalFlow);
     assert(histories.Acquire(
         view, 16, exposureAppeared).resetRequired);
+
+    frame.configurationGeneration = 2;
+    const auto newGeneration = DescribeGuideHistory(
+        frame, MotionSource::NvidiaOpticalFlow);
+    assert(histories.Acquire(
+        view, 17, newGeneration).resetRequired);
+
+    frame.motionVectors.resolution = {960, 540};
+    const auto resizedMotion = DescribeGuideHistory(
+        frame, MotionSource::NvidiaOpticalFlow);
+    assert(histories.Acquire(
+        view, 18, resizedMotion).resetRequired);
     return 0;
 }

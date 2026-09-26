@@ -11,8 +11,11 @@ enum class MotionGuideBindingFailure : std::uint8_t {
     InvalidFrame,
     InvalidZeroBinding,
     MissingResource,
+    UnsupportedFormat,
     MissingEvidence,
+    EvidenceMismatch,
     SourceFrameMismatch,
+    ConfigurationGenerationMismatch,
     ProvenanceMismatch
 };
 
@@ -26,6 +29,7 @@ struct MotionGuideBinding {
     ResourceLifetime lifetime =
         ResourceLifetime::Unknown;
     FrameId sourceFrameId = 0;
+    std::uint64_t configurationGeneration = 0;
 };
 
 struct MotionGuideBindingResult {
@@ -52,6 +56,12 @@ constexpr ResourceProvenance MotionGuideProvenance(
         return ResourceProvenance::Generated;
     }
     return ResourceProvenance::Unknown;
+}
+
+constexpr bool MotionGuideFormatSupported(
+    ResourceFormat format) noexcept {
+    return format == ResourceFormat::Rg16Float ||
+           format == ResourceFormat::Rg32Float;
 }
 
 MotionGuideBindingResult BindMotionGuide(

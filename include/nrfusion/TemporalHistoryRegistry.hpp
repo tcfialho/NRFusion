@@ -31,7 +31,7 @@ public:
     HistoryLease Acquire(
         const ViewDescriptor& view,
         std::uint64_t frameNumber,
-        const GuideHistoryState& guides = {});
+        const GuideHistoryState& guides);
     void InvalidateFeature(std::uint64_t featureKey);
     void Prune(std::uint64_t frameNumber, std::uint64_t maxIdleFrames = 600);
     void Clear();
@@ -42,6 +42,7 @@ private:
         ViewDescriptor descriptor{};
         std::uint64_t historyId = 0;
         std::uint64_t lastSeenFrame = 0;
+        std::uint64_t lastResetFrame = 0;
         GuideHistoryState guides{};
     };
 

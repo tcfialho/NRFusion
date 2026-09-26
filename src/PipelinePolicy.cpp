@@ -16,7 +16,7 @@ MotionSource ChooseMotion(
         caps.dlssContractMotion &&
         frame.HasDlssContractMotion() &&
         frame.MotionReliable(MotionSource::DlssContract);
-    guides.nvofAvailable = caps.nvof;
+    guides.nvofAvailable = caps.nvof && caps.nvofGuideReady;
     guides.shaderReliable =
         caps.shaderMotion &&
         frame.HasDepth() &&
