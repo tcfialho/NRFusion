@@ -76,6 +76,9 @@ if (WIN32)
     target_sources(nrfusion_core PRIVATE
         src/AdaW4A8Interceptor.cpp
         src/DlssgTransfusion.cpp
+        src/DlssgTransfusionRuntime.cpp
+        src/DlssgTransfusionPatches.cpp
+        src/DlssgTransfusionFatbin.cpp
         src/SyntheticDx12Provider.cpp
         src/NvofMotionProvider.cpp
         src/SyntheticDx11BridgeProvider.cpp
