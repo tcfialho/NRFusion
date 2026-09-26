@@ -21,74 +21,137 @@ const IMAGE_NT_HEADERS64* GetNtHeaders(HMODULE module)
 
 } // namespace
 
-bool DlssgTransfusion::PatchArchGates(HMODULE module)
+namespace {
+
+bool MatchesPattern(
+    const uint8_t* candidate, const uint8_t* bytes,
+    const char* mask, size_t length) noexcept
+{
+    for (size_t i = 0; i < length; ++i)
+        if (mask[i] == 'x' && candidate[i] != bytes[i])
+            return false;
+    return true;
+}
+
+uint8_t* UniqueExecutablePattern(
+    HMODULE module, const uint8_t* bytes,
+    const char* mask, size_t length)
 {
     const auto* nt = GetNtHeaders(module);
-    if (!nt) return false;
+    if (!nt || length == 0) return nullptr;
     auto* base = reinterpret_cast<uint8_t*>(module);
-
-    constexpr uint8_t kArchOld = 0xB0;
-    constexpr uint8_t kArchNew = 0x90; // 0x190 AD10x (Ada)
-
-    std::vector<uint8_t*> sites;
+    uint8_t* found = nullptr;
+    unsigned hits = 0;
     const IMAGE_SECTION_HEADER* section = IMAGE_FIRST_SECTION(nt);
 
     for (unsigned i = 0; i < nt->FileHeader.NumberOfSections; ++i, ++section)
     {
         if ((section->Characteristics & IMAGE_SCN_MEM_EXECUTE) == 0) continue;
-        const uint8_t* start = base + section->VirtualAddress;
         if (section->VirtualAddress >= nt->OptionalHeader.SizeOfImage) continue;
         const size_t available = nt->OptionalHeader.SizeOfImage - section->VirtualAddress;
-        const size_t size = std::min<size_t>(available, static_cast<size_t>(section->Misc.VirtualSize));
-        if (size < 6) continue;
-
-        for (size_t off = 0; off + 6 <= size; ++off)
+        const size_t size = std::min<size_t>(
+            available, static_cast<size_t>(section->Misc.VirtualSize));
+        if (size < length) continue;
+        uint8_t* begin = base + section->VirtualAddress;
+        for (size_t off = 0; off + length <= size; ++off)
         {
-            // 3D B0 01 00 00 (cmp eax, 0x1b0)
-            if (start[off] == 0x3D && start[off + 2] == 0x01 && start[off + 3] == 0x00 && start[off + 4] == 0x00)
-            {
-                if (start[off + 1] == kArchOld)
-                    sites.push_back(const_cast<uint8_t*>(start + off + 1));
-                continue;
-            }
-            // 81 F8..FF B0 01 00 00 (cmp reg, 0x1b0)
-            // The upper bound of the range is where a byte already ends, so testing for it is a
-            // comparison that can never be false, and a warning-as-error on some compilers.
-            if (start[off] == 0x81 && start[off + 1] >= 0xF8
-                && start[off + 3] == 0x01 && start[off + 4] == 0x00 && start[off + 5] == 0x00)
-            {
-                if (start[off + 2] == kArchOld)
-                    sites.push_back(const_cast<uint8_t*>(start + off + 2));
-                continue;
-            }
-            // REX + 81 F8..FF B0 01 00 00
-            if (off + 7 <= size && (start[off] >= 0x40 && start[off] <= 0x4F)
-                && start[off + 1] == 0x81 && start[off + 2] >= 0xF8
-                && start[off + 4] == 0x01 && start[off + 5] == 0x00 && start[off + 6] == 0x00)
-            {
-                if (start[off + 3] == kArchOld)
-                    sites.push_back(const_cast<uint8_t*>(start + off + 3));
-            }
+            if (!MatchesPattern(begin + off, bytes, mask, length)) continue;
+            found = begin + off;
+            if (++hits > 1) return nullptr;
         }
     }
+    return hits == 1 ? found : nullptr;
+}
 
-    unsigned int patched = 0;
-    for (uint8_t* site : sites)
+bool WritePatch(uint8_t* address, const uint8_t* bytes, size_t count)
+{
+    DWORD oldProtect = 0;
+    if (!address ||
+        !VirtualProtect(address, count, PAGE_EXECUTE_READWRITE, &oldProtect))
+        return false;
+    std::memcpy(address, bytes, count);
+    DWORD ignored = 0;
+    VirtualProtect(address, count, oldProtect, &ignored);
+    FlushInstructionCache(GetCurrentProcess(), address, count);
+    return true;
+}
+
+} // namespace
+
+bool DlssgTransfusion::PatchArchGates(HMODULE module)
+{
+    static constexpr uint8_t kAdvertise[] = {
+        0xBB, 0x01, 0x00, 0x00, 0x00, 0x41, 0xB8, 0x03, 0x00, 0x00, 0x00,
+        0x81, 0xFF, 0xB0, 0x01, 0x00, 0x00, 0x44, 0x0F, 0x4C, 0xC3
+    };
+    static constexpr char kAdvertiseMask[] = "xxxxxxxxxxxxxxxxxxxxx";
+    static constexpr uint8_t kValidate[] = {
+        0x3D, 0xB0, 0x01, 0x00, 0x00, 0x7C, 0x00, 0x83, 0xFB, 0x03, 0x76
+    };
+    static constexpr char kValidateMask[] = "xxxxxx?xxxx";
+    static constexpr uint8_t kAdvertise309[] = {
+        0x81, 0xFD, 0xB0, 0x01, 0x00, 0x00, 0x0F, 0x8C,
+        0x00, 0x00, 0x00, 0x00, 0xBF, 0x05, 0x00, 0x00, 0x00
+    };
+    static constexpr char kAdvertise309Mask[] = "xxxxxxxx????xxxxx";
+    static constexpr uint8_t kValidate309[] = {
+        0x3D, 0xB0, 0x01, 0x00, 0x00, 0x0F, 0x93, 0xC0
+    };
+    static constexpr char kValidate309Mask[] = "xxxxxxxx";
+
+    uint8_t* advertise309 = UniqueExecutablePattern(
+        module, kAdvertise309, kAdvertise309Mask, sizeof(kAdvertise309));
+    uint8_t* validate309 = UniqueExecutablePattern(
+        module, kValidate309, kValidate309Mask, sizeof(kValidate309));
+    uint8_t* advertise = UniqueExecutablePattern(
+        module, kAdvertise, kAdvertiseMask, sizeof(kAdvertise));
+    uint8_t* validate = UniqueExecutablePattern(
+        module, kValidate, kValidateMask, sizeof(kValidate));
+
+    const bool use309 = advertise309 != nullptr && validate309 != nullptr;
+    const bool useClassic = advertise != nullptr && validate != nullptr;
+    if (use309 == useClassic)
     {
-        DWORD oldProtect = 0;
-        if (VirtualProtect(site, 1, PAGE_EXECUTE_READWRITE, &oldProtect))
-        {
-            *site = kArchNew;
-            DWORD ignored = 0;
-            VirtualProtect(site, 1, oldProtect, &ignored);
-            FlushInstructionCache(GetCurrentProcess(), site, 1);
-            ++patched;
-        }
+        m_status.advertiseGatePatched = false;
+        m_status.validateGatePatched = false;
+        m_status.archGatesPatched = false;
+        m_status.archGatesCount = 0;
+        return false;
     }
 
-    m_status.archGatesPatched = (patched > 0);
-    m_status.archGatesCount = patched;
-    return (patched > 0);
+    bool advertisePatched = false;
+    bool validatePatched = false;
+    if (use309)
+    {
+        static constexpr uint8_t kAdvertiseNop[] = {
+            0x0F, 0x1F, 0x44, 0x00, 0x00, 0x90
+        };
+        static constexpr uint8_t kValidateAlways[] = {0xB0, 0x01, 0x90};
+        advertisePatched = WritePatch(
+            advertise309 + 6, kAdvertiseNop, sizeof(kAdvertiseNop));
+        validatePatched = WritePatch(
+            validate309 + 5, kValidateAlways, sizeof(kValidateAlways));
+    }
+    else
+    {
+        static constexpr uint8_t kFive[] = {0x05};
+        static constexpr uint8_t kAdvertiseNop[] = {0x0F, 0x1F, 0x40, 0x00};
+        static constexpr uint8_t kBranchNop[] = {0x90, 0x90};
+        advertisePatched =
+            WritePatch(advertise + 7, kFive, sizeof(kFive)) &&
+            WritePatch(advertise + 17, kAdvertiseNop, sizeof(kAdvertiseNop));
+        validatePatched =
+            WritePatch(validate + 5, kBranchNop, sizeof(kBranchNop)) &&
+            WritePatch(validate + 9, kFive, sizeof(kFive));
+    }
+
+    m_status.advertiseGatePatched = advertisePatched;
+    m_status.validateGatePatched = validatePatched;
+    m_status.archGatesCount =
+        static_cast<unsigned>(advertisePatched) +
+        static_cast<unsigned>(validatePatched);
+    m_status.archGatesPatched = advertisePatched && validatePatched;
+    return m_status.archGatesPatched;
 }
 
 bool DlssgTransfusion::PatchHudlessUi(HMODULE module)

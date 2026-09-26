@@ -129,8 +129,9 @@ void DlssgTransfusion::ProcessSetOptions(uint32_t& inOutMode, uint32_t& inOutNum
 void DlssgTransfusion::ProcessGetState(uint32_t& outNumFramesToGenerateMax)
 {
     std::lock_guard lock(m_mutex);
-    if (outNumFramesToGenerateMax < 5)
-        outNumFramesToGenerateMax = 5; // Suporta até 6X na API
+    const uint32_t unlockedMax = UnlockedMaxLocked();
+    if (unlockedMax != 0 && outNumFramesToGenerateMax < unlockedMax)
+        outNumFramesToGenerateMax = unlockedMax;
 }
 
 void DlssgTransfusion::NotifyFrameBoundary()

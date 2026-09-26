@@ -19,9 +19,17 @@ bool DlssgTransfusion::IsPending() const noexcept
     return !m_status.moduleFound;
 }
 
+uint32_t DlssgTransfusion::UnlockedMaxLocked() const noexcept
+{
+    return m_status.advertiseGatePatched &&
+           m_status.validateGatePatched &&
+           m_status.blackwellKernelsRewritten > 0 ? 5u : 0u;
+}
+
 uint32_t DlssgTransfusion::UnlockedMax() const noexcept
 {
-    return 5; // Suporte até 6X (5 gerados)
+    std::lock_guard lock(m_mutex);
+    return UnlockedMaxLocked();
 }
 
 TransfusionStatus DlssgTransfusion::Status() const
@@ -44,17 +52,14 @@ void DlssgTransfusion::TryApply(HMODULE module)
 
     m_status.moduleFound = true;
 
-    // 1. Patchear checagens de arquitetura Ada (0x1b0 -> 0x190)
-    PatchArchGates(module);
+    if (!TransfuseBlackwellFatbins(module))
+        return;
 
-    // 2. HUDless UI Recomposition
+    if (!PatchArchGates(module))
+        return;
+
     if (m_uiMode.load(std::memory_order_acquire) == MfgUiMode::Auto)
-    {
         PatchHudlessUi(module);
-    }
-
-    // 3. Transfusão de Kernels Blackwell (sm_120 -> sm_89)
-    TransfuseBlackwellFatbins(module);
 }
 
 } // namespace nrfusion

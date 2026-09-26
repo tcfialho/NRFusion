@@ -33,6 +33,8 @@ enum class MfgMotionVectorMode : uint32_t {
 struct TransfusionStatus {
     bool moduleFound = false;
     bool archGatesPatched = false;
+    bool advertiseGatePatched = false;
+    bool validateGatePatched = false;
     unsigned int archGatesCount = 0;
     bool blackwellTransfusionActive = false;
     unsigned int blackwellKernelsRewritten = 0;
@@ -90,6 +92,7 @@ private:
     bool PatchArchGates(HMODULE module);
     bool PatchHudlessUi(HMODULE module);
     bool TransfuseBlackwellFatbins(HMODULE module);
+    uint32_t UnlockedMaxLocked() const noexcept;
 
     mutable std::mutex m_mutex;
     TransfusionStatus m_status;
