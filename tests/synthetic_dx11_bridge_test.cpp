@@ -168,14 +168,18 @@ int main() {
     assert(bridge.PrivateD3D12Device() != nullptr);
     std::cout << "  [PASS] SyntheticDx11BridgeProvider private D3D12 bridge initialized." << std::endl;
 
-    // 4. Low-Res Asynchronous NVOF Validation (180p Height)
+    // 4. NVOF stays fail-closed until a real dispatch/completion backend exists.
     {
         NvofMotionProvider& nvof = bridge.OpticalFlow();
-        assert(nvof.IsReady());
-        Resolution fRes = nvof.FlowResolution();
+        assert(!nvof.IsReady());
+        const Resolution fRes = nvof.FlowResolution();
         assert(fRes.height == 180);
-        assert(fRes.width == 320); // 1920 * 180 / 1080 = 320
-        std::cout << "  [PASS] NvofMotionProvider 180p low-res geometry validated: " << fRes.width << "x" << fRes.height << std::endl;
+        assert(fRes.width == 320);
+        NvofMotionProvider::Submission submission{};
+        assert(!nvof.Submit(nullptr, 1, false, nullptr, submission));
+        assert(!submission.valid);
+        assert(!nvof.IsComplete(submission));
+        std::cout << "  [PASS] NVOF unavailable path is fail-closed." << std::endl;
     }
 
     {

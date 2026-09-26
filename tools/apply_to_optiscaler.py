@@ -611,7 +611,7 @@ bool HybridAvailable(){
 
     dx12 = opti / "shaders/dlssnr/DlssNr_Dx12.cpp"
     insert_after(dx12, '#include <gpu_time/GpuTime_Dx12.h>\n',
-                 '#include <nrfusion/OptiScalerAdapter.hpp>\n#include <nrfusion/AdaptiveExposureController.hpp>\n')
+                 '#include <nrfusion/OptiScalerAdapter.hpp>\n#include <nrfusion/MotionGuideBinding.hpp>\n#include <nrfusion/AdaptiveExposureController.hpp>\n')
     insert_after(dx12, '#include <State.h>\n', '#include <misc/IdentifyGpu.h>\n')
 
     dx12_text = dx12.read_text(encoding="utf-8")
@@ -783,6 +783,7 @@ bool HybridAvailable(){
 
     nrfusion::FrameContext fusionFrameCtx{};
     fusionFrameCtx.frameId = frame.SubmissionEpoch > 0 ? frame.SubmissionEpoch : 1;
+    fusionFrameCtx.configurationGeneration = fusionAdapter.ScaleGeneration();
     fusionFrameCtx.api = nrfusion::GraphicsApi::D3D12;
     fusionFrameCtx.color.opaqueId = reinterpret_cast<std::uintptr_t>(colour);
     fusionFrameCtx.color.resolution = {width, height};
@@ -791,11 +792,20 @@ bool HybridAvailable(){
     fusionFrameCtx.depth.resolution = {guideWidth, guideHeight};
     fusionFrameCtx.depth.format = nrfusion::ResourceFormat::D32Float;
     fusionFrameCtx.depthReliable = (depth != nullptr);
-    fusionFrameCtx.motionVectors.opaqueId = reinterpret_cast<std::uintptr_t>(motion);
-    fusionFrameCtx.motionVectors.resolution = {motionWidth, motionHeight};
-    fusionFrameCtx.motionVectors.format = nrfusion::ResourceFormat::Rg16Float;
-    fusionFrameCtx.motionVectorSource = nrfusion::MotionSource::Native;
-    fusionFrameCtx.motionVectorsReliable = (motion != nullptr);
+    nrfusion::MotionGuideBinding fusionMotionBinding{};
+    fusionMotionBinding.configurationGeneration = fusionFrameCtx.configurationGeneration;
+    if (motion != nullptr)
+    {
+        fusionMotionBinding.source = nrfusion::MotionSource::Native;
+        fusionMotionBinding.resource.opaqueId = reinterpret_cast<std::uintptr_t>(motion);
+        fusionMotionBinding.resource.resolution = {motionWidth, motionHeight};
+        fusionMotionBinding.resource.format = nrfusion::ResourceFormat::Rg16Float;
+        fusionMotionBinding.reliability = nrfusion::ResourceReliability::Reliable;
+        fusionMotionBinding.ownership = nrfusion::ResourceOwnership::Borrowed;
+        fusionMotionBinding.lifetime = nrfusion::ResourceLifetime::Frame;
+        fusionMotionBinding.sourceFrameId = fusionFrameCtx.frameId;
+    }
+    (void)nrfusion::BindMotionGuide(fusionFrameCtx, fusionMotionBinding);
     if (frame.ExposureTexture != nullptr)
     {
         fusionFrameCtx.exposure.opaqueId = reinterpret_cast<std::uintptr_t>(frame.ExposureTexture);
@@ -814,8 +824,11 @@ bool HybridAvailable(){
     fusionCaps.postSr = !frame.BeforeUpscale;
     fusionCaps.deferredResidual = frame.ResidualAcrossRr;
     fusionCaps.acrossRr = frame.ResidualAcrossRr;
-    fusionCaps.nativeMotion = (motion != nullptr);
-    fusionCaps.dlssContractMotion = true;
+    fusionCaps.nativeMotion =
+        fusionFrameCtx.MotionReliable(nrfusion::MotionSource::Native);
+    fusionCaps.dlssContractMotion = false;
+    fusionCaps.nvof = false;
+    fusionCaps.nvofGuideReady = false;
     // These are host facts, not preferences. This path submits NR on the game's graphics command
     // list and has no independent compute-queue or secondary-GPU executor. Advertising either
     // capability would let Auto select a route this host cannot execute.

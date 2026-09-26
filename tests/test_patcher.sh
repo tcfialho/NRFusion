@@ -22,6 +22,8 @@ grep -q 'PrecisionCandidateRequested()' "$TMP/OptiScaler/shaders/dlssnr/DlssNr_D
 grep -q 'DlssNrNative::HybridAvailable()' "$TMP/OptiScaler/shaders/dlssnr/DlssNr_Dx12.cpp"
 grep -q 'NVFP4 Auto unavailable' "$TMP/OptiScaler/shaders/dlssnr/DlssNr_Dx12.cpp"
 grep -q 'fusionHybridBackendIntegrated = false' "$TMP/OptiScaler/shaders/dlssnr/DlssNr_Dx12.cpp"
+grep -q 'BindMotionGuide' "$TMP/OptiScaler/shaders/dlssnr/DlssNr_Dx12.cpp"
+grep -q 'fusionCaps.nvofGuideReady = false' "$TMP/OptiScaler/shaders/dlssnr/DlssNr_Dx12.cpp"
 grep -q 'fusionCaps.asyncCompute = false' "$TMP/OptiScaler/shaders/dlssnr/DlssNr_Dx12.cpp"
 grep -q 'fusionCaps.secondaryGpu = false' "$TMP/OptiScaler/shaders/dlssnr/DlssNr_Dx12.cpp"
 grep -q 'manual NVFP4 is unavailable on this GPU/runtime' "$TMP/OptiScaler/shaders/dlssnr/DlssNr_Dx12.cpp"

@@ -85,10 +85,8 @@ public:
         const Resolution renderSize = frame.RenderSize();
         const Resolution outputSize = frame.OutputSize();
         MotionSource structuralMotion = out.pipeline.motion;
-        if ((frame.cameraCut || frame.resetHistory) &&
-            haveAutoStructure_) {
+        if ((frame.cameraCut || frame.resetHistory) && haveAutoStructure_)
             structuralMotion = autoStructure_.motion;
-        }
         const AutoStructuralIdentity structure{out.pipeline.provider, out.pipeline.transport,
                                                out.pipeline.api, out.pipeline.placement,
                                                structuralMotion, renderSize, outputSize};
@@ -208,13 +206,10 @@ public:
     MotionConfidenceResult ResolveMotionConfidence(const MotionConfidenceInput& input) const {
         return motionConfidence_.Evaluate(input);
     }
-    HistoryLease AcquireHistory(
-        const ViewDescriptor& view,
-        const FrameContext& frame,
-        MotionSource selectedMotion) {
-        return histories_.Acquire(
-            view, frame.frameId,
-            DescribeGuideHistory(frame, selectedMotion));
+    HistoryLease AcquireHistory(const ViewDescriptor& view, const FrameContext& frame,
+                                MotionSource selectedMotion) {
+        return histories_.Acquire(view, frame.frameId,
+                                  DescribeGuideHistory(frame, selectedMotion));
     }
     void InvalidateHistory(std::uint64_t featureKey) { histories_.InvalidateFeature(featureKey); }
 

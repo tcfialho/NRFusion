@@ -34,9 +34,9 @@ bool SyntheticDx11BridgeProvider::Initialize(const ProviderContext& context) {
     d12Ctx.preferSameDevice = true;
     if (!syntheticD3D12_.Initialize(d12Ctx)) return false;
 
-    if (!nvof_.Initialize(
-            d3d12Device_.Get(), d3d12Queue_.Get(), 1920, 1080))
-        return false;
+    // Optional until a real NVOF dispatch/completion backend is integrated.
+    (void)nvof_.Initialize(
+        d3d12Device_.Get(), d3d12Queue_.Get(), 1920, 1080);
     ready_ = true;
     return true;
 }
