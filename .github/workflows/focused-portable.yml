@@ -12,6 +12,7 @@ on:
       - 'src/**'
       - 'tests/**'
       - 'tools/check_source_size.py'
+      - 'tools/apply_to_optiscaler.py'
       - '.github/workflows/focused-portable.yml'
 
 concurrency:
@@ -63,6 +64,9 @@ jobs:
           ctest --test-dir build-focused
           --output-on-failure
           -R '^(nrfusion_tests|nrfusion_nr_(session_(tests|stress_tests)|timing_source_tests)|nrfusion_d3d11_bridge_slot_tracker_tests|nrfusion_d3d11_carrier_work_tests|nrfusion_d3d10_carrier_route_tests|nrfusion_d3d9_carrier_route_tests|nrfusion_motion_guide_selection_tests|nrfusion_guide_history_tests|nrfusion_motion_guide_binding_tests|nrfusion_d3d12_(carrier_(contract|session|native_facts|capabilities|bootstrap|work|execution_plan)|guide_format|nr_frame_plan)_tests|nrfusion_vulkan_carrier_(contract|acquire|session|execution_plan)_tests|nrfusion_opengl_carrier_(acquire|sync)_tests|nrfusion_provider_policy_opengl_tests)'
+
+      - name: Validate OptiScaler patcher closure
+        run: bash tests/test_patcher.sh
 
       - name: Check changed source size
         run: python tools/check_source_size.py changed
