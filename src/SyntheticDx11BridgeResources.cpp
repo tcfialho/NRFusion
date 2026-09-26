@@ -105,7 +105,7 @@ bool SyntheticDx11BridgeProvider::CopyInputToSlot(
     if (slot >= kMaxInFlight || gameColor == nullptr || !d3d11Context_)
         return false;
     SharedSlot& target = sharedSlots_[slot];
-    if (!D3D11ResourcesCopyCompatible(
+    if (!SyntheticDx11ResourcesCopyCompatible(
             gameColor, target.d3d11Color.Get(), d3d11Device_.Get()))
         return false;
     d3d11Context_->CopyResource(target.d3d11Color.Get(), gameColor);
