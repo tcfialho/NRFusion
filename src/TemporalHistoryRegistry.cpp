@@ -52,7 +52,10 @@ HistoryLease TemporalHistoryRegistry::Acquire(
 
     const bool shapeChanged =
         !SameShape(e.descriptor, view);
+    // A transient cut/reset invalidates history but must not overwrite the
+    // persistent guide signature with the temporary Zero selection.
     const bool guideChanged =
+        !guides.resetRequested &&
         !e.guides.SamePersistentGuides(guides);
     const bool resetRequired =
         guides.resetRequested ||
@@ -65,8 +68,10 @@ HistoryLease TemporalHistoryRegistry::Acquire(
             e.lastResetFrame = frameNumber;
         }
     }
-    e.guides = guides;
-    e.guides.resetRequested = false;
+    if (!guides.resetRequested) {
+        e.guides = guides;
+        e.guides.resetRequested = false;
+    }
     e.lastSeenFrame = frameNumber;
     return {e.historyId, resetRequired};
 }

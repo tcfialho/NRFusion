@@ -39,6 +39,7 @@ int main() {
     FusionRuntime runtime;
     GameContext game{};
     game.api = GraphicsApi::D3D12;
+    game.nativeDlss = true;
     TelemetrySample telemetry{};
 
     auto frame = ReadyFrame(1);

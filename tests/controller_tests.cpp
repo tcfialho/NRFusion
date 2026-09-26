@@ -420,6 +420,7 @@ int main() {
         const auto choose = [&](const GameContext& game, const FrameContext& frame, bool nvofAvailable) {
             auto caps = pipelineCaps;
             caps.nvof = nvofAvailable;
+            caps.nvofGuideReady = nvofAvailable;
             return p.Choose(game, frame, caps);
         };
 
