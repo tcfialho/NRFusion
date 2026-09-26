@@ -105,7 +105,7 @@ inventar evidence:
 - reliability, ownership, lifetime e sourceFrameId são obrigatórios para
   qualquer source não-Zero;
 - provenance conflitante, evidence ausente e frame stale falham closed;
-- Zero exige ausência de recurso e fica explícito como fallback.
+- Zero é explícito: pode limpar motion sem recurso ou materializar um recurso Generated zero-motion com evidence completa.
 
 Validação:
 - focused portable `36111227431`: PASS;
@@ -129,9 +129,34 @@ Validação:
 Exposure é opcional em todos os casos: ausência/non-null não vira reliability.
 Nenhum carrier ganha depth/motion/exposure por inferência.
 
+## Hardening pós-revisão
+
+A revisão posterior ao fechamento encontrou falhas de integração/contrato e a fase
+foi revalidada antes de permanecer fechada.
+
+Estado validado em `7364209`:
+- selection/history contracts mantidos em headers já presentes na closure do host;
+- patcher closure coberta pelo portable-core em `standalone/integration`;
+- history conectado ao `FusionRuntime::ResolveAuto`;
+- reset/camera-cut não causa double structural generation;
+- history signature inclui generation/provenance/reliability/resolution/format;
+- binder fail-closed limpa motion stale e valida evidence/format/generation;
+- Zero materializado como recurso Generated é aceito;
+- resolver valida provenance/frame/evidence e recebe `resetHistory`;
+- validator limpa hysteresis em `resetHistory`;
+- NVOF separa capability de guide-ready e o provider placeholder fica
+  intencionalmente indisponível até existir executor real;
+- D3D11/OpenGL não falham por ausência desse backend.
+
+Validação final:
+- Portable `36271983567`: PASS;
+- Focused Portable `36271983548`: PASS;
+- Windows `36271983572`: PASS.
+
 ## Estado
 
-**Fase 15 CLOSED.**
+**Fase 15 CLOSED após hardening.**
 
 O gate é portátil/hosted; não existe dependência física específica desta fase.
+NVOF permanece fail-closed, não anunciado como guide pronto.
 Os gates físicos pendentes das Fases 11–14 permanecem inalterados.

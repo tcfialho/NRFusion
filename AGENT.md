@@ -137,8 +137,8 @@ Regras obrigatórias:
 
 Date: 2026-09-25 BRT
 Branch: standalone/integration
-Validated code head: 268d49b
-Current branch head before closure docs: 268d49b
+Validated code head: 7364209
+Current branch head before closure docs: 7364209
 
 Phase 06: CLOSED.
 Phase 07: CLOSED, including real Windows compile/harness validation.
@@ -511,12 +511,12 @@ Phase 15 closure:
   Native -> DLSS contract -> NVOF -> shader -> Zero;
 - cameraCut or resetHistory forces Zero at selection time;
 - PipelinePolicy and MotionVectorResolver both consume that hierarchy, eliminating the prior divergence where the resolver preferred shader before NVOF;
-- MotionGuideValidator remains the whole-field validation/hysteresis owner and NvofMotionProvider remains the generation owner;
+- MotionGuideValidator remains the whole-field validation/hysteresis owner; NvofMotionProvider is deliberately fail-closed until a real optical-flow executor owns dispatch and completion;
 - FrameContext::DepthReliable() and ExposureReliable() remain the central depth/exposure evidence checks; no duplicate wrappers were added;
 - GuideHistoryState records selected motion source/reliability plus depth/exposure provenance/reliability for temporal compatibility;
 - TemporalHistoryRegistry now requests a fresh history identity when those persistent guide facts change, while cameraCut/resetHistory forces a one-shot reset without causing a second reset on the next stable frame;
 - MotionGuideBinding materializes non-zero motion guides into FrameContext only when reliability, ownership, lifetime and sourceFrameId are explicit; source determines the only valid provenance mapping;
-- Zero binding is explicit and requires no resource;
+- Zero binding is explicit: it may clear motion with no resource or bind an explicit Generated zero-motion resource with complete evidence;
 - conflicting provenance, missing evidence and stale sourceFrameId fail closed;
 - fallback remains observable through PipelineDecision.motion / FrameContext motion source and existing diagnostics;
 - guide strategy for color-only carriers is explicit: NVOF when qualified/available, shader only with reliable depth, otherwise Zero; no native guide is inferred;
@@ -530,3 +530,31 @@ Phase 15 closure:
 Exact next action:
 - start Phase 16 MFG from docs/standalone/16-mfg.md;
 - keep Phases 11–14 physical gates unchanged and do not treat their hosted proofs as physical closure.
+
+
+Phase 15 post-review hardening — validated head 7364209:
+- review reopened the Phase 15 closure and all concrete findings were addressed before re-freezing;
+- patcher/flattened-host dependency closure is validated by the full portable gate on standalone/integration; the large patcher/controller files were restored to their pre-Phase-15 state to preserve the <=300 changed-file rule;
+- canonical motion selection now lives in PipelinePolicy.hpp and the temporal guide signature in TemporalHistoryRegistry.hpp, both already part of the flattened host closure; compatibility headers remain small forwarders;
+- TemporalHistoryRegistry is wired into FusionRuntime::ResolveAuto through UpdateAutoGuideHistory and is idempotent for repeated reset requests in the same frame;
+- transient cameraCut/resetHistory selects Zero without mutating the persistent Auto structural motion identity, preventing the previous double-generation churn;
+- GuideHistoryState includes configuration generation plus motion/depth/exposure provenance, reliability, resolution and format; malformed evidence remains Unknown instead of being promoted;
+- MotionGuideBinding validates configuration generation, supported RG formats, evidence conflicts, provenance and source frame; every failed bind clears stale motion fail-closed;
+- explicit zero-motion GPU resources are accepted as Generated when evidence is complete; resource-less Zero remains valid;
+- MotionVectorResolver now consumes resetHistory and validates candidate provenance/reliability/frame ownership instead of treating non-null as trustworthy;
+- MotionGuideValidator resets hysteresis on cameraCut/resetHistory;
+- RuntimeCapabilities separates NVOF hardware capability from per-frame nvofGuideReady evidence;
+- the placeholder NvofMotionProvider no longer exposes fake fences/slots/results and always stays unavailable until a real dispatch/completion backend exists;
+- D3D11/OpenGL carrier initialization remains independent of unavailable NVOF;
+- Windows validation now executes the Phase 15 focused tests;
+- portable-core now runs on standalone/integration, so patcher closure is part of normal CI;
+- final validation for code head 7364209:
+  - Portable 36271983567 PASS;
+  - Focused Portable 36271983548 PASS;
+  - Windows 36271983572 PASS.
+- Phase 15 remains CLOSED after this hardening; no physical gate is introduced by these fixes.
+
+Exact next action:
+- proceed to Phase 16 MFG;
+- keep NVOF fail-closed until a real executor with dispatch, resource ownership and completion evidence is implemented;
+- keep Phases 11–14 pending physical gates unchanged.
