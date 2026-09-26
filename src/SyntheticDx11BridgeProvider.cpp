@@ -1,7 +1,5 @@
 #include "nrfusion/SyntheticDx11BridgeProvider.hpp"
 
-#include <utility>
-
 #if defined(_MSC_VER)
 #pragma comment(lib, "d3d11.lib")
 #pragma comment(lib, "dxgi.lib")
@@ -34,75 +32,6 @@ bool SyntheticDx11ResourcesCopyCompatible(
         a.Format == b.Format && a.SampleDesc.Count == b.SampleDesc.Count &&
         a.SampleDesc.Quality == b.SampleDesc.Quality;
 }
-
-bool SyntheticDx11FenceBridge::CreateSharedFencePair(
-    ID3D11Device5* device11, ID3D12Device* device12,
-    ComPtr<ID3D11Fence>& fence11, ComPtr<ID3D12Fence>& fence12) {
-    if (FAILED(device11->CreateFence(
-            0, D3D11_FENCE_FLAG_SHARED, IID_PPV_ARGS(&fence11))))
-        return false;
-    HANDLE handle = nullptr;
-    if (FAILED(fence11->CreateSharedHandle(
-            nullptr, GENERIC_ALL, nullptr, &handle)))
-        return false;
-    const HRESULT opened =
-        device12->OpenSharedHandle(handle, IID_PPV_ARGS(&fence12));
-    CloseHandle(handle);
-    return SUCCEEDED(opened);
-}
-
-bool SyntheticDx11FenceBridge::BindAfterIdle(
-    ID3D11Device* device11, ID3D11DeviceContext* context11,
-    ID3D12Device* device12, ID3D12CommandQueue* queue12) {
-    if (!device11 || !context11 || !device12 || !queue12) return false;
-    ResetAfterIdle();
-    ComPtr<ID3D11Device> contextDevice;
-    context11->GetDevice(&contextDevice);
-    if (contextDevice.Get() != device11) return false;
-    ComPtr<ID3D12Device> queueDevice;
-    if (FAILED(queue12->GetDevice(IID_PPV_ARGS(&queueDevice))) ||
-        queueDevice.Get() != device12)
-        return false;
-    ComPtr<ID3D11Device5> device5;
-    ComPtr<ID3D11DeviceContext4> context4;
-    if (FAILED(device11->QueryInterface(IID_PPV_ARGS(&device5))) ||
-        FAILED(context11->QueryInterface(IID_PPV_ARGS(&context4))))
-        return false;
-    if (!CreateSharedFencePair(
-            device5.Get(), device12, inputFence11_, inputFence12_) ||
-        !CreateSharedFencePair(
-            device5.Get(), device12, outputFence11_, outputFence12_)) {
-        ResetAfterIdle();
-        return false;
-    }
-    d3d11Context_ = std::move(context4);
-    d3d12Queue_ = queue12;
-    return true;
-}
-
-void SyntheticDx11FenceBridge::ResetAfterIdle() noexcept {
-    outputFence12_.Reset(); outputFence11_.Reset();
-    inputFence12_.Reset(); inputFence11_.Reset();
-    d3d12Queue_.Reset(); d3d11Context_.Reset();
-    nextInputValue_ = 1; nextOutputValue_ = 1;
-}
-
-bool SyntheticDx11FenceBridge::QueueInputHandoff() noexcept {
-    if (!d3d11Context_ || !d3d12Queue_ || !inputFence11_ || !inputFence12_)
-        return false;
-    const std::uint64_t value = nextInputValue_++;
-    return SUCCEEDED(d3d11Context_->Signal(inputFence11_.Get(), value)) &&
-        SUCCEEDED(d3d12Queue_->Wait(inputFence12_.Get(), value));
-}
-
-bool SyntheticDx11FenceBridge::QueueOutputHandoff() noexcept {
-    if (!d3d11Context_ || !d3d12Queue_ || !outputFence11_ || !outputFence12_)
-        return false;
-    const std::uint64_t value = nextOutputValue_++;
-    return SUCCEEDED(d3d12Queue_->Signal(outputFence12_.Get(), value)) &&
-        SUCCEEDED(d3d11Context_->Wait(outputFence11_.Get(), value));
-}
-
 
 SyntheticDx11BridgeProvider::SyntheticDx11BridgeProvider() = default;
 
@@ -254,6 +183,117 @@ bool SyntheticDx11BridgeProvider::ComposeNative(
     float residualWeight) {
     return syntheticD3D12_.ComposeNative(
         handle, originalNative, destinationNative, commandList, residualWeight);
+}
+
+
+bool SyntheticDx11BridgeProvider::CreatePrivateD3D12() {
+    ComPtr<IDXGIDevice> dxgiDevice;
+    if (FAILED(d3d11Device_.As(&dxgiDevice))) return false;
+    ComPtr<IDXGIAdapter> adapter;
+    if (FAILED(dxgiDevice->GetAdapter(&adapter))) return false;
+    if (FAILED(D3D12CreateDevice(
+            adapter.Get(), D3D_FEATURE_LEVEL_11_0, IID_PPV_ARGS(&d3d12Device_))))
+        return false;
+
+    D3D12_COMMAND_QUEUE_DESC queueDesc{};
+    queueDesc.Type = D3D12_COMMAND_LIST_TYPE_DIRECT;
+    if (FAILED(d3d12Device_->CreateCommandQueue(
+            &queueDesc, IID_PPV_ARGS(&d3d12Queue_))))
+        return false;
+
+    for (auto& slot : sharedSlots_) {
+        if (FAILED(d3d12Device_->CreateCommandAllocator(
+                D3D12_COMMAND_LIST_TYPE_DIRECT, IID_PPV_ARGS(&slot.alloc))))
+            return false;
+    }
+    if (FAILED(d3d12Device_->CreateCommandList(
+            0, D3D12_COMMAND_LIST_TYPE_DIRECT, sharedSlots_[0].alloc.Get(),
+            nullptr, IID_PPV_ARGS(&d3d12CmdList_))))
+        return false;
+    if (FAILED(d3d12CmdList_->Close())) return false;
+    return SUCCEEDED(d3d12Device_->CreateFence(
+        0, D3D12_FENCE_FLAG_SHARED, IID_PPV_ARGS(&d3d12Fence_)));
+}
+
+void SyntheticDx11BridgeProvider::CloseSharedHandles() {
+    for (auto& slot : sharedSlots_) {
+        if (slot.colorSharedHandle) CloseHandle(slot.colorSharedHandle);
+        if (slot.residualSharedHandle) CloseHandle(slot.residualSharedHandle);
+        slot.colorSharedHandle = nullptr;
+        slot.residualSharedHandle = nullptr;
+        slot.d3d11Color.Reset();
+        slot.d3d11Residual.Reset();
+        slot.d3d12Color.Reset();
+        slot.d3d12Residual.Reset();
+    }
+    slotTracker_.Reset();
+    currentRes_ = {};
+}
+
+bool SyntheticDx11BridgeProvider::CreateSharedResources(
+    std::uint32_t width, std::uint32_t height) {
+    if (width == 0 || height == 0) return false;
+    if (currentRes_.width == width && currentRes_.height == height) return true;
+    if (currentRes_.Valid() &&
+        !slotTracker_.AllRetired(d3d12Fence_->GetCompletedValue()))
+        return false;
+    CloseSharedHandles();
+
+    D3D11_TEXTURE2D_DESC desc{};
+    desc.Width = width;
+    desc.Height = height;
+    desc.MipLevels = 1;
+    desc.ArraySize = 1;
+    desc.Format = DXGI_FORMAT_R16G16B16A16_FLOAT;
+    desc.SampleDesc.Count = 1;
+    desc.Usage = D3D11_USAGE_DEFAULT;
+    desc.BindFlags = D3D11_BIND_SHADER_RESOURCE | D3D11_BIND_RENDER_TARGET;
+    desc.MiscFlags = D3D11_RESOURCE_MISC_SHARED_NTHANDLE |
+        D3D11_RESOURCE_MISC_SHARED_KEYEDMUTEX;
+
+    for (auto& slot : sharedSlots_) {
+        if (FAILED(d3d11Device_->CreateTexture2D(
+                &desc, nullptr, &slot.d3d11Color)))
+            return false;
+        ComPtr<IDXGIResource1> color;
+        if (FAILED(slot.d3d11Color.As(&color)) ||
+            FAILED(color->CreateSharedHandle(
+                nullptr, GENERIC_ALL, nullptr, &slot.colorSharedHandle)) ||
+            FAILED(d3d12Device_->OpenSharedHandle(
+                slot.colorSharedHandle, IID_PPV_ARGS(&slot.d3d12Color))))
+            return false;
+
+        if (FAILED(d3d11Device_->CreateTexture2D(
+                &desc, nullptr, &slot.d3d11Residual)))
+            return false;
+        ComPtr<IDXGIResource1> residual;
+        if (FAILED(slot.d3d11Residual.As(&residual)) ||
+            FAILED(residual->CreateSharedHandle(
+                nullptr, GENERIC_ALL, nullptr, &slot.residualSharedHandle)) ||
+            FAILED(d3d12Device_->OpenSharedHandle(
+                slot.residualSharedHandle, IID_PPV_ARGS(&slot.d3d12Residual))))
+            return false;
+    }
+
+    nvof_.Shutdown();
+    // NVOF is optional until a real dispatch/completion backend is integrated.
+    // Its fail-closed state must not disable the independent D3D11/D3D12 bridge.
+    (void)nvof_.Initialize(
+        d3d12Device_.Get(), d3d12Queue_.Get(), width, height);
+    currentRes_ = {width, height};
+    return true;
+}
+
+bool SyntheticDx11BridgeProvider::CopyInputToSlot(
+    std::uint32_t slot, ID3D11Resource* gameColor) {
+    if (slot >= kMaxInFlight || gameColor == nullptr || !d3d11Context_)
+        return false;
+    SharedSlot& target = sharedSlots_[slot];
+    if (!SyntheticDx11ResourcesCopyCompatible(
+            gameColor, target.d3d11Color.Get(), d3d11Device_.Get()))
+        return false;
+    d3d11Context_->CopyResource(target.d3d11Color.Get(), gameColor);
+    return true;
 }
 
 } // namespace nrfusion
