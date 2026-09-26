@@ -22,5 +22,26 @@ int main()
     transfusion.ProcessGetState(unavailableMax);
     assert(unavailableMax == 0);
 
+    transfusion.SetControlMode(nrfusion::MfgControlMode::FollowGame);
+    std::uint32_t mode = 0;
+    std::uint32_t frames = 1;
+    transfusion.ProcessSetOptions(mode, frames);
+    assert(frames == 1);
+
+    for (int i = 0; i < 7; ++i)
+    {
+        frames = 3;
+        transfusion.ProcessSetOptions(mode, frames);
+        assert(frames == 1);
+    }
+
+    frames = 3;
+    transfusion.ProcessSetOptions(mode, frames);
+    assert(frames == 3);
+
+    const auto transitioned = transfusion.Status();
+    assert(transitioned.requestedByGame == 3);
+    assert(transitioned.effectiveMultiplier == 4);
+
     return 0;
 }

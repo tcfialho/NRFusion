@@ -64,8 +64,7 @@ uint32_t DlssgTransfusion::GetDynamicTargetFps() const noexcept
 
 void DlssgTransfusion::ProcessSetOptions(uint32_t& inOutMode, uint32_t& inOutNumFramesToGenerate)
 {
-    std::lock_guard lock(m_mutex);
-    m_status.requestedByGame = inOutNumFramesToGenerate;
+    m_requestedByGame.store(inOutNumFramesToGenerate, std::memory_order_release);
 
     uint32_t targetFrames = inOutNumFramesToGenerate;
     const auto control = m_controlMode.load(std::memory_order_acquire);
@@ -123,7 +122,8 @@ void DlssgTransfusion::ProcessSetOptions(uint32_t& inOutMode, uint32_t& inOutNum
         }
     }
 
-    m_status.effectiveMultiplier = inOutNumFramesToGenerate + 1;
+    m_effectiveMultiplier.store(
+        inOutNumFramesToGenerate + 1, std::memory_order_release);
 }
 
 void DlssgTransfusion::ProcessGetState(uint32_t& outNumFramesToGenerateMax)

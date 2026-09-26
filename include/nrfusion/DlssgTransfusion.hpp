@@ -103,6 +103,8 @@ private:
     std::atomic<MfgUiMode> m_uiMode{MfgUiMode::Auto};
     std::atomic<MfgMotionVectorMode> m_mvMode{MfgMotionVectorMode::Auto};
     std::atomic<uint32_t> m_dynamicTargetFps{0};
+    std::atomic<uint32_t> m_requestedByGame{0};
+    std::atomic<uint32_t> m_effectiveMultiplier{2};
 
     // Safe Transition anti-TDR
     std::atomic<uint32_t> m_activeMultiplier{0};

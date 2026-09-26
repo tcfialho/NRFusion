@@ -35,7 +35,10 @@ uint32_t DlssgTransfusion::UnlockedMax() const noexcept
 TransfusionStatus DlssgTransfusion::Status() const
 {
     std::lock_guard lock(m_mutex);
-    return m_status;
+    TransfusionStatus snapshot = m_status;
+    snapshot.requestedByGame = m_requestedByGame.load(std::memory_order_acquire);
+    snapshot.effectiveMultiplier = m_effectiveMultiplier.load(std::memory_order_acquire);
+    return snapshot;
 }
 
 void DlssgTransfusion::TryApply(HMODULE module)
