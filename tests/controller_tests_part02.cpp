@@ -139,10 +139,10 @@ void RunControllerTestsPart02() {
         assert(syntheticFallback.provider == FrameProvider::Synthetic);
         assert(syntheticFallback.supported);
 
-        // A present but invalid guide must not block the automatic NVOF fallback.
+        // NVOF capability is not per-frame guide evidence.
         f.motionVectorsReliable = false;
         const auto fallback = choose(game, f, true);
-        assert(fallback.motion == MotionSource::NvidiaOpticalFlow);
+        assert(fallback.motion == MotionSource::Zero);
 
         GameContext vkGame{GraphicsApi::Vulkan, false, true, true, false};
         FrameContext vk;
@@ -197,12 +197,12 @@ void RunControllerTestsPart02() {
         x86Dx12.motionVectorsReliable = true;
         const auto nativeMotion = choose(x86Dx12Game, x86Dx12, true);
         x86Dx12.motionVectorsReliable = false;
-        const auto nvofMotion = choose(x86Dx12Game, x86Dx12, true);
-        assert(nativeMotion.provider == nvofMotion.provider);
-        assert(nativeMotion.transport == nvofMotion.transport);
-        assert(nativeMotion.api == nvofMotion.api);
+        const auto noGuideMotion = choose(x86Dx12Game, x86Dx12, true);
+        assert(nativeMotion.provider == noGuideMotion.provider);
+        assert(nativeMotion.transport == noGuideMotion.transport);
+        assert(nativeMotion.api == noGuideMotion.api);
         assert(nativeMotion.motion == MotionSource::Native);
-        assert(nvofMotion.motion == MotionSource::NvidiaOpticalFlow);
+        assert(noGuideMotion.motion == MotionSource::Zero);
 
         // Scheduler selection is another independent axis in the combined runtime decision.
         FusionRuntime runtime;

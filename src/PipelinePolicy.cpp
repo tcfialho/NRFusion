@@ -15,14 +15,10 @@ MotionSource ChooseMotion(
         caps.dlssContractMotion &&
         frame.HasDlssContractMotion() &&
         frame.MotionReliable(MotionSource::DlssContract);
-    const bool legacyProbe =
-        frame.frameId == 0 &&
-        frame.motionVectors.EvidenceUnspecified();
     guides.nvofAvailable =
         caps.nvof &&
-        ((caps.nvofGuideReady &&
-          frame.MotionReliable(MotionSource::NvidiaOpticalFlow)) ||
-         legacyProbe);
+        caps.nvofGuideReady &&
+        frame.MotionReliable(MotionSource::NvidiaOpticalFlow);
     guides.shaderReliable =
         caps.shaderMotion &&
         frame.MotionReliable(MotionSource::ShaderEstimated);
