@@ -1,4 +1,5 @@
 #include "nrfusion/FusionRuntime.hpp"
+#include "nrfusion/MotionGuideBinding.hpp"
 
 #include <cassert>
 
@@ -79,6 +80,24 @@ int main() {
     const auto noReadyNvof = runtime.ResolveAuto(
         game, frame, telemetry, caps);
     assert(noReadyNvof.pipeline.motion == MotionSource::Zero);
+
+    frame.frameId = 6;
+    MotionGuideBinding nvof{};
+    nvof.source = MotionSource::NvidiaOpticalFlow;
+    nvof.resource = {3, {320, 180}, ResourceFormat::Rg16Float};
+    nvof.reliability = ResourceReliability::Reliable;
+    nvof.ownership = ResourceOwnership::ProviderOwned;
+    nvof.lifetime = ResourceLifetime::Frame;
+    nvof.sourceFrameId = frame.frameId;
+    nvof.configurationGeneration = frame.configurationGeneration;
+    assert(BindMotionGuide(frame, nvof));
+    caps.nvofGuideReady = true;
+    const auto beforeGuideChange = runtime.AutoConfigurationGeneration();
+    const auto readyNvof = runtime.ResolveAuto(
+        game, frame, telemetry, caps);
+    assert(readyNvof.pipeline.motion ==
+           MotionSource::NvidiaOpticalFlow);
+    assert(runtime.AutoConfigurationGeneration() != beforeGuideChange);
 
     ViewDescriptor view{};
     view.featureKey = 9;

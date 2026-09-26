@@ -74,7 +74,14 @@ int main() {
         c.nativeEngineMv.resolution = { 1920, 1080 };
         c.nativeEngineMv.format = ResourceFormat::Rg16Float;
         c.nativeReliable = true;
-        c.nvofGuideAvailable = true;
+        c.frameId = 1;
+        c.nvofMv = {4, {320, 180}, ResourceFormat::Rg16Float};
+        c.nvofMv.provenance = ResourceProvenance::OpticalFlow;
+        c.nvofMv.reliability = ResourceReliability::Reliable;
+        c.nvofMv.ownership = ResourceOwnership::ProviderOwned;
+        c.nvofMv.lifetime = ResourceLifetime::Frame;
+        c.nvofMv.sourceFrameId = 1;
+        c.nvofReliable = true;
 
         auto r1 = MotionVectorResolver::Resolve(c, fullRes);
         assert(r1.category == ResolvedMotionCategory::NativeEngine);
@@ -105,7 +112,7 @@ int main() {
         assert(!r3.requiresNvofCompute);
 
         // Case 4: Shader is selected only when NVOF is unavailable.
-        c.nvofGuideAvailable = false;
+        c.nvofReliable = false;
         auto r4 = MotionVectorResolver::Resolve(c, fullRes);
         assert(r4.category ==
                ResolvedMotionCategory::ShaderEstimated);

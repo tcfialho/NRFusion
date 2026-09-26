@@ -76,6 +76,37 @@ HistoryLease TemporalHistoryRegistry::Acquire(
     return {e.historyId, resetRequired};
 }
 
+HistoryLease TemporalHistoryRegistry::Acquire(
+    const ViewDescriptor& view,
+    std::uint64_t frameNumber) {
+    if (view.featureKey == 0)
+        return {AllocateHistoryId(), true};
+
+    const RegistryKey key{view.featureKey, view.viewKey};
+    auto [it, inserted] = entries_.try_emplace(key);
+    Entry& e = it->second;
+    if (inserted) {
+        e.descriptor = view;
+        e.historyId = AllocateHistoryId();
+        e.lastSeenFrame = frameNumber;
+        e.lastResetFrame = frameNumber;
+        return {e.historyId, true};
+    }
+    if (frameNumber < e.lastSeenFrame)
+        return {AllocateHistoryId(), true};
+
+    const bool shapeChanged = !SameShape(e.descriptor, view);
+    if (shapeChanged) {
+        e.descriptor = view;
+        if (e.lastResetFrame != frameNumber) {
+            e.historyId = AllocateHistoryId();
+            e.lastResetFrame = frameNumber;
+        }
+    }
+    e.lastSeenFrame = frameNumber;
+    return {e.historyId, shapeChanged};
+}
+
 void TemporalHistoryRegistry::InvalidateFeature(std::uint64_t featureKey) {
     for (auto it = entries_.begin(); it != entries_.end();) {
         if (it->first.feature == featureKey) it = entries_.erase(it);

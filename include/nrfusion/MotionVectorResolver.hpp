@@ -35,7 +35,8 @@ struct MotionCandidates {
     ResourceRef shaderEstimatedMv{};
     bool shaderReliable = false;
 
-    bool nvofGuideAvailable = false;
+    ResourceRef nvofMv{};
+    bool nvofReliable = false;
     bool cameraCut = false;
     bool resetHistory = false;
     FrameId frameId = 0;
@@ -57,8 +58,11 @@ public:
             ResourceProvenance::DlssContract,
             candidates.contractReliable,
             candidates.frameId);
-        guides.nvofAvailable =
-            candidates.nvofGuideAvailable;
+        guides.nvofAvailable = CandidateReliable(
+            candidates.nvofMv,
+            ResourceProvenance::OpticalFlow,
+            candidates.nvofReliable,
+            candidates.frameId);
         guides.shaderReliable = CandidateReliable(
             candidates.shaderEstimatedMv,
             ResourceProvenance::ShaderEstimated,
@@ -85,9 +89,11 @@ public:
                 fullResolution);
             break;
         case MotionSource::NvidiaOpticalFlow:
-            result.category =
-                ResolvedMotionCategory::NvidiaOpticalFlow;
-            result.isReliable = true;
+            SetResourceResult(
+                result,
+                ResolvedMotionCategory::NvidiaOpticalFlow,
+                candidates.nvofMv,
+                fullResolution);
             result.requiresNvofCompute = false;
             break;
         case MotionSource::ShaderEstimated:

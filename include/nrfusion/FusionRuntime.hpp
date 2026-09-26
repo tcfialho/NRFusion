@@ -90,7 +90,9 @@ public:
         const AutoStructuralIdentity structure{out.pipeline.provider, out.pipeline.transport,
                                                out.pipeline.api, out.pipeline.placement,
                                                structuralMotion, renderSize, outputSize};
-        const bool structuralChanged = !haveAutoStructure_ || !(structure == autoStructure_);
+        const bool guideReset = UpdateAutoGuideHistory(frame, out.pipeline.motion);
+        const bool structuralChanged = !haveAutoStructure_ || !(structure == autoStructure_) ||
+            (guideReset && !frame.cameraCut && !frame.resetHistory);
         if (structuralChanged) {
             ResetAutoAdaptiveState(performance_.WorkingScale());
             autoStructure_ = structure;
@@ -206,11 +208,8 @@ public:
     MotionConfidenceResult ResolveMotionConfidence(const MotionConfidenceInput& input) const {
         return motionConfidence_.Evaluate(input);
     }
-    HistoryLease AcquireHistory(const ViewDescriptor& view, const FrameContext& frame, MotionSource selectedMotion) {
-        return histories_.Acquire(view, frame.frameId, DescribeGuideHistory(frame, selectedMotion));
-    }
-    HistoryLease AcquireHistory(const ViewDescriptor& view, std::uint64_t frameNumber) {
-        return histories_.Acquire(view, frameNumber); }
+    HistoryLease AcquireHistory(const ViewDescriptor&, const FrameContext&, MotionSource);
+    HistoryLease AcquireHistory(const ViewDescriptor&, std::uint64_t);
     void InvalidateHistory(std::uint64_t featureKey) { histories_.InvalidateFeature(featureKey); }
 
     AsyncOverlapEstimator& Overlap() noexcept { return overlap_; }
@@ -252,6 +251,7 @@ public:
     void BeginConfigurationEpoch(float initialScale);
 
 private:
+    bool UpdateAutoGuideHistory(const FrameContext&, MotionSource);
     void ResetAutoAdaptiveState(float initialScale) {
         performance_.ClearLearnedCostModel();
         performance_.Reset(initialScale);

@@ -15,11 +15,12 @@ MotionSource ChooseMotion(
         caps.dlssContractMotion &&
         frame.HasDlssContractMotion() &&
         frame.MotionReliable(MotionSource::DlssContract);
-    guides.nvofAvailable = caps.nvof && caps.nvofGuideReady;
+    guides.nvofAvailable =
+        caps.nvof && caps.nvofGuideReady &&
+        frame.MotionReliable(MotionSource::NvidiaOpticalFlow);
     guides.shaderReliable =
         caps.shaderMotion &&
-        frame.HasDepth() &&
-        frame.DepthReliable();
+        frame.MotionReliable(MotionSource::ShaderEstimated);
     guides.cameraCut = frame.cameraCut;
     guides.resetHistory = frame.resetHistory;
     return SelectMotionGuide(guides);
