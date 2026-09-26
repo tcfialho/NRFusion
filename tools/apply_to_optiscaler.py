@@ -209,7 +209,9 @@ def main() -> None:
                 "W4A8Ffn.hpp", "AdaW4A8Interceptor.hpp", "DlssgTransfusion.hpp",
                 "SyntheticProvider.hpp", "SyntheticDlaaContract.hpp", "SyntheticDx12Provider.hpp",
                 "MatchedResidualShader.hpp",
-                "MotionVectorResolver.hpp", "NvofMotionProvider.hpp", "SyntheticDx11BridgeProvider.hpp",
+                "MotionVectorResolver.hpp", "NvofMotionProvider.hpp",
+                "D3D11BridgeResources.hpp", "D3D11BridgeSlotTracker.hpp",
+                "D3D11D3D12FenceBridge.hpp", "SyntheticDx11BridgeProvider.hpp",
                 "IpcProtocol.hpp", "SyntheticVulkanProvider.hpp"]
     # CaptureProvider32(Export)/HostServer64 are the x86-carrier transport: a client DLL that runs
     # inside the 32-bit game (nrfusion_capture32.dll, its own CMake target) and a headless x64 host
@@ -227,7 +229,9 @@ def main() -> None:
                "AdaptiveExposure.cpp", "AdaptiveExposureController.cpp",
                "OptiScalerAdapter.cpp", "Presets.cpp", "QualityValidator.cpp", "Dlss5NeuralRendering.cpp",
                "W4A8FfnStub.cpp", "AdaW4A8Interceptor.cpp", "DlssgTransfusion.cpp",
-               "SyntheticDx12Provider.cpp", "NvofMotionProvider.cpp", "SyntheticDx11BridgeProvider.cpp",
+               "SyntheticDx12Provider.cpp", "NvofMotionProvider.cpp",
+               "D3D11BridgeResources.cpp", "D3D11BridgeSlotTracker.cpp",
+               "D3D11D3D12FenceBridge.cpp", "SyntheticDx11BridgeProvider.cpp",
                "SyntheticVulkanProvider.cpp"]
     for name in headers:
         shutil.copy2(ROOT / "include" / "nrfusion" / name, dest / name)
