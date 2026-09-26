@@ -1,5 +1,4 @@
 #include "nrfusion/PipelinePolicy.hpp"
-#include "nrfusion/MotionGuideSelection.hpp"
 
 namespace nrfusion {
 namespace {

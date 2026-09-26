@@ -420,7 +420,6 @@ int main() {
         const auto choose = [&](const GameContext& game, const FrameContext& frame, bool nvofAvailable) {
             auto caps = pipelineCaps;
             caps.nvof = nvofAvailable;
-            caps.nvofGuideReady = nvofAvailable;
             return p.Choose(game, frame, caps);
         };
 
@@ -949,16 +948,15 @@ int main() {
         left.viewKey = 1;
         right.x = 960;
 
-        const GuideHistoryState guides{};
-        const auto a = histories.Acquire(left, 1, guides);
-        const auto b = histories.Acquire(right, 1, guides);
+        const auto a = histories.Acquire(left, 1);
+        const auto b = histories.Acquire(right, 1);
         assert(a.resetRequired && b.resetRequired);
         assert(a.historyId != b.historyId);
-        const auto a2 = histories.Acquire(left, 2, guides);
+        const auto a2 = histories.Acquire(left, 2);
         assert(!a2.resetRequired && a2.historyId == a.historyId);
 
         left.width = 900;
-        const auto resized = histories.Acquire(left, 3, guides);
+        const auto resized = histories.Acquire(left, 3);
         assert(resized.resetRequired && resized.historyId != a.historyId);
         histories.Prune(1000, 100);
         assert(histories.Size() == 0);
@@ -1430,14 +1428,8 @@ int main() {
         const auto guide2 = runtime.UpdateMotionGuide(guide);
         assert(guide2.reliable);
         ViewDescriptor view; view.featureKey = 77; view.width = 1920; view.height = 1080;
-        FrameContext historyFrame{};
-        historyFrame.frameId = 1;
-        historyFrame.configurationGeneration = 1;
-        assert(runtime.AcquireHistory(
-            view, historyFrame, MotionSource::Zero).resetRequired);
-        historyFrame.frameId = 2;
-        assert(!runtime.AcquireHistory(
-            view, historyFrame, MotionSource::Zero).resetRequired);
+        assert(runtime.AcquireHistory(view, 1).resetRequired);
+        assert(!runtime.AcquireHistory(view, 2).resetRequired);
     }
 
 

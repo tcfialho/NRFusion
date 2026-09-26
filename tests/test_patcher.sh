@@ -22,8 +22,6 @@ grep -q 'PrecisionCandidateRequested()' "$TMP/OptiScaler/shaders/dlssnr/DlssNr_D
 grep -q 'DlssNrNative::HybridAvailable()' "$TMP/OptiScaler/shaders/dlssnr/DlssNr_Dx12.cpp"
 grep -q 'NVFP4 Auto unavailable' "$TMP/OptiScaler/shaders/dlssnr/DlssNr_Dx12.cpp"
 grep -q 'fusionHybridBackendIntegrated = false' "$TMP/OptiScaler/shaders/dlssnr/DlssNr_Dx12.cpp"
-grep -q 'BindMotionGuide' "$TMP/OptiScaler/shaders/dlssnr/DlssNr_Dx12.cpp"
-grep -q 'fusionCaps.nvofGuideReady = false' "$TMP/OptiScaler/shaders/dlssnr/DlssNr_Dx12.cpp"
 grep -q 'fusionCaps.asyncCompute = false' "$TMP/OptiScaler/shaders/dlssnr/DlssNr_Dx12.cpp"
 grep -q 'fusionCaps.secondaryGpu = false' "$TMP/OptiScaler/shaders/dlssnr/DlssNr_Dx12.cpp"
 grep -q 'manual NVFP4 is unavailable on this GPU/runtime' "$TMP/OptiScaler/shaders/dlssnr/DlssNr_Dx12.cpp"
@@ -76,12 +74,6 @@ grep -Fq 'nrfusion\MotionNormalization.cpp' "$TMP/OptiScaler/OptiScaler.vcxproj"
 grep -Fq 'nrfusion\MotionConfidence.cpp' "$TMP/OptiScaler/OptiScaler.vcxproj"
 grep -Fq 'nrfusion\TemporalHistoryRegistry.cpp' "$TMP/OptiScaler/OptiScaler.vcxproj"
 grep -Fq 'nrfusion\MotionGuideBinding.cpp' "$TMP/OptiScaler/OptiScaler.vcxproj"
-test -f "$TMP/OptiScaler/nrfusion/MotionGuideSelection.hpp"
-test -f "$TMP/OptiScaler/nrfusion/GuideHistoryState.hpp"
-test -f "$TMP/OptiScaler/nrfusion/MotionGuideBinding.hpp"
-test -f "$TMP/OptiScaler/nrfusion/D3D11BridgeResources.hpp"
-test -f "$TMP/OptiScaler/nrfusion/D3D11BridgeSlotTracker.hpp"
-test -f "$TMP/OptiScaler/nrfusion/D3D11D3D12FenceBridge.hpp"
 grep -Fq 'nrfusion\PipelinedExecutorState.cpp' "$TMP/OptiScaler/OptiScaler.vcxproj"
 grep -Fq 'nrfusion\WorkLedger.cpp' "$TMP/OptiScaler/OptiScaler.vcxproj"
 grep -Fq 'nrfusion\TimingWorkMapper.cpp' "$TMP/OptiScaler/OptiScaler.vcxproj"
@@ -101,8 +93,8 @@ test -f "$TMP/OptiScaler/nrfusion/RuntimeCapabilities.hpp"
 test -f "$TMP/OptiScaler/nrfusion/FrameContractProvider.hpp"
 test -f "$TMP/OptiScaler/nrfusion/CompatibilityDatabase.hpp"
 test -f "$TMP/OptiScaler/nrfusion/ResidualEngine.hpp"
-# Verify the flattened host copy is dependency-closed. This catches a new FusionRuntime include
-# being added without adding its header/source to the patcher manifest.
+# Verify the flattened host copy is dependency-closed. Phase 15 deliberately keeps its
+# canonical selection/history contracts inside headers already present in this closure.
 python3 - "$TMP/OptiScaler/nrfusion" <<'PYDEP'
 from pathlib import Path
 import re, sys

@@ -200,8 +200,7 @@ def main() -> None:
                "ProfileStore.hpp", "CompatibilityDatabase.hpp", "Diagnostics.hpp", "FrameLimitPolicy.hpp", "ResidualReprojection.hpp", "ResidualEngine.hpp",
                "SchedulerPolicy.hpp", "ProviderPolicy.hpp", "TransportPolicy.hpp", "PipelinePolicy.hpp",
                "ResidualPolicy.hpp", "TemporalConfidence.hpp", "MgpuPlanner.hpp", "NvofPolicy.hpp", "NvofWrapper.hpp",
-               "TelemetryTracker.hpp", "GuideValidation.hpp", "MotionNormalization.hpp", "MotionConfidence.hpp",
-               "MotionGuideSelection.hpp", "GuideHistoryState.hpp", "MotionGuideBinding.hpp", "TemporalHistoryRegistry.hpp",
+               "TelemetryTracker.hpp", "GuideValidation.hpp", "MotionNormalization.hpp", "MotionConfidence.hpp", "TemporalHistoryRegistry.hpp",
                "PipelinedExecutorState.hpp",
                "AdaptiveExposure.hpp", "AdaptiveExposureController.hpp",
                "FusionRuntime.hpp", "OptiScalerAdapter.hpp", "Presets.hpp", "QualityValidator.hpp",
@@ -209,9 +208,7 @@ def main() -> None:
                 "W4A8Ffn.hpp", "AdaW4A8Interceptor.hpp", "DlssgTransfusion.hpp",
                 "SyntheticProvider.hpp", "SyntheticDlaaContract.hpp", "SyntheticDx12Provider.hpp",
                 "MatchedResidualShader.hpp",
-                "MotionVectorResolver.hpp", "NvofMotionProvider.hpp",
-                "D3D11BridgeResources.hpp", "D3D11BridgeSlotTracker.hpp",
-                "D3D11D3D12FenceBridge.hpp", "SyntheticDx11BridgeProvider.hpp",
+                "MotionVectorResolver.hpp", "NvofMotionProvider.hpp", "SyntheticDx11BridgeProvider.hpp",
                 "IpcProtocol.hpp", "SyntheticVulkanProvider.hpp"]
     # CaptureProvider32(Export)/HostServer64 are the x86-carrier transport: a client DLL that runs
     # inside the 32-bit game (nrfusion_capture32.dll, its own CMake target) and a headless x64 host
@@ -224,14 +221,12 @@ def main() -> None:
                "ResidualReprojection.cpp", "ResidualEngine.cpp",
                "SchedulerPolicy.cpp", "ProviderPolicy.cpp", "TransportPolicy.cpp", "PipelinePolicy.cpp",
                "ResidualPolicy.cpp", "TemporalConfidence.cpp", "MgpuPlanner.cpp", "NvofPolicy.cpp", "NvofWrapper.cpp",
-               "TelemetryTracker.cpp", "GuideValidation.cpp", "MotionNormalization.cpp", "MotionConfidence.cpp", "MotionGuideBinding.cpp", "TemporalHistoryRegistry.cpp",
+               "TelemetryTracker.cpp", "GuideValidation.cpp", "MotionNormalization.cpp", "MotionConfidence.cpp", "TemporalHistoryRegistry.cpp",
                "PipelinedExecutorState.cpp", "NrKernelProfile.cpp",
                "AdaptiveExposure.cpp", "AdaptiveExposureController.cpp",
                "OptiScalerAdapter.cpp", "Presets.cpp", "QualityValidator.cpp", "Dlss5NeuralRendering.cpp",
                "W4A8FfnStub.cpp", "AdaW4A8Interceptor.cpp", "DlssgTransfusion.cpp",
-               "SyntheticDx12Provider.cpp", "NvofMotionProvider.cpp",
-               "D3D11BridgeResources.cpp", "D3D11BridgeSlotTracker.cpp",
-               "D3D11D3D12FenceBridge.cpp", "SyntheticDx11BridgeProvider.cpp",
+               "SyntheticDx12Provider.cpp", "NvofMotionProvider.cpp", "SyntheticDx11BridgeProvider.cpp",
                "SyntheticVulkanProvider.cpp"]
     for name in headers:
         shutil.copy2(ROOT / "include" / "nrfusion" / name, dest / name)
@@ -615,7 +610,7 @@ bool HybridAvailable(){
 
     dx12 = opti / "shaders/dlssnr/DlssNr_Dx12.cpp"
     insert_after(dx12, '#include <gpu_time/GpuTime_Dx12.h>\n',
-                 '#include <nrfusion/OptiScalerAdapter.hpp>\n#include <nrfusion/MotionGuideBinding.hpp>\n#include <nrfusion/AdaptiveExposureController.hpp>\n')
+                 '#include <nrfusion/OptiScalerAdapter.hpp>\n#include <nrfusion/AdaptiveExposureController.hpp>\n')
     insert_after(dx12, '#include <State.h>\n', '#include <misc/IdentifyGpu.h>\n')
 
     dx12_text = dx12.read_text(encoding="utf-8")
@@ -787,7 +782,6 @@ bool HybridAvailable(){
 
     nrfusion::FrameContext fusionFrameCtx{};
     fusionFrameCtx.frameId = frame.SubmissionEpoch > 0 ? frame.SubmissionEpoch : 1;
-    fusionFrameCtx.configurationGeneration = fusionAdapter.ScaleGeneration();
     fusionFrameCtx.api = nrfusion::GraphicsApi::D3D12;
     fusionFrameCtx.color.opaqueId = reinterpret_cast<std::uintptr_t>(colour);
     fusionFrameCtx.color.resolution = {width, height};
@@ -796,20 +790,11 @@ bool HybridAvailable(){
     fusionFrameCtx.depth.resolution = {guideWidth, guideHeight};
     fusionFrameCtx.depth.format = nrfusion::ResourceFormat::D32Float;
     fusionFrameCtx.depthReliable = (depth != nullptr);
-    nrfusion::MotionGuideBinding fusionMotionBinding{};
-    fusionMotionBinding.configurationGeneration = fusionFrameCtx.configurationGeneration;
-    if (motion != nullptr)
-    {
-        fusionMotionBinding.source = nrfusion::MotionSource::Native;
-        fusionMotionBinding.resource.opaqueId = reinterpret_cast<std::uintptr_t>(motion);
-        fusionMotionBinding.resource.resolution = {motionWidth, motionHeight};
-        fusionMotionBinding.resource.format = nrfusion::ResourceFormat::Rg16Float;
-        fusionMotionBinding.reliability = nrfusion::ResourceReliability::Reliable;
-        fusionMotionBinding.ownership = nrfusion::ResourceOwnership::Borrowed;
-        fusionMotionBinding.lifetime = nrfusion::ResourceLifetime::Frame;
-        fusionMotionBinding.sourceFrameId = fusionFrameCtx.frameId;
-    }
-    (void)nrfusion::BindMotionGuide(fusionFrameCtx, fusionMotionBinding);
+    fusionFrameCtx.motionVectors.opaqueId = reinterpret_cast<std::uintptr_t>(motion);
+    fusionFrameCtx.motionVectors.resolution = {motionWidth, motionHeight};
+    fusionFrameCtx.motionVectors.format = nrfusion::ResourceFormat::Rg16Float;
+    fusionFrameCtx.motionVectorSource = nrfusion::MotionSource::Native;
+    fusionFrameCtx.motionVectorsReliable = (motion != nullptr);
     if (frame.ExposureTexture != nullptr)
     {
         fusionFrameCtx.exposure.opaqueId = reinterpret_cast<std::uintptr_t>(frame.ExposureTexture);
@@ -828,11 +813,8 @@ bool HybridAvailable(){
     fusionCaps.postSr = !frame.BeforeUpscale;
     fusionCaps.deferredResidual = frame.ResidualAcrossRr;
     fusionCaps.acrossRr = frame.ResidualAcrossRr;
-    fusionCaps.nativeMotion =
-        fusionFrameCtx.MotionReliable(nrfusion::MotionSource::Native);
-    fusionCaps.dlssContractMotion = false;
-    fusionCaps.nvof = false;
-    fusionCaps.nvofGuideReady = false;
+    fusionCaps.nativeMotion = (motion != nullptr);
+    fusionCaps.dlssContractMotion = true;
     // These are host facts, not preferences. This path submits NR on the game's graphics command
     // list and has no independent compute-queue or secondary-GPU executor. Advertising either
     // capability would let Auto select a route this host cannot execute.

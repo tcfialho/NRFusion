@@ -1,7 +1,7 @@
 #pragma once
 
 #include "nrfusion/Types.hpp"
-#include "nrfusion/MotionGuideSelection.hpp"
+#include "nrfusion/PipelinePolicy.hpp"
 
 #include <cstdint>
 
