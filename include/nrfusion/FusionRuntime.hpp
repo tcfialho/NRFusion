@@ -206,13 +206,11 @@ public:
     MotionConfidenceResult ResolveMotionConfidence(const MotionConfidenceInput& input) const {
         return motionConfidence_.Evaluate(input);
     }
-    HistoryLease AcquireHistory(const ViewDescriptor& view, const FrameContext& frame,
-                                MotionSource selectedMotion) {
+    HistoryLease AcquireHistory(const ViewDescriptor& view, const FrameContext& frame, MotionSource selectedMotion) {
         return histories_.Acquire(view, frame.frameId, DescribeGuideHistory(frame, selectedMotion));
     }
     HistoryLease AcquireHistory(const ViewDescriptor& view, std::uint64_t frameNumber) {
-        return histories_.Acquire(view, frameNumber);
-    }
+        return histories_.Acquire(view, frameNumber); }
     void InvalidateHistory(std::uint64_t featureKey) { histories_.InvalidateFeature(featureKey); }
 
     AsyncOverlapEstimator& Overlap() noexcept { return overlap_; }
