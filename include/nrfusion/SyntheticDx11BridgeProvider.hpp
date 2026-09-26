@@ -12,9 +12,6 @@
 #include <dxgi1_6.h>
 #include <wrl/client.h>
 
-#include "nrfusion/D3D11BridgeResources.hpp"
-#include "nrfusion/D3D11BridgeSlotTracker.hpp"
-#include "nrfusion/D3D11D3D12FenceBridge.hpp"
 #include "nrfusion/MotionVectorResolver.hpp"
 #include "nrfusion/NvofMotionProvider.hpp"
 #include "nrfusion/SyntheticDx12Provider.hpp"
@@ -22,14 +19,122 @@
 
 #include <array>
 #include <mutex>
+#include <optional>
 
 namespace nrfusion {
 
 using Microsoft::WRL::ComPtr;
 
+bool SyntheticDx11ResourcesCopyCompatible(
+    ID3D11Resource* source, ID3D11Resource* destination,
+    ID3D11Device* expectedDevice) noexcept;
+
+struct SyntheticDx11SlotLease {
+    std::uint32_t slot = 0;
+    std::uint64_t workId = 0;
+};
+
+class SyntheticDx11SlotTracker {
+public:
+    static constexpr std::uint32_t kCapacity = 3;
+
+    std::optional<SyntheticDx11SlotLease> Acquire(
+        std::uint64_t workId, std::uint64_t completedFence) noexcept {
+        if (workId == 0 || Find(workId)) return std::nullopt;
+        for (std::uint32_t offset = 0; offset < kCapacity; ++offset) {
+            const std::uint32_t slot = (next_ + offset) % kCapacity;
+            Entry& entry = entries_[slot];
+            const bool retired = entry.occupied && entry.fenceValue != 0 &&
+                entry.fenceValue <= completedFence;
+            if (entry.occupied && !retired) continue;
+            entry = {workId, 0, true};
+            next_ = (slot + 1) % kCapacity;
+            return SyntheticDx11SlotLease{slot, workId};
+        }
+        return std::nullopt;
+    }
+
+    bool MarkSubmitted(
+        const SyntheticDx11SlotLease& lease,
+        std::uint64_t fenceValue) noexcept {
+        if (lease.slot >= kCapacity || lease.workId == 0 || fenceValue == 0)
+            return false;
+        Entry& entry = entries_[lease.slot];
+        if (!entry.occupied || entry.workId != lease.workId ||
+            entry.fenceValue != 0)
+            return false;
+        entry.fenceValue = fenceValue;
+        return true;
+    }
+
+    bool Release(const SyntheticDx11SlotLease& lease) noexcept {
+        if (lease.slot >= kCapacity || lease.workId == 0) return false;
+        Entry& entry = entries_[lease.slot];
+        if (!entry.occupied || entry.workId != lease.workId ||
+            entry.fenceValue != 0)
+            return false;
+        entry = {};
+        return true;
+    }
+
+    std::optional<std::uint32_t> Find(std::uint64_t workId) const noexcept {
+        if (workId == 0) return std::nullopt;
+        for (std::uint32_t slot = 0; slot < kCapacity; ++slot)
+            if (entries_[slot].occupied && entries_[slot].workId == workId)
+                return slot;
+        return std::nullopt;
+    }
+
+    bool AllRetired(std::uint64_t completedFence) const noexcept {
+        for (const Entry& entry : entries_)
+            if (entry.occupied &&
+                (entry.fenceValue == 0 || entry.fenceValue > completedFence))
+                return false;
+        return true;
+    }
+
+    void Reset() noexcept {
+        for (Entry& entry : entries_) entry = {};
+        next_ = 0;
+    }
+
+private:
+    struct Entry {
+        std::uint64_t workId = 0;
+        std::uint64_t fenceValue = 0;
+        bool occupied = false;
+    };
+    std::array<Entry, kCapacity> entries_{};
+    std::uint32_t next_ = 0;
+};
+
+class SyntheticDx11FenceBridge {
+public:
+    bool BindAfterIdle(
+        ID3D11Device* d3d11Device, ID3D11DeviceContext* d3d11Context,
+        ID3D12Device* d3d12Device, ID3D12CommandQueue* d3d12Queue);
+    void ResetAfterIdle() noexcept;
+    bool QueueInputHandoff() noexcept;
+    bool QueueOutputHandoff() noexcept;
+
+private:
+    bool CreateSharedFencePair(
+        ID3D11Device5* d3d11Device, ID3D12Device* d3d12Device,
+        ComPtr<ID3D11Fence>& d3d11Fence,
+        ComPtr<ID3D12Fence>& d3d12Fence);
+    ComPtr<ID3D11DeviceContext4> d3d11Context_;
+    ComPtr<ID3D12CommandQueue> d3d12Queue_;
+    ComPtr<ID3D11Fence> inputFence11_;
+    ComPtr<ID3D12Fence> inputFence12_;
+    ComPtr<ID3D11Fence> outputFence11_;
+    ComPtr<ID3D12Fence> outputFence12_;
+    std::uint64_t nextInputValue_ = 1;
+    std::uint64_t nextOutputValue_ = 1;
+};
+
 class SyntheticDx11BridgeProvider : public ISyntheticProvider {
 public:
-    static constexpr std::uint32_t kMaxInFlight = D3D11BridgeSlotTracker::kCapacity;
+    static constexpr std::uint32_t kMaxInFlight = SyntheticDx11SlotTracker::kCapacity;
 
     SyntheticDx11BridgeProvider();
     ~SyntheticDx11BridgeProvider() override;
@@ -84,8 +189,8 @@ private:
 
     SyntheticDx12Provider syntheticD3D12_;
     NvofMotionProvider nvof_;
-    D3D11BridgeSlotTracker slotTracker_{};
-    D3D11D3D12FenceBridge sync_{};
+    SyntheticDx11SlotTracker slotTracker_{};
+    SyntheticDx11FenceBridge sync_{};
     Resolution currentRes_{};
     std::array<SharedSlot, kMaxInFlight> sharedSlots_{};
     bool ready_ = false;

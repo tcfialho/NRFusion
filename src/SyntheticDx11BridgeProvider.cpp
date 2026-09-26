@@ -1,11 +1,108 @@
 #include "nrfusion/SyntheticDx11BridgeProvider.hpp"
 
+#include <utility>
+
 #if defined(_MSC_VER)
 #pragma comment(lib, "d3d11.lib")
 #pragma comment(lib, "dxgi.lib")
 #endif
 
 namespace nrfusion {
+
+bool SyntheticDx11ResourcesCopyCompatible(
+    ID3D11Resource* source, ID3D11Resource* destination,
+    ID3D11Device* expectedDevice) noexcept {
+    if (!source || !destination || !expectedDevice) return false;
+    ComPtr<ID3D11Device> sourceDevice;
+    ComPtr<ID3D11Device> destinationDevice;
+    source->GetDevice(&sourceDevice);
+    destination->GetDevice(&destinationDevice);
+    if (sourceDevice.Get() != expectedDevice ||
+        destinationDevice.Get() != expectedDevice)
+        return false;
+
+    ComPtr<ID3D11Texture2D> sourceTexture;
+    ComPtr<ID3D11Texture2D> destinationTexture;
+    if (FAILED(source->QueryInterface(IID_PPV_ARGS(&sourceTexture))) ||
+        FAILED(destination->QueryInterface(IID_PPV_ARGS(&destinationTexture))))
+        return false;
+    D3D11_TEXTURE2D_DESC a{}, b{};
+    sourceTexture->GetDesc(&a);
+    destinationTexture->GetDesc(&b);
+    return a.Width == b.Width && a.Height == b.Height &&
+        a.MipLevels == b.MipLevels && a.ArraySize == b.ArraySize &&
+        a.Format == b.Format && a.SampleDesc.Count == b.SampleDesc.Count &&
+        a.SampleDesc.Quality == b.SampleDesc.Quality;
+}
+
+bool SyntheticDx11FenceBridge::CreateSharedFencePair(
+    ID3D11Device5* device11, ID3D12Device* device12,
+    ComPtr<ID3D11Fence>& fence11, ComPtr<ID3D12Fence>& fence12) {
+    if (FAILED(device11->CreateFence(
+            0, D3D11_FENCE_FLAG_SHARED, IID_PPV_ARGS(&fence11))))
+        return false;
+    HANDLE handle = nullptr;
+    if (FAILED(fence11->CreateSharedHandle(
+            nullptr, GENERIC_ALL, nullptr, &handle)))
+        return false;
+    const HRESULT opened =
+        device12->OpenSharedHandle(handle, IID_PPV_ARGS(&fence12));
+    CloseHandle(handle);
+    return SUCCEEDED(opened);
+}
+
+bool SyntheticDx11FenceBridge::BindAfterIdle(
+    ID3D11Device* device11, ID3D11DeviceContext* context11,
+    ID3D12Device* device12, ID3D12CommandQueue* queue12) {
+    if (!device11 || !context11 || !device12 || !queue12) return false;
+    ResetAfterIdle();
+    ComPtr<ID3D11Device> contextDevice;
+    context11->GetDevice(&contextDevice);
+    if (contextDevice.Get() != device11) return false;
+    ComPtr<ID3D12Device> queueDevice;
+    if (FAILED(queue12->GetDevice(IID_PPV_ARGS(&queueDevice))) ||
+        queueDevice.Get() != device12)
+        return false;
+    ComPtr<ID3D11Device5> device5;
+    ComPtr<ID3D11DeviceContext4> context4;
+    if (FAILED(device11->QueryInterface(IID_PPV_ARGS(&device5))) ||
+        FAILED(context11->QueryInterface(IID_PPV_ARGS(&context4))))
+        return false;
+    if (!CreateSharedFencePair(
+            device5.Get(), device12, inputFence11_, inputFence12_) ||
+        !CreateSharedFencePair(
+            device5.Get(), device12, outputFence11_, outputFence12_)) {
+        ResetAfterIdle();
+        return false;
+    }
+    d3d11Context_ = std::move(context4);
+    d3d12Queue_ = queue12;
+    return true;
+}
+
+void SyntheticDx11FenceBridge::ResetAfterIdle() noexcept {
+    outputFence12_.Reset(); outputFence11_.Reset();
+    inputFence12_.Reset(); inputFence11_.Reset();
+    d3d12Queue_.Reset(); d3d11Context_.Reset();
+    nextInputValue_ = 1; nextOutputValue_ = 1;
+}
+
+bool SyntheticDx11FenceBridge::QueueInputHandoff() noexcept {
+    if (!d3d11Context_ || !d3d12Queue_ || !inputFence11_ || !inputFence12_)
+        return false;
+    const std::uint64_t value = nextInputValue_++;
+    return SUCCEEDED(d3d11Context_->Signal(inputFence11_.Get(), value)) &&
+        SUCCEEDED(d3d12Queue_->Wait(inputFence12_.Get(), value));
+}
+
+bool SyntheticDx11FenceBridge::QueueOutputHandoff() noexcept {
+    if (!d3d11Context_ || !d3d12Queue_ || !outputFence11_ || !outputFence12_)
+        return false;
+    const std::uint64_t value = nextOutputValue_++;
+    return SUCCEEDED(d3d12Queue_->Signal(outputFence12_.Get(), value)) &&
+        SUCCEEDED(d3d11Context_->Wait(outputFence11_.Get(), value));
+}
+
 
 SyntheticDx11BridgeProvider::SyntheticDx11BridgeProvider() = default;
 
@@ -128,7 +225,7 @@ bool SyntheticDx11BridgeProvider::RecordD3D11OutputConsume(
         return false;
     const auto slot = slotTracker_.Find(handle.workId);
     if (!slot || !sharedSlots_[*slot].d3d11Residual ||
-        !D3D11ResourcesCopyCompatible(
+        !SyntheticDx11ResourcesCopyCompatible(
             sharedSlots_[*slot].d3d11Residual.Get(), gameDestination,
             d3d11Device_.Get()) ||
         !sync_.QueueOutputHandoff())
