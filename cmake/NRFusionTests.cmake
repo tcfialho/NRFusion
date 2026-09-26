@@ -75,7 +75,21 @@ else()
 endif()
 
 nrfusion_test(nrfusion_tests tests/controller_tests.cpp)
-target_sources(nrfusion_tests PRIVATE src/OptiScalerAdapter.cpp)
+target_sources(nrfusion_tests PRIVATE
+    tests/controller_tests_part01.cpp
+    tests/controller_tests_part02.cpp
+    tests/controller_tests_part03.cpp
+    tests/controller_tests_part04.cpp
+    tests/controller_tests_part05.cpp
+    tests/controller_tests_part06.cpp
+    tests/controller_tests_part07.cpp
+    tests/controller_tests_part08.cpp
+    tests/controller_tests_part09.cpp
+    tests/controller_tests_part10.cpp
+    tests/controller_tests_part11.cpp
+    tests/controller_tests_part12.cpp
+    src/OptiScalerAdapter.cpp
+)
 nrfusion_test(nrfusion_game_probe_tests tests/game_probe_tests.cpp)
 nrfusion_test(nrfusion_telemetry_tests tests/telemetry_tracker_tests.cpp)
 nrfusion_test(nrfusion_timing_mapper_tests tests/timing_mapper_tests.cpp)
