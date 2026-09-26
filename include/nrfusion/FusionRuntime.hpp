@@ -211,6 +211,12 @@ public:
         return histories_.Acquire(view, frame.frameId,
                                   DescribeGuideHistory(frame, selectedMotion));
     }
+    // Compatibility for shape-only callers that do not own a FrameContext.
+    HistoryLease AcquireHistory(
+        const ViewDescriptor& view,
+        std::uint64_t frameNumber) {
+        return histories_.Acquire(view, frameNumber);
+    }
     void InvalidateHistory(std::uint64_t featureKey) { histories_.InvalidateFeature(featureKey); }
 
     AsyncOverlapEstimator& Overlap() noexcept { return overlap_; }

@@ -135,6 +135,13 @@ public:
         const ViewDescriptor& view,
         std::uint64_t frameNumber,
         const GuideHistoryState& guides);
+    // Legacy callers without guide evidence keep shape-only history semantics.
+    // New runtime paths must use the overload above.
+    HistoryLease Acquire(
+        const ViewDescriptor& view,
+        std::uint64_t frameNumber) {
+        return Acquire(view, frameNumber, GuideHistoryState{});
+    }
     void InvalidateFeature(std::uint64_t featureKey);
     void Prune(std::uint64_t frameNumber, std::uint64_t maxIdleFrames = 600);
     void Clear();
