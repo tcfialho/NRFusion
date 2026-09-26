@@ -160,3 +160,48 @@ Validação final:
 O gate é portátil/hosted; não existe dependência física específica desta fase.
 NVOF permanece fail-closed, não anunciado como guide pronto.
 Os gates físicos pendentes das Fases 11–14 permanecem inalterados.
+
+## Segunda revalidação adversarial
+
+A revisão dos achados #12–#30 foi repetida contra o código efetivamente publicado.
+
+Resultado:
+- NVOF continua fail-closed: o placeholder não cria submission, não publica guide e
+  não anuncia completion/backpressure fictícios;
+- resolver, validator, binder e history já cobrem provenance/evidence, resetHistory,
+  configuration generation, stale binding, Zero materializado, idempotência no mesmo
+  frame e mudanças de resolução/formato;
+- Windows CI executa os testes de guide da fase e portable-core roda em
+  `standalone/integration`;
+- o único bypass residual de capability foi removido: `caps.nvof` sozinho não
+  seleciona mais NVOF. A policy exige `nvofGuideReady` e evidence confiável do
+  frame;
+- o host OptiScaler continua sem anunciar NVOF porque não existe executor NVOF real.
+  Isso é fail-closed, não uma capability ausente a ser inventada;
+- history está no caminho efetivo
+  `OptiScalerAdapter::ResolveAuto -> FusionRuntime::ResolveAuto -> UpdateAutoGuideHistory`.
+  `MotionGuideBinding` permanece o boundary obrigatório para guides produzidos
+  pelo runtime/provider; o contrato legado de motion borrowed do host não é
+  reinterpretado como guide provider-owned.
+
+Preparação estrutural para a correção:
+- `f14fdab` dividiu `controller_tests.cpp` em partes <=300 linhas mantendo um
+  único executável de teste;
+- Portable `36276740194`: PASS;
+- Focused Portable `36276740185`: PASS;
+- Windows `36276740231`: PASS.
+
+Correção do bypass:
+- código validado: `6b788c0`;
+- Portable `36276992447`: PASS;
+- Focused Portable `36276992629`: PASS;
+- Windows `36276992418`: PASS;
+- checkpoint: `nrfusion-source-6b788c07f0439fdbd1473faf6e74dbd3f4126400`,
+  artifact `10916768824`,
+  sha256 `a86f320286f653df541a7ce77c1532ceff40a844ebb021db9c6bb1363218c0b6`.
+
+**Fase 15 CLOSED após a segunda revalidação.**
+
+A implementação de optical flow real continua trabalho futuro e não autoriza
+`caps.nvof=true` até existir dispatch, completion e guide evidence reais.
+
