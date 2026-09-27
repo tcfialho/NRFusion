@@ -128,8 +128,7 @@ void DlssgTransfusion::ProcessSetOptions(uint32_t& inOutMode, uint32_t& inOutNum
 
 void DlssgTransfusion::ProcessGetState(uint32_t& outNumFramesToGenerateMax)
 {
-    std::lock_guard lock(m_mutex);
-    const uint32_t unlockedMax = UnlockedMaxLocked();
+    const uint32_t unlockedMax = UnlockedMax();
     if (unlockedMax != 0 && outNumFramesToGenerateMax < unlockedMax)
         outNumFramesToGenerateMax = unlockedMax;
 }
