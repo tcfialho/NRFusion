@@ -132,17 +132,68 @@ Correção:
 | Guide clones | `D3D12NrGuideClones` | guide typeless que exige formato tipado | até depth + motion; bytes/count ativos | reutiliza enquanto desc tipada coincide | resize/formato ou retorno ao guide direto via retirement |
 | Codec | `D3D12NrCodec` | primeiro `ExecuteMainFrame` que inicializa codec | 48 x 256 B upload + 1 heap de 384 descriptors | ring fixo de 48 slots | `Shutdown()`; não depende de resize |
 | Timing D3D12 | `D3D12RetiredTimingSource` | `BindAfterIdle()` explícito | readback de 16 timestamps + query heap | ring fixo de 8 samples | `ResetAfterIdle()` |
-| Diagnostics legado | `NrD3D12Diagnostics` | `NRFusion_BeginNrDiagnosticFrame` | readback de 256 KiB + query heap de 32768 timestamps | reutiliza entre frames diagnósticos | ainda permanece residente após `ReadNrDiagnosticFrame` |
+| Diagnostics legado | `NrD3D12Diagnostics` | `NRFusion_BeginNrDiagnosticFrame` | readback de 256 KiB + query heap de 32768 timestamps | existe somente durante frame diagnóstico | libera após `ReadNrDiagnosticFrame` com fence concluído |
+| Synthetic D3D12 | `SyntheticDx12Provider` | primeiro uso de cada ring slot | 3 texturas RGBA16F por slot + 1 descriptor heap | ring fixo de 3 slots; reutiliza até resize | `Shutdown()`; accounting reporta bytes/count ativos |
+
+## Subgate 19d — diagnostics off sem GPU resources residentes
+
+Correção `145951f`:
+- `Prepare()` cria query heap/readback em temporários e só publica o par completo.
+- Após o fence comprovar conclusão, `NRFusion_ReadNrDiagnosticFrame` libera query heap,
+  readback e referência ao device em sucesso ou falha terminal.
+- Accounting expõe 2 objetos GPU + 256 KiB enquanto diagnostics está ativo e zero após leitura.
+- `tests/nvapi_stub/nvapi.h` existe somente para compilar esse owner no hosted Windows;
+  não altera o header/runtime NVAPI usado pelo patcher.
+- O harness executa dois ciclos begin -> fence -> read e exige recriação limpa em ambos.
+
+Validação:
+- Portable `36353342312`: PASS.
+- Focused Portable `36353342318`: PASS.
+- Windows `36353342324`: PASS; `nrfusion_d3d12_diagnostics_resources_tests` PASS em 0,03 s.
+- Checkpoint `nrfusion-source-145951f558046c7ba88e12fd46bd99aa3ecb6902`,
+  artifact `10942253939`,
+  sha256 `73bc01564241712f427ef6a58e3e87bb10381639c5e70869432132098284739e`.
+
+**Subgate 19d CLOSED.**
+
+## Subgate 19e — accounting do synthetic D3D12
+
+Correção `a140aef`:
+- `SyntheticDx12Provider::Accounting()` contabiliza os recursos ativos do ring sem alocar,
+  consultar device ou emitir GPU work.
+- O footprint atual é 3 texturas RGBA16F por slot usado:
+  `3 * width * height * 8` bytes lógicos por slot.
+- O scale gate prova dois slots ativos após 64x64 + 32x32:
+  6 resources, 122880 bytes lógicos, 1 descriptor heap.
+- Após `Shutdown()`, resources/heaps/bytes retornam a zero.
+
+Validação:
+- Portable `36353705045`: PASS.
+- Focused Portable `36353705106`: PASS.
+- Windows `36353705052`: PASS; `nrfusion_synthetic_dx12_scale_gate_test` PASS em 0,11 s.
+- Checkpoint `nrfusion-source-a140aef29ac47800b68f648adc9c2695c0a922b3`,
+  artifact `10943172628`,
+  sha256 `ec0528af05b88de79511f4a8970fac3599b483839b876848cfade5dd8acbdf42`.
+
+**Subgate 19e CLOSED. Fase 19 permanece IN PROGRESS.**
+
+## Auditoria dos demais carriers hosted
+
+- OpenGL: resize só recria depois que slots em voo aposentam; `CloseSharedHandles()` libera
+  D3D12/GL resources antes da nova resolução.
+- Vulkan: `ImportD3D12Resource()` e `ImportD3D12Fence()` não possuem callsite no source/test
+  Vulkan atual; não há import repetitivo ativo para corrigir.
+- D3D11: carriers standalone usam resources do jogo; o bridge próprio mantém fences e
+  `ResetAfterIdle()` explícito.
 
 ## Blocker atual
 
-O próximo leak concreto é o owner legado de diagnostics: depois que o fence comprova conclusão
-e `NRFusion_ReadNrDiagnosticFrame` termina, query heap/readback continuam presos no estado
-estático. O source tem <=300 linhas, mas depende de `nvapi.h`, que não está versionado no
-repositório; portanto hoje não existe gate hosted focado para compilar/testar esse owner isolado.
+O próximo recurso inativo concreto está no Host64: `zeroGuideUpload_` é staging temporário
+para inicializar depth/motion zero, mas `EnsureZeroGuides()` retorna cedo em resolução estável
+sem liberá-lo mesmo após `guideFence_` concluir.
 
-Não modificar `tools/apply_to_optiscaler.py` para resolver isso. Primeiro criar uma forma
-hosted de compilar/testar o owner sem depender do monólito do patcher; depois liberar os GPU
-resources após a conclusão comprovada do fence.
+Próxima correção: aposentar `zeroGuideUpload_` assim que o guide upload fence estiver
+concluído, sem wait, preservando `lowGuideDepth_`/`lowGuideMotion_`. Cobrir no hosted
+Host64/IPC antes de qualquer gate físico.
 
 A medição física de peak VRAM final continua pendente e não deve ser substituída por hosted CI.
