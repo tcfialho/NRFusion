@@ -108,6 +108,7 @@ nrfusion_test(nrfusion_motion_guide_binding_tests tests/motion_guide_binding_tes
 nrfusion_test(nrfusion_phase15_integration_tests tests/phase15_integration_tests.cpp)
 if (WIN32)
     nrfusion_test(nrfusion_mfg_capability_tests tests/dlssg_transfusion_capability_tests.cpp)
+    nrfusion_test(nrfusion_mfg_fake_streamline_tests tests/dlssg_transfusion_fake_streamline_tests.cpp)
 endif()
 nrfusion_test(nrfusion_d3d12_carrier_contract_tests tests/d3d12_carrier_contract_tests.cpp)
 nrfusion_test(nrfusion_d3d12_carrier_session_tests tests/d3d12_carrier_session_tests.cpp)
