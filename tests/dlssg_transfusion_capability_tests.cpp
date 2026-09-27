@@ -14,7 +14,13 @@ int main()
     assert(!status.advertiseGatePatched);
     assert(!status.validateGatePatched);
     assert(status.blackwellKernelsRewritten == 0);
+    assert(status.failureReason.empty());
     assert(transfusion.UnlockedMax() == 0);
+
+    transfusion.TryApply();
+    assert(transfusion.IsPending());
+    assert(!transfusion.Status().moduleFound);
+    assert(transfusion.Status().failureReason.empty());
 
     std::uint32_t stockMax = 3;
     transfusion.ProcessGetState(stockMax);
@@ -105,6 +111,8 @@ int main()
     assert(!rejected.archGatesPatched);
     assert(!rejected.blackwellTransfusionActive);
     assert(rejected.blackwellKernelsRewritten == 0);
+    assert(rejected.failureReason == "unsupported DLSSG gate signatures");
+    assert(!transfusion.IsPending());
     assert(transfusion.UnlockedMax() == 0);
 
     assert(VirtualFree(image, 0, MEM_RELEASE) != 0);

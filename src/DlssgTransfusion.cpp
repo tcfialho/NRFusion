@@ -54,15 +54,25 @@ void DlssgTransfusion::TryApply(HMODULE module)
         return;
 
     m_status.moduleFound = true;
+    m_status.failureReason.clear();
 
     if (!HasSupportedArchGates(module))
+    {
+        m_status.failureReason = "unsupported DLSSG gate signatures";
         return;
+    }
 
     if (!TransfuseBlackwellFatbins(module))
+    {
+        m_status.failureReason = "no compatible Blackwell fatbins";
         return;
+    }
 
     if (!PatchArchGates(module))
+    {
+        m_status.failureReason = "DLSSG gate patch failed";
         return;
+    }
 
     if (m_uiMode.load(std::memory_order_acquire) == MfgUiMode::Auto)
         PatchHudlessUi(module);
