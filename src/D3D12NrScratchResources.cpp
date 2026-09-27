@@ -198,6 +198,41 @@ bool D3D12NrScratchResources::EnsureOptional(
     return true;
 }
 
+bool D3D12NrScratchResources::RetireUnused(
+    const D3D12NrScratchUsage& usage,
+    NrDeferredRetirementQueue& retirement) noexcept {
+    struct Candidate {
+        D3D12NrScratchKind kind;
+        bool keep;
+    };
+    const Candidate candidates[] = {
+        {D3D12NrScratchKind::PassScratch, usage.passScratch},
+        {D3D12NrScratchKind::ColorSmall, usage.colorSmall},
+        {D3D12NrScratchKind::OutputNative, usage.outputNative},
+        {D3D12NrScratchKind::ActiveColor, usage.activeColor},
+        {D3D12NrScratchKind::ResidualEdited, usage.residual},
+        {D3D12NrScratchKind::ResidualHistory0, usage.residual},
+        {D3D12NrScratchKind::ResidualHistory1, usage.residual},
+        {D3D12NrScratchKind::ResidualComposed, usage.residual},
+    };
+
+    std::size_t retireCount = 0;
+    for (const auto& candidate : candidates) {
+        const Surface* surface = Slot(candidate.kind);
+        if (!candidate.keep && surface != nullptr && surface->resource != nullptr)
+            ++retireCount;
+    }
+    if (retireCount > NrDeferredRetirementQueue::kCapacity - retirement.Size())
+        return false;
+
+    for (const auto& candidate : candidates) {
+        if (candidate.keep) continue;
+        Surface* surface = Slot(candidate.kind);
+        if (surface != nullptr && !Park(*surface, retirement)) return false;
+    }
+    return true;
+}
+
 bool D3D12NrScratchResources::Retire(
     D3D12NrScratchKind kind, NrDeferredRetirementQueue& retirement) noexcept {
     Surface* surface = Slot(kind);

@@ -116,7 +116,11 @@ D3D12NrFrameResult D3D12NrExecutor::ExecuteMainFrame(
         residualStoreValid_ = false;
     }
     bool ok = codec_.Init(device) && scratch_.Ensure(device, scratchDesc, retirement_);
-    if (context.plan.requestedPasses > 1)
+    const D3D12NrScratchUsage scratchUsage{
+        effectivePasses > 1, context.plan.reduced, false,
+        context.cropColor, context.acrossRr};
+    ok = ok && scratch_.RetireUnused(scratchUsage, retirement_);
+    if (effectivePasses > 1)
         ok = ok && scratch_.EnsureOptional(
             device, D3D12NrScratchKind::PassScratch, targetDesc.Format,
             context.plan.work.width, context.plan.work.height, retirement_);

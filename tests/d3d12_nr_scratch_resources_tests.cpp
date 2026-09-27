@@ -149,12 +149,47 @@ int main() {
     assert(!scratch.Complete());
     assert(retirement.Size() == 15);
 
+    D3D12NrScratchResources usageScratch;
+    NrDeferredRetirementQueue usageRetirement;
+    assert(usageScratch.Ensure(gpu.device.Get(), native, usageRetirement));
+    for (const auto kind : {
+             D3D12NrScratchKind::PassScratch,
+             D3D12NrScratchKind::ColorSmall,
+             D3D12NrScratchKind::OutputNative,
+             D3D12NrScratchKind::ActiveColor,
+             D3D12NrScratchKind::ResidualEdited,
+             D3D12NrScratchKind::ResidualHistory0,
+             D3D12NrScratchKind::ResidualHistory1,
+             D3D12NrScratchKind::ResidualComposed}) {
+        assert(usageScratch.EnsureOptional(
+            gpu.device.Get(), kind, native.format,
+            native.frameWidth, native.frameHeight, usageRetirement));
+    }
+    D3D12NrScratchUsage passOnly{};
+    passOnly.passScratch = true;
+    assert(usageScratch.RetireUnused(passOnly, usageRetirement));
+    assert(usageScratch.Get(D3D12NrScratchKind::PassScratch) != nullptr);
+    assert(usageScratch.Get(D3D12NrScratchKind::ColorSmall) == nullptr);
+    assert(usageScratch.Get(D3D12NrScratchKind::ActiveColor) == nullptr);
+    assert(usageScratch.Get(D3D12NrScratchKind::ResidualHistory0) == nullptr);
+    assert(usageRetirement.Size() == 7);
+
+    assert(usageScratch.RetireUnused({}, usageRetirement));
+    assert(usageScratch.Get(D3D12NrScratchKind::PassScratch) == nullptr);
+    assert(usageRetirement.Size() == 8);
+    assert(usageScratch.Retire(usageRetirement));
+    assert(usageRetirement.Size() == 11);
+
     assert(SUCCEEDED(gpu.list->Close()));
     unsigned released = 0;
     retirement.DrainAfterIdle(&released, &ReleaseRetired);
     assert(released == 15);
     assert(retirement.Size() == 0);
+    usageRetirement.DrainAfterIdle(&released, &ReleaseRetired);
+    assert(released == 26);
+    assert(usageRetirement.Size() == 0);
 
     scratch.ReleaseAfterIdle();
+    usageScratch.ReleaseAfterIdle();
     return 0;
 }

@@ -24,6 +24,14 @@ enum class D3D12NrScratchKind : std::uint8_t {
     ResidualComposed
 };
 
+struct D3D12NrScratchUsage {
+    bool passScratch = false;
+    bool colorSmall = false;
+    bool outputNative = false;
+    bool activeColor = false;
+    bool residual = false;
+};
+
 struct D3D12NrScratchDesc {
     DXGI_FORMAT format = DXGI_FORMAT_UNKNOWN;
     std::uint32_t frameWidth = 0;
@@ -47,6 +55,8 @@ public:
     bool EnsureOptional(ID3D12Device* device, D3D12NrScratchKind kind,
                         DXGI_FORMAT format, std::uint32_t width, std::uint32_t height,
                         NrDeferredRetirementQueue& retirement) noexcept;
+    bool RetireUnused(const D3D12NrScratchUsage& usage,
+                      NrDeferredRetirementQueue& retirement) noexcept;
     bool Retire(D3D12NrScratchKind kind, NrDeferredRetirementQueue& retirement) noexcept;
     bool Retire(NrDeferredRetirementQueue& retirement) noexcept;
     bool Transition(ID3D12GraphicsCommandList* cmdList, D3D12NrScratchKind kind,
