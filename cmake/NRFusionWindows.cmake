@@ -33,6 +33,7 @@ add_executable(nrfusion_harness_3d
     add_executable(nrfusion_nr_scratch_resources_tests
         tests/d3d12_nr_scratch_resources_tests.cpp
         src/D3D12NrScratchResources.cpp
+        src/D3D12NrScratchAccounting.cpp
         src/NrDeferredRetirementQueue.cpp
     )
     target_include_directories(nrfusion_nr_scratch_resources_tests PRIVATE include)

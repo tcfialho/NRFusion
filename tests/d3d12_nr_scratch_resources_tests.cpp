@@ -73,6 +73,12 @@ int main() {
     assert(scratch.Complete());
     ExpectSize(scratch.Get(D3D12NrScratchKind::Output), 1280, 720);
     ExpectSize(scratch.Get(D3D12NrScratchKind::ColorCopy), 1920, 1080);
+    constexpr std::uint64_t frameBytes = 1920ull * 1080ull * 8ull;
+    constexpr std::uint64_t workBytes = 1280ull * 720ull * 8ull;
+    const auto coreAccounting = scratch.Accounting();
+    assert(coreAccounting.resourceCount == 3);
+    assert(coreAccounting.logicalBytesExact);
+    assert(coreAccounting.logicalBytes == workBytes + 2ull * frameBytes);
 
     assert(scratch.EnsureOptional(
         gpu.device.Get(), D3D12NrScratchKind::PassScratch,
@@ -110,6 +116,10 @@ int main() {
     assert(scratch.State(D3D12NrScratchKind::ResidualEdited) ==
            D3D12_RESOURCE_STATE_NON_PIXEL_SHADER_RESOURCE);
     assert(retirement.Size() == 0);
+    const auto fullAccounting = scratch.Accounting();
+    assert(fullAccounting.resourceCount == 11);
+    assert(fullAccounting.logicalBytesExact);
+    assert(fullAccounting.logicalBytes == 3ull * workBytes + 8ull * frameBytes);
 
     assert(scratch.EnsureOptional(
         gpu.device.Get(), D3D12NrScratchKind::PassScratch,
@@ -140,6 +150,11 @@ int main() {
 
     assert(scratch.Ensure(gpu.device.Get(), resized, retirement));
     assert(scratch.Matches(resized));
+    const auto resizedAccounting = scratch.Accounting();
+    assert(resizedAccounting.resourceCount == 3);
+    assert(resizedAccounting.logicalBytesExact);
+    assert(resizedAccounting.logicalBytes ==
+           1200ull * 675ull * 8ull + 2ull * 1600ull * 900ull * 8ull);
     assert(scratch.Get(D3D12NrScratchKind::PassScratch) == nullptr);
     assert(scratch.Get(D3D12NrScratchKind::ColorSmall) == nullptr);
     assert(scratch.Get(D3D12NrScratchKind::OutputNative) == nullptr);
@@ -147,6 +162,8 @@ int main() {
 
     assert(scratch.Retire(retirement));
     assert(!scratch.Complete());
+    assert(scratch.Accounting().resourceCount == 0);
+    assert(scratch.Accounting().logicalBytes == 0);
     assert(retirement.Size() == 15);
 
     D3D12NrScratchResources usageScratch;
@@ -173,9 +190,17 @@ int main() {
     assert(usageScratch.Get(D3D12NrScratchKind::ActiveColor) == nullptr);
     assert(usageScratch.Get(D3D12NrScratchKind::ResidualHistory0) == nullptr);
     assert(usageRetirement.Size() == 7);
+    const auto passOnlyAccounting = usageScratch.Accounting();
+    assert(passOnlyAccounting.resourceCount == 4);
+    assert(passOnlyAccounting.logicalBytesExact);
+    assert(passOnlyAccounting.logicalBytes ==
+           workBytes + 3ull * frameBytes);
 
     assert(usageScratch.RetireUnused({}, usageRetirement));
     assert(usageScratch.Get(D3D12NrScratchKind::PassScratch) == nullptr);
+    assert(usageScratch.Accounting().resourceCount == 3);
+    assert(usageScratch.Accounting().logicalBytes ==
+           workBytes + 2ull * frameBytes);
     assert(usageRetirement.Size() == 8);
     assert(usageScratch.Retire(usageRetirement));
     assert(usageRetirement.Size() == 11);

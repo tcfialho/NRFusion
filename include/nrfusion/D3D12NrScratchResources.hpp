@@ -6,6 +6,7 @@
 #include <d3d12.h>
 #include <dxgiformat.h>
 
+#include "nrfusion/D3D12NrScratchAccounting.hpp"
 #include "nrfusion/NrDeferredRetirementQueue.hpp"
 
 namespace nrfusion {
@@ -67,6 +68,7 @@ public:
     bool Matches(const D3D12NrScratchDesc& desc) const noexcept;
     ID3D12Resource* Get(D3D12NrScratchKind kind) const noexcept;
     D3D12_RESOURCE_STATES State(D3D12NrScratchKind kind) const noexcept;
+    D3D12NrScratchAccounting Accounting() const noexcept;
 
 private:
     struct Surface {
