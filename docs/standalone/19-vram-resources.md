@@ -134,6 +134,7 @@ Correção:
 | Timing D3D12 | `D3D12RetiredTimingSource` | `BindAfterIdle()` explícito | readback de 16 timestamps + query heap | ring fixo de 8 samples | `ResetAfterIdle()` |
 | Diagnostics legado | `NrD3D12Diagnostics` | `NRFusion_BeginNrDiagnosticFrame` | readback de 256 KiB + query heap de 32768 timestamps | existe somente durante frame diagnóstico | libera após `ReadNrDiagnosticFrame` com fence concluído |
 | Synthetic D3D12 | `SyntheticDx12Provider` | primeiro uso de cada ring slot | 3 texturas RGBA16F por slot + 1 descriptor heap | ring fixo de 3 slots; reutiliza até resize | `Shutdown()`; accounting reporta bytes/count ativos |
+| Host64 zero guides | `HostServer64` | ausência de depth/motion importados | depth + motion RGBA16F e staging de upload temporário | par reutilizado na mesma resolução | staging após guide fence; par após imports substituírem fallback e fences concluírem |
 
 ## Subgate 19d — diagnostics off sem GPU resources residentes
 
@@ -186,14 +187,49 @@ Validação:
 - D3D11: carriers standalone usam resources do jogo; o bridge próprio mantém fences e
   `ResetAfterIdle()` explícito.
 
+## Subgate 19f — retirement dos zero guides Host64
+
+Correção `c9504e9`:
+- `zeroGuideUpload_` deixou de permanecer residente após a inicialização dos fallback guides.
+- `CollectRetiredGuideUpload()` usa apenas `GetCompletedValue()`; não adiciona wait/event
+  ao produto.
+- A coleta ocorre no fluxo normal de frames e antes do early-return de resolução estável.
+- O wait usado para provar retirement existe somente no harness WARP.
+- O Windows push gate passou a executar `nrfusion_ipc_host_test`.
+
+Validação:
+- Portable `36354867650`: PASS.
+- Focused Portable `36354867628`: PASS.
+- Windows `36354867658`: PASS; `nrfusion_ipc_host_test` PASS em 0,39 s.
+- Checkpoint `nrfusion-source-c9504e92316ba228f817c6caff0b544443e328fa`,
+  artifact `10943502007`,
+  sha256 `7661fdbef41a1ca551b01a01189e3c3b9fca7e581cb928edd829fd2efd52c7f1`.
+
+Correção `8884173`:
+- quando depth e motion importados tornam o fallback desnecessário,
+  `CollectInactiveZeroGuides()` aposenta `lowGuideDepth_` e `lowGuideMotion_`;
+- o release só ocorre após o fence de criação dos guides e o último host fence que usou o
+  fallback estarem concluídos;
+- o mesmo harness confirma que os dois fallback resources saem quando ambos os imports existem.
+
+Validação:
+- Portable `36355137406`: PASS.
+- Focused Portable `36355137407`: PASS.
+- Windows `36355137413`: PASS; `nrfusion_ipc_host_test` PASS em 0,44 s.
+- Checkpoint `nrfusion-source-8884173d541ff2b8b911eb6817cd2ed4f716a14e`,
+  artifact `10943254380`,
+  sha256 `c736148bc6d8dfc6f0c093d6c3b3ffca7633ed7f2eb383b198077a87af4eec60`.
+
+**Subgate 19f CLOSED. Fase 19 permanece IN PROGRESS.**
+
 ## Blocker atual
 
-O próximo recurso inativo concreto está no Host64: `zeroGuideUpload_` é staging temporário
-para inicializar depth/motion zero, mas `EnsureZeroGuides()` retorna cedo em resolução estável
-sem liberá-lo mesmo após `guideFence_` concluir.
+`HostServer64::Stop()` encerra thread/transport, mas o objeto ainda pode permanecer vivo com
+providers, zero-guide command objects, queue e device residentes. O cleanup precisa emitir um
+idle marker novo na queue e só liberar os owners quando esse marker realmente concluir; timeout
+de shutdown deve preservar recursos em vez de liberar objetos potencialmente em voo.
 
-Próxima correção: aposentar `zeroGuideUpload_` assim que o guide upload fence estiver
-concluído, sem wait, preservando `lowGuideDepth_`/`lowGuideMotion_`. Cobrir no hosted
-Host64/IPC antes de qualquer gate físico.
+Próxima correção: tornar o cleanup GPU de `Stop()` explícito e seguro, com teste WARP que
+mantém o objeto vivo após `Stop()` e exige ausência de resources/device próprios.
 
 A medição física de peak VRAM final continua pendente e não deve ser substituída por hosted CI.
