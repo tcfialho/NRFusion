@@ -68,6 +68,10 @@ int main() {
     D3D12NrCodec codec;
     assert(codec.Init(device.Get()));
     assert(codec.Ready());
+    auto accounting = codec.Accounting();
+    assert(accounting.resourceCount == 48);
+    assert(accounting.descriptorHeapCount == 1);
+    assert(accounting.logicalBytes == 48ull * sizeof(D3D12NrCodecConstants));
 
     auto source = Texture(
         device.Get(), D3D12_RESOURCE_FLAG_NONE,
@@ -93,6 +97,8 @@ int main() {
     resources.keep = keep.Get();
 
     assert(codec.Dispatch(list.Get(), constants, resources));
+    constants.mode = static_cast<std::uint32_t>(D3D12NrCodecMode::Resolve);
+    assert(codec.Dispatch(list.Get(), constants, resources));
     assert(SUCCEEDED(list->Close()));
 
     ID3D12CommandList* lists[] = {list.Get()};
@@ -107,5 +113,9 @@ int main() {
 
     assert(device->GetDeviceRemovedReason() == S_OK);
     codec.Shutdown();
+    accounting = codec.Accounting();
+    assert(accounting.resourceCount == 0);
+    assert(accounting.descriptorHeapCount == 0);
+    assert(accounting.logicalBytes == 0);
     return 0;
 }

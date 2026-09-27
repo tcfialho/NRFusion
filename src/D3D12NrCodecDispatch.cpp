@@ -5,9 +5,21 @@
 namespace nrfusion {
 
 D3D12_CPU_DESCRIPTOR_HANDLE D3D12NrCodec::Handle(
-    const Slot& slot, std::uint32_t index) const noexcept {
-    D3D12_CPU_DESCRIPTOR_HANDLE handle = slot.heap->GetCPUDescriptorHandleForHeapStart();
-    handle.ptr += static_cast<SIZE_T>(index) * descriptorSize_;
+    std::uint32_t slot, std::uint32_t index) const noexcept {
+    D3D12_CPU_DESCRIPTOR_HANDLE handle =
+        descriptorHeap_->GetCPUDescriptorHandleForHeapStart();
+    const SIZE_T descriptor =
+        static_cast<SIZE_T>(slot) * kDescriptorCount + index;
+    handle.ptr += descriptor * descriptorSize_;
+    return handle;
+}
+
+D3D12_GPU_DESCRIPTOR_HANDLE D3D12NrCodec::GpuHandle(
+    std::uint32_t slot) const noexcept {
+    D3D12_GPU_DESCRIPTOR_HANDLE handle =
+        descriptorHeap_->GetGPUDescriptorHandleForHeapStart();
+    const SIZE_T descriptor = static_cast<SIZE_T>(slot) * kDescriptorCount;
+    handle.ptr += descriptor * descriptorSize_;
     return handle;
 }
 
@@ -109,7 +121,8 @@ bool D3D12NrCodec::DispatchWithPipeline(
         targetDesc.Width < constants.width || targetDesc.Height < constants.height)
         return false;
 
-    Slot& slot = slots_[slotIndex_];
+    const std::uint32_t slotNumber = slotIndex_;
+    Slot& slot = slots_[slotNumber];
     slotIndex_ = (slotIndex_ + 1) % kSlotCount;
 
     ID3D12Resource* srvs[kSrvCount] = {
@@ -125,20 +138,20 @@ bool D3D12NrCodec::DispatchWithPipeline(
     };
 
     for (std::uint32_t i = 0; i < kSrvCount; ++i) {
-        if (!WriteSrv(srvs[i], Handle(slot, i))) return false;
+        if (!WriteSrv(srvs[i], Handle(slotNumber, i))) return false;
     }
     for (std::uint32_t i = 0; i < kUavCount; ++i) {
-        if (!WriteUav(uavs[i], Handle(slot, kSrvCount + i))) return false;
+        if (!WriteUav(uavs[i], Handle(slotNumber, kSrvCount + i))) return false;
     }
-    if (!WriteConstants(slot, constants, Handle(slot, kSrvCount + kUavCount)))
+    if (!WriteConstants(
+            slot, constants, Handle(slotNumber, kSrvCount + kUavCount)))
         return false;
 
-    ID3D12DescriptorHeap* heaps[] = {slot.heap};
+    ID3D12DescriptorHeap* heaps[] = {descriptorHeap_};
     commandList->SetDescriptorHeaps(1, heaps);
     commandList->SetComputeRootSignature(rootSignature_);
     commandList->SetPipelineState(pipeline);
-    commandList->SetComputeRootDescriptorTable(
-        0, slot.heap->GetGPUDescriptorHandleForHeapStart());
+    commandList->SetComputeRootDescriptorTable(0, GpuHandle(slotNumber));
     const UINT groupsX = constants.width / 8u + static_cast<UINT>(constants.width % 8u != 0);
     const UINT groupsY = constants.height / 8u + static_cast<UINT>(constants.height % 8u != 0);
     commandList->Dispatch(groupsX, groupsY, 1);

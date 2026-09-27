@@ -99,8 +99,11 @@ bool D3D12NrCodec::CreatePipelines() noexcept {
 bool D3D12NrCodec::CreateSlots() noexcept {
     D3D12_DESCRIPTOR_HEAP_DESC heapDesc{};
     heapDesc.Type = D3D12_DESCRIPTOR_HEAP_TYPE_CBV_SRV_UAV;
-    heapDesc.NumDescriptors = kDescriptorCount;
+    heapDesc.NumDescriptors = kDescriptorCount * kSlotCount;
     heapDesc.Flags = D3D12_DESCRIPTOR_HEAP_FLAG_SHADER_VISIBLE;
+    if (FAILED(device_->CreateDescriptorHeap(
+            &heapDesc, IID_PPV_ARGS(&descriptorHeap_))))
+        return false;
 
     D3D12_HEAP_PROPERTIES upload{};
     upload.Type = D3D12_HEAP_TYPE_UPLOAD;
@@ -115,8 +118,6 @@ bool D3D12NrCodec::CreateSlots() noexcept {
     buffer.Layout = D3D12_TEXTURE_LAYOUT_ROW_MAJOR;
 
     for (Slot& slot : slots_) {
-        if (FAILED(device_->CreateDescriptorHeap(&heapDesc, IID_PPV_ARGS(&slot.heap))))
-            return false;
         if (FAILED(device_->CreateCommittedResource(
                 &upload, D3D12_HEAP_FLAG_NONE, &buffer,
                 D3D12_RESOURCE_STATE_GENERIC_READ, nullptr,
@@ -126,16 +127,28 @@ bool D3D12NrCodec::CreateSlots() noexcept {
     return true;
 }
 
+D3D12NrCodecAccounting D3D12NrCodec::Accounting() const noexcept {
+    D3D12NrCodecAccounting result{};
+    result.descriptorHeapCount = descriptorHeap_ != nullptr ? 1u : 0u;
+    for (const Slot& slot : slots_) {
+        if (slot.constants == nullptr) continue;
+        ++result.resourceCount;
+        result.logicalBytes += sizeof(D3D12NrCodecConstants);
+    }
+    return result;
+}
+
 void D3D12NrCodec::Shutdown() noexcept {
     for (Slot& slot : slots_) {
         if (slot.constants != nullptr) slot.constants->Release();
-        if (slot.heap != nullptr) slot.heap->Release();
         slot = {};
     }
+    if (descriptorHeap_ != nullptr) descriptorHeap_->Release();
     if (residualPipelineState_ != nullptr) residualPipelineState_->Release();
     if (pipelineState_ != nullptr) pipelineState_->Release();
     if (rootSignature_ != nullptr) rootSignature_->Release();
     if (device_ != nullptr) device_->Release();
+    descriptorHeap_ = nullptr;
     residualPipelineState_ = nullptr;
     pipelineState_ = nullptr;
     rootSignature_ = nullptr;

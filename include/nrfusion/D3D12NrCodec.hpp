@@ -75,6 +75,12 @@ struct D3D12NrCodecResources {
     ID3D12Resource* keep = nullptr;
 };
 
+struct D3D12NrCodecAccounting {
+    std::size_t resourceCount = 0;
+    std::size_t descriptorHeapCount = 0;
+    std::uint64_t logicalBytes = 0;
+};
+
 class D3D12NrCodec {
 public:
     D3D12NrCodec() = default;
@@ -90,10 +96,12 @@ public:
                           const D3D12NrCodecConstants& constants,
                           const D3D12NrCodecResources& resources) noexcept;
     void Shutdown() noexcept;
+    D3D12NrCodecAccounting Accounting() const noexcept;
 
     bool Ready() const noexcept {
         return device_ != nullptr && rootSignature_ != nullptr &&
-               pipelineState_ != nullptr && residualPipelineState_ != nullptr;
+               pipelineState_ != nullptr && residualPipelineState_ != nullptr &&
+               descriptorHeap_ != nullptr;
     }
 
 private:
@@ -104,7 +112,6 @@ private:
     static constexpr std::uint32_t kSlotCount = 48;
 
     struct Slot {
-        ID3D12DescriptorHeap* heap = nullptr;
         ID3D12Resource* constants = nullptr;
     };
 
@@ -119,13 +126,16 @@ private:
                               ID3D12PipelineState* pipeline,
                               const D3D12NrCodecConstants& constants,
                               const D3D12NrCodecResources& resources) noexcept;
-    D3D12_CPU_DESCRIPTOR_HANDLE Handle(const Slot& slot, std::uint32_t index) const noexcept;
+    D3D12_CPU_DESCRIPTOR_HANDLE Handle(
+        std::uint32_t slot, std::uint32_t index) const noexcept;
+    D3D12_GPU_DESCRIPTOR_HANDLE GpuHandle(std::uint32_t slot) const noexcept;
     static DXGI_FORMAT TypedFormat(DXGI_FORMAT format) noexcept;
 
     ID3D12Device* device_ = nullptr;
     ID3D12RootSignature* rootSignature_ = nullptr;
     ID3D12PipelineState* pipelineState_ = nullptr;
     ID3D12PipelineState* residualPipelineState_ = nullptr;
+    ID3D12DescriptorHeap* descriptorHeap_ = nullptr;
     std::array<Slot, kSlotCount> slots_{};
     std::uint32_t slotIndex_ = 0;
     std::uint32_t descriptorSize_ = 0;
