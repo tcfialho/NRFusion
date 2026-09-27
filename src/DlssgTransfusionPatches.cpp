@@ -78,7 +78,21 @@ bool WritePatch(uint8_t* address, const uint8_t* bytes, size_t count)
 
 } // namespace
 
-bool DlssgTransfusion::PatchArchGates(HMODULE module)
+namespace {
+
+enum class GateLayout {
+    None,
+    Classic,
+    V309
+};
+
+struct GateSites {
+    GateLayout layout = GateLayout::None;
+    uint8_t* advertise = nullptr;
+    uint8_t* validate = nullptr;
+};
+
+GateSites FindGateSites(HMODULE module)
 {
     static constexpr uint8_t kAdvertise[] = {
         0xBB, 0x01, 0x00, 0x00, 0x00, 0x41, 0xB8, 0x03, 0x00, 0x00, 0x00,
@@ -110,7 +124,22 @@ bool DlssgTransfusion::PatchArchGates(HMODULE module)
 
     const bool use309 = advertise309 != nullptr && validate309 != nullptr;
     const bool useClassic = advertise != nullptr && validate != nullptr;
-    if (use309 == useClassic)
+    if (use309 == useClassic) return {};
+    if (use309) return {GateLayout::V309, advertise309, validate309};
+    return {GateLayout::Classic, advertise, validate};
+}
+
+} // namespace
+
+bool DlssgTransfusion::HasSupportedArchGates(HMODULE module) const
+{
+    return FindGateSites(module).layout != GateLayout::None;
+}
+
+bool DlssgTransfusion::PatchArchGates(HMODULE module)
+{
+    const GateSites sites = FindGateSites(module);
+    if (sites.layout == GateLayout::None)
     {
         m_status.advertiseGatePatched = false;
         m_status.validateGatePatched = false;
@@ -121,16 +150,16 @@ bool DlssgTransfusion::PatchArchGates(HMODULE module)
 
     bool advertisePatched = false;
     bool validatePatched = false;
-    if (use309)
+    if (sites.layout == GateLayout::V309)
     {
         static constexpr uint8_t kAdvertiseNop[] = {
             0x0F, 0x1F, 0x44, 0x00, 0x00, 0x90
         };
         static constexpr uint8_t kValidateAlways[] = {0xB0, 0x01, 0x90};
         advertisePatched = WritePatch(
-            advertise309 + 6, kAdvertiseNop, sizeof(kAdvertiseNop));
+            sites.advertise + 6, kAdvertiseNop, sizeof(kAdvertiseNop));
         validatePatched = WritePatch(
-            validate309 + 5, kValidateAlways, sizeof(kValidateAlways));
+            sites.validate + 5, kValidateAlways, sizeof(kValidateAlways));
     }
     else
     {
@@ -138,11 +167,11 @@ bool DlssgTransfusion::PatchArchGates(HMODULE module)
         static constexpr uint8_t kAdvertiseNop[] = {0x0F, 0x1F, 0x40, 0x00};
         static constexpr uint8_t kBranchNop[] = {0x90, 0x90};
         advertisePatched =
-            WritePatch(advertise + 7, kFive, sizeof(kFive)) &&
-            WritePatch(advertise + 17, kAdvertiseNop, sizeof(kAdvertiseNop));
+            WritePatch(sites.advertise + 7, kFive, sizeof(kFive)) &&
+            WritePatch(sites.advertise + 17, kAdvertiseNop, sizeof(kAdvertiseNop));
         validatePatched =
-            WritePatch(validate + 5, kBranchNop, sizeof(kBranchNop)) &&
-            WritePatch(validate + 9, kFive, sizeof(kFive));
+            WritePatch(sites.validate + 5, kBranchNop, sizeof(kBranchNop)) &&
+            WritePatch(sites.validate + 9, kFive, sizeof(kFive));
     }
 
     m_status.advertiseGatePatched = advertisePatched;

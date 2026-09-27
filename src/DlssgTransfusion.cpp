@@ -55,6 +55,9 @@ void DlssgTransfusion::TryApply(HMODULE module)
 
     m_status.moduleFound = true;
 
+    if (!HasSupportedArchGates(module))
+        return;
+
     if (!TransfuseBlackwellFatbins(module))
         return;
 

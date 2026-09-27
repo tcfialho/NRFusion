@@ -89,6 +89,7 @@ private:
     DlssgTransfusion();
     ~DlssgTransfusion() = default;
 
+    bool HasSupportedArchGates(HMODULE module) const;
     bool PatchArchGates(HMODULE module);
     bool PatchHudlessUi(HMODULE module);
     bool TransfuseBlackwellFatbins(HMODULE module);
