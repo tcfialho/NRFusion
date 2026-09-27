@@ -1,5 +1,6 @@
 #pragma once
 
+#include <cstddef>
 #include <cstdint>
 
 #include <d3d12.h>
@@ -12,6 +13,12 @@ namespace nrfusion {
 enum class D3D12NrGuideKind : std::uint8_t {
     Depth,
     Motion
+};
+
+struct D3D12NrGuideCloneAccounting {
+    std::size_t resourceCount = 0;
+    std::uint64_t logicalBytes = 0;
+    bool logicalBytesExact = true;
 };
 
 class D3D12NrGuideClones {
@@ -33,6 +40,7 @@ public:
 
     ID3D12Resource* Get(D3D12NrGuideKind kind) const noexcept;
     D3D12_RESOURCE_STATES State(D3D12NrGuideKind kind) const noexcept;
+    D3D12NrGuideCloneAccounting Accounting() const noexcept;
 
 private:
     struct Clone {
@@ -45,6 +53,7 @@ private:
                          const D3D12_RESOURCE_DESC& b) noexcept;
     static ID3D12Resource* Create(ID3D12Device* device,
                                   const D3D12_RESOURCE_DESC& desc) noexcept;
+    static std::uint64_t LogicalBytes(const Clone& clone) noexcept;
     static bool Park(Clone& clone, NrDeferredRetirementQueue& retirement) noexcept;
     static void Release(Clone& clone) noexcept;
 

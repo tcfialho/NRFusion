@@ -1,8 +1,33 @@
 #include "nrfusion/D3D12NrGuideClones.hpp"
 
 #include <cstddef>
+#include <limits>
 
 namespace nrfusion {
+namespace {
+
+std::uint32_t BytesPerPixel(DXGI_FORMAT format) noexcept {
+    switch (format) {
+    case DXGI_FORMAT_R16_UNORM:
+        return 2;
+    case DXGI_FORMAT_D32_FLOAT:
+    case DXGI_FORMAT_R32_FLOAT:
+    case DXGI_FORMAT_R24_UNORM_X8_TYPELESS:
+    case DXGI_FORMAT_R16G16_FLOAT:
+    case DXGI_FORMAT_R8G8B8A8_UNORM:
+        return 4;
+    case DXGI_FORMAT_R32_FLOAT_X8X24_TYPELESS:
+    case DXGI_FORMAT_R32G32_FLOAT:
+    case DXGI_FORMAT_R16G16B16A16_FLOAT:
+        return 8;
+    case DXGI_FORMAT_R32G32B32A32_FLOAT:
+        return 16;
+    default:
+        return 0;
+    }
+}
+
+} // namespace
 
 bool D3D12NrGuideClones::SameDesc(
     const D3D12_RESOURCE_DESC& a, const D3D12_RESOURCE_DESC& b) noexcept {
@@ -37,11 +62,26 @@ ID3D12Resource* D3D12NrGuideClones::Create(
     return SUCCEEDED(result) ? resource : nullptr;
 }
 
+std::uint64_t D3D12NrGuideClones::LogicalBytes(const Clone& clone) noexcept {
+    if (clone.resource == nullptr || clone.desc.DepthOrArraySize != 1 ||
+        clone.desc.MipLevels != 1 || clone.desc.SampleDesc.Count != 1)
+        return 0;
+    const std::uint32_t bytesPerPixel = BytesPerPixel(clone.desc.Format);
+    if (bytesPerPixel == 0) return 0;
+    const std::uint64_t pixels =
+        clone.desc.Width * static_cast<std::uint64_t>(clone.desc.Height);
+    const auto max = (std::numeric_limits<std::uint64_t>::max)();
+    return pixels > max / bytesPerPixel ? 0 : pixels * bytesPerPixel;
+}
+
 bool D3D12NrGuideClones::Park(
     Clone& clone, NrDeferredRetirementQueue& retirement) noexcept {
     if (clone.resource == nullptr) return true;
     void* object = clone.resource;
-    if (!retirement.Park(object, NrRetiredObjectKind::Resource)) return false;
+    if (!retirement.Park(
+            object, NrRetiredObjectKind::Resource,
+            NrDeferredRetirementQueue::kDefaultDelay, LogicalBytes(clone)))
+        return false;
     clone = {};
     return true;
 }
@@ -149,6 +189,28 @@ ID3D12Resource* D3D12NrGuideClones::Get(D3D12NrGuideKind kind) const noexcept {
 D3D12_RESOURCE_STATES D3D12NrGuideClones::State(D3D12NrGuideKind kind) const noexcept {
     const Clone* clone = Slot(kind);
     return clone == nullptr ? D3D12_RESOURCE_STATE_COMMON : clone->state;
+}
+
+D3D12NrGuideCloneAccounting D3D12NrGuideClones::Accounting() const noexcept {
+    D3D12NrGuideCloneAccounting result{};
+    const Clone* clones[] = {&depth_, &motion_};
+    for (const Clone* clone : clones) {
+        if (clone->resource == nullptr) continue;
+        ++result.resourceCount;
+        const std::uint64_t bytes = LogicalBytes(*clone);
+        if (bytes == 0) {
+            result.logicalBytesExact = false;
+            continue;
+        }
+        const auto max = (std::numeric_limits<std::uint64_t>::max)();
+        if (result.logicalBytes > max - bytes) {
+            result.logicalBytes = max;
+            result.logicalBytesExact = false;
+            continue;
+        }
+        result.logicalBytes += bytes;
+    }
+    return result;
 }
 
 } // namespace nrfusion

@@ -88,6 +88,11 @@ int main() {
     assert(clones.Ensure(gpu.device.Get(), D3D12NrGuideKind::Motion,
                          motion.Get(), DXGI_FORMAT_R16G16_FLOAT, retirement));
     assert(retirement.Size() == 0);
+    constexpr std::uint64_t fullGuideBytes = 1280ull * 720ull * 4ull;
+    auto accounting = clones.Accounting();
+    assert(accounting.resourceCount == 2);
+    assert(accounting.logicalBytes == 2ull * fullGuideBytes);
+    assert(accounting.logicalBytesExact);
     assert(clones.State(D3D12NrGuideKind::Depth) == D3D12_RESOURCE_STATE_COPY_DEST);
 
     const D3D12_RESOURCE_DESC depthClone = clones.Get(D3D12NrGuideKind::Depth)->GetDesc();
@@ -116,10 +121,24 @@ int main() {
     assert(clones.Ensure(gpu.device.Get(), D3D12NrGuideKind::Depth,
                          depth.Get(), DXGI_FORMAT_R32_FLOAT, retirement));
     assert(retirement.Size() == 1);
+    auto retiredAccounting = retirement.ResourceAccounting();
+    assert(retiredAccounting.resourceCount == 1);
+    assert(retiredAccounting.logicalBytes == fullGuideBytes);
+    assert(retiredAccounting.logicalBytesExact);
+    accounting = clones.Accounting();
+    assert(accounting.resourceCount == 2);
+    assert(accounting.logicalBytes == 960ull * 540ull * 4ull + fullGuideBytes);
+    assert(accounting.logicalBytesExact);
     assert(clones.Get(D3D12NrGuideKind::Depth)->GetDesc().Width == 960);
 
     assert(clones.Retire(retirement));
     assert(retirement.Size() == 3);
+    assert(clones.Accounting().resourceCount == 0);
+    retiredAccounting = retirement.ResourceAccounting();
+    assert(retiredAccounting.resourceCount == 3);
+    assert(retiredAccounting.logicalBytes ==
+           2ull * fullGuideBytes + 960ull * 540ull * 4ull);
+    assert(retiredAccounting.logicalBytesExact);
     assert(clones.Get(D3D12NrGuideKind::Depth) == nullptr);
     assert(clones.Get(D3D12NrGuideKind::Motion) == nullptr);
 
@@ -127,6 +146,7 @@ int main() {
     unsigned released = 0;
     retirement.DrainAfterIdle(&released, &ReleaseRetired);
     assert(released == 3);
+    assert(retirement.ResourceAccounting().resourceCount == 0);
 
     clones.ReleaseAfterIdle();
     return 0;
