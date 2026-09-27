@@ -26,11 +26,38 @@ int main() {
     invalid.mode = static_cast<RuntimeNrMode>(255);
     assert(!runtime.Initialize(invalid));
 
+    invalid = {};
+    invalid.displayHz = std::numeric_limits<float>::infinity();
+    assert(!runtime.Initialize(invalid));
+
+    invalid = {};
+    invalid.mfgMode = static_cast<RuntimeMfgMode>(255);
+    assert(!runtime.Initialize(invalid));
+
+    invalid = {};
+    invalid.mfgQuality = static_cast<RuntimeMfgQuality>(255);
+    assert(!runtime.Initialize(invalid));
+
+    invalid = {};
+    invalid.mfgMultiplier = 1;
+    assert(!runtime.Initialize(invalid));
+    invalid.mfgMultiplier = 7;
+    assert(!runtime.Initialize(invalid));
+
     RuntimeConfig config;
     config.generation = 2;
     config.enabled = false;
     config.targetFps = 120.0f;
+    config.displayHz = 165.0f;
+    config.mfgMode = RuntimeMfgMode::Fixed;
+    config.mfgQuality = RuntimeMfgQuality::Enhanced;
+    config.mfgMultiplier = 4;
     assert(runtime.Initialize(config));
+    assert(runtime.Config().targetFps == 120.0f);
+    assert(runtime.Config().displayHz == 165.0f);
+    assert(runtime.Config().mfgMode == RuntimeMfgMode::Fixed);
+    assert(runtime.Config().mfgQuality == RuntimeMfgQuality::Enhanced);
+    assert(runtime.Config().mfgMultiplier == 4);
     assert(runtime.Status().state == RuntimeState::Disabled);
     assert(runtime.Status().configGeneration == 2);
 
