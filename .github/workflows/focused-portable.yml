@@ -38,7 +38,7 @@ jobs:
         run: >
           cmake --build build-focused
           --target nrfusion_nr_session_tests nrfusion_nr_session_stress_tests nrfusion_tests
-          nrfusion_nr_timing_source_tests nrfusion_runtime_config_store_tests nrfusion_d3d11_bridge_slot_tracker_tests
+          nrfusion_nr_timing_source_tests nrfusion_runtime_config_store_tests nrfusion_runtime_menu_model_tests nrfusion_d3d11_bridge_slot_tracker_tests
           nrfusion_d3d11_carrier_work_tests
           nrfusion_d3d10_carrier_route_tests
           nrfusion_d3d9_carrier_route_tests
@@ -64,7 +64,7 @@ jobs:
         run: >
           ctest --test-dir build-focused
           --output-on-failure
-          -R '^(nrfusion_tests|nrfusion_nr_(session_(tests|stress_tests)|timing_source_tests)|nrfusion_runtime_config_store_tests|nrfusion_d3d11_bridge_slot_tracker_tests|nrfusion_d3d11_carrier_work_tests|nrfusion_d3d10_carrier_route_tests|nrfusion_d3d9_carrier_route_tests|nrfusion_motion_guide_selection_tests|nrfusion_guide_history_tests|nrfusion_motion_guide_binding_tests|nrfusion_phase15_integration_tests|nrfusion_d3d12_(carrier_(contract|session|native_facts|capabilities|bootstrap|work|execution_plan)|guide_format|nr_frame_plan)_tests|nrfusion_vulkan_carrier_(contract|acquire|session|execution_plan)_tests|nrfusion_opengl_carrier_(acquire|sync)_tests|nrfusion_provider_policy_opengl_tests)'
+          -R '^(nrfusion_tests|nrfusion_nr_(session_(tests|stress_tests)|timing_source_tests)|nrfusion_runtime_config_store_tests|nrfusion_runtime_menu_model_tests|nrfusion_d3d11_bridge_slot_tracker_tests|nrfusion_d3d11_carrier_work_tests|nrfusion_d3d10_carrier_route_tests|nrfusion_d3d9_carrier_route_tests|nrfusion_motion_guide_selection_tests|nrfusion_guide_history_tests|nrfusion_motion_guide_binding_tests|nrfusion_phase15_integration_tests|nrfusion_d3d12_(carrier_(contract|session|native_facts|capabilities|bootstrap|work|execution_plan)|guide_format|nr_frame_plan)_tests|nrfusion_vulkan_carrier_(contract|acquire|session|execution_plan)_tests|nrfusion_opengl_carrier_(acquire|sync)_tests|nrfusion_provider_policy_opengl_tests)'
 
       - name: Validate OptiScaler patcher closure
         run: bash tests/test_patcher.sh
