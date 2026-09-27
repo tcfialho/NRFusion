@@ -15,6 +15,8 @@
 #include "nrfusion/SyntheticDlaaContract.hpp"
 
 #include <array>
+#include <cstddef>
+#include <cstdint>
 #include <memory>
 #include <mutex>
 #include <string>
@@ -24,6 +26,13 @@
 namespace nrfusion {
 
 using Microsoft::WRL::ComPtr;
+
+struct SyntheticDx12ResourceAccounting {
+    std::size_t resourceCount = 0;
+    std::size_t descriptorHeapCount = 0;
+    std::uint64_t logicalBytes = 0;
+    bool logicalBytesExact = true;
+};
 
 class SyntheticDx12Provider : public ISyntheticProvider {
 public:
@@ -64,6 +73,7 @@ public:
         return currentSlot_;
     }
     uint64_t CompletedFenceValue() const;
+    SyntheticDx12ResourceAccounting Accounting() const noexcept;
 
 private:
     struct Slot {

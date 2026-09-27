@@ -233,6 +233,11 @@ int main() {
     context.device = gpu.device.Get();
     context.commandQueue = gpu.queue.Get();
     if (!provider.Initialize(context)) return 1;
+    auto accounting = provider.Accounting();
+    assert(accounting.resourceCount == 0);
+    assert(accounting.descriptorHeapCount == 1);
+    assert(accounting.logicalBytes == 0);
+    assert(accounting.logicalBytesExact);
 
     ComPtr<ID3D12Resource> input = CreateTexture(gpu.device.Get(), 64, 64);
     const uint16_t halfValue = nrfusion::testing::FloatToHalf(0.25f);
@@ -263,6 +268,20 @@ int main() {
 
     if (!RunScaleGate(gpu, provider, 1.0f, input.Get(), 64, 64) ||
         !RunScaleGate(gpu, provider, 0.5f, input.Get(), 32, 32)) return 1;
+
+    accounting = provider.Accounting();
+    assert(accounting.resourceCount == 6);
+    assert(accounting.descriptorHeapCount == 1);
+    assert(accounting.logicalBytes ==
+           3ull * 64ull * 64ull * 8ull + 3ull * 32ull * 32ull * 8ull);
+    assert(accounting.logicalBytesExact);
+
+    provider.Shutdown();
+    accounting = provider.Accounting();
+    assert(accounting.resourceCount == 0);
+    assert(accounting.descriptorHeapCount == 0);
+    assert(accounting.logicalBytes == 0);
+
     std::cout << "[Synthetic Dx12 Scale Gate] PASS: scale 1.0 initializes lowColor and 0.5 downsamples GPU-only.\n";
     return 0;
 }
