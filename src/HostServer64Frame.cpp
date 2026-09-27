@@ -32,6 +32,7 @@ void TransitionSharedResource(ID3D12GraphicsCommandList* commandList, ID3D12Reso
 
 IpcFrameAckMessage HostServer64::ProcessFrame(const IpcFrameMessage& frameMsg) {
     CollectRetiredGuideUpload();
+    CollectInactiveZeroGuides();
     IpcFrameStatus frameStatus = IpcFrameStatus::InvalidResources;
     bool submittedGpuWork = false;
     bool usedZeroGuides = false;

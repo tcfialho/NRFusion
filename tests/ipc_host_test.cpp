@@ -16,6 +16,7 @@ struct HostServer64GuideTestAccess {
     static bool Ensure(HostServer64& h) { return h.EnsureZeroGuides(64, 64); }
     static bool Upload(const HostServer64& h) { return h.zeroGuideUpload_ != nullptr; }
     static unsigned Guides(const HostServer64& h) { return unsigned(h.lowGuideDepth_ != nullptr) + unsigned(h.lowGuideMotion_ != nullptr); }
+    static void UseImported(HostServer64& h) { h.importedDepth_ = h.lowGuideDepth_; h.importedMotion_ = h.lowGuideMotion_; h.CollectInactiveZeroGuides(); }
     static void WaitAndCollect(HostServer64& h) {
         HANDLE e = CreateEventW(nullptr, FALSE, FALSE, nullptr); assert(e);
         assert(h.guideFence_ && h.guideFenceValue_ != 0);
@@ -239,6 +240,8 @@ void TestZeroGuideUploadRetirement() {
     assert(HostServer64GuideTestAccess::Guides(host) == 2);
     assert(HostServer64GuideTestAccess::Ensure(host));
     assert(!HostServer64GuideTestAccess::Upload(host));
+    HostServer64GuideTestAccess::UseImported(host);
+    assert(HostServer64GuideTestAccess::Guides(host) == 0);
 }
 
 void TestCapture32ExportApi() {

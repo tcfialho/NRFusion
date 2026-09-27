@@ -9,6 +9,21 @@ void HostServer64::CollectRetiredGuideUpload() noexcept {
     }
 }
 
+void HostServer64::CollectInactiveZeroGuides() noexcept {
+    if ((!lowGuideDepth_ && !lowGuideMotion_) || !importedDepth_ || !importedMotion_)
+        return;
+    if (guideFenceValue_ != 0 &&
+        (!guideFence_ || guideFence_->GetCompletedValue() < guideFenceValue_))
+        return;
+    if (guideUseFenceValue_ != 0 &&
+        (!d3d12Fence_ || d3d12Fence_->GetCompletedValue() < guideUseFenceValue_))
+        return;
+    lowGuideDepth_.Reset();
+    lowGuideMotion_.Reset();
+    guideWidth_ = guideHeight_ = 0;
+    guideUseFenceValue_ = 0;
+}
+
 bool HostServer64::EnsureZeroGuides(uint32_t width, uint32_t height) {
     CollectRetiredGuideUpload();
     if (lowGuideDepth_ && lowGuideMotion_ && guideWidth_ == width && guideHeight_ == height) {

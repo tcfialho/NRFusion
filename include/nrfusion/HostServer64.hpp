@@ -39,6 +39,7 @@ private:
     IpcFrameAckMessage ProcessFrame(const IpcFrameMessage& frameMsg);
     bool EnsureZeroGuides(uint32_t width, uint32_t height);
     void CollectRetiredGuideUpload() noexcept;
+    void CollectInactiveZeroGuides() noexcept;
     void CollectRetiredTransport();
     void RetireImportedTransport();
 
