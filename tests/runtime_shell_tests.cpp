@@ -148,5 +148,20 @@ int main() {
     RuntimeBootstrap::Stop(runtime);
     RuntimeBootstrap::Stop(runtime);
     assert(runtime.Status().state == RuntimeState::Stopped);
+
+    RuntimeConfig published;
+    published.generation = 10;
+    assert(runtime.Initialize(published));
+    for (std::uint64_t generation = 11; generation < 1011; ++generation) {
+        published.generation = generation;
+        published.enabled = (generation & 1u) != 0;
+        assert(runtime.Reconfigure(published));
+        const auto snapshot = runtime.Status();
+        assert(snapshot.configGeneration == generation);
+        assert(snapshot.failure == RuntimeFailure::None);
+        assert(snapshot.state == (published.enabled
+            ? RuntimeState::Running : RuntimeState::Disabled));
+    }
+
     return 0;
 }

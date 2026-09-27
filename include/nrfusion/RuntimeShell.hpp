@@ -3,6 +3,7 @@
 #include "nrfusion/RuntimeComponentRegistry.hpp"
 #include "nrfusion/RuntimeConfig.hpp"
 
+#include <atomic>
 #include <cstdint>
 
 namespace nrfusion {
@@ -27,20 +28,30 @@ struct RuntimeStatus {
     std::uint64_t configGeneration = 0;
 };
 
+static_assert(std::atomic<std::uint8_t>::is_always_lock_free);
+static_assert(std::atomic<std::uint64_t>::is_always_lock_free);
+
 class RuntimeShell {
 public:
     bool Initialize(RuntimeConfig config) noexcept;
     void Shutdown() noexcept;
     bool Reconfigure(RuntimeConfig config) noexcept;
 
-    RuntimeStatus Status() const noexcept { return status_; }
+    RuntimeStatus Status() const noexcept;
     RuntimeConfig Config() const noexcept { return config_; }
     const RuntimeComponentRegistry& Registry() const noexcept { return registry_; }
 
 private:
     friend class RuntimeBootstrap;
+    void PublishStatus(RuntimeStatus status) noexcept;
+
     RuntimeConfig config_{};
-    RuntimeStatus status_{};
+    std::atomic<std::uint64_t> statusSequence_{0};
+    std::atomic<std::uint8_t> statusState_{
+        static_cast<std::uint8_t>(RuntimeState::Stopped)};
+    std::atomic<std::uint8_t> statusFailure_{
+        static_cast<std::uint8_t>(RuntimeFailure::None)};
+    std::atomic<std::uint64_t> statusGeneration_{0};
     RuntimeComponentRegistry registry_{};
 };
 
