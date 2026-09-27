@@ -296,3 +296,4 @@ add_executable(nrfusion_harness_3d
 
 include(cmake/NRFusionCompatibilityWindows.cmake)
 include(cmake/NRFusionDiagnosticsWindows.cmake)
+include(cmake/NRFusionHostResourcesWindows.cmake)

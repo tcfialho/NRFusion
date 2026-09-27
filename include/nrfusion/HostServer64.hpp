@@ -42,6 +42,7 @@ private:
     void CollectInactiveZeroGuides() noexcept;
     void CollectRetiredTransport();
     void RetireImportedTransport();
+    bool WaitForGpuIdleAfterStop() noexcept;
 
     HANDLE pipeHandle_ = INVALID_HANDLE_VALUE;
     OVERLAPPED overlapped_{};
@@ -105,6 +106,7 @@ private:
     uint64_t guideUseFenceValue_ = 0;
     std::unique_ptr<HostDlssNr> dlssNr_;
     friend struct HostServer64GuideTestAccess;
+    friend struct HostServer64StopTestAccess;
 };
 
 } // namespace nrfusion

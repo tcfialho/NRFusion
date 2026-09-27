@@ -90,48 +90,81 @@ bool HostServer64::Start(uint32_t hostPid) {
     return true;
 }
 
-void HostServer64::Stop() {
-    if (!running_) return;
+bool HostServer64::WaitForGpuIdleAfterStop() noexcept {
+    if (!d3d12Queue_ && !d3d12Fence_) return true;
+    if (!d3d12Queue_ || !d3d12Fence_) return false;
 
+    const uint64_t idleValue = fenceValue_ + 1;
+    if (idleValue == 0 ||
+        FAILED(d3d12Queue_->Signal(d3d12Fence_.Get(), idleValue))) {
+        return false;
+    }
+    fenceValue_ = idleValue;
+    if (d3d12Fence_->GetCompletedValue() >= idleValue) return true;
+
+    HANDLE idleEvent = CreateEventW(nullptr, FALSE, FALSE, nullptr);
+    if (!idleEvent) return false;
+    const bool armed = SUCCEEDED(
+        d3d12Fence_->SetEventOnCompletion(idleValue, idleEvent));
+    const DWORD waitResult = armed
+        ? WaitForSingleObject(idleEvent, 2000)
+        : WAIT_FAILED;
+    CloseHandle(idleEvent);
+    return waitResult == WAIT_OBJECT_0 &&
+        d3d12Fence_->GetCompletedValue() >= idleValue;
+}
+
+void HostServer64::Stop() {
     running_ = false;
 
     if (pipeHandle_ != INVALID_HANDLE_VALUE) {
         CancelIoEx(pipeHandle_, nullptr);
         DisconnectNamedPipe(pipeHandle_);
     }
+    if (eventHandle_) SetEvent(eventHandle_);
+    if (workerThread_.joinable()) workerThread_.join();
 
-    if (eventHandle_) {
-        SetEvent(eventHandle_);
-    }
-
-    if (workerThread_.joinable()) {
-        workerThread_.join();
-    }
-
-    if (d3d12Fence_ && fenceValue_ > 0 &&
-        d3d12Fence_->GetCompletedValue() < fenceValue_) {
-        HANDLE idleEvent = CreateEventW(nullptr, FALSE, FALSE, nullptr);
-        if (idleEvent) {
-            if (SUCCEEDED(d3d12Fence_->SetEventOnCompletion(
-                    fenceValue_, idleEvent))) {
-                WaitForSingleObject(idleEvent, 2000);
-            }
-            CloseHandle(idleEvent);
-        }
-    }
+    const bool gpuIdle = WaitForGpuIdleAfterStop();
 
     if (pipeHandle_ != INVALID_HANDLE_VALUE) {
         CloseHandle(pipeHandle_);
         pipeHandle_ = INVALID_HANDLE_VALUE;
     }
-
-    for (auto& alloc : d3d12Allocs_) {
-        alloc.Reset();
-    }
-
     clientConnected_ = false;
+    if (!gpuIdle) return;
+
     RetireImportedTransport();
     CollectRetiredTransport();
+
+    if (dlssNr_) {
+        dlssNr_->Shutdown();
+        dlssNr_.reset();
+    }
+    if (syntheticProvider_) {
+        syntheticProvider_->Shutdown();
+        syntheticProvider_.reset();
+    }
+
+    zeroGuideUpload_.Reset();
+    lowGuideDepth_.Reset();
+    lowGuideMotion_.Reset();
+    guideCmdList_.Reset();
+    guideAlloc_.Reset();
+    guideFence_.Reset();
+    guideWidth_ = guideHeight_ = 0;
+    guideFenceValue_ = guideUseFenceValue_ = 0;
+
+    d3d12CmdList_.Reset();
+    for (auto& alloc : d3d12Allocs_) alloc.Reset();
+    d3d12Alloc_.Reset();
+    d3d12Fence_.Reset();
+    d3d12Queue_.Reset();
+    d3d12Device_.Reset();
+    allocFenceValues_.fill(0);
+    currentAllocSlot_ = 0;
+    fenceValue_ = 0;
+    importedTransportFenceValue_ = 0;
+    currentBuild_ = {};
 }
 
 } // namespace nrfusion
