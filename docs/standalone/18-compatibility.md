@@ -10,39 +10,91 @@ Carriers principais.
 
 ## Fora de escopo
 
-- Copiar hooks genéricos do OptiScaler
-- Tracking global default
+- Copiar hooks genéricos do OptiScaler.
+- Tracking global default.
+- Criar profile por jogo para mascarar leak geral.
+
+## Auditoria
+
+- O caminho DLSS NR em D3D12 pode substituir bindings do command list.
+- `tools/requiem_game/main.cpp` já restaura manualmente PSO, graphics root signature,
+  descriptor heaps, root table/constants, OM/raster/IA depois da avaliação.
+- `D3D12NrExecutor` restaura resource states, mas não consegue consultar bindings anteriores:
+  D3D12 não oferece getters para root signatures, PSO ou root arguments.
+- `D3D12CarrierExecutor` recebe command list emprestado e precisa de estado fornecido pelo
+  caller quando esse caller pretende continuar gravando na mesma lista.
+- O `D3D12CarrierExecutor` ainda não tem caller de frame na branch; hoje existem
+  bootstrap/contract/session/plan, mas nenhum callsite integrado de `Execute()` auditado.
+- O synthetic D3D12 do patcher usa `SyntheticCommandContext::list`, command list privado;
+  o clobber interno do provider não é leak ativo do command list do jogo nesse caminho.
+- `CompatibilityDatabase.cpp` (350 linhas) e `ProfileStore.cpp` (666 linhas) ficaram
+  intocados. Nenhuma exception por jogo foi adicionada.
+- `CaptureD3D11.cpp` x86 legado usa o immediate context e limpa bindings CS para null
+  depois dos dispatches. Isso permanece dívida de state preservation do hook legado; Fases 09/10
+  explicitamente não reutilizam esse monólito no carrier standalone. O arquivo tem 1302 linhas e
+  exige split mecânico antes de evolução funcional.
 
 ## Implementação
 
-- [ ] Identificar states realmente necessários por rota.
-- [ ] Separar state capture/restore de profile matching/database.
-- [ ] Capturar root signature/heaps/PSO/root params apenas quando necessário.
-- [ ] Ativar por capability/profile observável.
-- [ ] Evitar maps/mutexes globais no fast path.
-- [ ] Documentar causa observável de cada exception.
-- [ ] Se CompatibilityDatabase/ProfileStore oversized forem tocados, separar parsing/storage de policy/aplicação.
-- [ ] Cada módulo <=300 linhas.
+- [x] Identificar states necessários para o boundary D3D12 auditado.
+- [x] Separar state restore de profile matching/database.
+- [x] Restore opt-in de descriptor heaps, graphics/compute root signature e PSO.
+- [x] Root params/estado adicional usam callback caller-owned, sem alocação.
+- [x] Nenhum map/mutex global no fast path.
+- [x] Default `commandStateRestore == nullptr` não chama helper nem API D3D12.
+- [x] Restore roda depois de `ExecuteFrame()`, inclusive quando o executor retorna falha.
+- [x] Config de restore inválida falha antes de emitir restore parcial.
+- [ ] Ligar restore no caller real do `D3D12CarrierExecutor` quando o cutover existir.
+- [ ] Remover restore manual do Requiem somente depois de migrar seu owner >300 linhas.
+- [ ] Corrigir state preservation no hook D3D11 x86 somente depois do split do monólito.
+
+## Split estrutural
+
+- `src/SyntheticDx12Provider.cpp` legado continua congelado para a closure explícita do patcher.
+- O standalone compila:
+  - `SyntheticDx12ProviderLifecycle.cpp`
+  - `SyntheticDx12ProviderSubmit.cpp`
+  - `SyntheticDx12ProviderResidual.cpp`
+- Todos os novos owners ficam <=300 linhas.
 
 ## Revisão obrigatória
 
-- [ ] Profile não mascara bug geral.
-- [ ] Restore cobre early-return/failure.
-- [ ] Exceção não impõe custo global.
-- [ ] Split por estado/ownership, não por game arbitrariamente.
+- [x] Nenhum profile mascara o leak geral.
+- [x] Restore é chamado após sucesso/falha do executor quando habilitado.
+- [x] Exceção não impõe chamadas D3D12 no default.
+- [x] Split por estado/ownership, não por game arbitrariamente.
+- [ ] Integração do caller real ainda pendente.
 
 ## Validação rápida
 
-- [ ] Harness state-restore.
-- [ ] Benchmark default vs compatibility.
-- [ ] Failure during restore.
-- [ ] LOC checker.
+- [x] Harness WARP clobbera heap/root signature/PSO/root table e prova restore por dispatch.
+- [x] Restore inválido é rejeitado fail-closed.
+- [x] Benchmark default vs compatibility existe no harness.
+- [x] LOC checker.
+- [ ] Harness integrado do futuro caller do carrier.
+
+## Evidência
+
+- `07dfe42`: split standalone do SyntheticDx12Provider; 3/3 CI PASS.
+- `5d2ebda`: restore caller-owned no boundary do D3D12 carrier; 3/3 CI PASS.
+- `1ab383b`: benchmark default vs compatibility; 3/3 CI PASS.
+- `fb8e338`: fast path nulo sem chamada ao helper.
+- Portable `36323693523`: PASS.
+- Focused Portable `36323693525`: PASS.
+- Windows `36323693528`: PASS.
+- Checkpoint `nrfusion-source-fb8e338c3aa5aea801ce333cff659ce69b674c60`,
+  artifact `10933915115`,
+  sha256 `e3b8be5f34c438f682ef9242d18ecc1710cd31d8f78f1447a0f6705c62e0659b`.
 
 ## Gate
 
-- [ ] Default sem overhead ampliado.
-- [ ] Compatibility tocada respeita <=300 por arquivo.
+- [x] Default não executa restore nem API D3D12 adicional.
+- [x] Módulo novo de restore respeita <=300 linhas.
+- [x] CompatibilityDatabase/ProfileStore oversized não foram tocados.
+- [ ] Caller integrado do D3D12 carrier ainda não existe para fechar o cutover.
 
-## Próxima fase
+**Subfase state-restore primitive da Fase 18 CLOSED. Fase 18 permanece IN PROGRESS até o caller real do carrier usar o contrato ou o caminho ser explicitamente retirado.**
 
-Fase 19.
+## Próxima ação
+
+Auditar o próximo carrier standalone com command list/context realmente reutilizado pelo host antes de criar qualquer nova exception.
