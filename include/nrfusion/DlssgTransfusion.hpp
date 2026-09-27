@@ -30,6 +30,31 @@ enum class MfgMotionVectorMode : uint32_t {
     DisableDilation = 1 // Troubleshooting: desativa dilatação de MV
 };
 
+enum class TransfusionFailure : std::uint8_t {
+    None,
+    UnsupportedGateSignatures,
+    NoCompatibleBlackwellFatbins,
+    GatePatchFailed
+};
+
+struct TransfusionSnapshot {
+    bool moduleFound = false;
+    bool archGatesPatched = false;
+    bool advertiseGatePatched = false;
+    bool validateGatePatched = false;
+    bool blackwellTransfusionActive = false;
+    bool uirPatched = false;
+    bool qualityFixActive = false;
+    std::uint32_t blackwellKernelsRewritten = 0;
+    std::uint32_t requestedByGame = 0;
+    std::uint32_t effectiveMultiplier = 2;
+    std::uint32_t unlockedMax = 0;
+    TransfusionFailure failure = TransfusionFailure::None;
+};
+
+static_assert(std::atomic<std::uint8_t>::is_always_lock_free);
+static_assert(std::atomic<std::uint32_t>::is_always_lock_free);
+
 struct TransfusionStatus {
     bool moduleFound = false;
     bool archGatesPatched = false;
@@ -83,6 +108,7 @@ public:
     // Sincronização na fronteira de frame / Present
     void NotifyFrameBoundary();
 
+    TransfusionSnapshot Snapshot() const noexcept;
     TransfusionStatus Status() const;
 
 private:
@@ -94,6 +120,7 @@ private:
     bool PatchHudlessUi(HMODULE module);
     bool TransfuseBlackwellFatbins(HMODULE module);
     uint32_t UnlockedMaxLocked() const noexcept;
+    void PublishSnapshotLocked(TransfusionFailure failure) noexcept;
 
     mutable std::mutex m_mutex;
     TransfusionStatus m_status;
@@ -106,6 +133,11 @@ private:
     std::atomic<uint32_t> m_dynamicTargetFps{0};
     std::atomic<uint32_t> m_requestedByGame{0};
     std::atomic<uint32_t> m_effectiveMultiplier{2};
+    std::atomic<uint32_t> m_snapshotSequence{0};
+    std::atomic<uint32_t> m_snapshotFlags{0};
+    std::atomic<uint32_t> m_snapshotKernels{0};
+    std::atomic<std::uint8_t> m_snapshotFailure{
+        static_cast<std::uint8_t>(TransfusionFailure::None)};
 
     // Safe Transition anti-TDR
     std::atomic<uint32_t> m_activeMultiplier{0};

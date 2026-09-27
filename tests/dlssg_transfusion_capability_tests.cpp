@@ -53,6 +53,11 @@ int main()
 {
     auto& transfusion = nrfusion::DlssgTransfusion::Instance();
 
+    const auto initialSnapshot = transfusion.Snapshot();
+    assert(!initialSnapshot.moduleFound);
+    assert(initialSnapshot.failure == nrfusion::TransfusionFailure::None);
+    assert(initialSnapshot.unlockedMax == 0);
+
     const auto status = transfusion.Status();
     assert(!status.moduleFound);
     assert(!status.advertiseGatePatched);
@@ -63,6 +68,8 @@ int main()
 
     transfusion.TryApply();
     assert(transfusion.IsPending());
+    assert(!transfusion.Snapshot().moduleFound);
+    assert(transfusion.Snapshot().failure == nrfusion::TransfusionFailure::None);
     assert(!transfusion.Status().moduleFound);
     assert(transfusion.Status().failureReason.empty());
 
@@ -94,6 +101,17 @@ int main()
     const auto transitioned = transfusion.Status();
     assert(transitioned.requestedByGame == 3);
     assert(transitioned.effectiveMultiplier == 4);
+
+    const auto snapshotAllocationsBefore =
+        gAllocations.load(std::memory_order_relaxed);
+    for (int i = 0; i < 1000; ++i)
+    {
+        const auto snapshot = transfusion.Snapshot();
+        assert(snapshot.requestedByGame == 3);
+        assert(snapshot.effectiveMultiplier == 4);
+    }
+    assert(gAllocations.load(std::memory_order_relaxed) ==
+           snapshotAllocationsBefore);
 
     constexpr int benchmarkIterations = 250000;
     const auto benchmarkStart = std::chrono::steady_clock::now();
@@ -177,6 +195,13 @@ int main()
     assert(!rejected.blackwellTransfusionActive);
     assert(rejected.blackwellKernelsRewritten == 0);
     assert(rejected.failureReason == "unsupported DLSSG gate signatures");
+    const auto rejectedSnapshot = transfusion.Snapshot();
+    assert(rejectedSnapshot.moduleFound);
+    assert(!rejectedSnapshot.archGatesPatched);
+    assert(rejectedSnapshot.blackwellKernelsRewritten == 0);
+    assert(rejectedSnapshot.unlockedMax == 0);
+    assert(rejectedSnapshot.failure ==
+           nrfusion::TransfusionFailure::UnsupportedGateSignatures);
     assert(!transfusion.IsPending());
     assert(transfusion.UnlockedMax() == 0);
 
