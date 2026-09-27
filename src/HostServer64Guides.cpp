@@ -2,7 +2,15 @@
 
 namespace nrfusion {
 
+void HostServer64::CollectRetiredGuideUpload() noexcept {
+    if (zeroGuideUpload_ && guideFence_ && guideFenceValue_ != 0 &&
+        guideFence_->GetCompletedValue() >= guideFenceValue_) {
+        zeroGuideUpload_.Reset();
+    }
+}
+
 bool HostServer64::EnsureZeroGuides(uint32_t width, uint32_t height) {
+    CollectRetiredGuideUpload();
     if (lowGuideDepth_ && lowGuideMotion_ && guideWidth_ == width && guideHeight_ == height) {
         return true;
     }

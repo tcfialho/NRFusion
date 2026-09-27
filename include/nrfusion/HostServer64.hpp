@@ -38,6 +38,7 @@ private:
     void ServerLoop();
     IpcFrameAckMessage ProcessFrame(const IpcFrameMessage& frameMsg);
     bool EnsureZeroGuides(uint32_t width, uint32_t height);
+    void CollectRetiredGuideUpload() noexcept;
     void CollectRetiredTransport();
     void RetireImportedTransport();
 
@@ -102,6 +103,7 @@ private:
     uint64_t guideFenceValue_ = 0;
     uint64_t guideUseFenceValue_ = 0;
     std::unique_ptr<HostDlssNr> dlssNr_;
+    friend struct HostServer64GuideTestAccess;
 };
 
 } // namespace nrfusion

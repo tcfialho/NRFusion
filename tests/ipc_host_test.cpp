@@ -1,6 +1,7 @@
 #include "nrfusion/HostServer64.hpp"
 #include "nrfusion/CaptureProvider32.hpp"
 #include "nrfusion/CaptureProvider32Export.h"
+#include "D3D12TestDevice.hpp"
 
 #include <cassert>
 #include <chrono>
@@ -8,6 +9,22 @@
 #include <thread>
 
 using namespace nrfusion;
+
+namespace nrfusion {
+struct HostServer64GuideTestAccess {
+    static void Bind(HostServer64& h, ID3D12Device* d, ID3D12CommandQueue* q) { h.d3d12Device_ = d; h.d3d12Queue_ = q; }
+    static bool Ensure(HostServer64& h) { return h.EnsureZeroGuides(64, 64); }
+    static bool Upload(const HostServer64& h) { return h.zeroGuideUpload_ != nullptr; }
+    static unsigned Guides(const HostServer64& h) { return unsigned(h.lowGuideDepth_ != nullptr) + unsigned(h.lowGuideMotion_ != nullptr); }
+    static void WaitAndCollect(HostServer64& h) {
+        HANDLE e = CreateEventW(nullptr, FALSE, FALSE, nullptr); assert(e);
+        assert(h.guideFence_ && h.guideFenceValue_ != 0);
+        assert(SUCCEEDED(h.guideFence_->SetEventOnCompletion(h.guideFenceValue_, e)));
+        assert(WaitForSingleObject(e, 5000) == WAIT_OBJECT_0); CloseHandle(e);
+        h.CollectRetiredGuideUpload();
+    }
+};
+} // namespace nrfusion
 
 void TestIpcHandshakeAndBuild() {
     std::cout << "[Test 1] IPC Handshake and Configuration...\n";
@@ -206,6 +223,24 @@ void TestD3D12SharedHandlePipeline() {
     std::cout << "  -> D3D12 Shared Handle and Fence Interop PASSED.\n";
 }
 
+void TestZeroGuideUploadRetirement() {
+    std::cout << "[Test 4] Host zero-guide upload retirement...\n";
+    ComPtr<ID3D12Device> device = testing::CreateD3D12TestDevice(); assert(device);
+    D3D12_COMMAND_QUEUE_DESC desc{}; desc.Type = D3D12_COMMAND_LIST_TYPE_DIRECT;
+    ComPtr<ID3D12CommandQueue> queue;
+    assert(SUCCEEDED(device->CreateCommandQueue(&desc, IID_PPV_ARGS(&queue))));
+    HostServer64 host;
+    HostServer64GuideTestAccess::Bind(host, device.Get(), queue.Get());
+    assert(HostServer64GuideTestAccess::Ensure(host));
+    assert(HostServer64GuideTestAccess::Upload(host));
+    assert(HostServer64GuideTestAccess::Guides(host) == 2);
+    HostServer64GuideTestAccess::WaitAndCollect(host);
+    assert(!HostServer64GuideTestAccess::Upload(host));
+    assert(HostServer64GuideTestAccess::Guides(host) == 2);
+    assert(HostServer64GuideTestAccess::Ensure(host));
+    assert(!HostServer64GuideTestAccess::Upload(host));
+}
+
 void TestCapture32ExportApi() {
     std::cout << "[Test 5] Standalone 32-bit Client C Export API...\n";
 
@@ -240,6 +275,7 @@ int main() {
     TestIpcHandshakeAndBuild();
     TestPipelinedFrameStreaming();
     TestD3D12SharedHandlePipeline();
+    TestZeroGuideUploadRetirement();
     TestCapture32ExportApi();
 
     std::cout << "=== All Stage 3 Tests PASSED successfully! ===\n";
