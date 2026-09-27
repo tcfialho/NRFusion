@@ -97,7 +97,7 @@ D3D12NrScratchAccounting D3D12NrScratchResources::Accounting() const noexcept {
 
         const std::uint64_t pixels =
             static_cast<std::uint64_t>(surface->width) * surface->height;
-        const auto max = std::numeric_limits<std::uint64_t>::max();
+        const auto max = (std::numeric_limits<std::uint64_t>::max)();
         if (pixels > max / bytesPerPixel) {
             result.logicalBytes = max;
             result.logicalBytesExact = false;
