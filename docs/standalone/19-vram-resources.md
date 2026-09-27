@@ -222,14 +222,44 @@ Validação:
 
 **Subgate 19f CLOSED. Fase 19 permanece IN PROGRESS.**
 
+## Subgate 19g — cleanup GPU completo do Host64 em Stop
+
+Correção `8d1d3ee`:
+- `Stop()` não retorna mais cedo apenas porque `running_` já está false; cleanup é idempotente.
+- Após a thread encerrar, um idle marker novo é enfileirado em `d3d12Queue_`/`d3d12Fence_`.
+- GPU owners só são liberados quando esse marker realmente conclui; signal/event/timeout
+  preservam os resources em vez de liberar objetos potencialmente em voo.
+- O caminho idle libera transport imports, DLSS-NR executor, synthetic provider, zero guides,
+  command lists/allocators/fences, queue e device, e zera o estado de fence/ring para restart.
+- `nrfusion_host64_stop_cleanup_tests` mantém o objeto vivo após `Stop()` e exige zero GPU
+  owners; uma segunda chamada a `Stop()` também permanece limpa.
+
+Validação hosted:
+- Portable `36357287344`: PASS.
+- Focused Portable `36357287338`: PASS.
+- Windows `36357287300`: PASS; `nrfusion_host64_stop_cleanup_tests` PASS em 0,08 s;
+  33/33 testes executados passaram.
+- Checkpoint `nrfusion-source-8d1d3eefe7b8ef82b796683f5e32e9dbf5c1912f`,
+  artifact `10943849947`,
+  sha256 `7adb6e5f21a1bf03820b0b3a83058e91e777c6f3d22a5c405f40e47c6337ac6e`.
+
+Validação física local:
+- Windows 11 / RTX 4050 Laptop GPU 6 GB, driver 617.14.
+- `NRFUSION_TEST_D3D12_HARDWARE=1` força `D3D12TestDevice` a escolher adaptador
+  high-performance não-software.
+- `nrfusion_host64_stop_cleanup_tests` PASS em 0,62 s no hardware real.
+
+**Subgate 19g CLOSED. Fase 19 permanece IN PROGRESS.**
+
 ## Blocker atual
 
-`HostServer64::Stop()` encerra thread/transport, mas o objeto ainda pode permanecer vivo com
-providers, zero-guide command objects, queue e device residentes. O cleanup precisa emitir um
-idle marker novo na queue e só liberar os owners quando esse marker realmente concluir; timeout
-de shutdown deve preservar recursos em vez de liberar objetos potencialmente em voo.
+O repositório ainda não possui harness dedicado para o gate “hardware real mede peak final”.
+O benchmark CUDA/FFN existente mede somente aquele kernel e não é equivalente ao footprint
+final dos owners D3D12/Host64; portanto não deve ser usado para fechar o gate de VRAM.
 
-Próxima correção: tornar o cleanup GPU de `Stop()` explícito e seguro, com teste WARP que
-mantém o objeto vivo após `Stop()` e exige ausência de resources/device próprios.
+Próxima ação: criar uma medição física reproduzível do mesmo workload no commit imediatamente
+pré-Phase-19 e no code head atual, registrar peak/delta no mesmo adaptador RTX 4050 e só então
+avaliar `VRAM alvo <= baseline equivalente`.
 
-A medição física de peak VRAM final continua pendente e não deve ser substituída por hosted CI.
+A medição física deve continuar separada do hosted CI e não pode ser inferida apenas dos
+counters lógicos de resources.
