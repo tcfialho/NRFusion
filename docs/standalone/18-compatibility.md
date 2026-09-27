@@ -29,6 +29,11 @@ Carriers principais.
   o clobber interno do provider não é leak ativo do command list do jogo nesse caminho.
 - `CompatibilityDatabase.cpp` (350 linhas) e `ProfileStore.cpp` (666 linhas) ficaram
   intocados. Nenhuma exception por jogo foi adicionada.
+- OpenGL standalone criava/importava textures no contexto WGL atual e terminava com
+  `GL_TEXTURE_BINDING_2D = 0`; `f0ea299` preserva/restaura o binding anterior via RAII.
+- D3D11 x64 standalone usa apenas CopyResource/fences nos owners auditados; não grava bindings.
+- D3D10/D3D9 owners auditados são route/acquire/sync; não gravam pipeline bindings.
+- Vulkan usa estado explícito de command buffer e não precisa de tracker implícito equivalente.
 - `CaptureD3D11.cpp` x86 legado usa o immediate context e limpa bindings CS para null
   depois dos dispatches. Isso permanece dívida de state preservation do hook legado; Fases 09/10
   explicitamente não reutilizam esse monólito no carrier standalone. O arquivo tem 1302 linhas e
@@ -44,6 +49,7 @@ Carriers principais.
 - [x] Default `commandStateRestore == nullptr` não chama helper nem API D3D12.
 - [x] Restore roda depois de `ExecuteFrame()`, inclusive quando o executor retorna falha.
 - [x] Config de restore inválida falha antes de emitir restore parcial.
+- [x] OpenGL preserva `GL_TEXTURE_BINDING_2D` em criação/recriação e early-return.
 - [ ] Ligar restore no caller real do `D3D12CarrierExecutor` quando o cutover existir.
 - [ ] Remover restore manual do Requiem somente depois de migrar seu owner >300 linhas.
 - [ ] Corrigir state preservation no hook D3D11 x86 somente depois do split do monólito.
@@ -70,6 +76,7 @@ Carriers principais.
 - [x] Harness WARP clobbera heap/root signature/PSO/root table e prova restore por dispatch.
 - [x] Restore inválido é rejeitado fail-closed.
 - [x] Benchmark default vs compatibility existe no harness.
+- [x] Harness OpenGL sem hardware prova restore normal e em early-return.
 - [x] LOC checker.
 - [ ] Harness integrado do futuro caller do carrier.
 
@@ -79,6 +86,12 @@ Carriers principais.
 - `5d2ebda`: restore caller-owned no boundary do D3D12 carrier; 3/3 CI PASS.
 - `1ab383b`: benchmark default vs compatibility; 3/3 CI PASS.
 - `fb8e338`: fast path nulo sem chamada ao helper.
+- `f0ea299`: preservação do texture binding OpenGL.
+- OpenGL lote `f0ea299`: Portable `36324255420` PASS; Focused Portable
+  `36324255411` PASS; Windows `36324255443` PASS.
+- Checkpoint `nrfusion-source-f0ea2997422707f8ac89992dff60a018b538e01e`,
+  artifact `10933321776`,
+  sha256 `b15c0412ff1a4ebd8436b287aa22be724e0d96d3481e16c1d93632a3c4f68d58`.
 - Portable `36323693523`: PASS.
 - Focused Portable `36323693525`: PASS.
 - Windows `36323693528`: PASS.
@@ -93,7 +106,7 @@ Carriers principais.
 - [x] CompatibilityDatabase/ProfileStore oversized não foram tocados.
 - [ ] Caller integrado do D3D12 carrier ainda não existe para fechar o cutover.
 
-**Subfase state-restore primitive da Fase 18 CLOSED. Fase 18 permanece IN PROGRESS até o caller real do carrier usar o contrato ou o caminho ser explicitamente retirado.**
+**Subfases state-restore primitive e route-state audit da Fase 18 CLOSED. Fase 18 permanece IN PROGRESS até o caller real do carrier usar o contrato ou o caminho ser explicitamente retirado.**
 
 ## Próxima ação
 
