@@ -81,6 +81,68 @@ Validação:
 
 **Subgate 19a CLOSED. Fase 19 permanece IN PROGRESS.**
 
-Próxima ação: adicionar `resourceCount` e `logicalBytes` do scratch em owner separado.
-`D3D12NrScratchResources.cpp` está em 298 linhas e não deve crescer além de 300.
-A métrica deve ser control-plane only, sem device query, allocation, mutex ou GPU work.
+## Subgate 19b — accounting de residency controlada
+
+Auditoria e correção:
+- `c050a50` adicionou `resourceCount` e `logicalBytes` do scratch ativo em owner
+  separado; `c1f8052` corrigiu a compilação MSVC sem mudar a semântica.
+- `7b30eaf` passou o tamanho lógico dos scratch resources para a retirement queue.
+  Recursos aposentados continuam contabilizados até `Tick()`/`DrainAfterIdle()` liberá-los.
+- `e945699` estendeu a mesma disciplina para depth/motion guide clones, incluindo
+  accounting ativo e bytes aposentados.
+- `98931f0` corrigiu o caso typeless -> typed: quando o caller volta a usar o guide
+  original, a clone stale é aposentada em vez de ficar residente indefinidamente.
+- Accounting permanece control-plane only: sem device query, heap allocation, mutex ou GPU work.
+
+Validação:
+- Portable `36352523502`: PASS.
+- Focused Portable `36352523438`: PASS.
+- Windows `36352523339`: PASS.
+- O Windows push gate agora executa explicitamente
+  `nrfusion_nr_guide_clones_tests` e `nrfusion_d3d12_nr_codec_tests`.
+- No run `36352523339`, guide clones passou em 0,06 s e codec em 0,26 s.
+- Checkpoint `nrfusion-source-98931f07c8ddc46c30f02bff45ea5381074b006c`,
+  artifact `10942138379`,
+  sha256 `e10d18105ea991bb311265859ab85a51b4ab1f16c3908ce6c8d88e456a82df12`.
+
+**Subgate 19b CLOSED.**
+
+## Subgate 19c — footprint persistente do codec
+
+Auditoria:
+- `D3D12NrCodec` usa 48 slots para evitar sobrescrever constants/descriptors ainda em voo.
+- Cada slot mantém um constant buffer upload de 256 bytes: 48 recursos, 12 KiB lógicos.
+- O desenho anterior criava também 48 shader-visible descriptor heaps separados.
+
+Correção:
+- `ea67c56` consolidou os 48 heaps em um único heap com 384 descriptors.
+- Cada slot mantém uma região independente de 8 descriptors; a proteção contra reuse em voo
+  continua sendo o ring de 48 slots.
+- `D3D12NrCodec::Accounting()` reporta 48 resources, 12 KiB e 1 descriptor heap após
+  `Init()`, e zero após `Shutdown()`.
+- O teste executa dois dispatches consecutivos para exercitar mais de uma região do heap.
+
+**Subgate 19c CLOSED. Fase 19 permanece IN PROGRESS.**
+
+## Resource ledger atual
+
+| Domínio | Owner | Trigger | Footprint controlado | Reuse | Release/resize |
+| --- | --- | --- | --- | --- | --- |
+| Scratch NR | `D3D12NrScratchResources` | primeiro frame/feature necessária | core + opcionais por formato/tamanho; bytes e count ativos | reutiliza enquanto desc/usage compatíveis | opcionais por usage; gerações antigas via retirement |
+| Guide clones | `D3D12NrGuideClones` | guide typeless que exige formato tipado | até depth + motion; bytes/count ativos | reutiliza enquanto desc tipada coincide | resize/formato ou retorno ao guide direto via retirement |
+| Codec | `D3D12NrCodec` | primeiro `ExecuteMainFrame` que inicializa codec | 48 x 256 B upload + 1 heap de 384 descriptors | ring fixo de 48 slots | `Shutdown()`; não depende de resize |
+| Timing D3D12 | `D3D12RetiredTimingSource` | `BindAfterIdle()` explícito | readback de 16 timestamps + query heap | ring fixo de 8 samples | `ResetAfterIdle()` |
+| Diagnostics legado | `NrD3D12Diagnostics` | `NRFusion_BeginNrDiagnosticFrame` | readback de 256 KiB + query heap de 32768 timestamps | reutiliza entre frames diagnósticos | ainda permanece residente após `ReadNrDiagnosticFrame` |
+
+## Blocker atual
+
+O próximo leak concreto é o owner legado de diagnostics: depois que o fence comprova conclusão
+e `NRFusion_ReadNrDiagnosticFrame` termina, query heap/readback continuam presos no estado
+estático. O source tem <=300 linhas, mas depende de `nvapi.h`, que não está versionado no
+repositório; portanto hoje não existe gate hosted focado para compilar/testar esse owner isolado.
+
+Não modificar `tools/apply_to_optiscaler.py` para resolver isso. Primeiro criar uma forma
+hosted de compilar/testar o owner sem depender do monólito do patcher; depois liberar os GPU
+resources após a conclusão comprovada do fence.
+
+A medição física de peak VRAM final continua pendente e não deve ser substituída por hosted CI.
