@@ -295,3 +295,4 @@ add_executable(nrfusion_harness_3d
     endif()
 
 include(cmake/NRFusionCompatibilityWindows.cmake)
+include(cmake/NRFusionDiagnosticsWindows.cmake)

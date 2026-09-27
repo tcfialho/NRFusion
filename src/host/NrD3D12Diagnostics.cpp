@@ -17,6 +17,8 @@ namespace nrfusion {
 namespace {
 using Microsoft::WRL::ComPtr;
 constexpr unsigned kQueryCapacity = 32768;
+constexpr std::uint64_t kReadbackBytes =
+    static_cast<std::uint64_t>(kQueryCapacity) * sizeof(UINT64);
 struct KernelSample {
     unsigned query = 0;
     std::string name;
@@ -46,23 +48,32 @@ DiagnosticState& Shared() {
     static auto* state = new DiagnosticState;
     return *state;
 }
+void ResetGpuResources(DiagnosticState& state) noexcept {
+    state.readback.Reset();
+    state.queries.Reset();
+    state.device.Reset();
+}
 bool Prepare(DiagnosticState& state, ID3D12Device* device) {
     if (state.device) return state.device.Get() == device;
-    D3D12_QUERY_HEAP_DESC queries{};
-    queries.Type = D3D12_QUERY_HEAP_TYPE_TIMESTAMP;
-    queries.Count = kQueryCapacity;
-    if (FAILED(device->CreateQueryHeap(&queries, IID_PPV_ARGS(&state.queries)))) return false;
+    D3D12_QUERY_HEAP_DESC queryDesc{};
+    queryDesc.Type = D3D12_QUERY_HEAP_TYPE_TIMESTAMP;
+    queryDesc.Count = kQueryCapacity;
+    ComPtr<ID3D12QueryHeap> queries;
+    if (FAILED(device->CreateQueryHeap(&queryDesc, IID_PPV_ARGS(&queries)))) return false;
     D3D12_HEAP_PROPERTIES heap{};
     heap.Type = D3D12_HEAP_TYPE_READBACK;
     D3D12_RESOURCE_DESC buffer{};
     buffer.Dimension = D3D12_RESOURCE_DIMENSION_BUFFER;
-    buffer.Width = kQueryCapacity * sizeof(UINT64);
+    buffer.Width = kReadbackBytes;
     buffer.Height = buffer.DepthOrArraySize = buffer.MipLevels = 1;
     buffer.SampleDesc.Count = 1;
     buffer.Layout = D3D12_TEXTURE_LAYOUT_ROW_MAJOR;
+    ComPtr<ID3D12Resource> readback;
     if (FAILED(device->CreateCommittedResource(&heap, D3D12_HEAP_FLAG_NONE, &buffer,
-        D3D12_RESOURCE_STATE_COPY_DEST, nullptr, IID_PPV_ARGS(&state.readback)))) return false;
+        D3D12_RESOURCE_STATE_COPY_DEST, nullptr, IID_PPV_ARGS(&readback)))) return false;
     state.device = device;
+    state.queries = std::move(queries);
+    state.readback = std::move(readback);
     state.samples.reserve(kQueryCapacity / 2);
     return true;
 }
@@ -79,6 +90,18 @@ void EndQuery(DiagnosticState& state, ID3D12GraphicsCommandList* commands, unsig
                               state.readback.Get(), query * sizeof(UINT64));
 }
 } // namespace
+
+NrD3D12DiagnosticAccounting NrD3D12DiagnosticAccountingSnapshot() noexcept {
+    auto& state = Shared();
+    std::lock_guard guard(state.mutex);
+    NrD3D12DiagnosticAccounting result{};
+    result.gpuObjectCount =
+        static_cast<std::size_t>(state.queries != nullptr) +
+        static_cast<std::size_t>(state.readback != nullptr);
+    result.readbackBytes = state.readback != nullptr ? kReadbackBytes : 0;
+    result.queryCapacity = state.queries != nullptr ? kQueryCapacity : 0;
+    return result;
+}
 
 void NoteNrFunction(NVDX_ObjectHandle function, const char* name) {
     auto& state = Shared();
@@ -222,13 +245,23 @@ extern "C" __declspec(dllexport) int NRFusion_ReadNrDiagnosticFrame(
     auto& state = Shared();
     std::lock_guard guard(state.mutex);
     if (!state.active || !queue || !fence || !output || state.passDepth ||
-        fence->GetCompletedValue() < completion || FAILED(state.device->GetDeviceRemovedReason())) return 0;
+        fence->GetCompletedValue() < completion) return 0;
     state.active = false;
+    if (!state.device || FAILED(state.device->GetDeviceRemovedReason())) {
+        ResetGpuResources(state);
+        return 0;
+    }
     UINT64 frequency = 0;
-    if (state.failed || FAILED(queue->GetTimestampFrequency(&frequency)) || !frequency) return 0;
+    if (state.failed || FAILED(queue->GetTimestampFrequency(&frequency)) || !frequency) {
+        ResetGpuResources(state);
+        return 0;
+    }
     UINT64* ticks = nullptr;
     D3D12_RANGE read{0, state.nextQuery * sizeof(UINT64)};
-    if (FAILED(state.readback->Map(0, &read, reinterpret_cast<void**>(&ticks)))) return 0;
+    if (FAILED(state.readback->Map(0, &read, reinterpret_cast<void**>(&ticks)))) {
+        ResetGpuResources(state);
+        return 0;
+    }
     auto milliseconds = [&](unsigned query) {
         if (ticks[query + 1] <= ticks[query]) { state.failed = true; return 0.0; }
         return double(ticks[query + 1] - ticks[query]) * 1000.0 / double(frequency);
@@ -249,6 +282,8 @@ extern "C" __declspec(dllexport) int NRFusion_ReadNrDiagnosticFrame(
     state.readback->Unmap(0, &written);
     if (state.profile) { state.csv.flush(); if (!state.csv) state.failed = true; }
     *output = state.result;
-    return state.failed ? 0 : 1;
+    const int result = state.failed ? 0 : 1;
+    ResetGpuResources(state);
+    return result;
 }
 } // namespace nrfusion
