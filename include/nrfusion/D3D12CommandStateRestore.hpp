@@ -66,4 +66,8 @@ struct D3D12CommandStateRestore {
     }
 };
 
+bool RestoreD3D12CommandState(
+    ID3D12GraphicsCommandList* commandList,
+    const D3D12CommandStateRestore* restore) noexcept;
+
 } // namespace nrfusion

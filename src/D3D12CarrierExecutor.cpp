@@ -161,8 +161,8 @@ D3D12CarrierExecuteResult D3D12CarrierExecutor::Execute(
     result.attempted = true;
     result.executorResult =
         executor_.ExecuteFrame(cmdList, executorResources, request);
-    if (options.commandStateRestore != nullptr &&
-        !options.commandStateRestore->Apply(cmdList)) {
+    if (!RestoreD3D12CommandState(
+            cmdList, options.commandStateRestore)) {
         result.failure = D3D12CarrierExecuteFailure::StateRestoreFailed;
         return result;
     }

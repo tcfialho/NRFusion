@@ -5,7 +5,9 @@
 #include <wrl/client.h>
 
 #include <cassert>
+#include <chrono>
 #include <cstdint>
+#include <cstdio>
 #include <cstring>
 
 using Microsoft::WRL::ComPtr;
@@ -186,9 +188,32 @@ int main() {
 
     D3D12CommandStateRestore invalid = restore;
     invalid.descriptorHeapCount = 3;
-    assert(!invalid.Apply(list.Get()));
-    assert(restore.Apply(list.Get()));
+    assert(!RestoreD3D12CommandState(list.Get(), &invalid));
 
+    constexpr int defaultIterations = 250000;
+    const auto defaultStart = std::chrono::steady_clock::now();
+    for (int i = 0; i < defaultIterations; ++i)
+        assert(RestoreD3D12CommandState(list.Get(), nullptr));
+    const auto defaultEnd = std::chrono::steady_clock::now();
+
+    constexpr int compatibilityIterations = 10000;
+    const auto compatibilityStart = std::chrono::steady_clock::now();
+    for (int i = 0; i < compatibilityIterations; ++i)
+        assert(RestoreD3D12CommandState(list.Get(), &restore));
+    const auto compatibilityEnd = std::chrono::steady_clock::now();
+
+    const auto defaultNs = std::chrono::duration_cast<std::chrono::nanoseconds>(
+        defaultEnd - defaultStart).count() / defaultIterations;
+    const auto compatibilityNs =
+        std::chrono::duration_cast<std::chrono::nanoseconds>(
+            compatibilityEnd - compatibilityStart).count() /
+        compatibilityIterations;
+    std::printf(
+        "D3D12 state restore: default=%lld ns/call, compatibility=%lld ns/call\n",
+        static_cast<long long>(defaultNs),
+        static_cast<long long>(compatibilityNs));
+
+    assert(RestoreD3D12CommandState(list.Get(), &restore));
     list->Dispatch(1, 1, 1);
 
     D3D12_RESOURCE_BARRIER barrier{};
