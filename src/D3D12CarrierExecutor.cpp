@@ -161,6 +161,11 @@ D3D12CarrierExecuteResult D3D12CarrierExecutor::Execute(
     result.attempted = true;
     result.executorResult =
         executor_.ExecuteFrame(cmdList, executorResources, request);
+    if (options.commandStateRestore != nullptr &&
+        !options.commandStateRestore->Apply(cmdList)) {
+        result.failure = D3D12CarrierExecuteFailure::StateRestoreFailed;
+        return result;
+    }
     if (result.executorResult == D3D12NrFrameResult::Failed)
         result.failure = D3D12CarrierExecuteFailure::ExecutorFailed;
     return result;

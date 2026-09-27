@@ -292,3 +292,5 @@ add_executable(nrfusion_harness_3d
                     "$<TARGET_FILE_DIR:nrfusion_requiem_game>/assets")
         set_target_properties(nrfusion_requiem_game PROPERTIES OUTPUT_NAME "RequiemGame")
     endif()
+
+include(cmake/NRFusionCompatibilityWindows.cmake)

@@ -12,6 +12,7 @@
 #include <array>
 
 #include "nrfusion/D3D12CarrierExecutionPlan.hpp"
+#include "nrfusion/D3D12CommandStateRestore.hpp"
 #include "nrfusion/D3D12CarrierNativeAcquire.hpp"
 #include "nrfusion/D3D12NrExecutor.hpp"
 
@@ -31,6 +32,7 @@ struct D3D12CarrierExecuteOptions {
         D3D12_RESOURCE_STATE_NON_PIXEL_SHADER_RESOURCE;
     D3D12_RESOURCE_STATES exposureState =
         D3D12_RESOURCE_STATE_NON_PIXEL_SHADER_RESOURCE;
+    const D3D12CommandStateRestore* commandStateRestore = nullptr;
 };
 
 enum class D3D12CarrierExecuteFailure : std::uint8_t {
@@ -42,7 +44,8 @@ enum class D3D12CarrierExecuteFailure : std::uint8_t {
     DeviceMismatch,
     ResourceIdentityMismatch,
     MissingExposure,
-    ExecutorFailed
+    ExecutorFailed,
+    StateRestoreFailed
 };
 
 struct D3D12CarrierExecuteResult {
