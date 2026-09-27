@@ -83,7 +83,9 @@ if (WIN32)
         src/DlssgTransfusionRuntime.cpp
         src/DlssgTransfusionPatches.cpp
         src/DlssgTransfusionFatbin.cpp
-        src/SyntheticDx12Provider.cpp
+        src/SyntheticDx12ProviderLifecycle.cpp
+        src/SyntheticDx12ProviderSubmit.cpp
+        src/SyntheticDx12ProviderResidual.cpp
         src/NvofMotionProvider.cpp
         src/SyntheticDx11BridgeProvider.cpp
         src/SyntheticDx11BridgeResources.cpp
