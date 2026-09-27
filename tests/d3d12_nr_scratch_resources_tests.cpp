@@ -129,6 +129,10 @@ int main() {
         gpu.device.Get(), D3D12NrScratchKind::PassScratch,
         native.format, 640, 360, retirement));
     assert(retirement.Size() == 1);
+    auto retiredAccounting = retirement.ResourceAccounting();
+    assert(retiredAccounting.resourceCount == 1);
+    assert(retiredAccounting.logicalBytes == workBytes);
+    assert(retiredAccounting.logicalBytesExact);
     ExpectSize(scratch.Get(D3D12NrScratchKind::PassScratch), 640, 360);
 
     assert(scratch.Transition(
@@ -147,6 +151,9 @@ int main() {
     assert(scratch.Retire(D3D12NrScratchKind::ActiveColor, retirement));
     assert(scratch.Get(D3D12NrScratchKind::ActiveColor) == nullptr);
     assert(retirement.Size() == 2);
+    retiredAccounting = retirement.ResourceAccounting();
+    assert(retiredAccounting.resourceCount == 2);
+    assert(retiredAccounting.logicalBytes == workBytes + frameBytes);
 
     assert(scratch.Ensure(gpu.device.Get(), resized, retirement));
     assert(scratch.Matches(resized));
@@ -159,12 +166,18 @@ int main() {
     assert(scratch.Get(D3D12NrScratchKind::ColorSmall) == nullptr);
     assert(scratch.Get(D3D12NrScratchKind::OutputNative) == nullptr);
     assert(retirement.Size() == 12);
+    retiredAccounting = retirement.ResourceAccounting();
+    assert(retiredAccounting.resourceCount == 12);
+    assert(retiredAccounting.logicalBytesExact);
 
     assert(scratch.Retire(retirement));
     assert(!scratch.Complete());
     assert(scratch.Accounting().resourceCount == 0);
     assert(scratch.Accounting().logicalBytes == 0);
     assert(retirement.Size() == 15);
+    retiredAccounting = retirement.ResourceAccounting();
+    assert(retiredAccounting.resourceCount == 15);
+    assert(retiredAccounting.logicalBytesExact);
 
     D3D12NrScratchResources usageScratch;
     NrDeferredRetirementQueue usageRetirement;
@@ -210,6 +223,7 @@ int main() {
     retirement.DrainAfterIdle(&released, &ReleaseRetired);
     assert(released == 15);
     assert(retirement.Size() == 0);
+    assert(retirement.ResourceAccounting().resourceCount == 0);
     usageRetirement.DrainAfterIdle(&released, &ReleaseRetired);
     assert(released == 26);
     assert(usageRetirement.Size() == 0);

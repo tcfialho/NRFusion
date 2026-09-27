@@ -84,6 +84,7 @@ private:
     static Surface MakeSurface(ID3D12Resource* resource, DXGI_FORMAT format,
                                std::uint32_t width, std::uint32_t height) noexcept;
     static void Release(Surface& surface) noexcept;
+    static std::uint64_t LogicalBytes(const Surface& surface) noexcept;
     static bool Park(Surface& surface, NrDeferredRetirementQueue& retirement) noexcept;
     static bool IsCoreKind(D3D12NrScratchKind kind) noexcept;
 

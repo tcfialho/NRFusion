@@ -61,7 +61,7 @@ bool D3D12NrScratchResources::Park(
     Surface& surface, NrDeferredRetirementQueue& retirement) noexcept {
     if (surface.resource == nullptr) return true;
     void* object = surface.resource;
-    if (!retirement.Park(object, NrRetiredObjectKind::Resource)) return false;
+    if (!retirement.Park(object, NrRetiredObjectKind::Resource, NrDeferredRetirementQueue::kDefaultDelay, LogicalBytes(surface))) return false;
     surface = {};
     return true;
 }

@@ -68,6 +68,16 @@ std::uint32_t BytesPerPixel(DXGI_FORMAT format) noexcept {
 
 } // namespace
 
+std::uint64_t D3D12NrScratchResources::LogicalBytes(
+    const Surface& surface) noexcept {
+    const std::uint32_t bytesPerPixel = BytesPerPixel(surface.format);
+    if (bytesPerPixel == 0) return 0;
+    const std::uint64_t pixels =
+        static_cast<std::uint64_t>(surface.width) * surface.height;
+    const auto max = (std::numeric_limits<std::uint64_t>::max)();
+    return pixels > max / bytesPerPixel ? 0 : pixels * bytesPerPixel;
+}
+
 D3D12NrScratchAccounting D3D12NrScratchResources::Accounting() const noexcept {
     D3D12NrScratchAccounting result{};
     constexpr D3D12NrScratchKind kinds[] = {
@@ -89,22 +99,13 @@ D3D12NrScratchAccounting D3D12NrScratchResources::Accounting() const noexcept {
         if (surface == nullptr || surface->resource == nullptr) continue;
         ++result.resourceCount;
 
-        const std::uint32_t bytesPerPixel = BytesPerPixel(surface->format);
-        if (bytesPerPixel == 0) {
+        const std::uint64_t bytes = LogicalBytes(*surface);
+        if (bytes == 0) {
             result.logicalBytesExact = false;
             continue;
         }
 
-        const std::uint64_t pixels =
-            static_cast<std::uint64_t>(surface->width) * surface->height;
         const auto max = (std::numeric_limits<std::uint64_t>::max)();
-        if (pixels > max / bytesPerPixel) {
-            result.logicalBytes = max;
-            result.logicalBytesExact = false;
-            continue;
-        }
-
-        const std::uint64_t bytes = pixels * bytesPerPixel;
         if (result.logicalBytes > max - bytes) {
             result.logicalBytes = max;
             result.logicalBytesExact = false;

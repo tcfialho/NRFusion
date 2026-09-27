@@ -14,6 +14,13 @@ enum class NrRetiredObjectKind : std::uint8_t {
 struct NrRetiredObject {
     void* object = nullptr;
     NrRetiredObjectKind kind = NrRetiredObjectKind::Feature;
+    std::uint64_t logicalBytes = 0;
+};
+
+struct NrDeferredRetirementAccounting {
+    std::size_t resourceCount = 0;
+    std::uint64_t logicalBytes = 0;
+    bool logicalBytesExact = true;
 };
 
 class NrDeferredRetirementQueue {
@@ -24,11 +31,13 @@ public:
     using ReleaseFn = void (*)(void* context, NrRetiredObject retired) noexcept;
 
     bool Park(void*& object, NrRetiredObjectKind kind,
-              std::uint32_t delay = kDefaultDelay) noexcept;
+              std::uint32_t delay = kDefaultDelay,
+              std::uint64_t logicalBytes = 0) noexcept;
     void Tick(void* context, ReleaseFn release) noexcept;
     void DrainAfterIdle(void* context, ReleaseFn release) noexcept;
 
     std::size_t Size() const noexcept { return size_; }
+    NrDeferredRetirementAccounting ResourceAccounting() const noexcept;
 
 private:
     struct Entry {
