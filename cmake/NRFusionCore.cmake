@@ -50,6 +50,7 @@ add_library(nrfusion_core STATIC
     src/RuntimeConfigStore.cpp
     src/RuntimeMenuModel.cpp
     src/RuntimeAdvancedConfig.cpp
+    src/RuntimeAdvancedConfigStore.cpp
     src/RuntimeBootstrap.cpp
     src/NrSession.cpp
     src/NrSessionWorkState.cpp
