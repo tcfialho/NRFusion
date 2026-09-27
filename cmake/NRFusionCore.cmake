@@ -47,6 +47,7 @@ add_library(nrfusion_core STATIC
     src/AdaptiveExposure.cpp
     src/AdaptiveExposureController.cpp
     src/RuntimeShell.cpp
+    src/RuntimeConfigStore.cpp
     src/RuntimeBootstrap.cpp
     src/NrSession.cpp
     src/NrSessionWorkState.cpp
