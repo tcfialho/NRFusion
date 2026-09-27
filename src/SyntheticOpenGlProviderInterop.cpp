@@ -1,4 +1,5 @@
 #include "nrfusion/SyntheticOpenGlProvider.hpp"
+#include "nrfusion/OpenGlStateRestore.hpp"
 
 namespace nrfusion {
 
@@ -78,6 +79,9 @@ bool SyntheticOpenGlProvider::CreateSharedResources(
 
     CloseSharedHandles();
 
+    OpenGlTextureBindingGuard textureBinding(glGetIntegerv, glBindTexture);
+    if (!textureBinding.Captured()) return false;
+
     D3D12_HEAP_PROPERTIES heapProps{};
     heapProps.Type = D3D12_HEAP_TYPE_DEFAULT;
     D3D12_RESOURCE_DESC desc{};
@@ -138,7 +142,6 @@ bool SyntheticOpenGlProvider::CreateSharedResources(
         gl_.TexStorageMem2DEXT(
             GL_TEXTURE_2D, 1, GL_RGBA16F,
             width, height, slot.glOutputMem, 0);
-        glBindTexture(GL_TEXTURE_2D, 0);
 
         gl_.GenSemaphoresEXT(1, &slot.glInputSem);
         gl_.GenSemaphoresEXT(1, &slot.glOutputSem);

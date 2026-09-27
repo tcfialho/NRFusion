@@ -33,3 +33,17 @@ add_test(NAME nrfusion_opengl_external_interop_tests
     COMMAND nrfusion_opengl_external_interop_tests)
 set_tests_properties(nrfusion_opengl_external_interop_tests PROPERTIES
     SKIP_RETURN_CODE 77)
+
+add_executable(nrfusion_opengl_state_restore_tests
+    tests/opengl_state_restore_tests.cpp)
+target_include_directories(nrfusion_opengl_state_restore_tests PRIVATE include)
+target_link_libraries(nrfusion_opengl_state_restore_tests PRIVATE opengl32)
+if (MSVC)
+    target_compile_options(nrfusion_opengl_state_restore_tests PRIVATE
+        /W4 /permissive- /UNDEBUG)
+else()
+    target_compile_options(nrfusion_opengl_state_restore_tests PRIVATE
+        -Wall -Wextra -Wpedantic -Werror -UNDEBUG)
+endif()
+add_test(NAME nrfusion_opengl_state_restore_tests
+    COMMAND nrfusion_opengl_state_restore_tests)
