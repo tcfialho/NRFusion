@@ -149,10 +149,14 @@ bool D3D12NrExecutor::PrepareFrameResources(
                             bool& cloned) -> ID3D12Resource* {
         const D3D12_RESOURCE_DESC sourceDesc = source->GetDesc();
         const DXGI_FORMAT typed = TypedGuideFormat(sourceDesc.Format);
-        if (typed == sourceDesc.Format)
+        if (typed == sourceDesc.Format) {
+            if (guideClones_.Get(kind) != nullptr &&
+                !guideClones_.Retire(kind, retirement_))
+                return nullptr;
             return TransitionExternal(
                 cmd, source, state, D3D12_RESOURCE_STATE_NON_PIXEL_SHADER_RESOURCE)
                 ? source : nullptr;
+        }
 
         ID3D12Device* device = nullptr;
         if (FAILED(source->GetDevice(IID_PPV_ARGS(&device))) || device == nullptr)

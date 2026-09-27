@@ -131,6 +131,12 @@ int main() {
     assert(accounting.logicalBytesExact);
     assert(clones.Get(D3D12NrGuideKind::Depth)->GetDesc().Width == 960);
 
+    assert(clones.Retire(D3D12NrGuideKind::Depth, retirement));
+    assert(retirement.Size() == 2);
+    assert(clones.Get(D3D12NrGuideKind::Depth) == nullptr);
+    assert(clones.Get(D3D12NrGuideKind::Motion) != nullptr);
+    assert(clones.Accounting().resourceCount == 1);
+
     assert(clones.Retire(retirement));
     assert(retirement.Size() == 3);
     assert(clones.Accounting().resourceCount == 0);
