@@ -1,9 +1,53 @@
 #include "nrfusion/DlssgTransfusion.hpp"
 
+#include <atomic>
 #include <cassert>
+#include <chrono>
 #include <cstdint>
+#include <cstdio>
+#include <cstdlib>
 #include <cstring>
+#include <new>
 #include <vector>
+
+namespace {
+
+std::atomic<std::size_t> gAllocations{0};
+
+} // namespace
+
+void* operator new(std::size_t size)
+{
+    gAllocations.fetch_add(1, std::memory_order_relaxed);
+    if (void* memory = std::malloc(size))
+        return memory;
+    throw std::bad_alloc();
+}
+
+void* operator new[](std::size_t size)
+{
+    return ::operator new(size);
+}
+
+void operator delete(void* memory) noexcept
+{
+    std::free(memory);
+}
+
+void operator delete[](void* memory) noexcept
+{
+    std::free(memory);
+}
+
+void operator delete(void* memory, std::size_t) noexcept
+{
+    std::free(memory);
+}
+
+void operator delete[](void* memory, std::size_t) noexcept
+{
+    std::free(memory);
+}
 
 int main()
 {
@@ -50,6 +94,27 @@ int main()
     const auto transitioned = transfusion.Status();
     assert(transitioned.requestedByGame == 3);
     assert(transitioned.effectiveMultiplier == 4);
+
+    constexpr int benchmarkIterations = 250000;
+    const auto benchmarkStart = std::chrono::steady_clock::now();
+    const auto allocationsBefore =
+        gAllocations.load(std::memory_order_relaxed);
+    for (int i = 0; i < benchmarkIterations; ++i)
+    {
+        mode = 0;
+        frames = (i & 1) == 0 ? 1u : 3u;
+        transfusion.ProcessSetOptions(mode, frames);
+    }
+    const auto allocationsAfter =
+        gAllocations.load(std::memory_order_relaxed);
+    const auto benchmarkEnd = std::chrono::steady_clock::now();
+    assert(allocationsAfter == allocationsBefore);
+
+    const auto elapsedNs = std::chrono::duration_cast<std::chrono::nanoseconds>(
+        benchmarkEnd - benchmarkStart).count();
+    std::printf(
+        "ProcessSetOptions: %lld ns/call, 0 allocations\n",
+        static_cast<long long>(elapsedNs / benchmarkIterations));
 
     constexpr std::size_t imageSize = 0x1000;
     auto* image = static_cast<std::uint8_t*>(
