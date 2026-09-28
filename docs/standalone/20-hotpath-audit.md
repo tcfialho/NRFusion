@@ -193,13 +193,16 @@ Parser PowerShell dos três arquivos: PASS.
 Portable `36378699825`: PASS; Focused `36378773440`: PASS.
 Checkpoint `10952137046`, sha256
 `211bc9184a40f583a6306b9e6ea73686ecf80834dc30aceed7add538a842d274`.
-Windows full `36378775434` permanece em execução no freeze.
+Windows full `36378775434`: FAIL no link do OptiScaler por sources já divididos que não entram
+na lista fechada de `apply_to_optiscaler.py` (incluindo owners de `PerformanceController`,
+`DlssgTransfusion` e `FusionRuntime`). O parser/contrato do split `build_dist` passaram; a falha
+expõe a dívida pré-existente da closure do patcher, não erro de dot-source.
 Dívida strict: **8 -> 7 violações**.
 
-Próxima ação estrutural: `installer/NRFusion.nsi` (465 linhas). Dry-run já separa
-`Install` e `Uninstall` em includes de 153/38 linhas, deixa o root em 277 e reconstrói
-o source atual exatamente. Os testes de distribuição/UX devem validar root + includes como
-uma única closure para preservar as mesmas asserções sem duplicar strings no root.
+Próxima ação bloqueadora: dividir `tools/apply_to_optiscaler.py` antes de alterar sua lista fechada,
+sem deixar nenhum helper >300; então materializar/adicionar ao projeto todos os owners já separados
+e repetir Windows full `36378775434`. O split do installer já está dry-run pronto (root 277,
+Install 153, Uninstall 38), mas não precede a correção da closure porque não desbloqueia distribuição.
 
 ## Revisão obrigatória
 
