@@ -34,13 +34,13 @@ Contínua; consolidar após features principais.
 
 - [ ] Resize/toggle/failure loops.
 - [ ] Resource counts por feature.
-- [ ] Hardware real mede peak final.
+- [x] Hardware real mede peak final.
 - [ ] LOC checker.
 
 ## Gate
 
 - [ ] Sem leak/recurso inativo.
-- [ ] VRAM alvo <= baseline equivalente.
+- [x] VRAM alvo <= baseline equivalente.
 - [ ] Código de resource ownership <=300 por arquivo.
 
 ## Próxima fase
@@ -251,15 +251,36 @@ Validação física local:
 
 **Subgate 19g CLOSED. Fase 19 permanece IN PROGRESS.**
 
+## Subgate 19h — init Host64 atômico e gate físico de VRAM
+
+Correção `8c8812e`:
+- `InitializeD3D12()` cria device/queue/allocators/list/fence/providers em temporários e
+  só publica o conjunto completo; falha intermediária não deixa estado parcial residente.
+- Portable `36360933948`, Focused `36360933832` e Windows `36360934021`: PASS.
+- Windows confirmou `nrfusion_ipc_host_test` em 0,41 s,
+  `nrfusion_host64_stop_cleanup_tests` em 0,10 s e 33/33 executados PASS.
+- Checkpoint artifact `10945422479`,
+  sha256 `f84305d849171ced41cdc13d05811d9e8da91fde98b39dc83eca7c0ccf38e824`.
+
+Gate físico no mesmo RTX 4050 Laptop 6 GB:
+- baseline pré-Phase-19: `6f597f4`; code head final medido: `8c8812e`;
+- mesmo `nrfusion_ipc_host_test`, com adaptação local idêntica para selecionar o adapter
+  high-performance e hold de 5 s no mesmo ponto; edits revertidos após medir;
+- `GPU Process Memory\\Dedicated Usage` por PID durante o hold:
+  baseline 92,254 MiB em 3/3; atual 92,254 MiB em 3/3; delta 0 MiB;
+- todos os seis runs do workload concluíram PASS.
+
+**Gate físico de peak e `VRAM alvo <= baseline equivalente` CLOSED.**
+**Subgate 19h CLOSED. Fase 19 permanece IN PROGRESS.**
+
 ## Blocker atual
 
-O repositório ainda não possui harness dedicado para o gate “hardware real mede peak final”.
-O benchmark CUDA/FFN existente mede somente aquele kernel e não é equivalente ao footprint
-final dos owners D3D12/Host64; portanto não deve ser usado para fechar o gate de VRAM.
+A ponte D3D11 ainda possui failure-path ownership incompleto:
+`CreatePrivateD3D12()` publica device/queue/allocators incrementalmente e
+`CreateSharedResources()` pode deixar um slot parcialmente criado após falha.
+Retry limpa os shared slots, portanto não há crescimento ilimitado, mas recursos inativos
+podem permanecer até retry/shutdown.
 
-Próxima ação: criar uma medição física reproduzível do mesmo workload no commit imediatamente
-pré-Phase-19 e no code head atual, registrar peak/delta no mesmo adaptador RTX 4050 e só então
-avaliar `VRAM alvo <= baseline equivalente`.
-
-A medição física deve continuar separada do hosted CI e não pode ser inferida apenas dos
-counters lógicos de resources.
+Próxima ação: tornar o bootstrap D3D12 privado atômico e limpar imediatamente shared slots
+parciais em qualquer falha antes da primeira submissão; validar
+`nrfusion_synthetic_dx11_bridge_test` hosted e na RTX 4050.
