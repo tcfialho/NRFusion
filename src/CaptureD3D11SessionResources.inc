@@ -1,3 +1,63 @@
+    class ComputeStateGuard {
+    public:
+        explicit ComputeStateGuard(ID3D11DeviceContext* context) : context_(context) {
+            if (!context_) return;
+
+            ID3D11ComputeShader* shader = nullptr;
+            std::array<ID3D11ClassInstance*, D3D11_SHADER_MAX_INTERFACES> rawClasses{};
+            UINT classCount = static_cast<UINT>(rawClasses.size());
+            context_->CSGetShader(&shader, rawClasses.data(), &classCount);
+            shader_.Attach(shader);
+            classCount_ = std::min(classCount, static_cast<UINT>(classInstances_.size()));
+            for (UINT i = 0; i < classCount_; ++i) classInstances_[i].Attach(rawClasses[i]);
+
+            ID3D11Buffer* constantBuffer = nullptr;
+            context_->CSGetConstantBuffers(0, 1, &constantBuffer);
+            constantBuffer_.Attach(constantBuffer);
+
+            std::array<ID3D11ShaderResourceView*, 2> rawSrvs{};
+            context_->CSGetShaderResources(0, static_cast<UINT>(rawSrvs.size()), rawSrvs.data());
+            for (std::size_t i = 0; i < rawSrvs.size(); ++i) shaderResources_[i].Attach(rawSrvs[i]);
+
+            ID3D11UnorderedAccessView* unorderedAccessView = nullptr;
+            context_->CSGetUnorderedAccessViews(0, 1, &unorderedAccessView);
+            unorderedAccessView_.Attach(unorderedAccessView);
+        }
+
+        ~ComputeStateGuard() { Restore(); }
+
+        ComputeStateGuard(const ComputeStateGuard&) = delete;
+        ComputeStateGuard& operator=(const ComputeStateGuard&) = delete;
+
+    private:
+        void Restore() noexcept {
+            if (!context_) return;
+
+            std::array<ID3D11ClassInstance*, D3D11_SHADER_MAX_INTERFACES> rawClasses{};
+            for (UINT i = 0; i < classCount_; ++i) rawClasses[i] = classInstances_[i].Get();
+            context_->CSSetShader(shader_.Get(), rawClasses.data(), classCount_);
+
+            ID3D11Buffer* constantBuffer = constantBuffer_.Get();
+            context_->CSSetConstantBuffers(0, 1, &constantBuffer);
+
+            std::array<ID3D11ShaderResourceView*, 2> rawSrvs{};
+            for (std::size_t i = 0; i < rawSrvs.size(); ++i) rawSrvs[i] = shaderResources_[i].Get();
+            context_->CSSetShaderResources(0, static_cast<UINT>(rawSrvs.size()), rawSrvs.data());
+
+            ID3D11UnorderedAccessView* unorderedAccessView = unorderedAccessView_.Get();
+            context_->CSSetUnorderedAccessViews(0, 1, &unorderedAccessView, nullptr);
+            context_ = nullptr;
+        }
+
+        ID3D11DeviceContext* context_ = nullptr;
+        ComPtr<ID3D11ComputeShader> shader_;
+        std::array<ComPtr<ID3D11ClassInstance>, D3D11_SHADER_MAX_INTERFACES> classInstances_{};
+        UINT classCount_ = 0;
+        ComPtr<ID3D11Buffer> constantBuffer_;
+        std::array<ComPtr<ID3D11ShaderResourceView>, 2> shaderResources_{};
+        ComPtr<ID3D11UnorderedAccessView> unorderedAccessView_;
+    };
+
     bool CreateSharedTextureLocked(const D3D11_TEXTURE2D_DESC& resourceDesc,
                                    bool allowUnorderedAccess,
                                    ComPtr<ID3D11Texture2D>& texture,
@@ -109,6 +169,7 @@
     bool RecordDownsampleLocked(ID3D11Texture2D* backBuffer) {
         if (!downsampleSource_ || !downsampleSourceView_ || !downsampleShader_ ||
             !downsampleConstants_ || !sharedColorUav_) return false;
+        ComputeStateGuard state(context_.Get());
 
         context_->CopyResource(downsampleSource_.Get(), backBuffer);
         struct DownsampleConstants {
@@ -143,6 +204,7 @@
     bool RecordComposeResidualLocked(ID3D11Texture2D* backBuffer) {
         if (!composeShader_ || !composeConstants_ || !downsampleSourceView_ ||
             !sharedOutputView_ || !composeTargetUav_ || !composeTarget_) return false;
+        ComputeStateGuard state(context_.Get());
 
         const bool isNeural = processingMode_ == static_cast<uint32_t>(IpcProcessingMode::Neural);
         struct ComposeConstants {

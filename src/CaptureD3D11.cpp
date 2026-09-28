@@ -16,8 +16,9 @@
 #include <tlhelp32.h>
 #include <wrl/client.h>
 
-#include <atomic>
 #include <algorithm>
+#include <array>
+#include <atomic>
 #include <cstddef>
 #include <cstdint>
 #include <cstring>

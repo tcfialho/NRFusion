@@ -3,6 +3,8 @@
 #endif
 #if !defined(NRFUSION_CAPTURE32_STATIC)
 #include "nrfusion/CaptureD3D11.hpp"
+#include "nrfusion/CaptureD3D11Runtime.hpp"
+#include "nrfusion/IpcProtocol.hpp"
 #endif
 #include "nrfusion/CaptureProvider32Export.h"
 
@@ -92,25 +94,45 @@ NRFUSION_CAPTURE32_API bool __cdecl NRFusion_Capture32_SubmitFramePipelinedEx(ui
                                                consumerFenceValue, jitterX, jitterY, reset, *outResult);
 }
 
+#if !defined(NRFUSION_CAPTURE32_STATIC)
+namespace nrfusion {
+
+void StartCaptureD3D11Runtime() noexcept {
+    SetCaptureD3D11ProcessingMode(static_cast<uint32_t>(IpcProcessingMode::Neural));
+    StartCaptureD3D11Hooks();
+}
+
+void StopCaptureD3D11Runtime(bool processTerminating) noexcept {
+    StopCaptureD3D11Hooks();
+    if (!processTerminating && g_client) {
+        g_client->Disconnect();
+        g_client.reset();
+    }
+}
+
+} // namespace nrfusion
+#endif
+
+#if defined(NRFUSION_CAPTURE32_DLL)
 BOOL WINAPI DllMain(HINSTANCE hinstDLL, DWORD fdwReason, LPVOID lpvReserved) {
     switch (fdwReason) {
     case DLL_PROCESS_ATTACH:
         DisableThreadLibraryCalls(hinstDLL);
 #if !defined(NRFUSION_CAPTURE32_STATIC)
-        nrfusion::StartCaptureD3D11Hooks();
+        nrfusion::StartCaptureD3D11Runtime();
 #endif
         break;
     case DLL_PROCESS_DETACH:
 #if !defined(NRFUSION_CAPTURE32_STATIC)
-        nrfusion::StopCaptureD3D11Hooks();
-#endif
-        if (lpvReserved == nullptr) {
-            if (g_client) {
-                g_client->Disconnect();
-                g_client.reset();
-            }
+        nrfusion::StopCaptureD3D11Runtime(lpvReserved != nullptr);
+#else
+        if (lpvReserved == nullptr && g_client) {
+            g_client->Disconnect();
+            g_client.reset();
         }
+#endif
         break;
     }
     return TRUE;
 }
+#endif

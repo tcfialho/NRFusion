@@ -1,6 +1,9 @@
 #include "nrfusion/CaptureProvider32.hpp"
 
+#include <algorithm>
 #include <array>
+#include <string>
+#include <vector>
 
 namespace nrfusion {
 namespace {
@@ -27,6 +30,28 @@ bool CompleteSetupIo(
     return completed == TRUE;
 }
 
+std::string CaptureModuleDirectory() {
+    HMODULE module = nullptr;
+    if (!GetModuleHandleExA(
+            GET_MODULE_HANDLE_EX_FLAG_FROM_ADDRESS |
+                GET_MODULE_HANDLE_EX_FLAG_UNCHANGED_REFCOUNT,
+            reinterpret_cast<LPCSTR>(&CaptureModuleDirectory), &module))
+        return {};
+
+    char path[MAX_PATH]{};
+    const DWORD length = GetModuleFileNameA(module, path, static_cast<DWORD>(sizeof(path)));
+    if (length == 0 || length >= sizeof(path)) return {};
+    const std::string fullPath(path, length);
+    const std::size_t slash = fullPath.find_last_of("\\/");
+    return slash == std::string::npos ? std::string{} : fullPath.substr(0, slash);
+}
+
+void AddHostCandidate(std::vector<std::string>& candidates, std::string path) {
+    if (path.empty()) return;
+    if (std::find(candidates.begin(), candidates.end(), path) == candidates.end())
+        candidates.push_back(std::move(path));
+}
+
 } // namespace
 
 bool CaptureProvider32::Connect(uint32_t requestedPipePid, uint32_t timeoutMs) {
@@ -48,20 +73,30 @@ bool CaptureProvider32::Connect(uint32_t requestedPipePid, uint32_t timeoutMs) {
 
         if (!attemptedSpawn && requestedPipePid == 0) {
             attemptedSpawn = true;
-            const char* hostCandidates[] = {
-                "OptiScaler\\NRFusion\\NRFusionHost64.exe",
-                "NRFusionHost64.exe",
-            };
-            for (const char* candidate : hostCandidates) {
-                if (GetFileAttributesA(candidate) == INVALID_FILE_ATTRIBUTES) continue;
+            const std::string moduleDir = CaptureModuleDirectory();
+            std::vector<std::string> hostCandidates;
+            if (!moduleDir.empty()) {
+                AddHostCandidate(hostCandidates, moduleDir + "\\NRFusion\\internal\\NRFusionHost64.exe");
+                AddHostCandidate(hostCandidates, moduleDir + "\\OptiScaler\\NRFusion\\NRFusionHost64.exe");
+                AddHostCandidate(hostCandidates, moduleDir + "\\NRFusionHost64.exe");
+            }
+            AddHostCandidate(hostCandidates, "NRFusion\\internal\\NRFusionHost64.exe");
+            AddHostCandidate(hostCandidates, "OptiScaler\\NRFusion\\NRFusionHost64.exe");
+            AddHostCandidate(hostCandidates, "NRFusionHost64.exe");
 
-                char commandLine[MAX_PATH + 32]{};
-                snprintf(commandLine, sizeof(commandLine), "\"%s\" %u", candidate, pipePid);
+            for (const std::string& candidate : hostCandidates) {
+                const DWORD attributes = GetFileAttributesA(candidate.c_str());
+                if (attributes == INVALID_FILE_ATTRIBUTES || (attributes & FILE_ATTRIBUTE_DIRECTORY) != 0)
+                    continue;
+
+                std::string commandLine = "\"" + candidate + "\" " + std::to_string(pipePid);
+                commandLine.push_back('\0');
                 STARTUPINFOA startup{};
                 startup.cb = sizeof(startup);
                 PROCESS_INFORMATION process{};
-                if (CreateProcessA(nullptr, commandLine, nullptr, nullptr, FALSE,
-                                   CREATE_NO_WINDOW | DETACHED_PROCESS, nullptr, nullptr,
+                if (CreateProcessA(nullptr, commandLine.data(), nullptr, nullptr, FALSE,
+                                   CREATE_NO_WINDOW | DETACHED_PROCESS, nullptr,
+                                   moduleDir.empty() ? nullptr : moduleDir.c_str(),
                                    &startup, &process)) {
                     CloseHandle(process.hProcess);
                     CloseHandle(process.hThread);

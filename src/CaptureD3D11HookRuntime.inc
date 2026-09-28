@@ -214,7 +214,6 @@ DWORD WINAPI CaptureHookWorker(void*) {
 } // namespace
 
 void StartCaptureD3D11Hooks() {
-    if (sizeof(void*) != 4) return;
     bool expected = false;
     if (!g_hookWorkerStarted.compare_exchange_strong(expected, true)) return;
 

@@ -131,6 +131,7 @@
     // temporary unbind.
     bool RecordCaptureDepthLocked() {
         if (!depthCaptureShader_ || !depthCaptureConstants_ || !depthSourceView_ || !depthTargetUav_) return false;
+        ComputeStateGuard state(context_.Get());
 
         const OMSetRenderTargetsFn original = OriginalOMSetRenderTargets(context_.Get());
         if (!original) return false;
