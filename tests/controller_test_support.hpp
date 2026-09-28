@@ -9,7 +9,7 @@
 #include "nrfusion/D3D12QueueClockBridge.hpp"
 #include "nrfusion/D3D12AsyncFenceBridge.hpp"
 #include "nrfusion/FusionRuntime.hpp"
-#include "nrfusion/OptiScalerAdapter.hpp"
+#include "TestCoordinator.hpp"
 #include "nrfusion/Presets.hpp"
 #include "nrfusion/TemporalConfidence.hpp"
 #include "nrfusion/MgpuPlanner.hpp"

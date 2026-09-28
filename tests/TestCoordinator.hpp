@@ -24,13 +24,13 @@ namespace nrfusion {
 struct AdaptiveSettings {
     bool enabled = true;
     UserMode mode = UserMode::Auto;
-    float fixedScale = 1.0f; // authoritative only when enabled=false / Custom
+    float fixedScale = 1.0f;
     double targetFps = 120.0;
 };
 
-class OptiScalerAdapter {
+class TestCoordinator {
 public:
-    static OptiScalerAdapter& Instance();
+    static TestCoordinator& Instance();
 
     float ResolveWorkingScale(const AdaptiveSettings& settings,
                               double nrGpuMs,
@@ -58,28 +58,18 @@ public:
     PerformanceDecision LastDecision() const;
     AutoDecision LastAutoDecision() const;
 
-    // Precisions the host last reported this device as having. A menu offers only these: a format
-    // the hardware lacks is a dead control, not a slower option. Empty until the first decision,
-    // because before that the adapter has been told nothing about the device.
     std::vector<NrPrecision> SupportedPrecisions() const;
     FusionRuntime& FusionRuntimeEngine() noexcept;
     const FusionRuntime& FusionRuntimeEngine() const noexcept;
     std::string DiagnosticsText() const;
 
-    // Exact neural-work telemetry. These methods are safe to call from the host around the serial
-    // timer today and from future async/MGPU executors without changing workload identity.
     WorkTicket BeginNrWork(std::uint64_t sourceFrame, std::uint64_t viewKey = 0,
                            float workingScale = 1.0f, std::uint8_t precisionTag = 0);
     bool SubmitNrWork(const WorkTicket& ticket);
     bool AbandonNrWork(const WorkTicket& ticket);
     bool CompleteNrWork(const WorkTicket& ticket);
-    // Associates an explicit same-workload visual/temporal verdict with a submitted ticket. The
-    // timing-first Auto path does not require a verdict; an explicit rejected verdict can still
-    // veto a candidate, and strict hosts can require one for every sample.
     bool ReportQualityEvidence(const WorkTicket& ticket, const QualityEvidence& quality);
 
-    // Bounded executor contract used by future Async/NVOF/MGPU/x86 backends. Admission submits the
-    // WorkId exactly once; completion updates throughput when GPU/helper work is actually ready.
     std::optional<PipelineTicket> AdmitPipelinedWork(const WorkTicket& ticket);
     bool CompletePipelinedWork(const PipelineTicket& pipelineTicket, const WorkTicket& workTicket);
     bool AbandonPipelinedWork(const PipelineTicket& pipelineTicket, const WorkTicket& workTicket);
@@ -99,8 +89,6 @@ public:
     double TrackedSourceFps() const;
     double TrackedProcessedFps() const;
     double TrackedNrGpuMs() const;
-    // Returns each newly retired NR timestamp once. A return value of zero means no fresh GPU
-    // timing is available for this decision; callers must not replay the previous value.
     double ConsumeTrackedNrGpuMs();
 
     NrPrecision ResolvePrecision(bool automaticEnabled, bool candidateAvailable,
@@ -109,9 +97,6 @@ public:
     PrecisionAutotuneResult PrecisionStatus() const;
     bool PrecisionCandidateRequested() const;
 
-    // Cross-queue timing path used by the real D3D12 async executor: calibration maps independent
-    // queue timestamp domains to QPC, overlap is measured there, and the hidden qualifier decides
-    // whether async is worth keeping for the current shape.
     bool UpdateQueueClock(QueueClockId queue, const QueueClockCalibrationSample& sample);
     template <typename QueueT>
     bool UpdateD3D12QueueClock(QueueT* queue, double cpuQpcFrequencyHz) {
@@ -119,8 +104,6 @@ public:
         if (!SampleD3D12QueueClock(queue, cpuQpcFrequencyHz, sample)) return false;
         return UpdateQueueClock(D3D12QueueClockId(queue), sample);
     }
-    // sampleId must identify the same source-frame/work sample passed to ObserveAsyncTrial.
-    // Async qualification rejects overlap measured for any older/newer sample.
     std::optional<double> ObserveAsyncOverlap(std::uint64_t sampleId, const QueueGpuIntervalTicks& nr,
                                                const std::vector<QueueGpuIntervalTicks>& concurrent,
                                                double dtSeconds);
@@ -138,7 +121,7 @@ public:
     void ResetForShape(const AdaptiveSettings& settings);
 
 private:
-    OptiScalerAdapter();
+    TestCoordinator();
     void ReconfigureIfNeeded(const AdaptiveSettings& settings);
     static bool SettingsEquivalent(const AdaptiveSettings& a, const AdaptiveSettings& b);
     static PerformanceConfig ToConfig(const AdaptiveSettings& settings);
@@ -149,8 +132,6 @@ private:
     TelemetrySample lastTelemetrySample_{};
     std::chrono::steady_clock::time_point lastUpdate_{};
     bool haveTimestamp_ = false;
-    // Resource incompatibility belongs to the host/session, not to a UI preset. Keep quarantined
-    // working scales across Target-FPS/mode controller rebuilds until the host shape/session resets.
     std::vector<float> failedWorkingScales_;
     WorkLedger works_;
     TimingWorkMapper timingMap_{16};
@@ -169,8 +150,6 @@ private:
     std::vector<GpuInterval> asyncCommonIntervals_;
     AsyncQualification asyncTuner_;
     std::uint64_t freshAsyncOverlapSampleId_ = 0;
-    // Precision cost is workload-size dependent. Cache the qualified result per WorkingScale
-    // for the current base shape so dynamic scaling can revisit a rung without another feature rebuild.
     std::unordered_map<int, bool> precisionByScale_;
     std::unordered_map<std::uint64_t, QualityEvidence> qualityEvidenceByWork_;
 
@@ -184,5 +163,7 @@ private:
     bool lastCapsHybridNvfp4_ = false;
     FusionRuntime runtime_{};
 };
+
+using OptiScalerAdapter = TestCoordinator;
 
 } // namespace nrfusion

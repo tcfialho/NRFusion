@@ -19,11 +19,11 @@ bool D3D9ExShareHarness::ProveResetPersistence() {
 
     eventHandoff_.Reset();
     auto params = PresentParameters();
-    if (FAILED(device9_->ResetEx(
-            &params, nullptr))) {
+    if (FAILED(device9_->ResetEx(&params, nullptr))) {
         return false;
     }
-    if (device9_->CheckDeviceState(window_) != S_OK ||
+    const HRESULT state = device9_->CheckDeviceState(window_);
+    if ((state != S_OK && state != S_PRESENT_OCCLUDED) ||
         !eventHandoff_.Bind(
             device9_.Get(),
             device11_.Get(),

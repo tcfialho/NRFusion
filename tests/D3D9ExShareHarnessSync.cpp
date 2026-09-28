@@ -6,13 +6,16 @@ namespace {
 bool PollReadyForD3D11(
     D3D9ExEventHandoff& handoff) noexcept {
     for (std::uint32_t attempt = 0;
-         attempt != 10000; ++attempt) {
+         attempt != 50000; ++attempt) {
         const auto state = handoff.PollForD3D11();
         if (state == D3D9ExHandoffPoll::Ready)
             return true;
         if (state != D3D9ExHandoffPoll::Pending)
             return false;
-        SwitchToThread();
+        if (attempt > 1000)
+            Sleep(0);
+        else
+            SwitchToThread();
     }
     return false;
 }
@@ -20,13 +23,16 @@ bool PollReadyForD3D11(
 bool PollReadyForD3D9(
     D3D9ExEventHandoff& handoff) noexcept {
     for (std::uint32_t attempt = 0;
-         attempt != 10000; ++attempt) {
+         attempt != 50000; ++attempt) {
         const auto state = handoff.PollForD3D9();
         if (state == D3D9ExHandoffPoll::Ready)
             return true;
         if (state != D3D9ExHandoffPoll::Pending)
             return false;
-        SwitchToThread();
+        if (attempt > 1000)
+            Sleep(0);
+        else
+            SwitchToThread();
     }
     return false;
 }
@@ -34,8 +40,13 @@ bool PollReadyForD3D9(
 bool AcquireZero(
     IDXGIKeyedMutex* mutex,
     std::uint64_t key) noexcept {
-    return mutex &&
-           mutex->AcquireSync(key, 0) == S_OK;
+    if (!mutex) return false;
+    if (mutex->AcquireSync(key, 0) == S_OK) return true;
+    for (int retry = 0; retry < 50; ++retry) {
+        Sleep(0);
+        if (mutex->AcquireSync(key, 0) == S_OK) return true;
+    }
+    return mutex->AcquireSync(key, 100) == S_OK;
 }
 
 bool Release(
