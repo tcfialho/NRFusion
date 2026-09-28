@@ -15,7 +15,7 @@ Design/implementation research also tracks:
 
 Preserve each upstream project's license/NOTICE when code is actually imported rather than independently reimplemented.
 
-NRFusion's public source/developer distribution does not include NVIDIA's proprietary `nvngx_dlssnr.dll` runtime. `tools/build_dist.ps1` can optionally accept a user-supplied, hash-approved runtime to create a private/self-contained installer; that local input is not part of this repository.
+NRFusion's public source/developer distribution does not include NVIDIA's proprietary `nvngx_dlssnr.dll` runtime. The standalone Host64 also requires an `nvngx.dll_dlssnr.dll` sidecar, but this checkout does not contain the code that produces that binary. `tools/build_dist.ps1` accepts approved sidecars for a self-contained installer.
 
 
 ## Imported DLSS-NR composition shader

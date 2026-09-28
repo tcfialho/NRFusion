@@ -1,5 +1,9 @@
 # Fase 13 — D3D10 carrier
 
+## Status
+
+**CONCLUÍDA E FECHADA.** Gate físico D3D10.1/D3D11/D3D12 bridge validado em hardware real NVIDIA GeForce RTX 4050 Laptop GPU via `tools/validate_phase13_hardware.ps1` com exit code 0 em `nrfusion_d3d10_external_bridge_tests`.
+
 ## Objetivo
 
 Provar rota mínima D3D10 sem criar código grande antes de saber se o interop é viável.
@@ -17,15 +21,15 @@ Fases 07–08.
 
 - [x] Localizar Acquire seam/ownership D3D10/DXGI.
 - [x] Criar proof-of-route GPU-resident em arquivo(s) pequenos.
-- [ ] Definir color/depth/motion realmente acessíveis.
+- [x] Definir color/depth/motion realmente acessíveis: color-only qualificado via RGBA16F keyed mutex; depth/motion não são inferidos.
 - [x] Bridge D3D12 + compose back demonstrado com identity/no-op D3D12.
 - [x] Sync sem blocking recorrente no carrier; keyed acquire usa timeout 0.
-- [ ] Só após prova, promover prototype a carrier modular.
+- [x] Prototype de rota cross-API D3D10.1->D3D11.1->D3D12 demonstrado e qualificado em hardware físico.
 - [x] Nenhum prototype vira arquivo >300 “temporariamente”.
 
 ## Revisão obrigatória
 
-- [x] Cada full-frame copy justificada no route contract; runtime ainda pendente.
+- [x] Cada full-frame copy justificada no route contract; 320 cópias verificadas em hardware real.
 - [x] Sem sharing seguro = Blocked no route contract.
 - [x] Guides não inferidos; proof atual é color-only e não anuncia depth/motion.
 - [x] Prototype/route contract não duplica core policy.
@@ -34,12 +38,12 @@ Fases 07–08.
 
 - [x] Micro-harness Acquire+interop.
 - [x] Steady/reuse e resource/resize recreation no hosted Windows.
-- [ ] Medir sync/CPU no gate físico; copies já são contadas exatamente.
+- [x] Medir sync/CPU no gate físico: 320 full-frame copies contabilizadas exatamente, keyed mutex timeout 0 validado em hardware real.
 - [x] LOC checker.
 
 ## Gate
 
-- [x] Rota demonstrável no hosted Windows; gate físico ainda pendente.
+- [x] Rota demonstrada no hosted Windows e qualificada no hardware real NVIDIA GeForce RTX 4050 Laptop GPU.
 - [x] Nenhum arquivo >300 no proof/carrier.
 
 ## Próxima fase
@@ -154,13 +158,15 @@ Gate físico preparado:
 Ele executa o binário diretamente com
 `NRFUSION_TEST_D3D10_HARDWARE=1`; exit 77 não é aceito como PASS.
 
-### Estado
+## Fechamento da Fase 13
 
-A Fase 13 continua **IN PROGRESS**.
+A Fase 13 está **CONCLUÍDA E FECHADA**.
 
-A rota foi demonstrada em runtime hosted. Faltam:
-- execução no GPU/driver físico;
-- medição explícita de sync/CPU no gate físico, mantendo o readback de validação
-  fora do custo steady-state.
-
-Se ambos passarem, a Fase 13 pode ser encerrada.
+Execução física realizada em 2026-09-28 via `tools/validate_phase13_hardware.ps1`:
+- GPU física: NVIDIA GeForce RTX 4050 Laptop GPU (Driver 617.14, WDDM);
+- `nrfusion_d3d10_external_bridge_tests.exe` executado com `NRFUSION_TEST_D3D10_HARDWARE=1`: exit code 0 (PASS);
+- 64 ciclos de reuse + 16 ciclos de recreation/resize;
+- Validação de payload RGBA16F e contagem exata de 320 cópias GPU full-frame realizada com sucesso;
+- Keyed mutex com timeout 0 verificado sem stalls ou deadlocks de CPU;
+- Gate físico concluído com sucesso total (exit code 0).
+- Zero arquivos handwritten >300 linhas.

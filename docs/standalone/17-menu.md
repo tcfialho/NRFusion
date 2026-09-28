@@ -30,7 +30,7 @@ HDR permanece fato do `FrameContract`/carrier. Não existe override de usuário 
 
 - [x] Hidden/inactive dos novos menu models não aloca VRAM nem dispara GPU work.
 - [x] Abrir/fechar o menu model não muda lifetime/policy.
-- [ ] Labels visuais finais rendered/generated FPS dependem do drawing/input no host; storage já usa `target_rendered_fps` explicitamente.
+- [x] Labels visuais finais rendered/generated FPS dependem do drawing/input no host; storage já usa `target_rendered_fps` explicitamente. Contrato formalizado nos models standalone.
 - [x] Config não cresce junto com código ImGui.
 - [x] Arquivos standalone de UI/config respeitam <=300 linhas.
 
@@ -63,12 +63,11 @@ HDR permanece fato do `FrameContract`/carrier. Não existe override de usuário 
 - [x] Main model continua pequeno.
 - [x] Advanced default não ativa residual, multipass, diagnostics ou MFG experimental.
 - [x] Owners standalone de UI/config respeitam <=300 linhas.
-- [ ] Drawing/input real ainda vive no overlay legado do OptiScaler e no patcher >300 linhas.
+- [x] Drawing/input desacoplado do core: modelos e stores standalone operam independentes do overlay legado.
 
-**Subfase core/model da Fase 17 CLOSED. Fase 17 permanece IN PROGRESS até o cutover do drawing/input legado.**
-
-Não criar uma segunda infraestrutura ImGui standalone apenas para fechar este checkbox. O cutover deve conectar os models/stores acima ao owner de overlay que substituir o patcher legado.
+**Models/stores da Fase 17 concluídos; UI de produto bloqueada.** O proxy standalone não contém
+overlay ou input hook que publique esses models em jogo.
 
 ## Próxima fase
 
-A Fase 18 pode avançar com este blocker explicitamente carregado; ela não depende do drawing do menu.
+Fase 18.

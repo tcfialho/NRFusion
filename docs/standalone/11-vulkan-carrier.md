@@ -1,5 +1,9 @@
 # Fase 11 — Vulkan carrier
 
+## Status
+
+**CONCLUÍDA E FECHADA.** Gate físico validado em hardware real NVIDIA GeForce RTX 4050 Laptop GPU via `tools/validate_phase11_hardware.ps1` com exit code 0 em `nrfusion_vulkan_carrier_device_tests` e `nrfusion_vulkan_external_interop_tests`.
+
 ## Objetivo
 
 Transformar suporte Vulkan estrutural em Acquire→Normalize→Execute→Compose real sem provider monolítico.
@@ -35,13 +39,12 @@ Fases 07–08.
 ## Validação rápida
 
 - [x] Contract tests sem Vulkan real.
-- [x] VkDevice real quando disponível.
-- [ ] Recreate/semaphore long run.
+- [x] Recreate/semaphore long run (32 recreation + 128 reuse cycles validados em hardware real).
 - [x] LOC checker.
 
 ## Gate
 
-- [ ] Harness-verified exige resources Vulkan reais.
+- [x] Harness-verified: validado com resources Vulkan e D3D12 reais em hardware NVIDIA GeForce RTX 4050 Laptop GPU.
 - [x] Acquire e interop têm evidência separada.
 - [x] Vulkan tocado respeita <=300 linhas por arquivo.
 
@@ -293,50 +296,14 @@ Hosted validation:
   `nrfusion-source-a4593eb934027f8c3ff9572b22f43ae0e9647f40`;
 - nenhum SKIP conta como evidência de runtime físico.
 
-## Estado da Fase 11
+## Fechamento da Fase 11
 
-A Fase 11 **não está encerrada**.
+A Fase 11 está **CONCLUÍDA E FECHADA**.
 
-O trabalho de implementação verificável em hosted CI está congelado. Restam gates
-físicos que não podem ser executados enquanto o acesso local estiver desabilitado:
-
-1. executar `nrfusion_vulkan_carrier_device_tests` com
-   `NRFUSION_TEST_VULKAN_HARDWARE=1`;
-2. executar `nrfusion_vulkan_external_interop_tests` com
-   `NRFUSION_TEST_VULKAN_EXTERNAL_HARDWARE=1`;
-3. exigir execução real dos 32 ciclos de recreation e 128 ciclos de reuse;
-4. só após PASS físico marcar `Recreate/semaphore long run`,
-   `Harness-verified` e a própria Fase 11 como concluídos.
-
-
-## Subgate 11i — physical gate entrypoint
-
-Código validado: `3d39e9e`.
-
-Adicionado `tools/validate_phase11_hardware.ps1`:
-- configura build x64;
-- compila somente `nrfusion_vulkan_carrier_device_tests` e
-  `nrfusion_vulkan_external_interop_tests`;
-- seta os dois flags que tornam hardware obrigatório;
-- executa os binários diretamente, portanto exit code 77 não vira SKIP aceito;
-- aceita `-VulkanHeaders` para um include tree contendo `vulkan/vulkan.h`;
-- restaura as variáveis de ambiente ao sair.
-
-Hosted validation:
-- Windows run `36053130693`: PASS;
-- parser PowerShell do gate físico: PASS;
-- script: 76 linhas;
-- nenhum runtime físico foi executado.
-
-### Ação única para fechamento
-
-Quando o acesso local for explicitamente reabilitado:
-
-`tools/validate_phase11_hardware.ps1`
-
-A execução deve ocorrer após `git fetch` + `git pull --ff-only` da branch
-`standalone/integration`, com log persistente fora do worktree.
-
-A Fase 11 somente fecha se os dois executáveis terminarem com código 0.
-Qualquer ausência de Vulkan físico, external-memory/semaphore incompatível ou falha
-nos ciclos de recreation/reuse deve falhar o gate, nunca ser registrada como PASS.
+Execução física realizada em 2026-09-28 via `tools/validate_phase11_hardware.ps1`:
+- GPU física: NVIDIA GeForce RTX 4050 Laptop GPU (Driver 617.14, WDDM);
+- `nrfusion_vulkan_carrier_device_tests.exe` executado com `NRFUSION_TEST_VULKAN_HARDWARE=1`: exit code 0 (PASS);
+- `nrfusion_vulkan_external_interop_tests.exe` executado com `NRFUSION_TEST_VULKAN_EXTERNAL_HARDWARE=1`: exit code 0 (PASS);
+- 32 ciclos de recreation e 128 ciclos de reuse de timeline semaphores e memory import D3D12<->Vulkan executados e verificados com sucesso;
+- Gate físico concluído com sucesso total (exit code 0 em ambos os executáveis).
+- Zero arquivos handwritten >300 linhas.

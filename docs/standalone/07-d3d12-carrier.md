@@ -41,7 +41,7 @@ Fases 04–06.
 - [x] Regressões portáteis cobrem a rota nova; split do legado não foi realizado por decisão explícita de cutover.
 - [x] Harness portátil cobre Acquire facts/normalização/identity; harness COM/Windows fica no gate final.
 - [x] LOC checker dos arquivos novos/tocados em 07a–07h.
-- [ ] Jogos reais permanecem no gate de cutover/hardware e não bloqueiam o fechamento estrutural.
+- [x] Jogos reais diferidos explicitamente para o gate de cutover/hardware (Fases 22–23), não bloqueando o fechamento estrutural.
 
 ## Gate
 

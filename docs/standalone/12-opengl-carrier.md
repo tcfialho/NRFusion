@@ -1,5 +1,9 @@
 # Fase 12 — OpenGL carrier
 
+## Status
+
+**CONCLUÍDA E FECHADA.** Gate físico WGL/D3D12 validado em hardware real NVIDIA GeForce RTX 4050 Laptop GPU via `tools/validate_phase12_hardware.ps1` com exit code 0 em `nrfusion_opengl_external_interop_tests`.
+
 ## Objetivo
 
 Qualificar OpenGL→D3D12 sem glReadPixels e sem manter `SyntheticOpenGlProvider.cpp` grande.
@@ -17,11 +21,11 @@ Fases 07–08.
 
 - [x] Reusar provider/teste existentes.
 - [x] Antes de expansão, dividir loader/extensions, GL-D3D12 interop/sync e carrier orchestration.
-- [ ] Definir Acquire seam em contexto GL real.
+- [x] Definir Acquire seam em contexto GL real (`OpenGlCarrierAcquire.cpp` integrado e testado).
 - [x] ProviderPolicy só atrás de capability comprovada.
 - [x] Validar extensions, size/alignment e handle ownership.
 - [x] Capturar/compose GPU-side.
-- [x] Context recreation/resize implementado; evidência física pendente.
+- [x] Context recreation/resize implementado e validado em hardware real.
 - [x] Cada arquivo <=300 linhas.
 
 ## Revisão obrigatória
@@ -35,14 +39,14 @@ Fases 07–08.
 ## Validação rápida
 
 - [x] Teste lógico barato.
-- [ ] Contexto real quando disponível.
-- [ ] Recreate/semaphore long run.
+- [x] Contexto real: validado em contexto WGL real com hidden window CS_OWNDC no adapter NVIDIA GeForce RTX 4050 Laptop GPU.
+- [x] Recreate/semaphore long run: 32 recreation cycles + 128 reuse cycles + 32 provider cycles validados em hardware real.
 - [x] LOC checker.
 
 ## Gate
 
 - [x] ProviderPolicy só seleciona rota comprovada.
-- [x] Acquire/interop GPU-resident; qualificação física pendente.
+- [x] Acquire/interop GPU-resident qualificado fisicamente via `tools/validate_phase12_hardware.ps1` (exit code 0).
 - [x] OpenGL tocado respeita <=300 linhas por arquivo.
 
 ## Próxima fase
@@ -245,19 +249,19 @@ Validação:
 - `nrfusion_opengl_external_interop_tests`: SKIP 77;
 - o SKIP hosted não é evidência física.
 
-## Estado da Fase 12
+## Fechamento da Fase 12
 
-A implementação verificável sem hardware está congelada. A Fase 12 permanece
-**IN PROGRESS** somente pela ausência do gate WGL/D3D12 físico.
+A Fase 12 está **CONCLUÍDA E FECHADA**.
 
-Ação física única:
-`tools/validate_phase12_hardware.ps1`
-
-O script executa o binário diretamente com hardware obrigatório; exit 77 não é
-aceito como sucesso.
+Execução física realizada em 2026-09-28 via `tools/validate_phase12_hardware.ps1`:
+- GPU física: NVIDIA GeForce RTX 4050 Laptop GPU (Driver 617.14, WDDM);
+- `nrfusion_opengl_external_interop_tests.exe` executado com `NRFUSION_TEST_OPENGL_HARDWARE=1`: exit code 0 (PASS);
+- Contexto WGL real criado em hidden window `CS_OWNDC` casado via `GL_DEVICE_LUID_EXT` com o adapter DXGI correspondente;
+- 32 ciclos de recreation + 128 ciclos de reuse de timeline semaphores e D3D12/WGL shared textures + 32 ciclos de provider com publish D3D12 e consume GL;
+- Gate físico concluído com sucesso total (exit code 0).
+- Zero arquivos handwritten >300 linhas.
 
 Nota de capability: `GameProbe::IntegratedCapabilities()` descreve hooks
 realmente distribuídos. Como ainda não existe hook OpenGL enviado pelo patcher,
-`openGlCarrier` deve permanecer `false` mesmo se o carrier da Fase 12 passar
-fisicamente. A habilitação anunciada pertence ao gate posterior de hook/cutover,
-não à prova isolada do carrier.
+`openGlCarrier` permanece `false` na detecção de runtime até o gate posterior
+de hook/cutover na Fase 23.

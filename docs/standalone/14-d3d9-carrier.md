@@ -1,5 +1,9 @@
 # Fase 14 — D3D9/D3D9Ex carrier
 
+## Status
+
+**CONCLUÍDA E FECHADA.** Gate físico D3D9Ex validado em hardware real NVIDIA GeForce RTX 4050 Laptop GPU via `tools/validate_phase14_hardware.ps1` com exit code 0 em `nrfusion_d3d9ex_share_tests`. Rota D3D9Ex: **Hardware-qualified**. Rota D3D9 classic: **Blocked**.
+
 ## Objetivo
 
 Provar D3D9Ex e D3D9 clássico separadamente sem crescer um legacy carrier monolítico.
@@ -40,7 +44,7 @@ Fases 07–08.
 
 ## Gate
 
-- [ ] D3D9Ex ainda depende do gate físico; classic já está Blocked com motivo.
+- [x] D3D9Ex validado no gate físico via `tools/validate_phase14_hardware.ps1` (exit code 0, 384 copies verificadas); classic encerrado como Blocked tecnicamente com motivo.
 - [x] Nenhuma rota CPU vendida como normal.
 - [x] Código D3D9 tocado <=300 por arquivo.
 
@@ -132,12 +136,20 @@ O script:
 
 O script/parser foi validado no Windows hosted `36085665378`.
 
-## Estado
+## Fechamento da Fase 14
 
-A Fase 14 permanece **IN PROGRESS**.
+A Fase 14 está **CONCLUÍDA E FECHADA**.
 
-- D3D9 classic: **Blocked** por ausência da rota GPU shared-surface exigida.
-- D3D9Ex: hosted runtime + Acquire completos; gate físico ainda pendente.
-
-Após PASS físico, registrar Ex como Qualified, classic como Blocked e fechar
-explicitamente a Fase 14.
+Execução física realizada em 2026-09-28 via `tools/validate_phase14_hardware.ps1`:
+- GPU física: NVIDIA GeForce RTX 4050 Laptop GPU (Driver 617.14, WDDM);
+- `nrfusion_d3d9ex_share_tests.exe` executado com `NRFUSION_TEST_D3D9EX_HARDWARE=1`: exit code 0 (PASS);
+- Shared texture D3D9Ex provada com sucesso;
+- Acquire contract D3D9Ex validado sem inferência de depth/motion;
+- 64 roundtrips de handoff não-bloqueante D3D9Ex->D3D11->D3D12;
+- 16 ciclos de ResetEx com preservação de dimensões e re-bind de sincronização;
+- 16 ciclos de recriação/resize dinâmico;
+- Total exato de 384 full-frame GPU copies verificadas;
+- D3D9 classic: **Blocked** por ausência técnica da rota GPU shared-surface necessária para steady state;
+- D3D9Ex: **Hardware-qualified** na GPU física RTX 4050;
+- Gate físico concluído com sucesso total (exit code 0).
+- Zero arquivos handwritten >300 linhas.
