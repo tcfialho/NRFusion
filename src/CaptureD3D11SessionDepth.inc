@@ -24,79 +24,102 @@
     // currently bound depth-stencil resource into the guide format HostServer64/DLSS-NR already
     // expects (see lowGuideDepth_ on the host side - same R16G16B16A16_FLOAT shape, depth in .r).
     bool EnsureDepthResourcesLocked() {
-        depthSourceView_.Reset();
         if (!lastDepthStencilView_) return false;
 
         ComPtr<ID3D11Resource> depthResource;
         lastDepthStencilView_->GetResource(&depthResource);
         ComPtr<ID3D11Texture2D> depthTexture;
-        if (!depthResource || FAILED(depthResource.As(&depthTexture))) return false;
+        if (!depthResource || FAILED(depthResource.As(&depthTexture)))
+            return false;
 
         D3D11_TEXTURE2D_DESC depthDesc{};
         depthTexture->GetDesc(&depthDesc);
-        if (depthDesc.ArraySize != 1 || depthDesc.SampleDesc.Count != 1) return false;
-
-        // Heuristic: only trust a depth buffer close to the backbuffer's own resolution. This
-        // filters out shadow maps and other small auxiliary depth targets that also flow through
-        // OMSetRenderTargets but are not the main scene depth.
-        if (depthDesc.Width < nativeWidth_ / 2 || depthDesc.Height < nativeHeight_ / 2) return false;
+        if (depthDesc.ArraySize != 1 || depthDesc.SampleDesc.Count != 1)
+            return false;
+        if (depthDesc.Width < nativeWidth_ / 2 ||
+            depthDesc.Height < nativeHeight_ / 2)
+            return false;
 
         DXGI_FORMAT srvFormat = DXGI_FORMAT_UNKNOWN;
-        if (!MapDepthSrvFormatLocked(depthDesc.Format, srvFormat)) return false;
+        if (!MapDepthSrvFormatLocked(depthDesc.Format, srvFormat))
+            return false;
 
+        ComPtr<ID3D11ShaderResourceView> sourceView;
         D3D11_SHADER_RESOURCE_VIEW_DESC srvDesc{};
         srvDesc.Format = srvFormat;
         srvDesc.ViewDimension = D3D11_SRV_DIMENSION_TEXTURE2D;
         srvDesc.Texture2D.MipLevels = 1;
-        if (FAILED(device_->CreateShaderResourceView(depthTexture.Get(), &srvDesc, &depthSourceView_))) {
+        if (FAILED(device_->CreateShaderResourceView(
+                depthTexture.Get(), &srvDesc, &sourceView)))
             return false;
+
+        ComPtr<ID3D11Texture2D> sharedDepth;
+        ComPtr<IDXGIKeyedMutex> depthMutex;
+        HANDLE depthHandle = nullptr;
+        auto fail = [&]() {
+            if (depthHandle) CloseHandle(depthHandle);
+            return false;
+        };
+
+        D3D11_TEXTURE2D_DESC transportDesc{};
+        transportDesc.Width = width_;
+        transportDesc.Height = height_;
+        transportDesc.MipLevels = 1;
+        transportDesc.ArraySize = 1;
+        transportDesc.Format = DXGI_FORMAT_R16G16B16A16_FLOAT;
+        transportDesc.SampleDesc.Count = 1;
+        if (!CreateSharedTextureLocked(
+                transportDesc, true, sharedDepth,
+                depthMutex, depthHandle))
+            return fail();
+
+        ComPtr<ID3D11UnorderedAccessView> targetUav;
+        D3D11_UNORDERED_ACCESS_VIEW_DESC uavDesc{};
+        uavDesc.Format = DXGI_FORMAT_R16G16B16A16_FLOAT;
+        uavDesc.ViewDimension = D3D11_UAV_DIMENSION_TEXTURE2D;
+        if (FAILED(device_->CreateUnorderedAccessView(
+                sharedDepth.Get(), &uavDesc, &targetUav)))
+            return fail();
+
+        const char* shaderSource = MatchedResidualShaderSource();
+        const UINT compileFlags =
+            D3DCOMPILE_ENABLE_STRICTNESS |
+            D3DCOMPILE_OPTIMIZATION_LEVEL3;
+        ComPtr<ID3DBlob> blob;
+        ComPtr<ID3DBlob> err;
+        ComPtr<ID3D11ComputeShader> captureShader;
+        if (FAILED(D3DCompile(
+                shaderSource, std::strlen(shaderSource),
+                "MatchedResidual.hlsl", nullptr, nullptr,
+                "CSCaptureDepth", "cs_5_0", compileFlags, 0,
+                &blob, &err)) ||
+            FAILED(device_->CreateComputeShader(
+                blob->GetBufferPointer(), blob->GetBufferSize(),
+                nullptr, &captureShader))) {
+            OutputDebugStringA(
+                "NRFusion Capture32: D3D11 CSCaptureDepth "
+                "compilation/creation failed.\n");
+            return fail();
         }
+
+        ComPtr<ID3D11Buffer> captureConstants;
+        D3D11_BUFFER_DESC constantDesc{};
+        constantDesc.ByteWidth = 32;
+        constantDesc.Usage = D3D11_USAGE_DEFAULT;
+        constantDesc.BindFlags = D3D11_BIND_CONSTANT_BUFFER;
+        if (FAILED(device_->CreateBuffer(
+                &constantDesc, nullptr, &captureConstants)))
+            return fail();
+
+        depthSourceView_ = std::move(sourceView);
+        sharedDepth_ = std::move(sharedDepth);
+        depthMutex_ = std::move(depthMutex);
+        depthTargetUav_ = std::move(targetUav);
+        depthCaptureShader_ = std::move(captureShader);
+        depthCaptureConstants_ = std::move(captureConstants);
+        depthHandle_ = depthHandle;
         depthSourceWidth_ = depthDesc.Width;
         depthSourceHeight_ = depthDesc.Height;
-
-        if (!sharedDepth_) {
-            D3D11_TEXTURE2D_DESC transportDesc{};
-            transportDesc.Width = width_;
-            transportDesc.Height = height_;
-            transportDesc.MipLevels = 1;
-            transportDesc.ArraySize = 1;
-            transportDesc.Format = DXGI_FORMAT_R16G16B16A16_FLOAT;
-            transportDesc.SampleDesc.Count = 1;
-            transportDesc.SampleDesc.Quality = 0;
-            if (!CreateSharedTextureLocked(transportDesc, /*allowUnorderedAccess=*/true, sharedDepth_,
-                                           depthMutex_, depthHandle_)) {
-                sharedDepth_.Reset();
-                return false;
-            }
-            D3D11_UNORDERED_ACCESS_VIEW_DESC uavDesc{};
-            uavDesc.Format = DXGI_FORMAT_R16G16B16A16_FLOAT;
-            uavDesc.ViewDimension = D3D11_UAV_DIMENSION_TEXTURE2D;
-            uavDesc.Texture2D.MipSlice = 0;
-            if (FAILED(device_->CreateUnorderedAccessView(sharedDepth_.Get(), &uavDesc, &depthTargetUav_))) {
-                sharedDepth_.Reset();
-                return false;
-            }
-        }
-
-        if (!depthCaptureShader_) {
-            const char* shaderSource = MatchedResidualShaderSource();
-            const UINT compileFlags = D3DCOMPILE_ENABLE_STRICTNESS | D3DCOMPILE_OPTIMIZATION_LEVEL3;
-            ComPtr<ID3DBlob> blob;
-            ComPtr<ID3DBlob> err;
-            if (FAILED(D3DCompile(shaderSource, std::strlen(shaderSource), "MatchedResidual.hlsl", nullptr,
-                                  nullptr, "CSCaptureDepth", "cs_5_0", compileFlags, 0, &blob, &err)) ||
-                FAILED(device_->CreateComputeShader(blob->GetBufferPointer(), blob->GetBufferSize(), nullptr,
-                                                    &depthCaptureShader_))) {
-                OutputDebugStringA("NRFusion Capture32: D3D11 CSCaptureDepth compilation/creation failed.\n");
-                return false;
-            }
-            D3D11_BUFFER_DESC constantDesc{};
-            constantDesc.ByteWidth = 32;
-            constantDesc.Usage = D3D11_USAGE_DEFAULT;
-            constantDesc.BindFlags = D3D11_BIND_CONSTANT_BUFFER;
-            if (FAILED(device_->CreateBuffer(&constantDesc, nullptr, &depthCaptureConstants_))) return false;
-        }
-
         return true;
     }
 
