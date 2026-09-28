@@ -273,14 +273,27 @@ Gate físico no mesmo RTX 4050 Laptop 6 GB:
 **Gate físico de peak e `VRAM alvo <= baseline equivalente` CLOSED.**
 **Subgate 19h CLOSED. Fase 19 permanece IN PROGRESS.**
 
+## Subgate 19i — failure paths dos synthetic providers
+
+Correção `0fe7ceb`:
+- removeu quatro definições stale do bridge D3D11 que geravam `LNK4006` e mascaravam o
+  source split; Windows final não contém mais esse warning;
+- bootstrap D3D12 privado e publicação do ring D3D11 agora são atômicos; resize libera a
+  geração antiga antes da tentativa, evitando peak duplo, e falha não publica slots parciais;
+- falha de `Initialize()` do bridge limpa owners não submetidos;
+- falha de init do `SyntheticDx12Provider` limpa fence, shaders/PSOs, heap, queue e device.
+- Portable `36362975823`, Focused `36362975826`, Windows `36362975825`: PASS;
+  Windows executou `nrfusion_synthetic_dx11_bridge_test` em 0,26 s; RTX 4050: 0,85 s.
+- Checkpoint artifact `10946427117`,
+  sha256 `cec7563559eb6d5ecdf4aa31fa9dc993d71228f230509b483d3cee685c6c4968`.
+
+**Subgate 19i CLOSED. Fase 19 permanece IN PROGRESS.**
+
 ## Blocker atual
 
-A ponte D3D11 ainda possui failure-path ownership incompleto:
-`CreatePrivateD3D12()` publica device/queue/allocators incrementalmente e
-`CreateSharedResources()` pode deixar um slot parcialmente criado após falha.
-Retry limpa os shared slots, portanto não há crescimento ilimitado, mas recursos inativos
-podem permanecer até retry/shutdown.
+`SyntheticOpenGlProvider::CreatePrivateD3D12()` ainda publica device antes de queue,
+allocators/fences/handles e retorna sucesso em retry apenas por `d3d12Device_ != nullptr`.
+`CreateSharedResources()` já limpa falhas imediatamente e `Shutdown()` limpa estado parcial.
 
-Próxima ação: tornar o bootstrap D3D12 privado atômico e limpar imediatamente shared slots
-parciais em qualquer falha antes da primeira submissão; validar
-`nrfusion_synthetic_dx11_bridge_test` hosted e na RTX 4050.
+Próxima ação: tornar somente o bootstrap D3D12 privado OpenGL atômico e limpar init falho
+antes de retry; validar os gates OpenGL hosted e, quando aplicável, no hardware local.
