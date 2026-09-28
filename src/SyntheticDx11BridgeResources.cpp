@@ -112,6 +112,7 @@ bool SyntheticDx11BridgeProvider::CreateSharedResources(
     desc.MiscFlags = D3D11_RESOURCE_MISC_SHARED_NTHANDLE |
         D3D11_RESOURCE_MISC_SHARED_KEYEDMUTEX;
 
+    CloseSharedHandles();
     std::array<PendingSharedSlot, kMaxInFlight> pending{};
     for (auto& slot : pending) {
         if (FAILED(d3d11Device_->CreateTexture2D(
@@ -137,7 +138,6 @@ bool SyntheticDx11BridgeProvider::CreateSharedResources(
             return false;
     }
 
-    CloseSharedHandles();
     for (std::uint32_t i = 0; i < kMaxInFlight; ++i) {
         sharedSlots_[i].d3d11Color = std::move(pending[i].d3d11Color);
         sharedSlots_[i].d3d11Residual = std::move(pending[i].d3d11Residual);

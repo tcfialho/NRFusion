@@ -35,25 +35,48 @@ bool SyntheticDx12Provider::Initialize(const ProviderContext& context) {
     if (ready_) return true;
 
     if (!context.device) return false;
+    auto failInitialization = [this]() {
+        for (auto& slot : ringSlots_) {
+            slot.lowColor.Reset();
+            slot.lowDepth.Reset();
+            slot.lowMotion.Reset();
+            slot.lowNeuralOut.Reset();
+            slot.lowResidual.Reset();
+            slot.inUse = false;
+            slot.activeWorkId = 0;
+        }
+        srvUavHeap_.Reset();
+        descriptorSize_ = 0;
+        downsamplePso_.Reset();
+        extractResidualPso_.Reset();
+        composeResidualPso_.Reset();
+        rootSignature_.Reset();
+        fence_.Reset();
+        queue_.Reset();
+        device_.Reset();
+        nextFenceValue_ = 1;
+        ready_ = false;
+        return false;
+    };
     device_ = static_cast<ID3D12Device*>(context.device);
     if (context.commandQueue) {
         queue_ = static_cast<ID3D12CommandQueue*>(context.commandQueue);
     }
 
-    if (FAILED(device_->CreateFence(0, D3D12_FENCE_FLAG_NONE, IID_PPV_ARGS(&fence_)))) {
-        return false;
+    if (FAILED(device_->CreateFence(
+            0, D3D12_FENCE_FLAG_NONE, IID_PPV_ARGS(&fence_)))) {
+        return failInitialization();
     }
 
-    if (!EnsureShaders()) {
-        return false;
-    }
+    if (!EnsureShaders()) return failInitialization();
 
     D3D12_DESCRIPTOR_HEAP_DESC heapDesc{};
     heapDesc.NumDescriptors = 64;
     heapDesc.Type = D3D12_DESCRIPTOR_HEAP_TYPE_CBV_SRV_UAV;
     heapDesc.Flags = D3D12_DESCRIPTOR_HEAP_FLAG_SHADER_VISIBLE;
-    if (FAILED(device_->CreateDescriptorHeap(&heapDesc, IID_PPV_ARGS(&srvUavHeap_)))) {
-        return false;
+    if (FAILED(device_->CreateDescriptorHeap(
+            &heapDesc, IID_PPV_ARGS(&srvUavHeap_)))) {
+        return failInitialization();
     }
     descriptorSize_ = device_->GetDescriptorHandleIncrementSize(D3D12_DESCRIPTOR_HEAP_TYPE_CBV_SRV_UAV);
 
