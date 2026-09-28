@@ -64,6 +64,38 @@ Próxima ação: dividir estruturalmente `tools/benchmark_sm89_ffn.cu` (552 linh
 o mesmo executável; depois alterar o timing para enfileirar os event pairs e sincronizar
 somente após o lote, produzindo p50/p95/p99 sem wait por sample.
 
+## Subgate 20b — benchmark e testes W4A8 / Capture32
+
+`ecce397` dividiu `tools/benchmark_sm89_ffn.cu` de 553 para 28 linhas, com fragments
+de 24/60/112/158/180 linhas no mesmo translation unit e executável.
+Reconstruction byte-a-byte foi verificada antes do commit; RTX 4050 recompilou e executou
+o benchmark completo. Portable `36371208298`: PASS.
+
+`1614001` corrigiu a metodologia de timing:
+- warm-up continua separado;
+- 500 event pairs são enfileirados sem `cudaEventSynchronize` entre samples;
+- há uma única sincronização após o lote;
+- output passou a reportar mean/p50/p95/p99 explicitamente.
+Portable `36371388095`: PASS.
+A variância de p99 restante é física (preempção/clock do sistema), não wait do host.
+
+`e2b0ef5` dividiu `tests/w4a8_sm89_gpu_test.cu` de 313 para 32 linhas,
+com setup 132 e validação 152; um único executável continua sendo usado.
+RTX 4050: TensorCore/DP4A cosine 1.0, max diff 0; E4M3 cosine 0.999212.
+Portable `36371592378`, Focused `36371592413`, Windows `36371592401`: PASS.
+
+`71dac21` dividiu somente suporte Win32/D3D11 do hook test Capture32:
+principal 235 linhas, support 80; cenários/main/executável não mudaram.
+Portable `36371937531`, Focused `36371937546`, Windows `36371937521`: PASS.
+Checkpoint `10949775621`, sha256
+`35b5ac3cbeee7f5d54ee27152507a46b5635248ba535c3ab8c3c7d4648769b31`.
+
+Dívida strict: 21 -> 20 (W4A8 kernel) -> 19 (benchmark) -> 18 (GPU test) ->
+**17 violações** após Capture32 hook support.
+
+Próxima ação estrutural: `tools/quantize_w4a8_sm89.py` (422 linhas), mantendo o mesmo
+entrypoint/script e sem adicionar job/executável.
+
 ## Revisão obrigatória
 
 - [ ] Todo steady cost justificado.
