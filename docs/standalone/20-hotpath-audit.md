@@ -152,9 +152,38 @@ Checkpoint `10951037881`, sha256
 
 Dívida strict: **13 -> 10 violações** neste lote; arquivos novos/tocados continuam <=300.
 
-Próxima ação estrutural: `src/InstallerState.cpp` (612 linhas). Dry-run já identifica duas
-boundaries naturais — install/snapshot e restore/transaction — que mantêm o mesmo translation
-unit, deixam todos os fragments <=300 e reconstroem o source atual exatamente.
+## Subgate 20e — installer state e Requiem testbed
+
+`76c064d` separou `src/InstallerState.cpp` por responsabilidade:
+- principal 205 linhas;
+- install/snapshot 170;
+- restore/transaction 238;
+- mesmo translation unit, API e target;
+- reconstrução textual exata.
+Focused `36377571978`, Portable `36377571938`, Windows `36377571748`: PASS.
+Checkpoint `10951711911`, sha256
+`d572b805b12b7d46bac93ff89e8e2da4e7d3e5ce2a133d920a9376875f2c945f`.
+
+`98651fb` separou os estágios do testbed Requiem:
+- `main.cpp` 146 linhas;
+- args 51, setup 267, render loop 181;
+- mesmo executável/translation unit;
+- reconstrução textual exata;
+- `--fixed-scene`, `--deterministic-motion` e `D3D12 Testbed` continuam no main para
+  preservar os contratos grep de `tests/test_patcher.sh`.
+Portable `36378070733`: PASS.
+Como `tools/requiem_game/**` não entra nos path filters dos outros workflows, foram
+disparados gates direcionados no mesmo HEAD:
+Focused `36378152527` PASS e Windows fast `36378154674` PASS.
+Checkpoint `10952220132`, sha256
+`f2a3d45117db09138d7ba99134e6596be77b5f8aa082d004ef084815cfe4e2c9`.
+
+Dívida strict: **10 -> 8 violações** neste lote; todos os arquivos tocados permanecem <=300.
+
+Próxima ação estrutural: `tools/build_dist.ps1` (394 linhas). Diferente dos splits acima,
+ele exige uma boundary de script real (provavelmente dot-source por estágio), então deve primeiro
+ser dividido por responsabilidade e validado com parser + fluxo de empacotamento, sem tratar a
+extração como byte-equivalência automática.
 
 ## Revisão obrigatória
 
