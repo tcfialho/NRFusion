@@ -50,6 +50,23 @@ void SyntheticOpenGlProvider::CloseSharedHandles() {
     currentRes_ = {};
 }
 
+void SyntheticOpenGlProvider::ResetPrivateD3D12() noexcept {
+    CloseSharedHandles();
+    for (auto& slot : sharedSlots_) {
+        if (slot.fenceSharedHandle) CloseHandle(slot.fenceSharedHandle);
+        slot.fenceSharedHandle = nullptr;
+        slot.fence.Reset();
+        slot.publishAlloc.Reset();
+        slot.alloc.Reset();
+        slot.nextFenceValue = 1;
+    }
+    nvof_.Shutdown();
+    syntheticD3D12_.Shutdown();
+    d3d12CmdList_.Reset();
+    d3d12Queue_.Reset();
+    d3d12Device_.Reset();
+}
+
 bool SyntheticOpenGlProvider::CanRecreateSharedResources() const noexcept {
     for (const auto& slot : sharedSlots_) {
         if (!slot.inUse) continue;

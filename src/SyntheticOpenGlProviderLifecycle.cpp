@@ -164,48 +164,67 @@ bool SyntheticOpenGlProvider::LoadOpenGl() {
 }
 
 bool SyntheticOpenGlProvider::CreatePrivateD3D12() {
-    if (d3d12Device_) return true;
+    if (d3d12Device_) return d3d12Queue_ && d3d12CmdList_;
 
     LUID glLuid{};
     ComPtr<IDXGIAdapter1> adapter;
     if (!QueryGlAdapterLuid(gl_, glLuid) ||
-        !FindDxgiAdapter(glLuid, adapter)) {
+        !FindDxgiAdapter(glLuid, adapter))
         return false;
-    }
 
-    const HRESULT hr = D3D12CreateDevice(
-        adapter.Get(), D3D_FEATURE_LEVEL_11_0,
-        IID_PPV_ARGS(&d3d12Device_));
-    if (FAILED(hr)) return false;
+    ComPtr<ID3D12Device> device;
+    if (FAILED(D3D12CreateDevice(
+            adapter.Get(), D3D_FEATURE_LEVEL_11_0,
+            IID_PPV_ARGS(&device))))
+        return false;
 
     D3D12_COMMAND_QUEUE_DESC qDesc{};
     qDesc.Type = D3D12_COMMAND_LIST_TYPE_DIRECT;
-    if (FAILED(d3d12Device_->CreateCommandQueue(&qDesc, IID_PPV_ARGS(&d3d12Queue_)))) {
+    ComPtr<ID3D12CommandQueue> queue;
+    if (FAILED(device->CreateCommandQueue(&qDesc, IID_PPV_ARGS(&queue))))
         return false;
-    }
 
-    for (auto& s : sharedSlots_) {
-        if (FAILED(d3d12Device_->CreateCommandAllocator(
-                D3D12_COMMAND_LIST_TYPE_DIRECT,
-                IID_PPV_ARGS(&s.alloc))) ||
-            FAILED(d3d12Device_->CreateCommandAllocator(
-                D3D12_COMMAND_LIST_TYPE_DIRECT,
-                IID_PPV_ARGS(&s.publishAlloc))) ||
-            FAILED(d3d12Device_->CreateFence(
-                0, D3D12_FENCE_FLAG_SHARED,
-                IID_PPV_ARGS(&s.fence))) ||
-            FAILED(d3d12Device_->CreateSharedHandle(
-                s.fence.Get(), nullptr, GENERIC_ALL, nullptr,
-                &s.fenceSharedHandle))) {
-            return false;
+    std::array<SharedSlot, kMaxInFlight> pending{};
+    auto fail = [&pending]() noexcept {
+        for (auto& slot : pending) {
+            if (slot.fenceSharedHandle) CloseHandle(slot.fenceSharedHandle);
+            slot.fenceSharedHandle = nullptr;
         }
-    }
-
-    if (FAILED(d3d12Device_->CreateCommandList(0, D3D12_COMMAND_LIST_TYPE_DIRECT, sharedSlots_[0].alloc.Get(), nullptr, IID_PPV_ARGS(&d3d12CmdList_)))) {
         return false;
+    };
+    for (auto& slot : pending) {
+        if (FAILED(device->CreateCommandAllocator(
+                D3D12_COMMAND_LIST_TYPE_DIRECT,
+                IID_PPV_ARGS(&slot.alloc))) ||
+            FAILED(device->CreateCommandAllocator(
+                D3D12_COMMAND_LIST_TYPE_DIRECT,
+                IID_PPV_ARGS(&slot.publishAlloc))) ||
+            FAILED(device->CreateFence(
+                0, D3D12_FENCE_FLAG_SHARED,
+                IID_PPV_ARGS(&slot.fence))) ||
+            FAILED(device->CreateSharedHandle(
+                slot.fence.Get(), nullptr, GENERIC_ALL, nullptr,
+                &slot.fenceSharedHandle)))
+            return fail();
     }
-    d3d12CmdList_->Close();
 
+    ComPtr<ID3D12GraphicsCommandList> commandList;
+    if (FAILED(device->CreateCommandList(
+            0, D3D12_COMMAND_LIST_TYPE_DIRECT, pending[0].alloc.Get(),
+            nullptr, IID_PPV_ARGS(&commandList))) ||
+        FAILED(commandList->Close()))
+        return fail();
+
+    d3d12Device_ = std::move(device);
+    d3d12Queue_ = std::move(queue);
+    d3d12CmdList_ = std::move(commandList);
+    for (std::uint32_t i = 0; i < kMaxInFlight; ++i) {
+        sharedSlots_[i].alloc = std::move(pending[i].alloc);
+        sharedSlots_[i].publishAlloc = std::move(pending[i].publishAlloc);
+        sharedSlots_[i].fence = std::move(pending[i].fence);
+        sharedSlots_[i].fenceSharedHandle = pending[i].fenceSharedHandle;
+        pending[i].fenceSharedHandle = nullptr;
+    }
     return true;
 }
 
@@ -231,6 +250,7 @@ bool SyntheticOpenGlProvider::Initialize(const ProviderContext& context) {
     d12Ctx.preferSameDevice = true;
 
     if (!syntheticD3D12_.Initialize(d12Ctx)) {
+        ResetPrivateD3D12();
         return false;
     }
 
@@ -240,26 +260,7 @@ bool SyntheticOpenGlProvider::Initialize(const ProviderContext& context) {
 
 void SyntheticOpenGlProvider::Shutdown() {
     std::scoped_lock lock(mutex_);
-
-    CloseSharedHandles();
-    for (auto& s : sharedSlots_) {
-        if (s.fenceSharedHandle) {
-            CloseHandle(s.fenceSharedHandle);
-            s.fenceSharedHandle = nullptr;
-        }
-        s.fence.Reset();
-        s.publishAlloc.Reset();
-        s.alloc.Reset();
-        s.nextFenceValue = 1;
-    }
-
-    nvof_.Shutdown();
-    syntheticD3D12_.Shutdown();
-
-    d3d12CmdList_.Reset();
-    d3d12Queue_.Reset();
-    d3d12Device_.Reset();
-
+    ResetPrivateD3D12();
     ready_ = false;
 }
 

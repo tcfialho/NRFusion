@@ -232,6 +232,7 @@ private:
     bool CreateSharedResources(uint32_t width, uint32_t height);
     bool CanRecreateSharedResources() const noexcept;
     void CloseSharedHandles();
+    void ResetPrivateD3D12() noexcept;
 
     OpenGlDispatchTable gl_{};
 
