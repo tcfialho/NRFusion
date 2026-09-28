@@ -96,11 +96,40 @@ Dívida strict: 21 -> 20 (W4A8 kernel) -> 19 (benchmark) -> 18 (GPU test) ->
 Próxima ação estrutural: `tools/quantize_w4a8_sm89.py` (422 linhas), mantendo o mesmo
 entrypoint/script e sem adicionar job/executável.
 
+## Subgate 20c — tooling e probe boundaries
+
+`70d360c` dividiu o quantizer W4A8:
+- entrypoint `quantize_w4a8_sm89.py`: 247 linhas;
+- core matemático: 195 linhas;
+- mesmo CLI/entrypoint; assinatura determinística before/after
+  `842bc26ef094b931ae38c81d6ed778608ed5125c23f351e6067a4af4325eb459`;
+- Portable `36372671947`: PASS.
+
+`e1e239b` dividiu o extractor de pesos em entrypoint 153, parser PE 140 e
+parser/modelo 146 linhas. Um mapa WEIGHTS_HT sintético mínimo preservou assinatura
+`4865693ee64fe5e1836d7d664bc26448e6dbb4dfd2e70bb48c39ef884c59b5fa`.
+Portable `36372871149`: PASS.
+
+`6e6a44b` moveu apenas discovery/carving/cuobjdump para helper de 94 linhas;
+`decode_swin_abi.py` ficou em 297. CLI, `cuobjdump` real e classificação sintética
+continuam válidos. Portable `36373040235`: PASS.
+
+`88a3bf5` separou a API pública do probe ABI no mesmo translation unit:
+`NrKernelAbi.cpp` 206 linhas + API 115; reconstrução byte-a-byte.
+Portable `36373144165`, Focused `36373144156`, Windows `36373144224`: PASS.
+Checkpoint `10949588828`, sha256
+`20ce914c65feae3ac6c26dbb389822490c3beb9c07a905c93276ba490c04c8bc`.
+
+Dívida strict ao final do lote: **13 violações**, contra 21 no início da Phase 20.
+
+Próxima ação estrutural: `src/CompatibilityDatabase.cpp` (350 linhas), separando apenas
+o parser JSON interno e mantendo a API/database no mesmo target.
+
 ## Revisão obrigatória
 
 - [ ] Todo steady cost justificado.
-- [ ] Benchmark exclui waits/Map/console.
-- [ ] Warm-up separado; p50/p95/p99.
+- [x] Benchmark exclui waits/Map/console.
+- [x] Warm-up separado; p50/p95/p99.
 - [ ] Tail regression bloqueia.
 - [x] Nenhuma exclusão criada para escapar do cap.
 - [x] Split W4A8 não introduz virtual/heap/lock/indireção.
