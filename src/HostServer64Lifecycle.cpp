@@ -3,12 +3,12 @@
 namespace nrfusion {
 
 bool HostServer64::InitializeD3D12() {
-    if (d3d12Device_) {
-        return true;
-    }
+    if (d3d12Device_) return true;
 
-    HRESULT hr = D3D12CreateDevice(nullptr, D3D_FEATURE_LEVEL_11_0, IID_PPV_ARGS(&d3d12Device_));
-    if (FAILED(hr)) {
+    ComPtr<ID3D12Device> device;
+    if (FAILED(D3D12CreateDevice(
+            nullptr, D3D_FEATURE_LEVEL_11_0,
+            IID_PPV_ARGS(&device)))) {
         return false;
     }
 
@@ -16,47 +16,62 @@ bool HostServer64::InitializeD3D12() {
     cqDesc.Type = D3D12_COMMAND_LIST_TYPE_DIRECT;
     cqDesc.Priority = D3D12_COMMAND_QUEUE_PRIORITY_NORMAL;
     cqDesc.Flags = D3D12_COMMAND_QUEUE_FLAG_NONE;
-    hr = d3d12Device_->CreateCommandQueue(&cqDesc, IID_PPV_ARGS(&d3d12Queue_));
-    if (FAILED(hr)) {
+
+    ComPtr<ID3D12CommandQueue> queue;
+    if (FAILED(device->CreateCommandQueue(
+            &cqDesc, IID_PPV_ARGS(&queue)))) {
         return false;
     }
 
-    hr = d3d12Device_->CreateCommandAllocator(D3D12_COMMAND_LIST_TYPE_DIRECT, IID_PPV_ARGS(&d3d12Alloc_));
-    if (FAILED(hr)) {
+    ComPtr<ID3D12CommandAllocator> alloc;
+    if (FAILED(device->CreateCommandAllocator(
+            D3D12_COMMAND_LIST_TYPE_DIRECT,
+            IID_PPV_ARGS(&alloc)))) {
         return false;
     }
 
-    for (auto& alloc : d3d12Allocs_) {
-        hr = d3d12Device_->CreateCommandAllocator(D3D12_COMMAND_LIST_TYPE_DIRECT, IID_PPV_ARGS(&alloc));
-        if (FAILED(hr)) return false;
+    std::array<ComPtr<ID3D12CommandAllocator>, kIpcMaxInFlight> allocs{};
+    for (auto& slotAlloc : allocs) {
+        if (FAILED(device->CreateCommandAllocator(
+                D3D12_COMMAND_LIST_TYPE_DIRECT,
+                IID_PPV_ARGS(&slotAlloc)))) {
+            return false;
+        }
     }
 
-    hr = d3d12Device_->CreateCommandList(0, D3D12_COMMAND_LIST_TYPE_DIRECT, d3d12Allocs_[0].Get(), nullptr, IID_PPV_ARGS(&d3d12CmdList_));
-    if (FAILED(hr)) {
+    ComPtr<ID3D12GraphicsCommandList> commandList;
+    if (FAILED(device->CreateCommandList(
+            0, D3D12_COMMAND_LIST_TYPE_DIRECT, allocs[0].Get(),
+            nullptr, IID_PPV_ARGS(&commandList))) ||
+        FAILED(commandList->Close())) {
         return false;
     }
-    d3d12CmdList_->Close();
 
-    hr = d3d12Device_->CreateFence(0, D3D12_FENCE_FLAG_NONE, IID_PPV_ARGS(&d3d12Fence_));
-    if (FAILED(hr)) {
+    ComPtr<ID3D12Fence> fence;
+    if (FAILED(device->CreateFence(
+            0, D3D12_FENCE_FLAG_NONE, IID_PPV_ARGS(&fence)))) {
         return false;
     }
 
-    syntheticProvider_ = std::make_unique<SyntheticDx12Provider>();
+    auto synthetic = std::make_unique<SyntheticDx12Provider>();
     ProviderContext ctx{};
     ctx.api = GraphicsApi::D3D12;
-    ctx.device = d3d12Device_.Get();
-    ctx.commandQueue = d3d12Queue_.Get();
+    ctx.device = device.Get();
+    ctx.commandQueue = queue.Get();
     ctx.preferSameDevice = true;
-    syntheticProvider_->Initialize(ctx);
+    synthetic->Initialize(ctx);
 
-    // Non-fatal: nvngx.dll_dlssnr.dll / nvngx_dlssnr.dll missing beside this executable leaves the
-    // host doing the downsample step only, same as before this pass -- never a hard failure to start.
-    dlssNr_ = std::make_unique<HostDlssNr>();
-    if (dlssNr_->Load()) {
-        dlssNr_->Init(d3d12Device_.Get());
-    }
+    auto dlssNr = std::make_unique<HostDlssNr>();
+    if (dlssNr->Load()) dlssNr->Init(device.Get());
 
+    d3d12Device_ = std::move(device);
+    d3d12Queue_ = std::move(queue);
+    d3d12Alloc_ = std::move(alloc);
+    d3d12Allocs_ = std::move(allocs);
+    d3d12CmdList_ = std::move(commandList);
+    d3d12Fence_ = std::move(fence);
+    syntheticProvider_ = std::move(synthetic);
+    dlssNr_ = std::move(dlssNr);
     return true;
 }
 
