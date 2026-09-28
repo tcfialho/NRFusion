@@ -99,6 +99,7 @@ int main() {
     {
         GameProbeResult bridge;
         bridge.bitness = 64; bridge.api = GraphicsApi::D3D11; bridge.hasDlssSr = true;
+        bridge.importsVersionDll = true;
         RuntimeCapabilities caps;
         caps.nativeProvider = true;
         assert(GameProbe::InstallSupport(bridge, caps) == GameInstallSupport::ProviderUnavailable);
@@ -223,35 +224,27 @@ int main() {
 
 
 #include "game_probe_installer_state_tests.inc"
-    // IntegratedCapabilities must track only what is actually wired into a real hook today: native
-    // NGX calls and the stock D3D11-with-D3D12 bridge inside the shipped OptiScaler.dll for a game
-    // with a real DLSS contract; EvaluateSynthetic/EvaluateSyntheticDx11/EvaluateSyntheticVk wired
-    // into wrapped_swapchain.cpp's real Present hook for a game with none; and the x86 carrier
-    // (nrfusion_capture32.dll + NRFusionHost64.exe, staged by tools/build_dist.ps1 and installed by
-    // installer/NRFusion.nsi) for a 32-bit D3D11 game. Only OpenGL has no hook surface at all.
+    // IntegratedCapabilities exposes only the D3D11 bridge actually embedded in the standalone
+    // version.dll carrier. Other providers remain harness-only until they have a shipped hook.
     {
         const auto integrated = GameProbe::IntegratedCapabilities();
-        assert(integrated.nativeProvider && integrated.bridgeProvider &&
-               integrated.syntheticD3D12 && integrated.syntheticD3D11Bridge &&
-               integrated.syntheticVulkan && integrated.x86Carrier && !integrated.openGlCarrier);
+        assert(!integrated.nativeProvider && integrated.bridgeProvider &&
+               !integrated.syntheticD3D12 && integrated.syntheticD3D11Bridge &&
+               !integrated.syntheticVulkan && !integrated.x86Carrier && !integrated.openGlCarrier);
 
-        // 32-bit D3D11 without a native DLSS contract: the x86 carrier always runs its own
-        // Synthetic pass regardless of native DLSS, so this is Supported once x86Carrier is wired.
-        const auto dmc4seProbe = GameProbe::Probe(root / "dmc4se.exe");
-        assert(GameProbe::InstallSupport(dmc4seProbe, integrated) == GameInstallSupport::Supported);
+        GameProbeResult d3d11Proxy;
+        d3d11Proxy.bitness = 64;
+        d3d11Proxy.api = GraphicsApi::D3D11;
+        d3d11Proxy.importsVersionDll = true;
+        assert(GameProbe::InstallSupport(d3d11Proxy, integrated) == GameInstallSupport::Supported);
+        d3d11Proxy.importsVersionDll = false;
+        assert(GameProbe::InstallSupport(d3d11Proxy, integrated) == GameInstallSupport::ProviderUnavailable);
 
-        // 64-bit D3D12 without a native DLSS contract: EvaluateSynthetic is wired into the real
-        // Present hook, so this now clears through the Synthetic fallback.
         const auto nativeProbe = GameProbe::Probe(root / "native.exe");
-        assert(GameProbe::InstallSupport(nativeProbe, integrated) == GameInstallSupport::Supported);
+        assert(GameProbe::InstallSupport(nativeProbe, integrated) == GameInstallSupport::ProviderUnavailable);
 
-        // Same reasoning for a non-DLSS Vulkan game. The x86 carrier is D3D11-only, so a 32-bit
-        // Vulkan game (unlike 32-bit D3D11) still fails closed even with x86Carrier wired.
         const auto vkProbe = GameProbe::Probe(root / "vk_game.exe");
-        assert(GameProbe::InstallSupport(vkProbe, integrated) == GameInstallSupport::Supported);
-        GameProbeResult vk32Probe = vkProbe;
-        vk32Probe.bitness = 32;
-        assert(GameProbe::InstallSupport(vk32Probe, integrated) == GameInstallSupport::Unsupported32BitApi);
+        assert(GameProbe::InstallSupport(vkProbe, integrated) == GameInstallSupport::ProviderUnavailable);
 
         const auto legacyProbe = GameProbe::Probe(root / "legacy64.exe");
         assert(GameProbe::InstallSupport(legacyProbe, integrated) == GameInstallSupport::UnsupportedLegacyDirect3D);
@@ -261,11 +254,10 @@ int main() {
         const auto glProbe = GameProbe::Probe(root / "gl_game.exe");
         assert(GameProbe::InstallSupport(glProbe, integrated) == GameInstallSupport::UnsupportedOpenGL);
 
-        // 32-bit OpenGL: x86Carrier only covers D3D11, so this now clears the bitness gate and
-        // reports the real reason (OpenGL, not 32-bit) instead of masking it.
+        // This distribution does not ship a Win32 carrier, so the bitness gate remains fail-closed.
         WriteFakePe(root / "gl_game32.exe", 32, "opengl32.dll wglCreateContext");
         const auto gl32Probe = GameProbe::Probe(root / "gl_game32.exe");
-        assert(GameProbe::InstallSupport(gl32Probe, integrated) == GameInstallSupport::UnsupportedOpenGL);
+        assert(GameProbe::InstallSupport(gl32Probe, integrated) == GameInstallSupport::Unsupported32Bit);
     }
 
     fs::remove_all(root, ec);

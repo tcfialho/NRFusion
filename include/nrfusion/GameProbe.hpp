@@ -40,6 +40,7 @@ struct GameProbeResult {
     bool proxyDxgiOccupied = false;
     bool proxyVersionOccupied = false;
     bool proxyWinmmOccupied = false;
+    bool importsVersionDll = false;
     std::vector<std::filesystem::path> capabilityEvidence;
 
     bool HasNativeDlssContract() const noexcept {
@@ -56,8 +57,7 @@ class GameProbe {
 public:
     static GameProbeResult Probe(const std::filesystem::path& executable);
     static const char* ApiName(GraphicsApi api) noexcept;
-    // Capabilities actually wired into the shipped OptiScaler.dll by apply_to_optiscaler.py --
-    // not what the portable core merely has source for. Keep in sync with the real patcher.
+    // Capabilities wired into the shipped standalone proxy, not merely present in the portable core.
     static RuntimeCapabilities IntegratedCapabilities() noexcept;
     static GameInstallSupport InstallSupport(const GameProbeResult& result) noexcept;
     static GameInstallSupport InstallSupport(const GameProbeResult& result,
