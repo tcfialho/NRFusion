@@ -122,8 +122,39 @@ Checkpoint `10949588828`, sha256
 
 Dívida strict ao final do lote: **13 violações**, contra 21 no início da Phase 20.
 
-Próxima ação estrutural: `src/CompatibilityDatabase.cpp` (350 linhas), separando apenas
-o parser JSON interno e mantendo a API/database no mesmo target.
+`CompatibilityDatabase.cpp` não foi dividido: assim como `ProfileStore.cpp`, ele está na
+lista fechada de sources materializada por `tools/apply_to_optiscaler.py`. Adicionar fragment
+novo sem uma boundary limpa no patcher repetiria a falha de closure já observada; fica bloqueado
+até o patcher deixar de ser monolítico/fechado.
+
+## Subgate 20d — test harness structural debt
+
+`2477f6d` separou somente a validação numérica de residual de
+`tests/synthetic_dx12_test.cpp`: principal 276 linhas + fragment 142, mesmo translation unit
+e executável, com reconstrução textual exata.
+Focused `36375068164`, Portable `36375068167`, Windows `36375068166`: PASS.
+Checkpoint `10949829126`, sha256
+`6bd8d31d819df2ddd9b1df72de28f3461d1d7ae2217afb8c73e170268f74bbc2`.
+
+`d026c24` separou o bloco de criação/upload/dispatch/readback de
+`tests/residual_gpu_test.cpp`: principal 254 linhas + fragment 242, mesmo translation unit
+e executável, com reconstrução textual exata.
+Focused `36376310469`, Portable `36376310422`, Windows `36376310451`: PASS.
+Checkpoint `10951195647`, sha256
+`65742fee6dff9bfe96eb6b2303662c6be7c5d9e232e78e4ae008c279002b19e6`.
+
+`1115441` separou os cenários de `InstallerState` de
+`tests/game_probe_tests.cpp`: principal 273 linhas + fragment 279, mesmo test executable,
+com reconstrução textual exata.
+Focused `36376791161`, Portable `36376791143`, Windows `36376791288`: PASS.
+Checkpoint `10951037881`, sha256
+`eb607ef5b6616d56724de10b49f00daf77b044234a9285e57fb3ea7495130b49`.
+
+Dívida strict: **13 -> 10 violações** neste lote; arquivos novos/tocados continuam <=300.
+
+Próxima ação estrutural: `src/InstallerState.cpp` (612 linhas). Dry-run já identifica duas
+boundaries naturais — install/snapshot e restore/transaction — que mantêm o mesmo translation
+unit, deixam todos os fragments <=300 e reconstroem o source atual exatamente.
 
 ## Revisão obrigatória
 
