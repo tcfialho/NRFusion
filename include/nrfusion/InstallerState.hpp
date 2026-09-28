@@ -28,7 +28,7 @@ public:
                                                   const std::filesystem::path& backupRoot);
 
     // Record hashes after installation. This captures deliberate post-copy edits such as enabling NR
-    // in an existing OptiScaler.ini without assuming that file matches the packaged default.
+    // in an existing installation without assuming that its files match the packaged default.
     static InstallerStateResult RecordInstalled(const std::filesystem::path& gameRoot,
                                                 const std::string& proxyName,
                                                 const std::filesystem::path& distManifest,

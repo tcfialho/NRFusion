@@ -233,6 +233,6 @@ InstallerStateResult InstallerState::CommitTransaction(const std::filesystem::pa
     if (magic != kTransactionCommitted && !WriteTextFile(magicPath, kTransactionCommitted, result.error)) return result;
     std::error_code ec;
     std::filesystem::remove_all(transactionRoot, ec);
-    if (ec) result.error = "install committed but transaction cleanup failed";
+    // The durable marker makes cleanup retryable on the next setup run.
     return result;
 }

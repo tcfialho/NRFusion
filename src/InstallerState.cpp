@@ -87,8 +87,8 @@ bool IsSupportedProxy(const std::string& name) {
 
 std::filesystem::path TargetRelative(const std::filesystem::path& distRelative, const std::string& proxyName) {
     const auto generic = distRelative.generic_string();
-    if (generic == "OptiScaler.dll") return std::filesystem::path(proxyName);
-    if (generic == "NRFusionProbe.exe") return std::filesystem::path("OptiScaler") / "NRFusion" / "NRFusionProbe.exe";
+    if (generic == "nrfusion_proxy.dll" || generic == "OptiScaler.dll") return std::filesystem::path(proxyName);
+    if (generic == "NRFusionProbe.exe") return std::filesystem::path("NRFusion") / "internal" / "NRFusionProbe.exe";
     return distRelative;
 }
 
