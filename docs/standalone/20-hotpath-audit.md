@@ -180,10 +180,26 @@ Checkpoint `10952220132`, sha256
 
 Dívida strict: **10 -> 8 violações** neste lote; todos os arquivos tocados permanecem <=300.
 
-Próxima ação estrutural: `tools/build_dist.ps1` (394 linhas). Diferente dos splits acima,
-ele exige uma boundary de script real (provavelmente dot-source por estágio), então deve primeiro
-ser dividido por responsabilidade e validado com parser + fluxo de empacotamento, sem tratar a
-extração como byte-equivalência automática.
+## Subgate 20f — distribution packaging
+
+`c354c6a` separou `tools/build_dist.ps1` por estágio:
+- entrypoint 262 linhas;
+- W4A8 assets 86;
+- carrier/testbed 50;
+- CLI e fluxo continuam únicos via dot-source no mesmo escopo;
+- os tokens exigidos por `test_dist_contract.sh` permaneceram no entrypoint.
+Parser PowerShell dos três arquivos: PASS.
+`tests/test_dist_contract.sh`: PASS em Git Bash.
+Portable `36378699825`: PASS; Focused `36378773440`: PASS.
+Checkpoint `10952137046`, sha256
+`211bc9184a40f583a6306b9e6ea73686ecf80834dc30aceed7add538a842d274`.
+Windows full `36378775434` permanece em execução no freeze.
+Dívida strict: **8 -> 7 violações**.
+
+Próxima ação estrutural: `installer/NRFusion.nsi` (465 linhas). Dry-run já separa
+`Install` e `Uninstall` em includes de 153/38 linhas, deixa o root em 277 e reconstrói
+o source atual exatamente. Os testes de distribuição/UX devem validar root + includes como
+uma única closure para preservar as mesmas asserções sem duplicar strings no root.
 
 ## Revisão obrigatória
 
