@@ -56,6 +56,19 @@ HMODULE LoadDriverNgxFromDriverStore() {
 
 } // namespace
 
+static std::wstring ResolveSidecarPath(const std::wstring& exeDir, const wchar_t* filename) {
+    const std::wstring candidates[] = {
+        exeDir + filename,
+        exeDir + L"internal\\" + filename,
+        exeDir + L"..\\" + filename,
+        exeDir + L"..\\internal\\" + filename
+    };
+    for (const auto& candidate : candidates) {
+        if (FileExists(candidate)) return candidate;
+    }
+    return exeDir + filename;
+}
+
 bool D3D12NrExecutor::Load() {
     if (driverModule_ != nullptr && forwarderModule_ != nullptr &&
         driverInit_ != nullptr && getCapabilityParams_ != nullptr &&
@@ -70,12 +83,12 @@ bool D3D12NrExecutor::Load() {
     }
 
     const std::wstring exeDir = ExeDirectory();
-    const std::wstring forwarderPath = exeDir + L"nvngx.dll_dlssnr.dll";
-    const std::wstring snippetPath = exeDir + L"nvngx_dlssnr.dll";
+    const std::wstring forwarderPath = ResolveSidecarPath(exeDir, L"nvngx.dll_dlssnr.dll");
+    const std::wstring snippetPath = ResolveSidecarPath(exeDir, L"nvngx_dlssnr.dll");
     if (!FileExists(forwarderPath) || !FileExists(snippetPath)) {
         status_ = !FileExists(forwarderPath)
-            ? "nvngx.dll_dlssnr.dll not found beside NRFusionHost64.exe"
-            : "nvngx_dlssnr.dll (the model itself) not found beside NRFusionHost64.exe";
+            ? "nvngx.dll_dlssnr.dll not found in NRFusion directory"
+            : "nvngx_dlssnr.dll (the model itself) not found in NRFusion directory";
         return false;
     }
 
@@ -156,7 +169,7 @@ void D3D12NrExecutor::DiscoverFloatSlot() {
     if (floatSlotKnown_ || !capabilityParams_ || !probeFloat_ || !setFloatSlot_) return;
     floatSlotKnown_ = true;
 
-    static const char* kProbeKey = "DLSSNR.OptiScalerFloatProbe";
+    static const char* kProbeKey = "DLSSNR.NRFusionFloatProbe";
     static const int kCandidates[] = { 1, 2, 5, 6, 7, 4, 3, 0 };
     const float expected = 0.375f;
 
