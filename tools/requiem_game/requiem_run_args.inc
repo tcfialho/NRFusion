@@ -1,0 +1,51 @@
+    for (int i = 1; i < argc; ++i) {
+        if (argv[i] == nullptr)
+            continue;
+        const std::string argument = argv[i];
+        if (argument == "--fixed-scene")
+            g_fixedScene = true;
+        else if (argument == "--deterministic-motion")
+            g_deterministicMotion = true;
+        else if (argument == "--debug-layer")
+            g_debugLayer = true;
+        else if (argument == "--require-nr")
+            g_requireNr = true;
+        else if (argument == "--nr-kernels" && i + 1 < argc) {
+            g_kernelCsv = argv[++i];
+            g_requireNr = true;
+        }
+        else if (argument == "--reference-on")
+            g_view = 2;
+        else if (argument == "--frames" && i + 1 < argc) {
+            g_frameLimit = ParseCount(argv[++i]);
+            if (!g_frameLimit) throw std::runtime_error("--frames must be positive");
+        }
+        else if (argument == "--width" && i + 1 < argc)
+            g_width = ParseCount(argv[++i]);
+        else if (argument == "--height" && i + 1 < argc)
+            g_height = ParseCount(argv[++i]);
+        else if (argument == "--warmup" && i + 1 < argc)
+            g_warmup = ParseCount(argv[++i]);
+        else if (argument == "--csv" && i + 1 < argc)
+            g_csv = argv[++i];
+        else if (argument == "--capture" && i + 1 < argc)
+            g_capture = argv[++i];
+        else { std::cerr << "Invalid argument: " << argument << std::endl; return 2; }
+    }
+
+    if (g_fixedScene && g_deterministicMotion)
+        throw std::runtime_error("Choose fixed scene or deterministic motion");
+    if ((g_width != 1280 || g_height != 720) && (g_width != 1920 || g_height != 1080)) {
+        std::cerr << "Supported output sizes: 1280x720, 1920x1080" << std::endl;
+        return 2;
+    }
+    if ((!g_csv.empty() || !g_capture.empty()) && (!g_frameLimit || g_frameLimit <= g_warmup)) {
+        std::cerr << "Capture/CSV requires --frames greater than --warmup" << std::endl;
+        return 2;
+    }
+    std::ofstream timings;
+    if (!g_csv.empty()) {
+        timings.open(g_csv);
+        if (!timings) { std::cerr << "Cannot open CSV" << std::endl; return 2; }
+        timings << "frame,input_width,input_height,output_width,output_height,ngx_evaluation_gpu_ms,frame_wall_ms,nr_gpu_ms,nr_passes,nr_successes,nvapi_kernels,nvapi_chains\n";
+    }
