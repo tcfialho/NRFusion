@@ -1,26 +1,40 @@
+# Build e distribuição
 /build/
+/build-*/
+/.build/
 /dist/
+/out/
+
+# Dependências e upstreams
+/.deps/
+/upstreams/
+
+# Artefatos temporários e logs
 *.log
 *.pid
+.temp/
+*telemetry*.json
+*profile_store*.json
+
+# Python
 __pycache__/
 *.pyc
+
+# IDEs e ambiente local
 .vs/
 .idea/
 .vscode/
 .claude/
-/build-sanitize/
-/.build/
-/upstreams/
+*.user
+*.suo
+CMakeUserPresets.json
 
-/build-warnings/
-.temp/
+# Dados e pesos não versionados
 /data/pesos/
 /data/*.dll
 /data/*.log
-/build-windows-validation/
-/build-win32-validation/
-*telemetry*.json
-*profile_store*.json
+
+# Recuperação e histórico
 /recuperado-*/
 /.recuperacao/
 /docs/ai-sessions/

@@ -78,7 +78,6 @@ add_library(nrfusion_core STATIC
 
 if (WIN32)
     target_sources(nrfusion_core PRIVATE
-        src/AdaW4A8Interceptor.cpp
         src/DlssgTransfusion.cpp
         src/DlssgTransfusionRuntime.cpp
         src/DlssgTransfusionPatches.cpp

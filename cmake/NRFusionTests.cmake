@@ -88,7 +88,7 @@ target_sources(nrfusion_tests PRIVATE
     tests/controller_tests_part10.cpp
     tests/controller_tests_part11.cpp
     tests/controller_tests_part12.cpp
-    src/OptiScalerAdapter.cpp
+    tests/TestCoordinator.cpp
 )
 nrfusion_test(nrfusion_game_probe_tests tests/game_probe_tests.cpp)
 nrfusion_test(nrfusion_telemetry_tests tests/telemetry_tracker_tests.cpp)
