@@ -6,9 +6,10 @@
         std::printf("========================================================================================\n");
         std::printf("--- CONFIGURATION: %u Tokens (%u Windows x 64 Tokens, 8 Groups) ---\n", tokens, windows);
         std::printf("========================================================================================\n");
-        std::printf("%-26s | %-10s | %-10s | %-10s | %-12s | %-10s\n",
-                    "Implementation", "Mean (us)", "Min (us)", "P95 (us)", "Mtokens/s", "Speedup");
-        std::printf("----------------------------------------------------------------------------------------\n");
+        std::printf("%-26s | %-9s | %-9s | %-9s | %-9s | %-11s | %-9s\n",
+                    "Implementation", "Mean(us)", "P50(us)", "P95(us)", "P99(us)",
+                    "Mtokens/s", "Speedup");
+        std::printf("----------------------------------------------------------------------------------------------------\n");
 
         // 1. FP16 Unfused
         size_t bytesUnfused = tokens * channels * sizeof(__half) * 2 + // in + out
@@ -19,9 +20,10 @@
             BaselineFp16ProjectKernel<<<grid, kThreads>>>(d_intermediate, d_prjFp16, d_output, windows, channels, header.groups);
         }, kWarmup, kIterations, tokens, bytesUnfused);
 
-        std::printf("%-26s | %9.2f  | %9.2f  | %9.2f  | %11.2f  | %9.2fx (baseline)\n",
-                    "FP16 Unfused (VRAM Trip)", statsFp16Unfused.meanUs, statsFp16Unfused.minUs,
-                    statsFp16Unfused.p95Us, statsFp16Unfused.throughputMTokSec, 1.0f);
+        std::printf("%-26s | %8.2f | %8.2f | %8.2f | %8.2f | %10.2f | %8.2fx (baseline)\n",
+                    "FP16 Unfused (VRAM Trip)", statsFp16Unfused.meanUs,
+                    statsFp16Unfused.medianUs, statsFp16Unfused.p95Us,
+                    statsFp16Unfused.p99Us, statsFp16Unfused.throughputMTokSec, 1.0f);
 
         // 2. FP16 Fused
         size_t bytesFused = tokens * channels * sizeof(__half) * 2 + fp16WeightBytes;
@@ -31,9 +33,10 @@
         }, kWarmup, kIterations, tokens, bytesFused);
 
         float speedupVsUnfused = statsFp16Unfused.meanUs / statsFp16Fused.meanUs;
-        std::printf("%-26s | %9.2f  | %9.2f  | %9.2f  | %11.2f  | %9.2fx\n",
-                    "FP16 Fused (40KiB SRAM)", statsFp16Fused.meanUs, statsFp16Fused.minUs,
-                    statsFp16Fused.p95Us, statsFp16Fused.throughputMTokSec, speedupVsUnfused);
+        std::printf("%-26s | %8.2f | %8.2f | %8.2f | %8.2f | %10.2f | %8.2fx\n",
+                    "FP16 Fused (40KiB SRAM)", statsFp16Fused.meanUs,
+                    statsFp16Fused.medianUs, statsFp16Fused.p95Us,
+                    statsFp16Fused.p99Us, statsFp16Fused.throughputMTokSec, speedupVsUnfused);
 
         // 3. FP8 Fused
         size_t bytesFp8 = tokens * channels * sizeof(__half) * 2 + fp8WeightBytes;
@@ -43,9 +46,10 @@
         }, kWarmup, kIterations, tokens, bytesFp8);
 
         float speedupFp8 = statsFp16Unfused.meanUs / statsFp8Fused.meanUs;
-        std::printf("%-26s | %9.2f  | %9.2f  | %9.2f  | %11.2f  | %9.2fx\n",
-                    "FP8 Fused (SM89 Native)", statsFp8Fused.meanUs, statsFp8Fused.minUs,
-                    statsFp8Fused.p95Us, statsFp8Fused.throughputMTokSec, speedupFp8);
+        std::printf("%-26s | %8.2f | %8.2f | %8.2f | %8.2f | %10.2f | %8.2fx\n",
+                    "FP8 Fused (SM89 Native)", statsFp8Fused.meanUs,
+                    statsFp8Fused.medianUs, statsFp8Fused.p95Us,
+                    statsFp8Fused.p99Us, statsFp8Fused.throughputMTokSec, speedupFp8);
 
         // 4. Ada W4A8 INT8 Tensor Core (IMMA) Fused
         size_t bytesW4A8 = tokens * channels * sizeof(__half) * 2 + w4a8WeightBytes;
@@ -83,10 +87,11 @@
         float speedupTcVsFp16Fused = statsFp16Fused.meanUs / statsW4A8TC.meanUs;
         float speedupTcVsFp8 = statsFp8Fused.meanUs / statsW4A8TC.meanUs;
 
-        std::printf("%-26s | %9.2f  | %9.2f  | %9.2f  | %11.2f  | %9.2fx (%.2fx vs FP8, %.2fx vs FP16 Fused)\n",
-                    "Ada W4A8 INT8 TC (IMMA)", statsW4A8TC.meanUs, statsW4A8TC.minUs,
-                    statsW4A8TC.p95Us, statsW4A8TC.throughputMTokSec,
-                    speedupTcVsUnfused, speedupTcVsFp8, speedupTcVsFp16Fused);
+        std::printf("%-26s | %8.2f | %8.2f | %8.2f | %8.2f | %10.2f | %8.2fx (%.2fx vs FP8, %.2fx vs FP16 Fused)\n",
+                    "Ada W4A8 INT8 TC (IMMA)", statsW4A8TC.meanUs,
+                    statsW4A8TC.medianUs, statsW4A8TC.p95Us, statsW4A8TC.p99Us,
+                    statsW4A8TC.throughputMTokSec, speedupTcVsUnfused,
+                    speedupTcVsFp8, speedupTcVsFp16Fused);
 
         // 5. Ada W4A8 CUDA Core (__dp4a)
         params.computeMode = AdaW4A8ComputeMode::Dp4a;
@@ -97,10 +102,11 @@
         float speedupDp4aVsUnfused = statsFp16Unfused.meanUs / statsW4A8Dp4a.meanUs;
         float speedupTcVsDp4a = statsW4A8Dp4a.meanUs / statsW4A8TC.meanUs;
 
-        std::printf("%-26s | %9.2f  | %9.2f  | %9.2f  | %11.2f  | %9.2fx (%.2fx Tensor Core Speedup)\n",
-                    "Ada W4A8 CUDA Core (__dp4a)", statsW4A8Dp4a.meanUs, statsW4A8Dp4a.minUs,
-                    statsW4A8Dp4a.p95Us, statsW4A8Dp4a.throughputMTokSec,
-                    speedupDp4aVsUnfused, speedupTcVsDp4a);
+        std::printf("%-26s | %8.2f | %8.2f | %8.2f | %8.2f | %10.2f | %8.2fx (%.2fx Tensor Core Speedup)\n",
+                    "Ada W4A8 CUDA Core (__dp4a)", statsW4A8Dp4a.meanUs,
+                    statsW4A8Dp4a.medianUs, statsW4A8Dp4a.p95Us, statsW4A8Dp4a.p99Us,
+                    statsW4A8Dp4a.throughputMTokSec, speedupDp4aVsUnfused,
+                    speedupTcVsDp4a);
 
         // 6. Auto Calibration Decision
         AdaBenchmarkResult autoBench = BenchmarkAdaW4A8Ffn(params, 10.0f);
