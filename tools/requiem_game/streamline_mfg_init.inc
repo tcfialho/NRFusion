@@ -1,0 +1,288 @@
+bool StreamlineMfg::Initialize(
+    std::uint32_t multiplier, bool required) {
+    impl_->requested = multiplier >= 2;
+    impl_->required = required;
+    impl_->multiplier = multiplier;
+    if (!impl_->requested) {
+        impl_->status = "disabled";
+        return true;
+    }
+
+#if !defined(NRFUSION_REQUIEM_STREAMLINE)
+    impl_->status = "Streamline support not compiled";
+    return false;
+#else
+    if (multiplier > 6) {
+        impl_->status = "invalid MFG multiplier";
+        return false;
+    }
+
+    impl_->pluginPath = ExeDirectory();
+    if (impl_->pluginPath.empty()) {
+        impl_->status = "cannot resolve executable directory";
+        return false;
+    }
+
+    const auto dlssgPath =
+        std::filesystem::path(impl_->pluginPath) / L"nvngx_dlssg.dll";
+    impl_->dlssgModule = LoadLibraryW(dlssgPath.c_str());
+    if (!impl_->dlssgModule) {
+        impl_->status = "nvngx_dlssg.dll not found";
+        return false;
+    }
+    using PatchMfgFn = int(__cdecl*)(HMODULE);
+    bool patched = false;
+    if (const auto proxy = GetModuleHandleW(L"version.dll")) {
+        if (const auto patchMfg = reinterpret_cast<PatchMfgFn>(
+                GetProcAddress(proxy, "NRFusion_PatchMfgModule"))) {
+            patched = (patchMfg(impl_->dlssgModule) != 0);
+        }
+    }
+    if (!patched) {
+        nrfusion::DlssgTransfusion::Instance().TryApply(impl_->dlssgModule);
+    }
+
+    const auto interposerPath =
+        std::filesystem::path(impl_->pluginPath) / L"sl.interposer.dll";
+    impl_->interposer = LoadLibraryW(interposerPath.c_str());
+    if (!impl_->interposer) {
+        impl_->status = "sl.interposer.dll not found";
+        return false;
+    }
+
+    impl_->init = Symbol<PFun_slInit*>(impl_->interposer, "slInit");
+    impl_->shutdown =
+        Symbol<PFun_slShutdown*>(impl_->interposer, "slShutdown");
+    impl_->isFeatureSupported =
+        Symbol<PFun_slIsFeatureSupported*>(
+            impl_->interposer, "slIsFeatureSupported");
+    impl_->setD3DDevice =
+        Symbol<PFun_slSetD3DDevice*>(impl_->interposer, "slSetD3DDevice");
+    impl_->upgradeInterface =
+        Symbol<PFun_slUpgradeInterface*>(
+            impl_->interposer, "slUpgradeInterface");
+    impl_->getFeatureFunction =
+        Symbol<PFun_slGetFeatureFunction*>(
+            impl_->interposer, "slGetFeatureFunction");
+    impl_->getNewFrameToken =
+        Symbol<PFun_slGetNewFrameToken*>(
+            impl_->interposer, "slGetNewFrameToken");
+    impl_->setConstants =
+        Symbol<PFun_slSetConstants*>(
+            impl_->interposer, "slSetConstants");
+    impl_->setTagForFrame =
+        Symbol<PFun_slSetTagForFrame*>(
+            impl_->interposer, "slSetTagForFrame");
+
+    if (!impl_->init || !impl_->shutdown || !impl_->isFeatureSupported ||
+        !impl_->setD3DDevice || !impl_->upgradeInterface ||
+        !impl_->getFeatureFunction ||
+        !impl_->getNewFrameToken || !impl_->setConstants ||
+        !impl_->setTagForFrame) {
+        impl_->status = "sl.interposer.dll missing required exports";
+        return false;
+    }
+    const sl::Feature features[] = {
+        sl::kFeatureDLSS_G, sl::kFeatureReflex, sl::kFeaturePCL};
+    const wchar_t* pluginPath = impl_->pluginPath.c_str();
+    sl::Preferences preferences{};
+    preferences.showConsole = true;
+    preferences.logLevel = sl::LogLevel::eVerbose;
+    preferences.pathsToPlugins = &pluginPath;
+    preferences.pathToLogsAndData = pluginPath;
+    preferences.numPathsToPlugins = 1;
+    preferences.flags =
+        sl::PreferenceFlags::eDisableCLStateTracking |
+        sl::PreferenceFlags::eDisableDebugText |
+        sl::PreferenceFlags::eUseManualHooking |
+        sl::PreferenceFlags::eUseFrameBasedResourceTagging;
+    preferences.featuresToLoad = features;
+    preferences.numFeaturesToLoad =
+        static_cast<std::uint32_t>(std::size(features));
+    // Public NVIDIA Streamline Sample application id, appropriate for this testbed.
+    preferences.applicationId = 231313132u;
+    preferences.engine = sl::EngineType::eCustom;
+    preferences.engineVersion = "NRFusion-Requiem";
+    preferences.renderAPI = sl::RenderAPI::eD3D12;
+
+    const auto result = impl_->init(preferences, sl::kSDKVersion);
+    if (result != sl::Result::eOk) {
+        impl_->status = ResultText("slInit", result);
+        return false;
+    }
+
+    impl_->initialized = true;
+    impl_->status = "Streamline initialized";
+    return true;
+#endif
+}
+bool StreamlineMfg::SetDevice(
+    ID3D12Device* native, ID3D12Device** proxyDevice) {
+    if (!impl_->requested) {
+        if (proxyDevice) *proxyDevice = native;
+        return true;
+    }
+#if !defined(NRFUSION_REQUIEM_STREAMLINE)
+    (void)native; (void)proxyDevice;
+    return false;
+#else
+    if (!impl_->initialized || !native || !proxyDevice) return false;
+    auto result = impl_->setD3DDevice(native);
+    if (result != sl::Result::eOk) {
+        impl_->status = ResultText("slSetD3DDevice", result);
+        return false;
+    }
+    const LUID luid = native->GetAdapterLuid();
+    sl::AdapterInfo adapter{};
+    adapter.deviceLUID = reinterpret_cast<std::uint8_t*>(
+        const_cast<LUID*>(&luid));
+    adapter.deviceLUIDSizeInBytes = sizeof(luid);
+    for (const auto feature : {
+             sl::kFeatureDLSS_G, sl::kFeatureReflex, sl::kFeaturePCL}) {
+        result = impl_->isFeatureSupported(feature, adapter);
+        if (result != sl::Result::eOk) {
+            impl_->status = ResultText("slIsFeatureSupported", result);
+            return false;
+        }
+    }
+
+    if (!GetFeatureFunction(
+            *impl_, sl::kFeatureDLSS_G, "slDLSSGSetOptions",
+            reinterpret_cast<void**>(&impl_->setDlssgOptions))) {
+        impl_->status = "GetFeatureFunction(slDLSSGSetOptions) failed";
+        return false;
+    }
+    if (!GetFeatureFunction(
+            *impl_, sl::kFeatureDLSS_G, "slDLSSGGetState",
+            reinterpret_cast<void**>(&impl_->getDlssgState))) {
+        impl_->status = "GetFeatureFunction(slDLSSGGetState) failed";
+        return false;
+    }
+    if (!GetFeatureFunction(
+            *impl_, sl::kFeatureReflex, "slReflexSetOptions",
+            reinterpret_cast<void**>(&impl_->setReflexOptions))) {
+        impl_->status = "GetFeatureFunction(slReflexSetOptions) failed";
+        return false;
+    }
+    if (!GetFeatureFunction(
+            *impl_, sl::kFeatureReflex, "slReflexSleep",
+            reinterpret_cast<void**>(&impl_->reflexSleep))) {
+        impl_->status = "GetFeatureFunction(slReflexSleep) failed";
+        return false;
+    }
+    if (!GetFeatureFunction(
+            *impl_, sl::kFeaturePCL, "slPCLSetMarker",
+            reinterpret_cast<void**>(&impl_->pclSetMarker))) {
+        impl_->status = "GetFeatureFunction(slPCLSetMarker) failed";
+        return false;
+    }
+    sl::ReflexOptions reflex{};
+    reflex.mode = sl::ReflexMode::eLowLatency;
+    result = impl_->setReflexOptions(reflex);
+    if (result != sl::Result::eOk) {
+        impl_->status = ResultText("slReflexSetOptions", result);
+        return false;
+    }
+
+    void* upgraded = native;
+    result = impl_->upgradeInterface(&upgraded);
+    if (result != sl::Result::eOk || !upgraded) {
+        impl_->status = ResultText("slUpgradeInterface(device)", result);
+        return false;
+    }
+    *proxyDevice = static_cast<ID3D12Device*>(upgraded);
+    impl_->status = "Streamline device ready";
+    return true;
+#endif
+}
+
+bool StreamlineMfg::UpgradeFactory(
+    IDXGIFactory4* native, IDXGIFactory4** proxyFactory) {
+    if (!impl_->requested) {
+        if (proxyFactory) *proxyFactory = native;
+        return true;
+    }
+#if !defined(NRFUSION_REQUIEM_STREAMLINE)
+    (void)native; (void)proxyFactory;
+    return false;
+#else
+    if (!impl_->initialized || !native || !proxyFactory) return false;
+    void* upgraded = native;
+    const auto result = impl_->upgradeInterface(&upgraded);
+    if (result != sl::Result::eOk || !upgraded) {
+        impl_->status = ResultText("slUpgradeInterface(factory)", result);
+        return false;
+    }
+    *proxyFactory = static_cast<IDXGIFactory4*>(upgraded);
+    return true;
+#endif
+}
+bool StreamlineMfg::Configure(
+    std::uint32_t outputWidth, std::uint32_t outputHeight,
+    std::uint32_t renderWidth, std::uint32_t renderHeight,
+    std::uint32_t backBuffers) {
+    if (!impl_->requested) return true;
+#if !defined(NRFUSION_REQUIEM_STREAMLINE)
+    (void)outputWidth; (void)outputHeight;
+    (void)renderWidth; (void)renderHeight; (void)backBuffers;
+    return false;
+#else
+    if (!impl_->setDlssgOptions || !impl_->getDlssgState) return false;
+    impl_->outputWidth = outputWidth;
+    impl_->outputHeight = outputHeight;
+    impl_->backBuffers = backBuffers;
+
+    impl_->options = {};
+    impl_->options.mode = sl::DLSSGMode::eOn;
+    impl_->options.numFramesToGenerate = impl_->multiplier - 1;
+    impl_->options.flags = sl::DLSSGFlags::eRetainResourcesWhenOff;
+    impl_->options.numBackBuffers = backBuffers;
+    impl_->options.mvecDepthWidth = renderWidth;
+    impl_->options.mvecDepthHeight = renderHeight;
+    impl_->options.colorWidth = outputWidth;
+    impl_->options.colorHeight = outputHeight;
+    impl_->options.colorBufferFormat =
+        static_cast<std::uint32_t>(DXGI_FORMAT_R8G8B8A8_UNORM);
+    impl_->options.mvecBufferFormat =
+        static_cast<std::uint32_t>(DXGI_FORMAT_R32G32_FLOAT);
+    impl_->options.depthBufferFormat =
+        static_cast<std::uint32_t>(DXGI_FORMAT_R32_FLOAT);
+    impl_->options.hudLessBufferFormat =
+        static_cast<std::uint32_t>(DXGI_FORMAT_R8G8B8A8_UNORM);
+    impl_->options.uiBufferFormat =
+        static_cast<std::uint32_t>(DXGI_FORMAT_R8G8B8A8_UNORM);
+    impl_->options.onErrorCallback = &OnDlssgApiError;
+
+    auto mode = static_cast<std::uint32_t>(impl_->options.mode);
+    auto frames = impl_->options.numFramesToGenerate;
+    auto& transfusion = nrfusion::DlssgTransfusion::Instance();
+    transfusion.SetControlMode(nrfusion::MfgControlMode::FollowGame);
+    transfusion.ProcessSetOptions(mode, frames);
+    impl_->options.mode = static_cast<sl::DLSSGMode>(mode);
+    impl_->options.numFramesToGenerate = frames;
+
+    auto result =
+        impl_->setDlssgOptions(impl_->viewport, impl_->options);
+    if (result != sl::Result::eOk) {
+        impl_->status = ResultText("slDLSSGSetOptions", result);
+        return false;
+    }
+    sl::DLSSGState state{};
+    result = impl_->getDlssgState(
+        impl_->viewport, state, &impl_->options);
+    if (result == sl::Result::eOk) {
+        impl_->reportedMax = state.numFramesToGenerateMax;
+        auto exposed = state.numFramesToGenerateMax;
+        transfusion.ProcessGetState(exposed);
+        impl_->reportedMax = std::max(impl_->reportedMax, exposed);
+        impl_->lastDlssgStatus =
+            static_cast<std::uint32_t>(state.status);
+    }
+
+    ApplyFocusHooks();
+    impl_->ready = true;
+    impl_->status = "DLSS-G configured";
+    return true;
+#endif
+}
+

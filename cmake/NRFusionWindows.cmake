@@ -232,13 +232,26 @@ add_executable(nrfusion_harness_3d
         target_link_libraries(nrfusion_requiem_viewer PRIVATE d3d11 dxgi d3dcompiler windowscodecs ole32)
     endif()
 
+    add_executable(nrfusion_mfg_real_module_probe
+        tools/mfg_real_module_probe.cpp)
+    target_link_libraries(nrfusion_mfg_real_module_probe PRIVATE nrfusion_core)
+    target_include_directories(nrfusion_mfg_real_module_probe PRIVATE include)
+
     if (EXISTS "${CMAKE_CURRENT_SOURCE_DIR}/tools/requiem_game/main.cpp")
         add_executable(nrfusion_requiem_game tools/requiem_game/main.cpp
                                             tools/requiem_game/ngx_dlss.cpp
-                                            tools/requiem_game/image.cpp)
+                                            tools/requiem_game/image.cpp
+                                            tools/requiem_game/streamline_mfg.cpp)
         # windowscodecs and ole32 decode the reference frames, as the original linked them too.
-        target_link_libraries(nrfusion_requiem_game PRIVATE d3d12 dxgi d3dcompiler windowscodecs ole32)
+        target_link_libraries(nrfusion_requiem_game PRIVATE
+            nrfusion_core d3d12 dxgi d3dcompiler windowscodecs ole32)
         target_include_directories(nrfusion_requiem_game PRIVATE include)
+        if (NRFUSION_STREAMLINE_INCLUDE)
+            target_include_directories(nrfusion_requiem_game PRIVATE
+                "${NRFUSION_STREAMLINE_INCLUDE}")
+            target_compile_definitions(nrfusion_requiem_game PRIVATE
+                NRFUSION_REQUIEM_STREAMLINE=1)
+        endif()
         add_custom_command(TARGET nrfusion_requiem_game POST_BUILD
             COMMAND ${CMAKE_COMMAND} -E copy_directory
                     "${CMAKE_CURRENT_SOURCE_DIR}/tools/requiem_game/assets"

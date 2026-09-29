@@ -19,6 +19,13 @@
             g_openMenu = true;
             g_requireNrfusionProxy = true;
         }
+        else if (argument == "--mfg" && i + 1 < argc) {
+            g_mfgMultiplier = static_cast<std::uint32_t>(ParseCount(argv[++i]));
+            if (g_mfgMultiplier < 2 || g_mfgMultiplier > 6)
+                throw std::runtime_error("--mfg must be between 2 and 6");
+        }
+        else if (argument == "--require-mfg")
+            g_requireMfg = true;
         else if (argument == "--nr-kernels" && i + 1 < argc) {
             g_kernelCsv = argv[++i];
             g_requireNr = true;
@@ -44,6 +51,8 @@
 
     if (g_fixedScene && g_deterministicMotion)
         throw std::runtime_error("Choose fixed scene or deterministic motion");
+    if (g_requireMfg && g_mfgMultiplier < 2)
+        throw std::runtime_error("--require-mfg requires --mfg <2..6>");
     if ((g_width != 1280 || g_height != 720) && (g_width != 1920 || g_height != 1080)) {
         std::cerr << "Supported output sizes: 1280x720, 1920x1080" << std::endl;
         return 2;

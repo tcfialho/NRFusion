@@ -1,3 +1,55 @@
+    const auto setDpiContext = reinterpret_cast<BOOL(WINAPI*)(DPI_AWARENESS_CONTEXT)>(
+        GetProcAddress(GetModuleHandleW(L"user32.dll"), "SetProcessDpiAwarenessContext"));
+    if (setDpiContext) {
+        const BOOL dpiOk = setDpiContext(DPI_AWARENESS_CONTEXT_PER_MONITOR_AWARE_V2);
+        std::cout << "[DPI] SetProcessDpiAwarenessContext: " << (dpiOk ? "OK" : "FAIL")
+                  << " (err=" << GetLastError() << ")" << std::endl;
+    }
+    HDESK inputDesk = OpenInputDesktop(0, FALSE, GENERIC_ALL);
+    if (inputDesk) {
+        const BOOL deskOk = SetThreadDesktop(inputDesk);
+        std::cout << "[DESK] SetThreadDesktop: " << (deskOk ? "OK" : "FAIL")
+                  << " (err=" << GetLastError() << ")" << std::endl;
+    }
+
+    auto EnsureWindowFocus = [](HWND hwnd) -> bool {
+        if (!hwnd || !IsWindow(hwnd)) return false;
+        DWORD fgPid = 0;
+        HWND fgWnd = GetForegroundWindow();
+        if (fgWnd) GetWindowThreadProcessId(fgWnd, &fgPid);
+        if (fgPid == GetCurrentProcessId()) return true;
+
+        const DWORD currentThreadId = GetCurrentThreadId();
+        const DWORD fgThreadId = fgWnd ? GetWindowThreadProcessId(fgWnd, nullptr) : 0;
+        if (fgThreadId && fgThreadId != currentThreadId) {
+            AttachThreadInput(currentThreadId, fgThreadId, TRUE);
+        }
+
+        keybd_event(VK_MENU, 0, 0, 0);
+        keybd_event(VK_MENU, 0, KEYEVENTF_KEYUP, 0);
+
+        ShowWindow(hwnd, SW_RESTORE);
+        SetWindowPos(hwnd, HWND_TOPMOST, 0, 0, 0, 0, SWP_NOMOVE | SWP_NOSIZE | SWP_SHOWWINDOW);
+        BringWindowToTop(hwnd);
+        SetForegroundWindow(hwnd);
+        SetActiveWindow(hwnd);
+        SetFocus(hwnd);
+
+        if (fgThreadId && fgThreadId != currentThreadId) {
+            AttachThreadInput(currentThreadId, fgThreadId, FALSE);
+        }
+
+        MSG msg{};
+        while (PeekMessageW(&msg, nullptr, 0, 0, PM_REMOVE)) {
+            TranslateMessage(&msg);
+            DispatchMessageW(&msg);
+        }
+
+        fgWnd = GetForegroundWindow();
+        if (fgWnd) GetWindowThreadProcessId(fgWnd, &fgPid);
+        return (fgPid == GetCurrentProcessId());
+    };
+
     WNDCLASSEXW windowClass{};
     windowClass.cbSize = sizeof(windowClass);
     windowClass.lpfnWndProc = WindowProc;
@@ -19,22 +71,179 @@
     }
     ShowWindow(g_hwnd, SW_SHOW);
 
+    HMODULE standaloneProxy = nullptr;
+    if (g_requireNrfusionProxy || g_mfgMultiplier >= 2) {
+        wchar_t proxyPath[MAX_PATH]{};
+        GetModuleFileNameW(nullptr, proxyPath, MAX_PATH);
+        if (wchar_t* slash = wcsrchr(proxyPath, L'\\'))
+            wcscpy_s(slash + 1, MAX_PATH - (slash + 1 - proxyPath), L"version.dll");
+        standaloneProxy = LoadLibraryW(proxyPath);
+        if (!standaloneProxy) {
+            std::cerr << "[ERRO] standalone version.dll nao carregou." << std::endl;
+            return 1;
+        }
+        using EnsureRuntimeFn = void(__cdecl*)();
+        const auto ensureRuntime = reinterpret_cast<EnsureRuntimeFn>(
+            GetProcAddress(standaloneProxy, "NRFusion_EnsureRuntime"));
+        if (ensureRuntime) ensureRuntime();
+    }
+
+    requiem::StreamlineMfg mfg;
+    if (!mfg.Initialize(g_mfgMultiplier, g_requireMfg)) {
+        std::cerr << "[MFG] " << mfg.Status() << std::endl;
+        if (g_requireMfg) return 1;
+    }
+    mfg.SetWindow(g_hwnd);
+    if (g_mfgMultiplier > 2 && standaloneProxy) {
+        using MfgFlagFn = int(__cdecl*)();
+        using MfgMaxFn = unsigned int(__cdecl*)();
+        const auto observed = reinterpret_cast<MfgFlagFn>(
+            GetProcAddress(standaloneProxy, "NRFusion_MfgModuleObserved"));
+        const auto qualified = reinterpret_cast<MfgFlagFn>(
+            GetProcAddress(standaloneProxy, "NRFusion_MfgPatchQualified"));
+        const auto unlockedMax = reinterpret_cast<MfgMaxFn>(
+            GetProcAddress(standaloneProxy, "NRFusion_MfgUnlockedMax"));
+        for (unsigned attempt = 0;
+             attempt < 2000 && qualified && !qualified(); ++attempt)
+            Sleep(1);
+        if (!observed || !qualified || !unlockedMax ||
+            !observed() || !qualified() ||
+            unlockedMax() < g_mfgMultiplier - 1) {
+            using ReasonFn = const char*(__cdecl*)();
+            const auto reasonFn = reinterpret_cast<ReasonFn>(
+                GetProcAddress(standaloneProxy, "NRFusion_MfgFailureReason"));
+            std::cerr << "[ERRO] proxy NRFusion nao qualificou late-load DLSS-G: "
+                      << "observed=" << (observed ? observed() : -1)
+                      << " qualified=" << (qualified ? qualified() : -1)
+                      << " unlockedMax=" << (unlockedMax ? unlockedMax() : 0)
+                      << " reason=" << (reasonFn ? reasonFn() : "none")
+                      << std::endl;
+            return 1;
+        }
+    }
+
     if (g_debugLayer) {
         ComPtr<ID3D12Debug> debug;
         Check(D3D12GetDebugInterface(IID_PPV_ARGS(&debug)), "D3D12 debug layer unavailable");
         debug->EnableDebugLayer();
     }
+
+    ComPtr<IDXGIFactory4> nativeFactory;
+    Check(CreateDXGIFactory2(0, IID_PPV_ARGS(&nativeFactory)), "CreateDXGIFactory2");
+
+    ComPtr<IDXGIAdapter1> selectedAdapter;
+    if (mfg.Requested()) {
+        ComPtr<IDXGIFactory6> factory6;
+        if (SUCCEEDED(nativeFactory.As(&factory6))) {
+            for (UINT i = 0; ; ++i) {
+                ComPtr<IDXGIAdapter1> candidate;
+                if (factory6->EnumAdapterByGpuPreference(
+                        i, DXGI_GPU_PREFERENCE_HIGH_PERFORMANCE,
+                        IID_PPV_ARGS(&candidate)) == DXGI_ERROR_NOT_FOUND) break;
+                DXGI_ADAPTER_DESC1 desc{};
+                candidate->GetDesc1(&desc);
+                if (desc.VendorId == 0x10DE &&
+                    SUCCEEDED(D3D12CreateDevice(
+                        candidate.Get(), D3D_FEATURE_LEVEL_12_0,
+                        __uuidof(ID3D12Device), nullptr))) {
+                    selectedAdapter = candidate;
+                    char descUtf8[256] = {};
+                    WideCharToMultiByte(CP_UTF8, 0, desc.Description, -1, descUtf8, sizeof(descUtf8), nullptr, nullptr);
+                    std::cout << "[MFG] adapter: " << descUtf8 << std::endl;
+                    break;
+                }
+            }
+        }
+    }
+
+    ComPtr<ID3D12Device> nativeDevice;
+    Check(D3D12CreateDevice(selectedAdapter.Get(), D3D_FEATURE_LEVEL_12_0,
+                            IID_PPV_ARGS(&nativeDevice)), "D3D12CreateDevice");
+    ComPtr<IDXGIOutput> desktopOutput;
+    if (selectedAdapter) {
+        selectedAdapter->EnumOutputs(0, &desktopOutput);
+    }
+    if (!desktopOutput && nativeFactory) {
+        for (UINT a = 0; ; ++a) {
+            ComPtr<IDXGIAdapter1> ad;
+            if (nativeFactory->EnumAdapters1(a, &ad) == DXGI_ERROR_NOT_FOUND) break;
+            ComPtr<IDXGIOutput> out;
+            if (SUCCEEDED(ad->EnumOutputs(0, &out))) {
+                DXGI_OUTPUT_DESC d{};
+                if (SUCCEEDED(out->GetDesc(&d)) && d.AttachedToDesktop) {
+                    desktopOutput = out;
+                    break;
+                }
+            }
+        }
+    }
+    if (desktopOutput) {
+        DXGI_OUTPUT_DESC outputDesc{};
+        if (SUCCEEDED(desktopOutput->GetDesc(&outputDesc)) && outputDesc.AttachedToDesktop) {
+            const RECT area = outputDesc.DesktopCoordinates;
+            const int monWidth = area.right - area.left;
+            const int monHeight = area.bottom - area.top;
+            const int posX = area.left + (std::max)(0, (monWidth - static_cast<int>(width)) / 2);
+            const int posY = area.top + (std::max)(0, (monHeight - static_cast<int>(height)) / 2);
+            std::cout << "[MFG] desktop bounds: (" << area.left << "," << area.top << ")-("
+                      << area.right << "," << area.bottom << ") size " << monWidth << "x" << monHeight
+                      << " -> window pos: (" << posX << "," << posY << ")" << std::endl;
+            SetWindowLongPtrW(g_hwnd, GWL_STYLE, WS_POPUP | WS_VISIBLE);
+            SetWindowPos(
+                g_hwnd, HWND_TOPMOST, posX, posY,
+                width, height,
+                SWP_FRAMECHANGED | SWP_SHOWWINDOW);
+            char outUtf8[256] = {};
+            WideCharToMultiByte(CP_UTF8, 0, outputDesc.DeviceName, -1, outUtf8, sizeof(outUtf8), nullptr, nullptr);
+            std::cout << "[MFG] output: " << outUtf8 << std::endl;
+        }
+    }
+
+    bool isFocused = false;
+    for (int attempt = 0; attempt < 50; ++attempt) {
+        if (EnsureWindowFocus(g_hwnd)) {
+            isFocused = true;
+            break;
+        }
+        Sleep(10);
+    }
+    std::cout << "[MFG] window focus: " << (isFocused ? "YES" : "NO") << std::endl;
+    ID3D12Device* deviceApi = nativeDevice.Get();
+    if (mfg.Requested() && !mfg.SetDevice(nativeDevice.Get(), &deviceApi)) {
+        std::cerr << "[MFG] " << mfg.Status() << std::endl;
+        return 1;
+    }
+    ComPtr<ID3D12Device> proxyDevice;
+    if (deviceApi == nativeDevice.Get()) proxyDevice = nativeDevice;
+    else proxyDevice.Attach(deviceApi);
+    // Manual Streamline hooking: native interfaces everywhere except
+    // explicitly hooked APIs. Only CreateCommandQueue uses the proxy device.
+    ComPtr<ID3D12Device> device = nativeDevice;
+
+    IDXGIFactory4* factoryApi = nativeFactory.Get();
+    if (mfg.Requested() && !mfg.UpgradeFactory(nativeFactory.Get(), &factoryApi)) {
+        std::cerr << "[MFG] " << mfg.Status() << std::endl;
+        return 1;
+    }
     ComPtr<IDXGIFactory4> factory;
-    Check(CreateDXGIFactory2(0, IID_PPV_ARGS(&factory)), "CreateDXGIFactory2");
-    ComPtr<ID3D12Device> device;
-    Check(D3D12CreateDevice(nullptr, D3D_FEATURE_LEVEL_12_0, IID_PPV_ARGS(&device)), "D3D12CreateDevice");
+    if (factoryApi == nativeFactory.Get()) factory = nativeFactory;
+    else factory.Attach(factoryApi);
+
+    BOOL tearingSupported = FALSE;
+    ComPtr<IDXGIFactory5> factory5;
+    if (SUCCEEDED(nativeFactory.As(&factory5)))
+        factory5->CheckFeatureSupport(
+            DXGI_FEATURE_PRESENT_ALLOW_TEARING,
+            &tearingSupported, sizeof(tearingSupported));
+    const bool allowTearing = tearingSupported == TRUE;
+
     ComPtr<ID3D12InfoQueue> debugMessages;
-    if (g_debugLayer) Check(device.As(&debugMessages), "D3D12 info queue");
+    if (g_debugLayer) Check(nativeDevice.As(&debugMessages), "D3D12 info queue");
 
     D3D12_COMMAND_QUEUE_DESC queueDesc{};
     queueDesc.Type = D3D12_COMMAND_LIST_TYPE_DIRECT;
     ComPtr<ID3D12CommandQueue> queue;
-    Check(device->CreateCommandQueue(&queueDesc, IID_PPV_ARGS(&queue)), "CreateCommandQueue");
+    Check(proxyDevice->CreateCommandQueue(&queueDesc, IID_PPV_ARGS(&queue)), "CreateCommandQueue");
 
     DXGI_SWAP_CHAIN_DESC1 swapDesc{};
     swapDesc.BufferCount = kBackBuffers;
@@ -44,14 +253,20 @@
     swapDesc.BufferUsage = DXGI_USAGE_RENDER_TARGET_OUTPUT;
     swapDesc.SwapEffect = DXGI_SWAP_EFFECT_FLIP_DISCARD;
     swapDesc.SampleDesc.Count = 1;
+    swapDesc.Flags = allowTearing ? DXGI_SWAP_CHAIN_FLAG_ALLOW_TEARING : 0;
     ComPtr<IDXGISwapChain1> swapChain1;
     Check(factory->CreateSwapChainForHwnd(queue.Get(), g_hwnd, &swapDesc, nullptr, nullptr, &swapChain1),
           "CreateSwapChainForHwnd");
     ComPtr<IDXGISwapChain3> swapChain;
     Check(swapChain1.As(&swapChain), "IDXGISwapChain3");
+    if (mfg.Requested() &&
+        !mfg.Configure(width, height, inputWidth, inputHeight, kBackBuffers)) {
+        std::cerr << "[MFG] " << mfg.Status() << std::endl;
+        return 1;
+    }
 
     D3D12_DESCRIPTOR_HEAP_DESC rtvHeapDesc{};
-    rtvHeapDesc.NumDescriptors = kBackBuffers + 3;
+    rtvHeapDesc.NumDescriptors = kBackBuffers + 4;
     rtvHeapDesc.Type = D3D12_DESCRIPTOR_HEAP_TYPE_RTV;
     ComPtr<ID3D12DescriptorHeap> rtvHeap;
     Check(device->CreateDescriptorHeap(&rtvHeapDesc, IID_PPV_ARGS(&rtvHeap)), "CreateDescriptorHeap rtv");
@@ -81,6 +296,8 @@
         D3D12_RESOURCE_FLAG_ALLOW_RENDER_TARGET, D3D12_RESOURCE_STATE_RENDER_TARGET);
     auto calculated = requiem::MakeTexture(device.Get(), width, height, DXGI_FORMAT_R8G8B8A8_UNORM,
         D3D12_RESOURCE_FLAG_ALLOW_UNORDERED_ACCESS, D3D12_RESOURCE_STATE_UNORDERED_ACCESS);
+    auto ui = requiem::MakeTexture(device.Get(), width, height, DXGI_FORMAT_R8G8B8A8_UNORM,
+        D3D12_RESOURCE_FLAG_ALLOW_RENDER_TARGET, D3D12_RESOURCE_STATE_RENDER_TARGET);
     D3D12_CPU_DESCRIPTOR_HANDLE inputRtvs[3];
     ID3D12Resource* inputs[] = {colour.Get(), depth.Get(), motion.Get()};
     for (UINT slot = 0; slot < 3; ++slot) {
@@ -88,6 +305,9 @@
         inputRtvs[slot].ptr += static_cast<SIZE_T>(kBackBuffers + slot) * rtvSize;
         device->CreateRenderTargetView(inputs[slot], nullptr, inputRtvs[slot]);
     }
+    D3D12_CPU_DESCRIPTOR_HANDLE uiRtv = rtvHeap->GetCPUDescriptorHandleForHeapStart();
+    uiRtv.ptr += static_cast<SIZE_T>(kBackBuffers + 3) * rtvSize;
+    device->CreateRenderTargetView(ui.Get(), nullptr, uiRtv);
     requiem::EvaluationTimer evaluationTimer(device.Get(), queue.Get());
     std::unique_ptr<requiem::OutputCapture> capture;
     if (!g_capture.empty()) capture = std::make_unique<requiem::OutputCapture>(device.Get(), calculated.Get());
@@ -103,6 +323,20 @@
     HANDLE fenceEvent = CreateEventW(nullptr, FALSE, FALSE, nullptr);
     if (!fenceEvent) throw std::runtime_error("Cannot create GPU fence event");
     UINT64 fenceValue = 0;
+    auto DrainDebugMessages = [&] {
+        if (!debugMessages) return;
+        const auto count = debugMessages->GetNumStoredMessages();
+        for (UINT64 index = 0; index < count; ++index) {
+            SIZE_T bytes = 0;
+            Check(debugMessages->GetMessage(index, nullptr, &bytes), "debug message size");
+            std::vector<unsigned char> storage(bytes);
+            auto* message = reinterpret_cast<D3D12_MESSAGE*>(storage.data());
+            Check(debugMessages->GetMessage(index, message, &bytes), "debug message");
+            if (message->Severity <= D3D12_MESSAGE_SEVERITY_WARNING)
+                std::cerr << "[D3D12] " << message->pDescription << std::endl;
+        }
+        debugMessages->ClearStoredMessages();
+    };
     auto WaitForGpu = [&] {
         Check(queue->Signal(fence.Get(), ++fenceValue), "Signal");
         if (fence->GetCompletedValue() < fenceValue) {
@@ -111,184 +345,7 @@
                 throw std::runtime_error("GPU fence timed out or failed");
         }
         Check(device->GetDeviceRemovedReason(), "device status after fence");
-        if (debugMessages) {
-            const auto count = debugMessages->GetNumStoredMessages();
-            for (UINT64 index = 0; index < count; ++index) {
-                SIZE_T bytes = 0;
-                Check(debugMessages->GetMessage(index, nullptr, &bytes), "debug message size");
-                std::vector<unsigned char> storage(bytes);
-                auto* message = reinterpret_cast<D3D12_MESSAGE*>(storage.data());
-                Check(debugMessages->GetMessage(index, message, &bytes), "debug message");
-                if (message->Severity <= D3D12_MESSAGE_SEVERITY_ERROR)
-                    throw std::runtime_error(message->pDescription);
-            }
-            debugMessages->ClearStoredMessages();
-        }
+        DrainDebugMessages();
     };
 
-    // The reference frames, decoded on the open command list and uploaded before anything draws.
-    ComPtr<ID3D12Resource> uploadOff, uploadOn;
-    requiem::Image referenceOff = requiem::LoadImage(
-        device.Get(), commands.Get(), requiem::FindAsset(L"nvidia-dlss5-requiem-off.jpeg").c_str(), uploadOff);
-    requiem::Image referenceOn = requiem::LoadImage(
-        device.Get(), commands.Get(), requiem::FindAsset(L"nvidia-dlss5-requiem-on.jpeg").c_str(), uploadOn);
-    Check(commands->Close(), "close upload");
-    ID3D12CommandList* uploadLists[] = {commands.Get()};
-    queue->ExecuteCommandLists(1, uploadLists);
-    WaitForGpu();
-
-    for (int i = 0; i < 4; ++i) {
-        ID3D12Resource* texture = i == 0 ? referenceOff.texture.Get() : i == 1 ? referenceOn.texture.Get() : i == 2 ? calculated.Get() : colour.Get();
-        if (!texture) continue;
-        D3D12_SHADER_RESOURCE_VIEW_DESC view{};
-        view.Format = DXGI_FORMAT_R8G8B8A8_UNORM;
-        view.ViewDimension = D3D12_SRV_DIMENSION_TEXTURE2D;
-        view.Shader4ComponentMapping = D3D12_DEFAULT_SHADER_4_COMPONENT_MAPPING;
-        view.Texture2D.MipLevels = 1;
-        D3D12_CPU_DESCRIPTOR_HANDLE handle = srvHeap->GetCPUDescriptorHandleForHeapStart();
-        handle.ptr += static_cast<SIZE_T>(i) * srvSize;
-        device->CreateShaderResourceView(texture, &view, handle);
-    }
-    std::cout << "[IMG] referencia desligada: " << referenceOff.status;
-    if (referenceOff.Valid()) std::cout << " (" << referenceOff.width << "x" << referenceOff.height << ")";
-    std::cout << std::endl;
-    std::cout << "[IMG] referencia ligada:    " << referenceOn.status << std::endl;
-    if (!referenceOff.Valid() || !referenceOn.Valid()) {
-        std::cout << "[IMG] Sem a referencia nao ha o que comparar. Esperava encontrar as imagens"
-                  << " em assets/ ao lado do executavel." << std::endl;
-        return 1;
-    }
-
-    ComPtr<ID3DBlob> vertexShader, pixelShader, errors;
-    if (FAILED(D3DCompile(kShader, std::strlen(kShader), nullptr, nullptr, nullptr, "VSMain",
-                          "vs_5_1", 0, 0, &vertexShader, &errors))) {
-        std::cout << "[ERRO] shader de vertice: "
-                  << (errors ? (const char*) errors->GetBufferPointer() : "") << std::endl;
-        return 1;
-    }
-    if (FAILED(D3DCompile(kShader, std::strlen(kShader), nullptr, nullptr, nullptr, "PSMain",
-                          "ps_5_1", 0, 0, &pixelShader, &errors))) {
-        std::cout << "[ERRO] shader de pixel: "
-                  << (errors ? (const char*) errors->GetBufferPointer() : "") << std::endl;
-        return 1;
-    }
-
-    D3D12_DESCRIPTOR_RANGE range{};
-    range.RangeType = D3D12_DESCRIPTOR_RANGE_TYPE_SRV;
-    range.NumDescriptors = 1;
-    D3D12_ROOT_PARAMETER rootParameters[2]{};
-    rootParameters[0].ParameterType = D3D12_ROOT_PARAMETER_TYPE_DESCRIPTOR_TABLE;
-    rootParameters[0].DescriptorTable.NumDescriptorRanges = 1;
-    rootParameters[0].DescriptorTable.pDescriptorRanges = &range;
-    rootParameters[0].ShaderVisibility = D3D12_SHADER_VISIBILITY_PIXEL;
-    rootParameters[1].ParameterType = D3D12_ROOT_PARAMETER_TYPE_32BIT_CONSTANTS;
-    rootParameters[1].Constants.Num32BitValues = 4;
-    rootParameters[1].ShaderVisibility = D3D12_SHADER_VISIBILITY_VERTEX;
-
-    D3D12_STATIC_SAMPLER_DESC sampler{};
-    sampler.Filter = D3D12_FILTER_MIN_MAG_MIP_LINEAR;
-    sampler.AddressU = sampler.AddressV = sampler.AddressW = D3D12_TEXTURE_ADDRESS_MODE_CLAMP;
-    sampler.ShaderVisibility = D3D12_SHADER_VISIBILITY_PIXEL;
-
-    D3D12_ROOT_SIGNATURE_DESC rootDesc{};
-    rootDesc.NumParameters = 2;
-    rootDesc.pParameters = rootParameters;
-    rootDesc.NumStaticSamplers = 1;
-    rootDesc.pStaticSamplers = &sampler;
-    rootDesc.Flags = D3D12_ROOT_SIGNATURE_FLAG_ALLOW_INPUT_ASSEMBLER_INPUT_LAYOUT;
-    ComPtr<ID3DBlob> serialized;
-    Check(D3D12SerializeRootSignature(&rootDesc, D3D_ROOT_SIGNATURE_VERSION_1, &serialized, &errors),
-          "D3D12SerializeRootSignature");
-    ComPtr<ID3D12RootSignature> rootSignature;
-    Check(device->CreateRootSignature(0, serialized->GetBufferPointer(), serialized->GetBufferSize(),
-                                      IID_PPV_ARGS(&rootSignature)), "CreateRootSignature");
-
-    D3D12_GRAPHICS_PIPELINE_STATE_DESC pipelineDesc{};
-    pipelineDesc.pRootSignature = rootSignature.Get();
-    pipelineDesc.VS = {vertexShader->GetBufferPointer(), vertexShader->GetBufferSize()};
-    pipelineDesc.PS = {pixelShader->GetBufferPointer(), pixelShader->GetBufferSize()};
-    pipelineDesc.RasterizerState.FillMode = D3D12_FILL_MODE_SOLID;
-    pipelineDesc.RasterizerState.CullMode = D3D12_CULL_MODE_NONE;
-    pipelineDesc.BlendState.RenderTarget[0].RenderTargetWriteMask = D3D12_COLOR_WRITE_ENABLE_ALL;
-    pipelineDesc.SampleMask = UINT_MAX;
-    pipelineDesc.PrimitiveTopologyType = D3D12_PRIMITIVE_TOPOLOGY_TYPE_TRIANGLE;
-    pipelineDesc.NumRenderTargets = 1;
-    pipelineDesc.RTVFormats[0] = DXGI_FORMAT_R8G8B8A8_UNORM;
-    pipelineDesc.SampleDesc.Count = 1;
-    ComPtr<ID3D12PipelineState> pipeline;
-    Check(device->CreateGraphicsPipelineState(&pipelineDesc, IID_PPV_ARGS(&pipeline)),
-          "CreateGraphicsPipelineState");
-
-    // Request the SR feature from NGX/the proxy. NR routing is owned by the host.
-    requiem::Dlss dlss;
-    bool dlssActive = false;
-    if (dlss.Load()) {
-        wchar_t here[MAX_PATH]{};
-        GetModuleFileNameW(nullptr, here, MAX_PATH);
-        if (wchar_t* slash = wcsrchr(here, L'\\')) *slash = 0;
-        if (dlss.Init(device.Get(), here)) {
-            Check(allocator->Reset(), "allocator reset");
-            Check(commands->Reset(allocator.Get(), nullptr), "command reset");
-            dlssActive = dlss.Create(commands.Get(), inputWidth, inputHeight, width, height);
-            Check(commands->Close(), "close");
-            ID3D12CommandList* setup[] = {commands.Get()};
-            queue->ExecuteCommandLists(1, setup);
-            WaitForGpu();
-        }
-    }
-    std::cout << "[NGX] " << dlss.Status();
-    if (!dlss.Library().empty()) std::cout << "  (" << dlss.Library() << ")";
-    std::cout << std::endl;
-    if (g_requireNrfusionProxy && !dlss.IsNRFusionProxy()) {
-        std::cerr << "[ERRO] fluxo NGX D3D12 nao passou pelo proxy NRFusion." << std::endl;
-        return 1;
-    }
-    if (!dlssActive) {
-        std::cout << "[NGX] Sem upscaler: o passe neural nao roda e o perfilador nao tem o que medir."
-                  << std::endl;
-        return 1;
-    }
-    using MenuSetOpenFn = void(__cdecl*)(int);
-    using MenuDrawCountFn = unsigned long long(__cdecl*)();
-    using MenuStateFn = int(__cdecl*)();
-
-    nrfusion::BeginNrDiagnosticFrame beginNrFrame = nullptr;
-    nrfusion::ReadNrDiagnosticFrame readNrFrame = nullptr;
-    MenuSetOpenFn menuSetOpen = nullptr;
-    MenuDrawCountFn menuDrawCount = nullptr;
-    MenuStateFn menuIsOpen = nullptr;
-    MenuStateFn menuIsInFrame = nullptr;
-    const auto host = dlss.IsNRFusionProxy()
-        ? GetModuleHandleA(dlss.Library().c_str()) : nullptr;
-
-    if (g_requireNr) {
-        beginNrFrame = reinterpret_cast<nrfusion::BeginNrDiagnosticFrame>(
-            GetProcAddress(host, "NRFusion_BeginNrDiagnosticFrame"));
-        readNrFrame = reinterpret_cast<nrfusion::ReadNrDiagnosticFrame>(
-            GetProcAddress(host, "NRFusion_ReadNrDiagnosticFrame"));
-        if (!beginNrFrame || !readNrFrame)
-            throw std::runtime_error("Host lacks the completed-frame NR diagnostic API");
-    }
-    if (g_openMenu || g_requireMenu) {
-        menuSetOpen = reinterpret_cast<MenuSetOpenFn>(
-            GetProcAddress(host, "NRFusion_SetMenuOpen"));
-        menuDrawCount = reinterpret_cast<MenuDrawCountFn>(
-            GetProcAddress(host, "NRFusion_MenuGpuDrawCount"));
-        menuIsOpen = reinterpret_cast<MenuStateFn>(
-            GetProcAddress(host, "NRFusion_MenuIsOpen"));
-        menuIsInFrame = reinterpret_cast<MenuStateFn>(
-            GetProcAddress(host, "NRFusion_MenuIsInFrame"));
-        if (g_requireMenu &&
-            (!menuSetOpen || !menuDrawCount || !menuIsOpen || !menuIsInFrame))
-            throw std::runtime_error("Host lacks the in-frame menu diagnostic API");
-    }
-
-    std::cout << "[OK] Direct3D 12 Testbed inicializado com sucesso!" << std::endl;
-    std::cout << "[OK] Pressione [INSERT] a qualquer momento para abrir o menu do NRFusion." << std::endl;
-    std::cout << "[OK] Pressione [TAB] para alternar: entrada, resultado calculado, referencia NVIDIA." << std::endl;
-    std::cout << "[OK] Pressione [ESC] para fechar." << std::endl;
-    if (g_fixedScene)
-        std::cout << "[TEST] Fixed-scene mode: camera and lighting are deterministic." << std::endl;
-    if (g_deterministicMotion)
-        std::cout << "[TEST] Deterministic-motion mode: animation follows rendered-frame number." << std::endl;
-
+#include "requiem_run_setup_post.inc"

@@ -13,6 +13,9 @@
             DispatchMessageW(&msg);
         }
         if (!g_running) break;
+        if (mfg.Requested()) {
+            EnsureWindowFocus(g_hwnd);
+        }
 
         auto curTime = std::chrono::high_resolution_clock::now();
         float totalTime = g_fixedScene
@@ -22,6 +25,15 @@
 
         Check(allocator->Reset(), "allocator reset");
         Check(commands->Reset(allocator.Get(), pipeline.Get()), "command reset");
+        if (simulationFrame != 0) {
+            for (auto* guide : {depth.Get(), motion.Get()})
+                requiem::Transition(commands.Get(), guide,
+                                    D3D12_RESOURCE_STATE_NON_PIXEL_SHADER_RESOURCE,
+                                    D3D12_RESOURCE_STATE_RENDER_TARGET);
+            requiem::Transition(commands.Get(), ui.Get(),
+                                D3D12_RESOURCE_STATE_NON_PIXEL_SHADER_RESOURCE,
+                                D3D12_RESOURCE_STATE_RENDER_TARGET);
+        }
 
         const UINT index = swapChain->GetCurrentBackBufferIndex();
         D3D12_RESOURCE_BARRIER barrier{};
@@ -74,9 +86,20 @@
         previous = constants;
         commands->ClearRenderTargetView(inputRtvs[1], depthValue, 0, nullptr);
         commands->ClearRenderTargetView(inputRtvs[2], motionValue, 0, nullptr);
+        const float uiClear[4] = {0, 0, 0, 0};
+        commands->ClearRenderTargetView(uiRtv, uiClear, 0, nullptr);
+        requiem::Transition(commands.Get(), ui.Get(), D3D12_RESOURCE_STATE_RENDER_TARGET,
+                            D3D12_RESOURCE_STATE_NON_PIXEL_SHADER_RESOURCE);
         for (auto* input : inputs)
             requiem::Transition(commands.Get(), input, D3D12_RESOURCE_STATE_RENDER_TARGET,
                                 D3D12_RESOURCE_STATE_NON_PIXEL_SHADER_RESOURCE);
+        if (mfg.Requested() &&
+            !mfg.BeginFrame(static_cast<std::uint32_t>(simulationFrame),
+                            commands.Get(), depth.Get(), motion.Get(),
+                            inputWidth, inputHeight, simulationFrame == 0)) {
+            std::cerr << "[MFG] " << mfg.Status() << std::endl;
+            return 1;
+        }
         if (g_openMenu && menuSetOpen && menuIsOpen && !menuIsOpen())
             menuSetOpen(1);
         evaluationTimer.Begin(commands.Get());
@@ -86,6 +109,11 @@
         if (!dlss.Evaluate(commands.Get(), colour.Get(), calculated.Get(), depth.Get(), motion.Get(),
                            0, 0, simulationFrame == 0)) {
             std::cerr << "[ERRO] " << dlss.Status() << std::endl;
+            return 1;
+        }
+        if (mfg.Requested() &&
+            !mfg.TagHudless(commands.Get(), calculated.Get(), ui.Get(), width, height)) {
+            std::cerr << "[MFG] " << mfg.Status() << std::endl;
             return 1;
         }
         evaluationTimer.End(commands.Get());
@@ -116,18 +144,28 @@
                             D3D12_RESOURCE_STATE_UNORDERED_ACCESS);
         requiem::Transition(commands.Get(), colour.Get(), D3D12_RESOURCE_STATE_PIXEL_SHADER_RESOURCE,
                             D3D12_RESOURCE_STATE_RENDER_TARGET);
-        for (auto* guide : {depth.Get(), motion.Get()})
-            requiem::Transition(commands.Get(), guide, D3D12_RESOURCE_STATE_NON_PIXEL_SHADER_RESOURCE,
-                                D3D12_RESOURCE_STATE_RENDER_TARGET);
-
         barrier.Transition.StateBefore = D3D12_RESOURCE_STATE_RENDER_TARGET;
         barrier.Transition.StateAfter = D3D12_RESOURCE_STATE_PRESENT;
         commands->ResourceBarrier(1, &barrier);
+        mfg.SimulationEnd();
         Check(commands->Close(), "close");
 
         ID3D12CommandList* lists[] = {commands.Get()};
+        mfg.RenderSubmitStart();
         queue->ExecuteCommandLists(1, lists);
-        Check(swapChain->Present(0, 0), "Present");
+        mfg.RenderSubmitEnd();
+        mfg.PresentStart();
+        const UINT syncInterval = allowTearing ? 0u : 1u;
+        const UINT presentFlags = allowTearing ? DXGI_PRESENT_ALLOW_TEARING : 0u;
+        const HRESULT presentResult = swapChain->Present(syncInterval, presentFlags);
+        if (presentResult != S_OK) {
+            std::fprintf(stderr, "[PRESENT] frame=%llu hr=0x%08lX\n",
+                         static_cast<unsigned long long>(simulationFrame),
+                         static_cast<unsigned long>(presentResult));
+        }
+        DrainDebugMessages();
+        Check(presentResult, "Present");
+        mfg.PresentEnd();
         WaitForGpu();
 
         nrfusion::NrDiagnosticFrame nrFrame{};
@@ -195,7 +233,16 @@
                 throw std::runtime_error("DX12 menu created an external overlay window");
         }
     }
+    if (mfg.Requested()) {
+        std::cout << "[MFG] app_presents=" << mfg.AppPresents()
+                  << " actual_presents=" << mfg.ActualPresents()
+                  << " reported_max_generated=" << mfg.ReportedMaxGenerated()
+                  << " status=" << mfg.Status() << std::endl;
+        if (g_requireMfg && !mfg.GatePassed())
+            throw std::runtime_error("DLSS-G/MFG physical gate failed");
+    }
     if (dlssActive) dlss.Shutdown();
+    mfg.Shutdown();
     std::cout << "[OK] " << simulationFrame << " quadros renderizados." << std::endl;
     CloseHandle(fenceEvent);
     return 0;

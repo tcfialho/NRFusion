@@ -22,12 +22,15 @@
 #include <dxgi1_6.h>
 #include <d3dcompiler.h>
 #include <d3d12sdklayers.h>
+#include <dbghelp.h>
+#pragma comment(lib, "dbghelp.lib")
 
 #include <wrl/client.h>
 
 #include "image.hpp"
 #include "ngx_dlss.hpp"
 #include "frame_resources.hpp"
+#include "streamline_mfg.hpp"
 #include "nrfusion/NrDiagnosticsApi.hpp"
 #include <memory>
 #include <charconv>
@@ -68,6 +71,8 @@ bool g_requireNr = false;
 bool g_requireNrfusionProxy = false;
 bool g_openMenu = false;
 bool g_requireMenu = false;
+std::uint32_t g_mfgMultiplier = 0;
+bool g_requireMfg = false;
 std::uint64_t g_frameLimit = 0;
 
 LRESULT CALLBACK WindowProc(HWND hwnd, UINT message, WPARAM wparam, LPARAM lparam) {
@@ -141,6 +146,35 @@ int Run(int argc, char* argv[]) {
 }
 
 int main(int argc, char* argv[]) {
+    std::setvbuf(stdout, nullptr, _IONBF, 0);
+    std::setvbuf(stderr, nullptr, _IONBF, 0);
+    SetUnhandledExceptionFilter([](EXCEPTION_POINTERS* ep) -> LONG {
+        void* addr = ep->ExceptionRecord->ExceptionAddress;
+        HMODULE hMod = nullptr;
+        wchar_t modPath[MAX_PATH] = L"<unknown>";
+        uintptr_t offset = 0;
+        if (GetModuleHandleExW(GET_MODULE_HANDLE_EX_FLAG_FROM_ADDRESS | GET_MODULE_HANDLE_EX_FLAG_UNCHANGED_REFCOUNT,
+                               reinterpret_cast<LPCWSTR>(addr), &hMod) && hMod) {
+            GetModuleFileNameW(hMod, modPath, MAX_PATH);
+            offset = reinterpret_cast<uintptr_t>(addr) - reinterpret_cast<uintptr_t>(hMod);
+        }
+        std::fprintf(stderr, "[FATAL] Unhandled exception 0x%08lX at address %p (%ls + 0x%llX)\n",
+                     static_cast<unsigned long>(ep->ExceptionRecord->ExceptionCode),
+                     addr, modPath, static_cast<unsigned long long>(offset));
+        HANDLE hDump = CreateFileW(L"crash.dmp", GENERIC_WRITE, 0, nullptr, CREATE_ALWAYS, FILE_ATTRIBUTE_NORMAL, nullptr);
+        if (hDump != INVALID_HANDLE_VALUE) {
+            MINIDUMP_EXCEPTION_INFORMATION mei{};
+            mei.ThreadId = GetCurrentThreadId();
+            mei.ExceptionPointers = ep;
+            mei.ClientPointers = FALSE;
+            MiniDumpWriteDump(GetCurrentProcess(), GetCurrentProcessId(), hDump, MiniDumpNormal, &mei, nullptr, nullptr);
+            CloseHandle(hDump);
+            std::fprintf(stderr, "[FATAL] Wrote crash.dmp\n");
+        }
+        std::fflush(stderr);
+        std::fflush(stdout);
+        return EXCEPTION_CONTINUE_SEARCH;
+    });
     try { return Run(argc, argv); }
     catch (const std::exception& error) {
         std::cerr << "[ERRO] " << error.what() << std::endl;

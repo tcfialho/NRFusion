@@ -76,9 +76,9 @@ bool Dlss::Load() {
 
 bool Dlss::Init(ID3D12Device* device, const wchar_t* applicationPath) {
     if (!module_) return false;
-    // A published application identifier is not required for a local test, and borrowing one
-    // that belongs to a real game would be worse than using a plain local value.
-    if (init_(0x4E524653ull, applicationPath, device, nullptr, 0x15u) != kSuccess) {
+    // Use NVIDIA's public Streamline Sample id so NGX and Streamline share a valid
+    // test application identity without borrowing an id from a shipping title.
+    if (init_(231313132ull, applicationPath, device, nullptr, 0x15u) != kSuccess) {
         status_ = "NVSDK_NGX_D3D12_Init recusou";
         return false;
     }
