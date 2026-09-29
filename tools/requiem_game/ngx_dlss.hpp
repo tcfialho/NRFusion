@@ -79,6 +79,7 @@ public:
     bool Ready() const noexcept { return handle_ != nullptr; }
     const std::string& Status() const noexcept { return status_; }
     const std::string& Library() const noexcept { return library_; }
+    bool IsNRFusionProxy() const noexcept { return nrfusionProxy_; }
 
 private:
     using InitFn = int(__cdecl*)(unsigned long long, const wchar_t*, ID3D12Device*, const void*, unsigned int);
@@ -103,6 +104,8 @@ private:
     std::uint32_t renderWidth_ = 0, renderHeight_ = 0;
     std::string status_ = "nao carregado";
     std::string library_;
+    bool nrfusionProxy_ = false;
+    bool nrfusionProxySeen_ = false;
 };
 
 } // namespace requiem

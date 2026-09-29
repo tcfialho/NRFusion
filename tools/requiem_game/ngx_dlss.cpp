@@ -1,6 +1,7 @@
 #include "ngx_dlss.hpp"
 
 #include <array>
+#include <filesystem>
 
 namespace requiem {
 namespace {
@@ -20,24 +21,39 @@ T Symbol(HMODULE module, const char* name) {
     return reinterpret_cast<T>(reinterpret_cast<void*>(GetProcAddress(module, name)));
 }
 
+HMODULE LoadCandidate(const wchar_t* name) {
+    wchar_t exe[MAX_PATH]{};
+    if (GetModuleFileNameW(nullptr, exe, MAX_PATH) != 0) {
+        const auto local = std::filesystem::path(exe).parent_path() / name;
+        if (std::filesystem::is_regular_file(local)) {
+            if (HMODULE module = LoadLibraryW(local.c_str())) return module;
+        }
+    }
+    if (HMODULE module = GetModuleHandleW(name)) return module;
+    return LoadLibraryW(name);
+}
+
 } // namespace
 
 bool Dlss::Load() {
     for (const wchar_t* candidate : kCandidates) {
-        HMODULE module = GetModuleHandleW(candidate);
-        if (!module) module = LoadLibraryW(candidate);
+        HMODULE module = LoadCandidate(candidate);
         if (!module) continue;
-        // A module only counts if it actually answers for D3D12; several of the candidates
-        // exist for other reasons and would otherwise be accepted and then fail later.
+        const bool isNRFusion =
+            GetProcAddress(module, "NRFusion_Capture32_Connect") != nullptr;
+        nrfusionProxySeen_ = nrfusionProxySeen_ || isNRFusion;
         if (!Symbol<CreateFn>(module, "NVSDK_NGX_D3D12_CreateFeature")) continue;
         module_ = module;
+        nrfusionProxy_ = isNRFusion;
         char path[MAX_PATH]{};
         GetModuleFileNameA(module_, path, MAX_PATH);
         library_ = path;
         break;
     }
     if (!module_) {
-        status_ = "nenhuma biblioteca com os pontos de entrada NGX D3D12";
+        status_ = nrfusionProxySeen_
+            ? "proxy NRFusion carregado sem exports NGX D3D12"
+            : "nenhuma biblioteca com os pontos de entrada NGX D3D12";
         return false;
     }
 

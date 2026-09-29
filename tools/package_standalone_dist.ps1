@@ -154,6 +154,7 @@ if (Test-Path -LiteralPath $compatJson) {
 $requiemExe = Join-Path $BuildDir 'RequiemGame.exe'
 if (Test-Path -LiteralPath $requiemExe) {
     Copy-EnsureParent $requiemExe (Join-Path $dist 'RequiemGame\RequiemGame.exe')
+    Copy-EnsureParent $proxyDll (Join-Path $dist 'RequiemGame\version.dll')
     $assets = Join-Path $root 'tools\requiem_game\assets'
     if (Test-Path -LiteralPath $assets) {
         Copy-Item -LiteralPath $assets -Destination (Join-Path $dist 'RequiemGame\assets') -Recurse -Force

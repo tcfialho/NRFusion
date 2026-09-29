@@ -10,6 +10,8 @@
             g_debugLayer = true;
         else if (argument == "--require-nr")
             g_requireNr = true;
+        else if (argument == "--require-nrfusion-proxy")
+            g_requireNrfusionProxy = true;
         else if (argument == "--nr-kernels" && i + 1 < argc) {
             g_kernelCsv = argv[++i];
             g_requireNr = true;

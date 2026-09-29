@@ -239,6 +239,10 @@
     std::cout << "[NGX] " << dlss.Status();
     if (!dlss.Library().empty()) std::cout << "  (" << dlss.Library() << ")";
     std::cout << std::endl;
+    if (g_requireNrfusionProxy && !dlss.IsNRFusionProxy()) {
+        std::cerr << "[ERRO] fluxo NGX D3D12 nao passou pelo proxy NRFusion." << std::endl;
+        return 1;
+    }
     if (!dlssActive) {
         std::cout << "[NGX] Sem upscaler: o passe neural nao roda e o perfilador nao tem o que medir."
                   << std::endl;
