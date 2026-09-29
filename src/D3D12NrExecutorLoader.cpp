@@ -60,8 +60,10 @@ static std::wstring ResolveSidecarPath(const std::wstring& exeDir, const wchar_t
     const std::wstring candidates[] = {
         exeDir + filename,
         exeDir + L"internal\\" + filename,
+        exeDir + L"NRFusion\\internal\\" + filename,
         exeDir + L"..\\" + filename,
-        exeDir + L"..\\internal\\" + filename
+        exeDir + L"..\\internal\\" + filename,
+        exeDir + L"..\\NRFusion\\internal\\" + filename
     };
     for (const auto& candidate : candidates) {
         if (FileExists(candidate)) return candidate;

@@ -54,7 +54,13 @@ bool D3D12NrExecutor::EnsureFeature(ID3D12GraphicsCommandList* cmdList, uint32_t
     device->Release();
 
     if (!feature_) {
-        status_ = "dlssnr_call_create failed";
+        using ErrorFn = const char*(__cdecl*)();
+        const auto error = reinterpret_cast<ErrorFn>(
+            reinterpret_cast<void*>(GetProcAddress(forwarderModule_, "dlssnr_call_error")));
+        const char* detail = error ? error() : nullptr;
+        status_ = detail && detail[0]
+            ? std::string("dlssnr_call_create failed: ") + detail
+            : "dlssnr_call_create failed";
         return false;
     }
     featureWidth_ = width;

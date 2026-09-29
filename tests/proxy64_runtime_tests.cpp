@@ -11,13 +11,23 @@ int main() {
         GetProcAddress(proxy, "GetFileVersionInfoA") != nullptr;
     const bool hasCaptureRuntime =
         GetProcAddress(proxy, "NRFusion_Capture32_Connect") != nullptr;
+    const bool hasNgxD3D12 =
+        GetProcAddress(proxy, "NVSDK_NGX_D3D12_Init") != nullptr &&
+        GetProcAddress(proxy, "NVSDK_NGX_D3D12_CreateFeature") != nullptr &&
+        GetProcAddress(proxy, "NVSDK_NGX_D3D12_EvaluateFeature") != nullptr &&
+        GetProcAddress(proxy, "NVSDK_NGX_D3D12_ReleaseFeature") != nullptr;
+    const bool hasNrDiagnostics =
+        GetProcAddress(proxy, "NRFusion_BeginNrDiagnosticFrame") != nullptr &&
+        GetProcAddress(proxy, "NRFusion_ReadNrDiagnosticFrame") != nullptr;
     using RuntimeFn = void(*)();
     auto ensureRuntime = reinterpret_cast<RuntimeFn>(
         GetProcAddress(proxy, "NRFusion_EnsureRuntime"));
     auto shutdownRuntime = reinterpret_cast<RuntimeFn>(
         GetProcAddress(proxy, "NRFusion_ShutdownRuntime"));
 
-    if (!hasVersionForwarder || !hasCaptureRuntime || !ensureRuntime || !shutdownRuntime) return 1;
+    if (!hasVersionForwarder || !hasCaptureRuntime || !hasNgxD3D12 ||
+        !hasNrDiagnostics || !ensureRuntime || !shutdownRuntime)
+        return 1;
     ensureRuntime();
     shutdownRuntime();
     return 0;

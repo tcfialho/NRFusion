@@ -22,6 +22,8 @@ if (WIN32)
         src/Proxy64Export.cpp
         src/VersionDllProxy.cpp
         src/VersionDllProxy.def
+        src/NgxGameProxyD3D12.cpp
+        src/NgxGameProxyDiagnostics.cpp
         src/CaptureProvider32.cpp
         src/CaptureProvider32Io.cpp
         src/CaptureProvider32Frames.cpp
@@ -31,7 +33,7 @@ if (WIN32)
     target_include_directories(nrfusion_proxy PUBLIC include)
     target_compile_definitions(nrfusion_proxy PRIVATE NRFUSION_CAPTURE32_EXPORTS=1)
     target_compile_options(nrfusion_proxy PRIVATE /UNRFUSION_CAPTURE32_STATIC)
-    target_link_libraries(nrfusion_proxy PRIVATE nrfusion_core d3d11 dxgi d3dcompiler user32 gdi32)
+    target_link_libraries(nrfusion_proxy PRIVATE nrfusion_core d3d11 d3d12 dxgi d3dcompiler user32 gdi32)
     set_target_properties(nrfusion_proxy PROPERTIES OUTPUT_NAME "nrfusion_proxy")
 
     add_executable(nrfusion_proxy_runtime_tests tests/proxy64_runtime_tests.cpp)
