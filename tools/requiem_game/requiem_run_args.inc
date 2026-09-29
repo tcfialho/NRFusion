@@ -12,6 +12,13 @@
             g_requireNr = true;
         else if (argument == "--require-nrfusion-proxy")
             g_requireNrfusionProxy = true;
+        else if (argument == "--open-menu")
+            g_openMenu = true;
+        else if (argument == "--require-menu") {
+            g_requireMenu = true;
+            g_openMenu = true;
+            g_requireNrfusionProxy = true;
+        }
         else if (argument == "--nr-kernels" && i + 1 < argc) {
             g_kernelCsv = argv[++i];
             g_requireNr = true;

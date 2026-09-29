@@ -130,6 +130,7 @@ if (WIN32)
         src/RuntimeMenuDrawing.cpp
         src/RuntimeOverlayWindow.cpp
         src/RuntimeOverlay.cpp
+        src/RuntimeOverlayInput.cpp
         src/RuntimeOverlayWorker.cpp
     )
     target_link_libraries(nrfusion_core PUBLIC user32 gdi32)

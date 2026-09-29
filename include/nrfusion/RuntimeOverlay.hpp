@@ -32,6 +32,8 @@ public:
     void OpenMenu();
     void CloseMenu();
     bool IsMenuOpen() const noexcept;
+    void SetInFrameRendering(bool enabled) noexcept;
+    bool InFrameRendering() const noexcept;
 
     void ShowToast(const std::string& message, ToastType type, std::uint32_t durationMs = 3000);
     void ShowToast(const std::wstring& message, ToastType type, std::uint32_t durationMs = 3000);
@@ -61,6 +63,13 @@ private:
     bool hotkeyF8Pressed_ = false;
     bool hotkeyInsertPressed_ = false;
     bool hotkeyEscPressed_ = false;
+    bool hotkeyApplyPressed_ = false;
+    bool hotkeyEnabledPressed_ = false;
+    bool hotkeyLeftPressed_ = false;
+    bool hotkeyRightPressed_ = false;
+    bool hotkeyUpPressed_ = false;
+    bool hotkeyDownPressed_ = false;
+    std::atomic<bool> inFrameRendering_{false};
     RuntimeShell* shell_ = nullptr;
     std::unique_ptr<RuntimeShell> ownedShell_;
 

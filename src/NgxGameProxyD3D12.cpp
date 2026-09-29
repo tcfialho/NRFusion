@@ -8,7 +8,9 @@
 #include <d3d12.h>
 
 #include "nrfusion/D3D12NrExecutor.hpp"
+#include "nrfusion/RuntimeOverlay.hpp"
 #include "NgxGameProxyDiagnostics.hpp"
+#include "NgxGameProxyOverlay.hpp"
 
 #include <array>
 #include <cstdint>
@@ -120,6 +122,7 @@ DriverApi& Driver() {
 struct ProxyFeature {
     void* driverFeature = nullptr;
     nrfusion::D3D12NrExecutor nr;
+    nrfusion::NgxGameProxyOverlay overlay;
     std::uint64_t epoch = 0;
     unsigned int createFlags = 0;
     bool nrReady = false;
@@ -207,6 +210,7 @@ bool RunNeuralPass(ProxyFeature& feature, ID3D12GraphicsCommandList* commands,
 extern "C" __declspec(dllexport) int __cdecl NVSDK_NGX_D3D12_Init(
     unsigned long long appId, const wchar_t* appPath, ID3D12Device* device,
     const void* info, unsigned int version) {
+    nrfusion::RuntimeOverlay::Instance().SetInFrameRendering(true);
     NRFusion_EnsureRuntime();
     auto& driver = Driver();
     if (!driver.Ready()) return 0;
@@ -257,9 +261,12 @@ extern "C" __declspec(dllexport) int __cdecl NVSDK_NGX_D3D12_EvaluateFeature(
         static_cast<const ProxyFeature*>(opaqueFeature));
     RunNeuralPass(*feature, commands, params);
     auto& driver = Driver();
-    return driver.evaluate
-        ? driver.evaluate(commands, feature->driverFeature, params, callback)
-        : 0;
+    if (!driver.evaluate) return 0;
+    const int result =
+        driver.evaluate(commands, feature->driverFeature, params, callback);
+    if (result == kNgxSuccess)
+        feature->overlay.Draw(commands, GetResource(params, "Output"));
+    return result;
 }
 extern "C" __declspec(dllexport) int __cdecl NVSDK_NGX_D3D12_ReleaseFeature(
     void* opaqueFeature) {
@@ -274,6 +281,7 @@ extern "C" __declspec(dllexport) int __cdecl NVSDK_NGX_D3D12_ReleaseFeature(
 extern "C" __declspec(dllexport) int __cdecl NVSDK_NGX_D3D12_Shutdown() {
     auto& driver = Driver();
     const int result = driver.shutdown ? driver.shutdown() : 0;
+    nrfusion::RuntimeOverlay::Instance().SetInFrameRendering(false);
     NRFusion_ShutdownRuntime();
     return result;
 }

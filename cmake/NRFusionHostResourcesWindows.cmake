@@ -24,6 +24,7 @@ if (WIN32)
         src/VersionDllProxy.def
         src/NgxGameProxyD3D12.cpp
         src/NgxGameProxyDiagnostics.cpp
+        src/NgxGameProxyOverlay.cpp
         src/CaptureProvider32.cpp
         src/CaptureProvider32Io.cpp
         src/CaptureProvider32Frames.cpp

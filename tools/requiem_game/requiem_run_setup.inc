@@ -248,10 +248,20 @@
                   << std::endl;
         return 1;
     }
+    using MenuSetOpenFn = void(__cdecl*)(int);
+    using MenuDrawCountFn = unsigned long long(__cdecl*)();
+    using MenuStateFn = int(__cdecl*)();
+
     nrfusion::BeginNrDiagnosticFrame beginNrFrame = nullptr;
     nrfusion::ReadNrDiagnosticFrame readNrFrame = nullptr;
+    MenuSetOpenFn menuSetOpen = nullptr;
+    MenuDrawCountFn menuDrawCount = nullptr;
+    MenuStateFn menuIsOpen = nullptr;
+    MenuStateFn menuIsInFrame = nullptr;
+    const auto host = dlss.IsNRFusionProxy()
+        ? GetModuleHandleA(dlss.Library().c_str()) : nullptr;
+
     if (g_requireNr) {
-        const auto host = GetModuleHandleA(dlss.Library().c_str());
         beginNrFrame = reinterpret_cast<nrfusion::BeginNrDiagnosticFrame>(
             GetProcAddress(host, "NRFusion_BeginNrDiagnosticFrame"));
         readNrFrame = reinterpret_cast<nrfusion::ReadNrDiagnosticFrame>(
@@ -259,9 +269,22 @@
         if (!beginNrFrame || !readNrFrame)
             throw std::runtime_error("Host lacks the completed-frame NR diagnostic API");
     }
+    if (g_openMenu || g_requireMenu) {
+        menuSetOpen = reinterpret_cast<MenuSetOpenFn>(
+            GetProcAddress(host, "NRFusion_SetMenuOpen"));
+        menuDrawCount = reinterpret_cast<MenuDrawCountFn>(
+            GetProcAddress(host, "NRFusion_MenuGpuDrawCount"));
+        menuIsOpen = reinterpret_cast<MenuStateFn>(
+            GetProcAddress(host, "NRFusion_MenuIsOpen"));
+        menuIsInFrame = reinterpret_cast<MenuStateFn>(
+            GetProcAddress(host, "NRFusion_MenuIsInFrame"));
+        if (g_requireMenu &&
+            (!menuSetOpen || !menuDrawCount || !menuIsOpen || !menuIsInFrame))
+            throw std::runtime_error("Host lacks the in-frame menu diagnostic API");
+    }
 
     std::cout << "[OK] Direct3D 12 Testbed inicializado com sucesso!" << std::endl;
-    std::cout << "[OK] Pressione [INSERT] a qualquer momento para abrir o menu do OptiScaler." << std::endl;
+    std::cout << "[OK] Pressione [INSERT] a qualquer momento para abrir o menu do NRFusion." << std::endl;
     std::cout << "[OK] Pressione [TAB] para alternar: entrada, resultado calculado, referencia NVIDIA." << std::endl;
     std::cout << "[OK] Pressione [ESC] para fechar." << std::endl;
     if (g_fixedScene)

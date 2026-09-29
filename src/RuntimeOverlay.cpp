@@ -142,6 +142,8 @@ void RuntimeOverlay::OpenMenu() {
     menuDrawing_.Open(activeMain_, activeAdv_);
     UpdateTelemetrySnapshot();
 
+    if (inFrameRendering_.load(std::memory_order_acquire)) return;
+
     EnsureUiWindow();
     if (uiHwnd_) {
         SetWindowPos(uiHwnd_, HWND_TOPMOST, 0, 0, 0, 0,
@@ -191,11 +193,22 @@ bool RuntimeOverlay::IsMenuOpen() const noexcept {
     return menuDrawing_.IsOpen();
 }
 
+void RuntimeOverlay::SetInFrameRendering(bool enabled) noexcept {
+    inFrameRendering_.store(enabled, std::memory_order_release);
+    if (enabled) DestroyUiWindow();
+}
+
+bool RuntimeOverlay::InFrameRendering() const noexcept {
+    return inFrameRendering_.load(std::memory_order_acquire);
+}
+
 void RuntimeOverlay::ShowToast(const std::string& message, ToastType type, std::uint32_t durationMs) {
+    if (InFrameRendering()) return;
     RuntimeToast::Instance().Show(message, type, durationMs);
 }
 
 void RuntimeOverlay::ShowToast(const std::wstring& message, ToastType type, std::uint32_t durationMs) {
+    if (InFrameRendering()) return;
     RuntimeToast::Instance().Show(message, type, durationMs);
 }
 
@@ -261,39 +274,6 @@ void RuntimeOverlay::ApplyStagedConfiguration() {
         ShowToast(RuntimeLocalization::Strings().toastSaved, ToastType::Success, 2500);
     } else {
         ShowToast(RuntimeLocalization::Strings().toastFailed, ToastType::Error, 3000);
-    }
-}
-
-void RuntimeOverlay::PollHotkey() {
-    if (!initialized_.load()) return;
-    if (IsMenuOpen()) ClipCursor(nullptr);
-
-    const HWND fg = GetForegroundWindow();
-    if (fg) {
-        DWORD fgPid = 0;
-        GetWindowThreadProcessId(fg, &fgPid);
-        if (fgPid != GetCurrentProcessId()) return;
-    }
-
-    const bool f8Down = (GetAsyncKeyState(VK_F8) & 0x8000) != 0;
-    if (f8Down && !hotkeyF8Pressed_) ToggleMenu();
-    hotkeyF8Pressed_ = f8Down;
-
-    const bool insertDown = (GetAsyncKeyState(VK_INSERT) & 0x8000) != 0;
-    if (insertDown && !hotkeyInsertPressed_) ToggleMenu();
-    hotkeyInsertPressed_ = insertDown;
-
-    if (IsMenuOpen()) {
-        const bool escDown = (GetAsyncKeyState(VK_ESCAPE) & 0x8000) != 0;
-        if (escDown && !hotkeyEscPressed_) CloseMenu();
-        hotkeyEscPressed_ = escDown;
-    } else {
-        hotkeyEscPressed_ = false;
-    }
-
-    if (IsMenuOpen() && uiHwnd_) {
-        UpdateTelemetrySnapshot();
-        InvalidateRect(uiHwnd_, nullptr, FALSE);
     }
 }
 

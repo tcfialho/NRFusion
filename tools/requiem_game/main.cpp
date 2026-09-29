@@ -66,6 +66,8 @@ std::string g_csv, g_capture;
 std::string g_kernelCsv;
 bool g_requireNr = false;
 bool g_requireNrfusionProxy = false;
+bool g_openMenu = false;
+bool g_requireMenu = false;
 std::uint64_t g_frameLimit = 0;
 
 LRESULT CALLBACK WindowProc(HWND hwnd, UINT message, WPARAM wparam, LPARAM lparam) {

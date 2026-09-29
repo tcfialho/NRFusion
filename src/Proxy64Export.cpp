@@ -40,6 +40,24 @@ extern "C" __declspec(dllexport) void NRFusion_ShutdownRuntime() {
     nrfusion::StopCaptureD3D11Runtime(false);
 }
 
+extern "C" __declspec(dllexport) void NRFusion_SetMenuOpen(int open) {
+    NRFusion_EnsureRuntime();
+    auto& overlay = nrfusion::RuntimeOverlay::Instance();
+    if (open) {
+        if (!overlay.IsMenuOpen()) overlay.OpenMenu();
+    } else if (overlay.IsMenuOpen()) {
+        overlay.CloseMenu();
+    }
+}
+
+extern "C" __declspec(dllexport) int NRFusion_MenuIsOpen() {
+    return nrfusion::RuntimeOverlay::Instance().IsMenuOpen() ? 1 : 0;
+}
+
+extern "C" __declspec(dllexport) int NRFusion_MenuIsInFrame() {
+    return nrfusion::RuntimeOverlay::Instance().InFrameRendering() ? 1 : 0;
+}
+
 BOOL WINAPI DllMain(HINSTANCE hinstDLL, DWORD fdwReason, LPVOID) {
     if (fdwReason == DLL_PROCESS_ATTACH) {
         DisableThreadLibraryCalls(hinstDLL);

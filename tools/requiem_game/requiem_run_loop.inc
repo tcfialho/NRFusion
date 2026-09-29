@@ -77,6 +77,8 @@
         for (auto* input : inputs)
             requiem::Transition(commands.Get(), input, D3D12_RESOURCE_STATE_RENDER_TARGET,
                                 D3D12_RESOURCE_STATE_NON_PIXEL_SHADER_RESOURCE);
+        if (g_openMenu && menuSetOpen && menuIsOpen && !menuIsOpen())
+            menuSetOpen(1);
         evaluationTimer.Begin(commands.Get());
         if (beginNrFrame && !beginNrFrame(device.Get(), simulationFrame,
             !g_kernelCsv.empty() && simulationFrame >= g_warmup, g_kernelCsv.c_str()))
@@ -174,7 +176,25 @@
         std::cerr << "[ERRO] bounded run interrupted" << std::endl;
         return 1;
     }
-    std::cout << "[NGX] evaluations=" << evaluatedFrames << "; NR execution requires host evidence" << std::endl;
+    std::cout << "[NGX] evaluations=" << evaluatedFrames
+              << "; NR execution requires host evidence" << std::endl;
+    if (g_requireMenu) {
+        const auto draws = menuDrawCount ? menuDrawCount() : 0;
+        const int open = menuIsOpen ? menuIsOpen() : 0;
+        const int inFrame = menuIsInFrame ? menuIsInFrame() : 0;
+        std::cout << "[MENU] in_frame=" << inFrame
+                  << " open=" << open
+                  << " gpu_draws=" << draws << std::endl;
+        if (!inFrame || !open || draws == 0)
+            throw std::runtime_error("NRFusion in-frame menu gate failed");
+        HWND external = FindWindowW(L"NRFusion_Overlay_Menu", nullptr);
+        if (external) {
+            DWORD pid = 0;
+            GetWindowThreadProcessId(external, &pid);
+            if (pid == GetCurrentProcessId())
+                throw std::runtime_error("DX12 menu created an external overlay window");
+        }
+    }
     if (dlssActive) dlss.Shutdown();
     std::cout << "[OK] " << simulationFrame << " quadros renderizados." << std::endl;
     CloseHandle(fenceEvent);
