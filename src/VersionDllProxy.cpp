@@ -11,7 +11,9 @@
 
 #include <string>
 
+#if defined(NRFUSION_PROXY_RUNTIME)
 extern "C" void NRFusion_EnsureRuntime();
+#endif
 
 #if defined(__MINGW32__)
 using VersionInputA = LPSTR;
@@ -37,7 +39,9 @@ HMODULE RealVersionModule() {
 
 template <typename Fn>
 Fn ResolveRealExport(const char* name) {
+#if defined(NRFUSION_PROXY_RUNTIME)
     NRFusion_EnsureRuntime();
+#endif
     HMODULE module = RealVersionModule();
     if (!module) return nullptr;
     return reinterpret_cast<Fn>(reinterpret_cast<void*>(GetProcAddress(module, name)));
