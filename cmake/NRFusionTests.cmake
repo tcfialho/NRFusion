@@ -148,3 +148,7 @@ nrfusion_test(nrfusion_vulkan_carrier_execution_plan_tests tests/vulkan_carrier_
 nrfusion_test(nrfusion_opengl_carrier_acquire_tests tests/opengl_carrier_acquire_tests.cpp)
 nrfusion_test(nrfusion_opengl_carrier_sync_tests tests/opengl_carrier_sync_tests.cpp)
 nrfusion_test(nrfusion_provider_policy_opengl_tests tests/provider_policy_opengl_tests.cpp)
+
+if (WIN32)
+    nrfusion_test(nrfusion_runtime_overlay_tests tests/runtime_overlay_tests.cpp)
+endif()
