@@ -61,8 +61,11 @@ Fases 02,04 e carrier aplicável.
 - [x] Rota B provada ou Blocked: **Blocked**.
 - [x] MFG <=300 por arquivo de integração: todos os módulos standalone de MFG (`DlssgTransfusionFatbin.cpp`, `DlssgTransfusionPatches.cpp`, `DlssgTransfusionRuntime.cpp`, `StreamlineMfgSession.cpp`) estão estritamente <= 300 linhas.
 
-**Core/harness da Fase 16 concluído; integração de produto bloqueada.** O proxy standalone
-distribuído não contém hook Streamline, portanto MFG não pode ser anunciado como rota integrada.
+**Rota A integrada e qualificada em hardware no fluxo standalone D3D12 controlado.**
+O `version.dll` distribuído arma `MfgModuleWatcher`, recebe late-load de `nvngx_dlssg.dll`
+via notificação do loader e aplica `DlssgTransfusion` fora do loader lock. O Requiem
+empacotado provou 4X (`16 -> 64` presents) e 6X experimental (`12 -> 72`) na RTX 4050,
+sem chamada direta do testbed a `TryApply` e sem polling no hot path.
 
 ## Próxima fase
 
