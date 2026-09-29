@@ -126,25 +126,34 @@ NRFUSION_BRIDGE_API int dlssnr_call_evaluate_v2(
     snippet = it->second;
   }
 
-  SetResource(capabilityParams, "DLSSNR.Feature.Create.InColour", color);
-  SetResource(capabilityParams, "DLSSNR.Feature.Create.InDepth", depth);
-  SetResource(capabilityParams, "DLSSNR.Feature.Create.InMotionVectors", motion);
-  SetResource(capabilityParams, "DLSSNR.Feature.Create.OutColour", output);
+  SetResource(capabilityParams, "DLSSNR.Color", color);
+  SetResource(capabilityParams, "DLSSNR.Depth", depth);
+  SetResource(capabilityParams, "DLSSNR.MVec", motion);
+  SetResource(capabilityParams, "DLSSNR.Output", output);
 
+  SetUInt(capabilityParams, "DLSSNR.Enabled", 1);
   SetUInt(capabilityParams, "DLSSNR.Width", width);
   SetUInt(capabilityParams, "DLSSNR.Height", height);
-  SetUInt(capabilityParams, "DLSSNR.GuideWidth", guideWidth);
-  SetUInt(capabilityParams, "DLSSNR.GuideHeight", guideHeight);
-  SetUInt(capabilityParams, "DLSSNR.MotionWidth", motionWidth);
-  SetUInt(capabilityParams, "DLSSNR.MotionHeight", motionHeight);
-  SetUInt(capabilityParams, "DLSSNR.DepthBaseX", depthBaseX);
-  SetUInt(capabilityParams, "DLSSNR.DepthBaseY", depthBaseY);
-  SetUInt(capabilityParams, "DLSSNR.MotionBaseX", motionBaseX);
-  SetUInt(capabilityParams, "DLSSNR.MotionBaseY", motionBaseY);
-  SetUInt(capabilityParams, "DLSSNR.InvertDepth", static_cast<unsigned int>(depthInverted));
+  SetUInt(capabilityParams, "DLSSNR.DepthInverted", static_cast<unsigned int>(depthInverted));
   SetUInt(capabilityParams, "DLSSNR.Reset", static_cast<unsigned int>(reset));
-  SetFloat(capabilityParams, "DLSSNR.MotionScaleX", motionScaleX);
-  SetFloat(capabilityParams, "DLSSNR.MotionScaleY", motionScaleY);
+  SetUInt(capabilityParams, "DLSSNR.ColorSubrectBaseX", 0);
+  SetUInt(capabilityParams, "DLSSNR.ColorSubrectBaseY", 0);
+  SetUInt(capabilityParams, "DLSSNR.ColorSubrectWidth", width);
+  SetUInt(capabilityParams, "DLSSNR.ColorSubrectHeight", height);
+  SetUInt(capabilityParams, "DLSSNR.OutputSubrectBaseX", 0);
+  SetUInt(capabilityParams, "DLSSNR.OutputSubrectBaseY", 0);
+  SetUInt(capabilityParams, "DLSSNR.OutputSubrectWidth", width);
+  SetUInt(capabilityParams, "DLSSNR.OutputSubrectHeight", height);
+  SetUInt(capabilityParams, "DLSSNR.DepthSubrectBaseX", depthBaseX);
+  SetUInt(capabilityParams, "DLSSNR.DepthSubrectBaseY", depthBaseY);
+  SetUInt(capabilityParams, "DLSSNR.DepthSubrectWidth", guideWidth);
+  SetUInt(capabilityParams, "DLSSNR.DepthSubrectHeight", guideHeight);
+  SetUInt(capabilityParams, "DLSSNR.MVecSubrectBaseX", motionBaseX);
+  SetUInt(capabilityParams, "DLSSNR.MVecSubrectBaseY", motionBaseY);
+  SetUInt(capabilityParams, "DLSSNR.MVecSubrectWidth", motionWidth);
+  SetUInt(capabilityParams, "DLSSNR.MVecSubrectHeight", motionHeight);
+  SetFloat(capabilityParams, "DLSSNR.MVecScaleX", motionScaleX);
+  SetFloat(capabilityParams, "DLSSNR.MVecScaleY", motionScaleY);
 
   SetFloat(capabilityParams, "DLSSNR.Intensity", intensity);
   SetUInt(capabilityParams, "DLSSNR.Style", static_cast<unsigned int>(style));
@@ -164,32 +173,32 @@ NRFUSION_BRIDGE_API int dlssnr_call_evaluate_v2(
 
 NRFUSION_BRIDGE_API void dlssnr_call_set_extras(
     void* capabilityParams,
-    int denoiserMode,
-    float hitDistanceRatio,
-    int hitDistanceNormalization,
-    float normalRoughnessWeight,
-    int hairSeparation) {
-  if (!capabilityParams) {
-    return;
-  }
+    float globalTone,
+    ID3D12Resource* ui,
+    ID3D12Resource* uiAlpha,
+    ID3D12Resource* backbuffer,
+    unsigned int uiWidth,
+    unsigned int uiHeight,
+    unsigned int backbufferWidth,
+    unsigned int backbufferHeight) {
+  if (!capabilityParams) return;
+  (void)globalTone;
   using namespace nrfusion::bridge;
-  if (denoiserMode >= 0) {
-    SetUInt(capabilityParams, "DLSSNR.DenoiserMode", static_cast<unsigned int>(denoiserMode));
-  }
-  if (hitDistanceRatio >= 0.0f) {
-    SetFloat(capabilityParams, "DLSSNR.HitDistanceRatio", hitDistanceRatio);
-  }
-  if (hitDistanceNormalization >= 0) {
-    SetUInt(capabilityParams, "DLSSNR.HitDistanceNormalization",
-            static_cast<unsigned int>(hitDistanceNormalization));
-  }
-  if (normalRoughnessWeight >= 0.0f) {
-    SetFloat(capabilityParams, "DLSSNR.NormalRoughnessWeight", normalRoughnessWeight);
-  }
-  if (hairSeparation >= 0) {
-    SetUInt(capabilityParams, "DLSSNR.HairSeparation",
-            static_cast<unsigned int>(hairSeparation));
-  }
+  SetResource(capabilityParams, "DLSSNR.UI", ui);
+  SetResource(capabilityParams, "DLSSNR.UIAlpha", uiAlpha);
+  SetResource(capabilityParams, "DLSSNR.Backbuffer", backbuffer);
+  SetUInt(capabilityParams, "DLSSNR.UISubrectBaseX", 0);
+  SetUInt(capabilityParams, "DLSSNR.UISubrectBaseY", 0);
+  SetUInt(capabilityParams, "DLSSNR.UISubrectWidth", uiWidth);
+  SetUInt(capabilityParams, "DLSSNR.UISubrectHeight", uiHeight);
+  SetUInt(capabilityParams, "DLSSNR.UIAlphaSubrectBaseX", 0);
+  SetUInt(capabilityParams, "DLSSNR.UIAlphaSubrectBaseY", 0);
+  SetUInt(capabilityParams, "DLSSNR.UIAlphaSubrectWidth", uiWidth);
+  SetUInt(capabilityParams, "DLSSNR.UIAlphaSubrectHeight", uiHeight);
+  SetUInt(capabilityParams, "DLSSNR.BackbufferSubrectBaseX", 0);
+  SetUInt(capabilityParams, "DLSSNR.BackbufferSubrectBaseY", 0);
+  SetUInt(capabilityParams, "DLSSNR.BackbufferSubrectWidth", backbufferWidth);
+  SetUInt(capabilityParams, "DLSSNR.BackbufferSubrectHeight", backbufferHeight);
 }
 
 NRFUSION_BRIDGE_API void dlssnr_call_release(void* feature) {
