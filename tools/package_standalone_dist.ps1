@@ -3,6 +3,7 @@ param(
     [string]$RuntimePath = '',
     [string]$ForwarderPath = '',
     [string]$ForwarderSha256 = '',
+    [string]$RequiemUpscalerPath = '',
     [switch]$CompileInstaller
 )
 
@@ -155,6 +156,19 @@ $requiemExe = Join-Path $BuildDir 'RequiemGame.exe'
 if (Test-Path -LiteralPath $requiemExe) {
     Copy-EnsureParent $requiemExe (Join-Path $dist 'RequiemGame\RequiemGame.exe')
     Copy-EnsureParent $proxyDll (Join-Path $dist 'RequiemGame\version.dll')
+    if (-not $RequiemUpscalerPath) {
+        $requiemUpscalerCandidates = @(
+            'D:\Users\tcfialho\Documents\dlss5-for-all\nvngx_dlss.dll'
+        )
+        $RequiemUpscalerPath = $requiemUpscalerCandidates |
+            Where-Object { Test-Path -LiteralPath $_ -PathType Leaf } |
+            Select-Object -First 1
+    }
+    if (-not $RequiemUpscalerPath) {
+        throw 'RequiemGame foi compilado, mas nvngx_dlss.dll nao foi localizado.'
+    }
+    Assert-Pe64 $RequiemUpscalerPath 'Requiem DLSS-SR runtime'
+    Copy-EnsureParent $RequiemUpscalerPath (Join-Path $dist 'RequiemGame\nvngx_dlss.dll')
     $assets = Join-Path $root 'tools\requiem_game\assets'
     if (Test-Path -LiteralPath $assets) {
         Copy-Item -LiteralPath $assets -Destination (Join-Path $dist 'RequiemGame\assets') -Recurse -Force
