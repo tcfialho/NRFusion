@@ -19,8 +19,24 @@ struct MockParams {
   MockVTable* vt = nullptr;
   std::string lastKey;
   float lastValue = 0.0f;
+  unsigned int lastUInt = 0;
+  unsigned long long lastUll = 0;
   int calledSlot = -1;
 };
+
+static void MockSetUll(void* self, const char* name, unsigned long long val) {
+  auto* p = reinterpret_cast<MockParams*>(self);
+  p->lastKey = name ? name : "";
+  p->lastUll = val;
+  p->calledSlot = 0;
+}
+
+static void MockSetUInt(void* self, const char* name, unsigned int val) {
+  auto* p = reinterpret_cast<MockParams*>(self);
+  p->lastKey = name ? name : "";
+  p->lastUInt = val;
+  p->calledSlot = 3;
+}
 
 static void MockSetFloat(void* self, const char* name, float val) {
   auto* p = reinterpret_cast<MockParams*>(self);
@@ -69,6 +85,7 @@ int main() {
   assert(pLastCreate != nullptr);
 
   MockVTable vt{};
+  vt.slots[0] = reinterpret_cast<void*>(&MockSetUll);
   vt.slots[1] = reinterpret_cast<void*>(&MockSetFloat);
   vt.slots[3] = reinterpret_cast<void*>(&MockSetFloatSlot3);
   MockParams mock{};
@@ -96,10 +113,17 @@ int main() {
   assert(err != nullptr);
   std::cout << "Reported model error as expected: " << err << "\n";
 
-  auto pfnSetExtras = reinterpret_cast<void(__cdecl*)(void*, int, float, int, float, int)>(
+  auto pfnSetExtras = reinterpret_cast<void(__cdecl*)(
+      void*, float, void*, void*, void*, unsigned int, unsigned int,
+      unsigned int, unsigned int)>(
       GetProcAddress(bridge, "dlssnr_call_set_extras"));
   assert(pfnSetExtras != nullptr);
-  pfnSetExtras(nullptr, 0, 1.0f, 0, 1.0f, 0);
+  vt.slots[3] = reinterpret_cast<void*>(&MockSetUInt);
+  pfnSetExtras(pMock, 1.0f, reinterpret_cast<void*>(1), reinterpret_cast<void*>(2),
+               reinterpret_cast<void*>(3), 640, 480, 1920, 1080);
+  assert(mock.lastKey == "DLSSNR.BackbufferSubrectHeight");
+  assert(mock.lastUInt == 1080);
+  assert(mock.calledSlot == 3);
 
   FreeLibrary(bridge);
   std::cout << "All NRFusion NVNGX bridge tests passed.\n";
