@@ -6,7 +6,6 @@ param(
     [string]$RequiemUpscalerPath = '',
     [switch]$CompileInstaller
 )
-
 $ErrorActionPreference = 'Stop'
 Set-StrictMode -Version Latest
 
@@ -94,7 +93,7 @@ if (-not $RuntimePath) {
     }
 }
 
-# 1. Preparar diretório dist limpo
+# 1. Preparar diretÃ³rio dist limpo
 if (Test-Path -LiteralPath $dist) {
     try { Remove-Item -LiteralPath $dist -Recurse -Force -ErrorAction Stop }
     catch {
@@ -109,7 +108,7 @@ if (Test-Path -LiteralPath $dist) {
 }
 New-Item -ItemType Directory -Force -Path $dist | Out-Null
 
-# 2. Binários do código novo compilados
+# 2. BinÃ¡rios do cÃ³digo novo compilados
 $probeExe = Join-Path $BuildDir 'NRFusionProbe.exe'
 $hostExe = Join-Path $BuildDir 'NRFusionHost64.exe'
 $proxyDll = Join-Path $BuildDir 'nrfusion_proxy.dll'
@@ -169,6 +168,19 @@ if (Test-Path -LiteralPath $requiemExe) {
     }
     Assert-Pe64 $RequiemUpscalerPath 'Requiem DLSS-SR runtime'
     Copy-EnsureParent $RequiemUpscalerPath (Join-Path $dist 'RequiemGame\nvngx_dlss.dll')
+
+    $requiemRuntimeDir = Split-Path -Parent $RequiemUpscalerPath
+    $dlssgRuntime = Join-Path $requiemRuntimeDir 'nvngx_dlssg.dll'
+    if (Test-Path -LiteralPath $dlssgRuntime -PathType Leaf) {
+        Assert-Pe64 $dlssgRuntime 'Requiem DLSS-G runtime'
+        Copy-EnsureParent $dlssgRuntime (Join-Path $dist 'RequiemGame\nvngx_dlssg.dll')
+    }
+    Get-ChildItem -LiteralPath $requiemRuntimeDir -Filter 'sl.*.dll' -File |
+        ForEach-Object {
+            Assert-Pe64 $_.FullName "Streamline runtime $($_.Name)"
+            Copy-EnsureParent $_.FullName (Join-Path $dist "RequiemGame\$($_.Name)")
+        }
+
     $assets = Join-Path $root 'tools\requiem_game\assets'
     if (Test-Path -LiteralPath $assets) {
         Copy-Item -LiteralPath $assets -Destination (Join-Path $dist 'RequiemGame\assets') -Recurse -Force
@@ -215,6 +227,11 @@ if ($RuntimePath) {
     if ([IO.Path]::GetFullPath($RuntimePath) -ne [IO.Path]::GetFullPath($destRuntime)) {
         Copy-EnsureParent $RuntimePath $destRuntime
     }
+    $requiemExe = Join-Path $dist 'RequiemGame\RequiemGame.exe'
+    if (Test-Path -LiteralPath $requiemExe -PathType Leaf) {
+        Copy-EnsureParent $RuntimePath (
+            Join-Path $dist 'RequiemGame\NRFusion\internal\nvngx_dlssnr.dll')
+    }
     Write-Host "Runtime DLSS-NR empacotado: $RuntimePath"
 }
 
@@ -227,6 +244,11 @@ if ($ForwarderPath) {
         }
     }
     Copy-EnsureParent $ForwarderPath (Join-Path $dist 'NRFusion\internal\nvngx.dll_dlssnr.dll')
+    $requiemExe = Join-Path $dist 'RequiemGame\RequiemGame.exe'
+    if (Test-Path -LiteralPath $requiemExe -PathType Leaf) {
+        Copy-EnsureParent $ForwarderPath (
+            Join-Path $dist 'RequiemGame\NRFusion\internal\nvngx.dll_dlssnr.dll')
+    }
     Write-Host "Bridge DLSS-NR empacotado: $ForwarderPath"
 }
 
