@@ -20,7 +20,7 @@ public:
 
 private:
     RuntimeOverlayWorker() = default;
-    ~RuntimeOverlayWorker() { Stop(false); }
+    ~RuntimeOverlayWorker() { Stop(true); }
 
     RuntimeOverlayWorker(const RuntimeOverlayWorker&) = delete;
     RuntimeOverlayWorker& operator=(const RuntimeOverlayWorker&) = delete;

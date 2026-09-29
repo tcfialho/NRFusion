@@ -11,6 +11,8 @@
 
 #include <string>
 
+extern "C" void NRFusion_EnsureRuntime();
+
 #if defined(__MINGW32__)
 using VersionInputA = LPSTR;
 using VersionInputW = LPWSTR;
@@ -35,6 +37,7 @@ HMODULE RealVersionModule() {
 
 template <typename Fn>
 Fn ResolveRealExport(const char* name) {
+    NRFusion_EnsureRuntime();
     HMODULE module = RealVersionModule();
     if (!module) return nullptr;
     return reinterpret_cast<Fn>(reinterpret_cast<void*>(GetProcAddress(module, name)));

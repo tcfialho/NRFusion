@@ -10,18 +10,39 @@
 #include "nrfusion/RuntimeOverlay.hpp"
 #include "nrfusion/RuntimeOverlayWorker.hpp"
 
-BOOL WINAPI DllMain(HINSTANCE hinstDLL, DWORD fdwReason, LPVOID lpvReserved) {
-    switch (fdwReason) {
-    case DLL_PROCESS_ATTACH:
+#include <atomic>
+
+namespace {
+
+std::atomic<bool> g_runtimeStarted{false};
+
+void PinProxyModule() noexcept {
+    HMODULE module = nullptr;
+    GetModuleHandleExW(
+        GET_MODULE_HANDLE_EX_FLAG_FROM_ADDRESS | GET_MODULE_HANDLE_EX_FLAG_PIN,
+        reinterpret_cast<LPCWSTR>(&PinProxyModule), &module);
+}
+
+} // namespace
+
+extern "C" __declspec(dllexport) void NRFusion_EnsureRuntime() {
+    bool expected = false;
+    if (!g_runtimeStarted.compare_exchange_strong(expected, true)) return;
+    PinProxyModule();
+    nrfusion::StartCaptureD3D11Runtime();
+    nrfusion::RuntimeOverlayWorker::Instance().Start(&nrfusion::RuntimeOverlay::Instance());
+}
+
+extern "C" __declspec(dllexport) void NRFusion_ShutdownRuntime() {
+    if (!g_runtimeStarted.exchange(false)) return;
+    nrfusion::RuntimeOverlayWorker::Instance().Stop(false);
+    nrfusion::RuntimeOverlay::Instance().Shutdown();
+    nrfusion::StopCaptureD3D11Runtime(false);
+}
+
+BOOL WINAPI DllMain(HINSTANCE hinstDLL, DWORD fdwReason, LPVOID) {
+    if (fdwReason == DLL_PROCESS_ATTACH) {
         DisableThreadLibraryCalls(hinstDLL);
-        nrfusion::StartCaptureD3D11Runtime();
-        nrfusion::RuntimeOverlayWorker::Instance().Start(&nrfusion::RuntimeOverlay::Instance());
-        break;
-    case DLL_PROCESS_DETACH:
-        nrfusion::RuntimeOverlayWorker::Instance().Stop(lpvReserved != nullptr);
-        nrfusion::RuntimeOverlay::Instance().Shutdown();
-        nrfusion::StopCaptureD3D11Runtime(lpvReserved != nullptr);
-        break;
     }
     return TRUE;
 }

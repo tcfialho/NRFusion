@@ -11,6 +11,14 @@ int main() {
         GetProcAddress(proxy, "GetFileVersionInfoA") != nullptr;
     const bool hasCaptureRuntime =
         GetProcAddress(proxy, "NRFusion_Capture32_Connect") != nullptr;
+    using RuntimeFn = void(*)();
+    auto ensureRuntime = reinterpret_cast<RuntimeFn>(
+        GetProcAddress(proxy, "NRFusion_EnsureRuntime"));
+    auto shutdownRuntime = reinterpret_cast<RuntimeFn>(
+        GetProcAddress(proxy, "NRFusion_ShutdownRuntime"));
 
-    return hasVersionForwarder && hasCaptureRuntime ? 0 : 1;
+    if (!hasVersionForwarder || !hasCaptureRuntime || !ensureRuntime || !shutdownRuntime) return 1;
+    ensureRuntime();
+    shutdownRuntime();
+    return 0;
 }
