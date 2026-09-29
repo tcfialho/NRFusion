@@ -1,0 +1,25 @@
+- [ ] R00.01 — Trabalhar somente em D:\Users\tcfialho\Documents\NRFusion; preservar alterações existentes e identificar branch, HEAD e arquivos modificados antes de implementar.
+- [ ] R00.02 — Ler README.md e as quatro partes recuperacao-00 a recuperacao-03 nesta pasta antes de executar; tratar esta sequência como critério obrigatório de entrega.
+- [ ] R00.03 — Manter NRFusion standalone; usar OptiScaler como referência funcional e baseline, sem restaurar dependência obrigatória dele como atalho para concluir.
+- [ ] R00.04 — Priorizar Cyberpunk DX12 x64: estabilidade, menu, interceptação, NR, MFG e performance; não expandir a implementação para outras APIs antes de fechar essa rota.
+- [ ] R00.05 — Manter regressões D3D11 sob verificação durante a recuperação; não remover uma rota existente para fazer a nova passar.
+- [ ] R00.06 — Executar os gates na ordem definida; investigação pode ser antecipada, mas implementação da etapa seguinte depende da aprovação verificável do gate anterior.
+- [ ] R00.07 — Marcar um item somente com evidência do alvo exigido: comando, exit code, artefato, hash e resultado observável; anexar referências em subitens de checklist com até 300 caracteres.
+- [ ] R00.08 — Separar estados implementado, testado em harness e validado no produto; nenhum deles substitui os demais e nenhum percentual agregado autoriza entrega.
+- [ ] R00.09 — Registrar blocker como item aberto, com pré-requisito e próxima ação exata; não converter bloqueio em conclusão nem relaxar o gate para avançar.
+- [ ] R00.10 — Se faltar jogo, hardware, runtime ou acesso indispensável, executar apenas trabalho independente; manter os gates dependentes abertos e não afirmar validação real.
+- [ ] R00.11 — Preservar logs e experimentos em .temp/ ignorado pelo Git; não incorporar mocks, dumps ou recursos de testbed ao produto para simular processamento.
+- [ ] R00.12 — Registrar checkpoint recuperável antes de substituir binários ou alterar instalações; não apagar alterações do usuário e não fazer commit automático sem autorização.
+- [ ] R00.13 — Ler as fases 07, 16, 17, 18, 22 e 23 e confrontar cada alegação de integração com o call graph do proxy distribuído.
+- [ ] R00.14 — Reabrir checkboxes históricos que afirmam produto integrado com prova apenas de core, fake ou harness; preservar evidências úteis e identificar o alcance real de cada teste.
+- [ ] R00.15 — Corrigir a fase 16: fake Streamline não comprova MFG ponta a ponta; manter o gate de integração aberto até geração e apresentação no jogo.
+- [ ] R00.16 — Corrigir a fase 17: models/stores não encerram menu; exigir desenho, entrada, configuração aplicada e telemetria reais no jogo.
+- [ ] R00.17 — Corrigir a fase 22: Requiem testbed não conta como jogo comercial; distinguir execução de transporte, inferência, composição e apresentação.
+- [ ] R00.18 — Preservar a fase 23 aberta até instalar o pacote oficial e provar seu fluxo; não declarar uma rota suportada apenas porque existem classes com seu nome.
+- [ ] R00.19 — Identificar executável, versão e pasta do Cyberpunk utilizado; inventariar DLLs de mods e preservar a instalação antes de preparar uma comparação controlada.
+- [ ] R00.20 — Identificar DLL NRFusion realmente carregada no Cyberpunk, caminho e SHA-256; comparar com build e dist deste checkout antes de atribuir o incidente ao código atual.
+- [ ] R00.21 — Reproduzir abertura do menu na instalação identificada e distinguir minimização, perda de foco, travamento e encerramento; registrar processo e modo de apresentação.
+- [ ] R00.22 — Capturar erro completo e dump se houver crash; localizar módulo, stack e ponto de falha antes de escolher a correção; não atribuir automaticamente o incidente ao DWM.
+- [ ] R00.23 — Registrar baseline sem NRFusion e com versão fixa do OptiScaler: cena, resolução, qualidade, HDR, VSync, FG, driver, GPU, FPS renderizado e latência.
+- [ ] R00.24 — Separar reprodução do crash e baseline de performance; mudanças de mod, configuração ou driver devem ser registradas e não misturadas numa única comparação.
+- [ ] G00 — Fechar somente após inventário, diagnóstico reproduzível ou blocker preciso, baseline disponível e critérios documentais corrigidos; seguir para recuperacao-01-integracao-menu.md.

@@ -1,0 +1,25 @@
+- [ ] R01.01 — Depender de G00; construir o fluxo mínimo DX12 de carregamento, swapchain e menu antes de implementar processamento neural nessa rota.
+- [ ] R01.02 — Identificar o mecanismo real de carregamento do Cyberpunk; verificar imports, módulos e exports necessários; manter version.dll somente se a entrada estiver comprovada.
+- [ ] R01.03 — Separar loader de interceptação: carregar o proxy não significa interceptar NGX; registrar separadamente sucesso de carregamento e instalação dos hooks.
+- [ ] R01.04 — Definir owners explícitos para device, command queue, swapchain, recursos do menu e entrada; tratar múltiplas swapchains sem assumir que a primeira é a principal.
+- [ ] R01.05 — Retirar inicialização pesada e espera de threads de DllMain; garantir inicialização única e encerramento sem join sob loader lock.
+- [ ] R01.06 — Corrigir a causa confirmada do crash ou travamento; alterar uma variável por vez e repetir o cenário original depois do ponto de falha.
+- [ ] R01.07 — Integrar renderização ImGui na swapchain real DX12; usar command queue correta, descriptor heap, allocators e fences com ownership explícito.
+- [ ] R01.08 — Integrar backend D3D11 ao mesmo modelo de menu; preservar estado gráfico e evitar manter a janela GDI como solução final dessa rota.
+- [ ] R01.09 — Remover menu e toast GDI do fluxo do jogo somente após seus equivalentes in-game estarem integrados; manter mensagens e configurações necessárias.
+- [ ] R01.10 — Impedir criação de janela topmost externa para menu e toast; não usar ativação de outra janela como mecanismo de entrada do menu.
+- [ ] R01.11 — Renderizar antes da apresentação com transições corretas e restauração de estado; validar resize, troca de resolução, HDR e recriação de swapchain.
+- [ ] R01.12 — Integrar entrada na janela real do jogo; encadear e restaurar WndProc com segurança, respeitando outros hooks presentes.
+- [ ] R01.13 — Consumir teclado e mouse destinados ao menu enquanto aberto; verificar Raw Input e impedir movimentos ou comandos involuntários no jogo.
+- [ ] R01.14 — Controlar cursor conforme foco e estado do menu; não liberar ClipCursor continuamente fora do jogo nem desequilibrar ShowCursor.
+- [ ] R01.15 — Tratar Alt+Tab, perda de foco, fechamento e troca de janela sem cursor preso, handlers inválidos, deadlock ou recursos usados após liberação.
+- [ ] R01.16 — Manter UI e render thread sem acesso concorrente não sincronizado; publicar snapshots consistentes e aplicar configurações em fronteira segura de frame.
+- [ ] R01.17 — Conectar Enabled e opções do menu ao runtime que realmente processa frames; remover o RuntimeShell paralelo usado apenas para atualizar aparência e INI.
+- [ ] R01.18 — Exibir indisponível ou pendente para opções sem backend integrado; não mostrar NR ativo, multiplicador efetivo ou FPS medido a partir de intenção configurada.
+- [ ] R01.19 — Mostrar meta de FPS separada de FPS renderizado e apresentado; manter métricas indisponíveis até receber amostras válidas do fluxo real.
+- [ ] R01.20 — Aplicar configuração com confirmação do backend; informar rejeição ou falha de persistência e não emitir toast de sucesso antes dessas confirmações.
+- [ ] R01.21 — Compilar o proxy oficial e testar seu carregamento; provar o hash do módulo no jogo após instalação controlada, sem trocar para executável de demonstração.
+- [ ] R01.22 — Executar 30 ciclos de abrir, interagir, aplicar e fechar menu no Cyberpunk; registrar ausência de crash, minimização induzida e perda de entrada.
+- [ ] R01.23 — Repetir menu com Alt+Tab, resize e modos de tela disponíveis; registrar se fullscreen é exclusivo ou borderless, sem apresentar um como prova do outro.
+- [ ] R01.24 — Validar persistência após reiniciar o jogo e encerramento normal; conferir logs e processos remanescentes sem executar limpeza destrutiva.
+- [ ] G01 — Fechar somente com menu do proxy oficial observado no Cyberpunk e regressão D3D11 verificada; seguir para recuperacao-02-neural-mfg.md.
