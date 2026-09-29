@@ -125,7 +125,14 @@ if (WIN32)
         src/SyntheticOpenGlProviderLifecycle.cpp
         src/SyntheticOpenGlProviderInterop.cpp
         src/SyntheticOpenGlProviderPublish.cpp
+        src/RuntimeToast.cpp
+        src/RuntimeLocalization.cpp
+        src/RuntimeMenuDrawing.cpp
+        src/RuntimeOverlayWindow.cpp
+        src/RuntimeOverlay.cpp
+        src/RuntimeOverlayWorker.cpp
     )
+    target_link_libraries(nrfusion_core PUBLIC user32 gdi32)
 endif()
 
 include(CheckLanguage)
