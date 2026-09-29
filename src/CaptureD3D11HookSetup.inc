@@ -181,12 +181,11 @@ DxgiCreateSwapChainForHwndFn OriginalFactoryCreateSwapChainForHwnd(IDXGIFactory2
 // as the monolithic D3D11CreateDeviceAndSwapChain path does.
 void AttachFromDeviceUnknown(IUnknown* deviceUnknown, IDXGISwapChain* swapChain) {
     if (!deviceUnknown || !swapChain) return;
+    PatchSwapChainVtable(swapChain);
     ComPtr<ID3D11Device> device;
     if (FAILED(deviceUnknown->QueryInterface(IID_PPV_ARGS(&device))) || !device) return;
     ComPtr<ID3D11DeviceContext> context;
     device->GetImmediateContext(&context);
-
-    PatchSwapChainVtable(swapChain);
     if (context) PatchContextVtable(context.Get());
     g_captureSession.Attach(device.Get(), context.Get(), swapChain);
 }

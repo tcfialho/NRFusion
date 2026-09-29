@@ -1,4 +1,5 @@
 #include "nrfusion/CaptureD3D11.hpp"
+#include "nrfusion/RuntimeOverlay.hpp"
 
 #include "nrfusion/CaptureProvider32Export.h"
 #include "nrfusion/MatchedResidualShader.hpp"

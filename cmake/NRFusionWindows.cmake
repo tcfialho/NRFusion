@@ -195,7 +195,8 @@ add_executable(nrfusion_harness_3d
     target_compile_definitions(nrfusion_capture32 PRIVATE
         NRFUSION_CAPTURE32_DLL=1
         NRFUSION_CAPTURE32_EXPORTS=1)
-    target_link_libraries(nrfusion_capture32 PRIVATE d3d11 dxgi d3dcompiler)
+    target_compile_options(nrfusion_capture32 PRIVATE /UNRFUSION_CAPTURE32_STATIC)
+    target_link_libraries(nrfusion_capture32 PRIVATE nrfusion_core d3d11 dxgi d3dcompiler user32 gdi32)
     set_target_properties(nrfusion_capture32 PROPERTIES OUTPUT_NAME "nrfusion_capture32")
 
     add_executable(nrfusion_capture32_roundtrip_test

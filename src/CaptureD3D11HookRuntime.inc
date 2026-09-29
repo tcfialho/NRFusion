@@ -1,6 +1,12 @@
 HRESULT STDMETHODCALLTYPE HookedPresent(IDXGISwapChain* swapChain, UINT syncInterval, UINT flags) {
     const PresentFn original = OriginalPresent(swapChain);
     if (!original) return DXGI_ERROR_INVALID_CALL;
+    if (swapChain) {
+        DXGI_SWAP_CHAIN_DESC scd{};
+        if (SUCCEEDED(swapChain->GetDesc(&scd)) && scd.OutputWindow) {
+            RuntimeOverlay::Instance().Initialize(scd.OutputWindow);
+        }
+    }
     g_captureSession.OnPresent(swapChain);
     return original(swapChain, syncInterval, flags);
 }
