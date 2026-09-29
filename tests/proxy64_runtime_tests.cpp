@@ -24,6 +24,10 @@ int main() {
         GetProcAddress(proxy, "NRFusion_MenuIsOpen") != nullptr &&
         GetProcAddress(proxy, "NRFusion_MenuIsInFrame") != nullptr &&
         GetProcAddress(proxy, "NRFusion_MenuGpuDrawCount") != nullptr;
+    const bool hasMfgDiagnostics =
+        GetProcAddress(proxy, "NRFusion_MfgModuleObserved") != nullptr &&
+        GetProcAddress(proxy, "NRFusion_MfgUnlockedMax") != nullptr &&
+        GetProcAddress(proxy, "NRFusion_MfgPatchQualified") != nullptr;
     using RuntimeFn = void(*)();
     auto ensureRuntime = reinterpret_cast<RuntimeFn>(
         GetProcAddress(proxy, "NRFusion_EnsureRuntime"));
@@ -32,7 +36,7 @@ int main() {
 
     if (!hasVersionForwarder || !hasCaptureRuntime || !hasNgxD3D12 ||
         !hasNrDiagnostics || !hasMenuDiagnostics ||
-        !ensureRuntime || !shutdownRuntime)
+        !hasMfgDiagnostics || !ensureRuntime || !shutdownRuntime)
         return 1;
     ensureRuntime();
     shutdownRuntime();

@@ -7,6 +7,8 @@
 #include <windows.h>
 
 #include "nrfusion/CaptureD3D11Runtime.hpp"
+#include "nrfusion/DlssgTransfusion.hpp"
+#include "nrfusion/MfgModuleWatcher.hpp"
 #include "nrfusion/RuntimeOverlay.hpp"
 #include "nrfusion/RuntimeOverlayWorker.hpp"
 
@@ -29,6 +31,7 @@ extern "C" __declspec(dllexport) void NRFusion_EnsureRuntime() {
     bool expected = false;
     if (!g_runtimeStarted.compare_exchange_strong(expected, true)) return;
     PinProxyModule();
+    nrfusion::MfgModuleWatcher::Instance().Start();
     nrfusion::StartCaptureD3D11Runtime();
     nrfusion::RuntimeOverlayWorker::Instance().Start(&nrfusion::RuntimeOverlay::Instance());
 }
@@ -38,6 +41,7 @@ extern "C" __declspec(dllexport) void NRFusion_ShutdownRuntime() {
     nrfusion::RuntimeOverlayWorker::Instance().Stop(false);
     nrfusion::RuntimeOverlay::Instance().Shutdown();
     nrfusion::StopCaptureD3D11Runtime(false);
+    nrfusion::MfgModuleWatcher::Instance().Stop(false);
 }
 
 extern "C" __declspec(dllexport) void NRFusion_SetMenuOpen(int open) {
@@ -56,6 +60,25 @@ extern "C" __declspec(dllexport) int NRFusion_MenuIsOpen() {
 
 extern "C" __declspec(dllexport) int NRFusion_MenuIsInFrame() {
     return nrfusion::RuntimeOverlay::Instance().InFrameRendering() ? 1 : 0;
+}
+
+extern "C" __declspec(dllexport) int NRFusion_MfgModuleObserved() {
+    return nrfusion::MfgModuleWatcher::Instance().ModuleObserved() ? 1 : 0;
+}
+
+extern "C" __declspec(dllexport) unsigned int NRFusion_MfgUnlockedMax() {
+    return nrfusion::DlssgTransfusion::Instance().UnlockedMax();
+}
+
+extern "C" __declspec(dllexport) int NRFusion_MfgPatchQualified() {
+    const auto state = nrfusion::DlssgTransfusion::Instance().Snapshot();
+    return state.archGatesPatched && state.blackwellTransfusionActive ? 1 : 0;
+}
+
+extern "C" __declspec(dllexport) int NRFusion_PatchMfgModule(HMODULE module) {
+    nrfusion::DlssgTransfusion::Instance().TryApply(module);
+    const auto state = nrfusion::DlssgTransfusion::Instance().Snapshot();
+    return (state.archGatesPatched && state.blackwellTransfusionActive) ? 1 : 0;
 }
 
 BOOL WINAPI DllMain(HINSTANCE hinstDLL, DWORD fdwReason, LPVOID) {

@@ -144,6 +144,7 @@ private:
     std::atomic<uint32_t> m_pendingMultiplier{0};
     std::atomic<uint32_t> m_stabilityCount{0};
     std::atomic<bool> m_appliedOnce{false};
+    HMODULE m_lastPatchedModule{nullptr};
 };
 
 } // namespace nrfusion

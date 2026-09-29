@@ -114,23 +114,23 @@ TransfusionStatus DlssgTransfusion::Status() const
 
 void DlssgTransfusion::TryApply(HMODULE module)
 {
-    std::lock_guard lock(m_mutex);
-    if (m_status.moduleFound)
-        return;
-
     if (!module)
         module = GetModuleHandleW(L"nvngx_dlssg.dll");
 
     if (!module)
         return;
 
-    m_status.moduleFound = true;
-    m_status.failureReason.clear();
+    std::lock_guard lock(m_mutex);
+    if (m_lastPatchedModule == module && m_status.moduleFound && m_status.advertiseGatePatched && m_status.blackwellTransfusionActive)
+        return;
 
     if (!HasSupportedArchGates(module))
     {
-        m_status.failureReason = "unsupported DLSSG gate signatures";
-        PublishSnapshotLocked(TransfusionFailure::UnsupportedGateSignatures);
+        if (!m_status.moduleFound)
+        {
+            m_status.failureReason = "unsupported DLSSG gate signatures";
+            PublishSnapshotLocked(TransfusionFailure::UnsupportedGateSignatures);
+        }
         return;
     }
 
@@ -151,6 +151,10 @@ void DlssgTransfusion::TryApply(HMODULE module)
     if (m_uiMode.load(std::memory_order_acquire) == MfgUiMode::Auto)
         PatchHudlessUi(module);
 
+    m_status.moduleFound = true;
+    m_lastPatchedModule = module;
+    m_appliedOnce.store(true, std::memory_order_release);
+    m_status.failureReason.clear();
     PublishSnapshotLocked(TransfusionFailure::None);
 }
 
