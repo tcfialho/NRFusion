@@ -68,11 +68,14 @@ NRFUSION_BRIDGE_API int dlssnr_call_evaluate_v2(
 
 NRFUSION_BRIDGE_API void dlssnr_call_set_extras(
     void* capabilityParams,
-    int denoiserMode,
-    float hitDistanceRatio,
-    int hitDistanceNormalization,
-    float normalRoughnessWeight,
-    int hairSeparation);
+    float globalTone,
+    ID3D12Resource* ui,
+    ID3D12Resource* uiAlpha,
+    ID3D12Resource* backbuffer,
+    unsigned int uiWidth,
+    unsigned int uiHeight,
+    unsigned int backbufferWidth,
+    unsigned int backbufferHeight);
 
 NRFUSION_BRIDGE_API void dlssnr_call_release(void* feature);
 
