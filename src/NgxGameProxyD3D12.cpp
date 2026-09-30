@@ -11,6 +11,7 @@
 #include "nrfusion/RuntimeOverlay.hpp"
 #include "NgxGameProxyDiagnostics.hpp"
 #include "NgxGameProxyOverlay.hpp"
+#include "NgxGameNeuralHook.hpp"
 
 #include <array>
 #include <cstdint>
@@ -149,6 +150,10 @@ ID3D12Resource* GetResource(Param* params, const char* name) {
 bool RunNeuralPass(ProxyFeature& feature, ID3D12GraphicsCommandList* commands,
                    Param* params) {
     if (!feature.nrReady || !commands || !params) return false;
+    nrfusion::RuntimeConfig config{};
+    nrfusion::RuntimeAdvancedConfig advanced{};
+    nrfusion::RuntimeOverlay::Instance().GetActiveConfiguration(config, advanced);
+    if (!config.enabled) return false;
 
     ID3D12Resource* color = GetResource(params, "Color");
     ID3D12Resource* depth = GetResource(params, "Depth");
@@ -236,6 +241,7 @@ extern "C" __declspec(dllexport) int __cdecl NVSDK_NGX_D3D12_CreateFeature(
     if (!driver.Ready()) return 0;
 
     void* driverFeature = nullptr;
+    nrfusion::ScopedGameNeuralHookBypass neuralBypass;
     const int result = driver.create(
         commands, featureId, params, &driverFeature);
     if (result != kNgxSuccess || !driverFeature) return result;

@@ -166,6 +166,7 @@ D3D12NrFrameResult D3D12NrExecutor::ExecuteMainFrame(
         if (context.acrossRr) residualHistoryPrimed_ = false;
         return D3D12NrFrameResult::Failed;
     }
+    status_ = "NR applied";
     return D3D12NrFrameResult::Applied;
 }
 

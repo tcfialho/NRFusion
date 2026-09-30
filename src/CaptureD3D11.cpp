@@ -1,5 +1,10 @@
 #include "nrfusion/CaptureD3D11.hpp"
 #include "nrfusion/RuntimeOverlay.hpp"
+#include "RuntimeOverlayD3D12.hpp"
+#ifdef NRFUSION_PROXY_RUNTIME
+#include "NgxGameNeuralHook.hpp"
+#include "GameNeuralTiming.hpp"
+#endif
 
 #include "nrfusion/CaptureProvider32Export.h"
 #include "nrfusion/MatchedResidualShader.hpp"
@@ -40,6 +45,7 @@ using CreateDeviceAndSwapChainFn = HRESULT(WINAPI*)(IDXGIAdapter*, D3D_DRIVER_TY
                                                     const DXGI_SWAP_CHAIN_DESC*, IDXGISwapChain**,
                                                     ID3D11Device**, D3D_FEATURE_LEVEL*, ID3D11DeviceContext**);
 using PresentFn = HRESULT(STDMETHODCALLTYPE*)(IDXGISwapChain*, UINT, UINT);
+using Present1Fn = HRESULT(STDMETHODCALLTYPE*)(IDXGISwapChain1*, UINT, UINT, const DXGI_PRESENT_PARAMETERS*);
 using ResizeBuffersFn = HRESULT(STDMETHODCALLTYPE*)(IDXGISwapChain*, UINT, UINT, UINT, DXGI_FORMAT, UINT);
 using OMSetRenderTargetsFn = void(STDMETHODCALLTYPE*)(ID3D11DeviceContext*, UINT, ID3D11RenderTargetView* const*,
                                                        ID3D11DepthStencilView*);
@@ -54,6 +60,7 @@ using DxgiCreateSwapChainForHwndFn = HRESULT(STDMETHODCALLTYPE*)(IDXGIFactory2*,
                                                                   IDXGIOutput*, IDXGISwapChain1**);
 
 constexpr size_t kSwapChainPresentIndex = 8;
+constexpr size_t kSwapChainPresent1Index = 22;
 constexpr size_t kSwapChainResizeBuffersIndex = 13;
 constexpr size_t kContextOMSetRenderTargetsIndex = 33;
 // IDXGIObject (slots 3-6) + IDXGIFactory's own EnumAdapters/MakeWindowAssociation/
@@ -65,6 +72,7 @@ constexpr size_t kFactory2CreateSwapChainForHwndIndex = 15;
 struct VtableOriginals {
     PresentFn present = nullptr;
     ResizeBuffersFn resizeBuffers = nullptr;
+    Present1Fn present1 = nullptr;
 };
 
 struct ContextVtableOriginals {

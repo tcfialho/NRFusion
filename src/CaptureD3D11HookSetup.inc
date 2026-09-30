@@ -11,7 +11,30 @@ std::unordered_map<void**, FactoryVtableOriginals> g_factoryVtables;
 std::vector<IatPatch> g_iatPatches;
 D3D11CaptureSession g_captureSession;
 
+void RecordOriginalCreateDeviceAndSwapChain(void* original) {
+    CreateDeviceAndSwapChainFn expected = nullptr;
+    g_originalCreateDeviceAndSwapChain.compare_exchange_strong(
+        expected, reinterpret_cast<CreateDeviceAndSwapChainFn>(original));
+}
+
+void RecordOriginalCreateDXGIFactory(void* original) {
+    CreateDxgiFactoryFn expected = nullptr;
+    g_originalCreateDXGIFactory.compare_exchange_strong(expected, reinterpret_cast<CreateDxgiFactoryFn>(original));
+}
+
+void RecordOriginalCreateDXGIFactory1(void* original) {
+    CreateDxgiFactoryFn expected = nullptr;
+    g_originalCreateDXGIFactory1.compare_exchange_strong(expected, reinterpret_cast<CreateDxgiFactoryFn>(original));
+}
+
+void RecordOriginalCreateDXGIFactory2(void* original) {
+    CreateDxgiFactory2Fn expected = nullptr;
+    g_originalCreateDXGIFactory2.compare_exchange_strong(expected, reinterpret_cast<CreateDxgiFactory2Fn>(original));
+}
+
 HRESULT STDMETHODCALLTYPE HookedPresent(IDXGISwapChain* swapChain, UINT syncInterval, UINT flags);
+HRESULT STDMETHODCALLTYPE HookedPresent1(IDXGISwapChain1* swapChain, UINT syncInterval, UINT flags,
+                                          const DXGI_PRESENT_PARAMETERS* parameters);
 HRESULT STDMETHODCALLTYPE HookedResizeBuffers(IDXGISwapChain* swapChain, UINT bufferCount, UINT width,
                                                UINT height, DXGI_FORMAT newFormat, UINT swapChainFlags);
 void STDMETHODCALLTYPE HookedOMSetRenderTargets(ID3D11DeviceContext* context, UINT numViews,
@@ -68,6 +91,13 @@ bool PatchSwapChainVtable(IDXGISwapChain* swapChain) {
         RestorePointer(&vtable[kSwapChainResizeBuffersIndex], reinterpret_cast<void*>(originals.resizeBuffers));
         g_swapChainVtables.erase(vtable);
         return false;
+    }
+    ComPtr<IDXGISwapChain1> swapChain1;
+    if (SUCCEEDED(swapChain->QueryInterface(IID_PPV_ARGS(&swapChain1))) &&
+        *reinterpret_cast<void***>(swapChain1.Get()) == vtable) {
+        void* previous = nullptr;
+        if (ReplacePointer(&vtable[kSwapChainPresent1Index], reinterpret_cast<void*>(&HookedPresent1), previous))
+            g_swapChainVtables.at(vtable).present1 = reinterpret_cast<Present1Fn>(previous);
     }
     return true;
 }
@@ -182,6 +212,12 @@ DxgiCreateSwapChainForHwndFn OriginalFactoryCreateSwapChainForHwnd(IDXGIFactory2
 void AttachFromDeviceUnknown(IUnknown* deviceUnknown, IDXGISwapChain* swapChain) {
     if (!deviceUnknown || !swapChain) return;
     PatchSwapChainVtable(swapChain);
+#ifdef NRFUSION_PROXY_RUNTIME
+    ComPtr<ID3D12CommandQueue> neuralQueue;
+    if (SUCCEEDED(deviceUnknown->QueryInterface(IID_PPV_ARGS(&neuralQueue))))
+        RegisterNeuralCommandQueue(neuralQueue.Get());
+#endif
+    if (RuntimeOverlayD3D12::Instance().Attach(deviceUnknown, swapChain)) return;
     ComPtr<ID3D11Device> device;
     if (FAILED(deviceUnknown->QueryInterface(IID_PPV_ARGS(&device))) || !device) return;
     ComPtr<ID3D11DeviceContext> context;
@@ -196,5 +232,18 @@ void STDMETHODCALLTYPE HookedOMSetRenderTargets(ID3D11DeviceContext* context, UI
     g_captureSession.OnSetRenderTargets(numViews, renderTargetViews, depthStencilView);
     const OMSetRenderTargetsFn original = OriginalOMSetRenderTargets(context);
     if (original) original(context, numViews, renderTargetViews, depthStencilView);
+}
+
+HRESULT STDMETHODCALLTYPE HookedPresent1(IDXGISwapChain1* swapChain, UINT syncInterval, UINT flags,
+                                          const DXGI_PRESENT_PARAMETERS* parameters) {
+    Present1Fn original = nullptr;
+    {
+        std::scoped_lock lock(g_hookMutex);
+        const auto found = g_swapChainVtables.find(*reinterpret_cast<void***>(swapChain));
+        if (found != g_swapChainVtables.end()) original = found->second.present1;
+    }
+    if (!original) return DXGI_ERROR_INVALID_CALL;
+    RuntimeOverlayD3D12::Instance().Draw(swapChain, flags);
+    return original(swapChain, syncInterval, flags, parameters);
 }
 

@@ -8,6 +8,7 @@ HRESULT STDMETHODCALLTYPE HookedPresent(IDXGISwapChain* swapChain, UINT syncInte
         }
     }
     g_captureSession.OnPresent(swapChain);
+    RuntimeOverlayD3D12::Instance().Draw(swapChain, flags);
     return original(swapChain, syncInterval, flags);
 }
 
@@ -15,6 +16,7 @@ HRESULT STDMETHODCALLTYPE HookedResizeBuffers(IDXGISwapChain* swapChain, UINT bu
                                                UINT height, DXGI_FORMAT newFormat, UINT swapChainFlags) {
     const ResizeBuffersFn original = OriginalResizeBuffers(swapChain);
     if (!original) return DXGI_ERROR_INVALID_CALL;
+    if (!RuntimeOverlayD3D12::Instance().BeforeResize(swapChain)) return DXGI_ERROR_WAS_STILL_DRAWING;
     g_captureSession.OnResize(swapChain);
     return original(swapChain, bufferCount, width, height, newFormat, swapChainFlags);
 }
@@ -75,31 +77,21 @@ struct ImportHookSpec {
     void (*recordOriginal)(void* original);
 };
 
-void RecordOriginalCreateDeviceAndSwapChain(void* original) {
-    CreateDeviceAndSwapChainFn expected = nullptr;
-    g_originalCreateDeviceAndSwapChain.compare_exchange_strong(
-        expected, reinterpret_cast<CreateDeviceAndSwapChainFn>(original));
-}
-
-void RecordOriginalCreateDXGIFactory(void* original) {
-    CreateDxgiFactoryFn expected = nullptr;
-    g_originalCreateDXGIFactory.compare_exchange_strong(expected, reinterpret_cast<CreateDxgiFactoryFn>(original));
-}
-
-void RecordOriginalCreateDXGIFactory1(void* original) {
-    CreateDxgiFactoryFn expected = nullptr;
-    g_originalCreateDXGIFactory1.compare_exchange_strong(expected, reinterpret_cast<CreateDxgiFactoryFn>(original));
-}
-
-void RecordOriginalCreateDXGIFactory2(void* original) {
-    CreateDxgiFactory2Fn expected = nullptr;
-    g_originalCreateDXGIFactory2.compare_exchange_strong(expected, reinterpret_cast<CreateDxgiFactory2Fn>(original));
-}
-
 // Walks one module's import table and patches every IAT slot matching any spec's {dllName,
 // functionName}, across d3d11.dll (the monolithic path) and dxgi.dll (the factory-based split
 // path) in a single pass, so both creation styles are covered by the same retry loop.
 bool PatchModuleImports(HMODULE module, const ImportHookSpec* specs, size_t specCount) {
+    HMODULE heldModule = nullptr;
+    if (!module || !GetModuleHandleExW(GET_MODULE_HANDLE_EX_FLAG_FROM_ADDRESS,
+            reinterpret_cast<LPCWSTR>(module), &heldModule)) return false;
+    struct ModuleReference {
+        HMODULE handle;
+        ~ModuleReference() { FreeLibrary(handle); }
+    };
+    const ModuleReference reference{heldModule};
+#ifdef NRFUSION_PROXY_RUNTIME
+    TryInstallGameNeuralHooks(heldModule);
+#endif
     auto* base = reinterpret_cast<std::byte*>(module);
     auto* dos = reinterpret_cast<IMAGE_DOS_HEADER*>(base);
     if (!dos || dos->e_magic != IMAGE_DOS_SIGNATURE) return false;
@@ -210,7 +202,7 @@ DWORD WINAPI CaptureHookWorker(void*) {
         }
         if (g_originalCreateDeviceAndSwapChain.load() || g_originalCreateDXGIFactory.load() ||
             g_originalCreateDXGIFactory1.load() || g_originalCreateDXGIFactory2.load()) {
-            break;
+            if (attempt >= 30) break;
         }
         Sleep(100);
     }
@@ -242,11 +234,15 @@ bool GetCaptureD3D11TransportInfo(CaptureD3D11TransportInfo& outInfo) {
 
 void StopCaptureD3D11Hooks() {
     g_stopRequested = true;
+    RuntimeOverlayD3D12::Instance().Reset();
     g_captureSession.Shutdown();
     std::scoped_lock lock(g_hookMutex);
 
     for (const IatPatch& patch : g_iatPatches) {
         if (!patch.slot) continue;
+        HMODULE heldModule = nullptr;
+        if (!GetModuleHandleExW(GET_MODULE_HANDLE_EX_FLAG_FROM_ADDRESS,
+                reinterpret_cast<LPCWSTR>(patch.slot), &heldModule)) continue;
         const void* current = *patch.slot;
         if (current == reinterpret_cast<void*>(&HookedCreateDeviceAndSwapChain) ||
             current == reinterpret_cast<void*>(&HookedCreateDXGIFactory) ||
@@ -254,6 +250,7 @@ void StopCaptureD3D11Hooks() {
             current == reinterpret_cast<void*>(&HookedCreateDXGIFactory2)) {
             RestorePointer(patch.slot, patch.original);
         }
+        FreeLibrary(heldModule);
     }
     g_iatPatches.clear();
 
@@ -279,6 +276,8 @@ void StopCaptureD3D11Hooks() {
         if (vtable[kSwapChainResizeBuffersIndex] == reinterpret_cast<void*>(&HookedResizeBuffers)) {
             RestorePointer(&vtable[kSwapChainResizeBuffersIndex], reinterpret_cast<void*>(originals.resizeBuffers));
         }
+        if (originals.present1 && vtable[kSwapChainPresent1Index] == reinterpret_cast<void*>(&HookedPresent1))
+            RestorePointer(&vtable[kSwapChainPresent1Index], reinterpret_cast<void*>(originals.present1));
     }
     g_swapChainVtables.clear();
 

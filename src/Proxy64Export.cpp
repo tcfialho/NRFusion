@@ -11,6 +11,8 @@
 #include "nrfusion/MfgModuleWatcher.hpp"
 #include "nrfusion/RuntimeOverlay.hpp"
 #include "nrfusion/RuntimeOverlayWorker.hpp"
+#include "nrfusion/StreamlineDlssgHook.hpp"
+#include "nrfusion/Logger.hpp"
 
 #include <atomic>
 
@@ -31,6 +33,9 @@ extern "C" __declspec(dllexport) void NRFusion_EnsureRuntime() {
     bool expected = false;
     if (!g_runtimeStarted.compare_exchange_strong(expected, true)) return;
     PinProxyModule();
+    nrfusion::Logger::Instance().Initialize(nullptr);
+    NRF_LOG_INFO("Proxy", "NRFusion_EnsureRuntime: starting watchers and runtime");
+    nrfusion::StreamlineDlssgHook::Instance().Install();
     nrfusion::MfgModuleWatcher::Instance().Start();
     nrfusion::StartCaptureD3D11Runtime();
     nrfusion::RuntimeOverlayWorker::Instance().Start(&nrfusion::RuntimeOverlay::Instance());
@@ -76,7 +81,11 @@ extern "C" __declspec(dllexport) int NRFusion_MfgPatchQualified() {
 }
 
 extern "C" __declspec(dllexport) int NRFusion_PatchMfgModule(HMODULE module) {
-    nrfusion::DlssgTransfusion::Instance().TryApply(module);
+    if (module) {
+        nrfusion::DlssgTransfusion::Instance().TryApply(module);
+    } else {
+        nrfusion::MfgModuleWatcher::Instance().ScanAndPatchLoadedModules();
+    }
     const auto state = nrfusion::DlssgTransfusion::Instance().Snapshot();
     return (state.archGatesPatched && state.blackwellTransfusionActive) ? 1 : 0;
 }
@@ -84,6 +93,15 @@ extern "C" __declspec(dllexport) int NRFusion_PatchMfgModule(HMODULE module) {
 BOOL WINAPI DllMain(HINSTANCE hinstDLL, DWORD fdwReason, LPVOID) {
     if (fdwReason == DLL_PROCESS_ATTACH) {
         DisableThreadLibraryCalls(hinstDLL);
+        nrfusion::Logger::Instance().Initialize(hinstDLL);
+        NRF_LOG_INFO("Proxy", "NRFusion version.dll attached to PID %lu", GetCurrentProcessId());
+        HANDLE hInitThread = CreateThread(nullptr, 0, [](LPVOID) -> DWORD {
+            NRFusion_EnsureRuntime();
+            return 0;
+        }, nullptr, 0, nullptr);
+        if (hInitThread) {
+            CloseHandle(hInitThread);
+        }
     }
     return TRUE;
 }
