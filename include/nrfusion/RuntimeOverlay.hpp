@@ -44,6 +44,8 @@ public:
     RuntimeMenuDrawing& MenuDrawing() noexcept;
     void ApplyStagedConfiguration();
     void GetActiveConfiguration(RuntimeConfig& main, RuntimeAdvancedConfig& advanced);
+    bool GetActiveConfigurationIfChanged(std::uint64_t& cachedGeneration,
+        RuntimeConfig& main, RuntimeAdvancedConfig& advanced);
     void ObserveNeuralFrame(bool applied) noexcept;
     void ObserveNeuralRuntime(bool ready, bool rayReconstruction) noexcept;
     void ObserveNeuralWork(float scale, bool beforeUpscale, std::uint32_t passes, double gpuMs) noexcept;
@@ -69,6 +71,7 @@ private:
     RuntimeConfig activeMain_{};
     RuntimeAdvancedConfig activeAdv_{};
     std::uint64_t generation_ = 1;
+    std::atomic<std::uint64_t> configurationGeneration_{1};
     bool hotkeyF8Pressed_ = false;
     bool hotkeyInsertPressed_ = false;
     bool hotkeyEscPressed_ = false;
@@ -96,6 +99,7 @@ private:
     int cursorShowCount_{0};
 
     friend class RuntimeOverlayWindow;
+    friend class RuntimeOverlaySnapshotTestAccess;
 };
 
 } // namespace nrfusion

@@ -1,6 +1,6 @@
 # Fase 1 — Quick Wins de Performance: subgate QW1
 
-**Fase 1 incompleta.** QW1 e QW2 implementados e medidos; QW3–QW6 pendentes.
+**Fase 1 incompleta.** QW1–QW3 implementados e medidos; QW4–QW6 pendentes.
 QW1 fechado na continuação: contagem dinâmica de Map/Unmap/CBV, falha de Map e recriação de device testadas.
 A correção preexistente do Death Stranding foi preservada no commit `0ab4bc96d3608e32655bba6b4f5ed5c8598502ba`.
 
@@ -26,7 +26,7 @@ A correção preexistente do Death Stranding foi preservada no commit `0ab4bc96d
 | Persistent CB (720p, NR GPU ms) | 5.975550 | 5.957630 | -0.300% | 6.190080 → 6.165500 | 6.478394 → 6.395290 | RGB exact nas capturas | Mantido; eb3e984 |
 | Persistent CB (1080p, NR GPU ms) | 9.540095 | 9.550850 | +0.113% | 9.967927 → 9.949440 | 10.997963 → 10.918064 | RGB exact nas capturas | Mantido; eb3e984 |
 | Logging (µs/INFO call) | 2009.850 | 3.400 | -99.831% | 2100.620 → 3.800 | 2205.485 → 6.302 | Mensagens preservadas; RGB exact | Mantido; e1731b8 |
-| Config cache | — | — | — | — | — | Não testado | QW3 pendente |
+| Config cache (µs/getter) | 0.014063 | 0.001563 | -88.889% | 0.014063 → 0.001563 | 0.017969 → 0.001563 | Snapshots coerentes; RGB exact | Mantido; commit próprio |
 | Descriptor cache | — | — | — | — | — | Não testado | QW4 pendente |
 | Zero-Division | — | — | — | — | — | Não testado | QW5 pendente |
 | Direct guides | — | — | — | — | — | Não testado | QW6 pendente |
@@ -81,3 +81,26 @@ os contadores em 48/0/48; shutdown executa os 48 Unmap. A instrumentação está
 - Push e CI dos commits novos ainda não executados: aguardam autorização de publicação.
 - Sem qualificação de gameplay ampla para as otimizações; o gate físico executado foi o pipeline oficial Requiem.
 - Instalador e DLLs nos jogos continuam na versão anterior à Fase 1; o proxy otimizado foi aplicado no Requiem.
+
+## QW3 — validação
+
+- Snapshot com atomic generation check antes do lock; campos copiados somente quando a versão muda.
+- Token monotônico próprio, distinto da generation da política: reload/reinitialize também invalidam o cache.
+- Load de configurações agora protegido pelo mesmo mutex; publicação depois de load/apply/cópia do shell.
+- Hook NGX e proxy direto do Requiem guardam snapshot por feature, sem heap/mutex novo por evaluate.
+- GameNeuralControl::Reconfigure deixa de ser chamado a cada frame quando a configuração não mudou.
+- Benchmark CPU: **EXPERIMENTO ISOLADO — NÃO VALIDA O PRODUTO FINAL** como ganho de FPS.
+  Getter real, sem writer concorrente: 2000 blocos de 128 chamadas, cinco repetições, clock fora de cada bloco.
+  AFTER confirma um único snapshot em 257000 acessos. Não são tempos do hook completo.
+- Teste mantém mutex do overlay bloqueado no mesmo thread e confirma retorno imediato com versão igual.
+- Testes: apply real; 10000 publicações concorrentes sem pares main/advanced incoerentes; reload/reinit PASS.
+- O primeiro teste de reinit falhou porque o fixture anterior deixava o overlay inicializado;
+  fixture corrigido com Shutdown inicial. Testes focados repetidos: 2/2 PASS.
+- Pipeline oficial Requiem: protocolo pareado de 360 frames/60 warmup/cinco repetições, FP8, scale 1.0,
+  Pre-SR, uma passagem, MFG off. Capturas 720p/1080p RGB bit-identical.
+- GPU/frame-wall p50/p95/p99: `../phase1/2026-09-30-qw3/comparison.json`.
+  Nenhum ganho cumulativo de FPS é atribuído a esta medição. QW4–QW6 ainda pendentes.
+
+### Ressalva de timing QW3
+
+NR GPU 720p: p99 6.644355 → 6.854803 ms (+3.17%); BEFORE variou aproximadamente 10.51% entre runs e AFTER 5.94%. P95 1080p +2.22%. O teste curto não estabelece regressão estatisticamente significativa nem ganho GPU; manter pelo mutex/cópia eliminados e correctness, com confirmação de tails no A/B cumulativo final. CPU getter muito curto e quantizado pelo clock: não extrapolar nanosegundos para FPS.

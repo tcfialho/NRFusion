@@ -25,6 +25,9 @@ bool hooksReady = false;
 
 struct GameFeature {
     std::mutex mutex;
+    RuntimeConfig configuration{};
+    RuntimeAdvancedConfig advanced{};
+    std::uint64_t configurationGeneration = 0;
     D3D12NrExecutor executor;
     GameNeuralTiming timings;
     GameNeuralControl control;
@@ -65,11 +68,12 @@ int __cdecl HookEvaluate(ID3D12GraphicsCommandList* commands, const void* handle
     if (!feature) return originalEvaluate(commands, handle, parameters, callback);
     std::lock_guard featureLock(feature->mutex);
     auto& overlay = RuntimeOverlay::Instance();
-    RuntimeConfig config{};
-    RuntimeAdvancedConfig advanced{};
-    overlay.GetActiveConfiguration(config, advanced);
+    if (overlay.GetActiveConfigurationIfChanged(feature->configurationGeneration,
+            feature->configuration, feature->advanced))
+        feature->control.Reconfigure(feature->configuration, feature->advanced);
+    const auto& config = feature->configuration;
+    const auto& advanced = feature->advanced;
     DlssgTransfusion::Instance().ObserveRenderedFrame();
-    feature->control.Reconfigure(config, advanced);
     feature->control.Consume(feature->timings);
     ++feature->calls;
     if (!config.enabled) {

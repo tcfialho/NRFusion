@@ -36,6 +36,7 @@ void RuntimeOverlay::OpenMenu() {
 
     if (shell_) {
         activeMain_ = shell_->Config();
+        configurationGeneration_.fetch_add(1, std::memory_order_release);
     }
     menuDrawing_.Open(activeMain_, activeAdv_);
     UpdateTelemetrySnapshot();
@@ -88,6 +89,16 @@ void RuntimeOverlay::GetActiveConfiguration(RuntimeConfig& main, RuntimeAdvanced
     std::lock_guard lock(mutex_);
     main = activeMain_;
     advanced = activeAdv_;
+}
+
+bool RuntimeOverlay::GetActiveConfigurationIfChanged(std::uint64_t& cachedGeneration,
+    RuntimeConfig& main, RuntimeAdvancedConfig& advanced) {
+    if (configurationGeneration_.load(std::memory_order_acquire) == cachedGeneration) return false;
+    std::lock_guard lock(mutex_);
+    main = activeMain_;
+    advanced = activeAdv_;
+    cachedGeneration = configurationGeneration_.load(std::memory_order_relaxed);
+    return true;
 }
 
 void RuntimeOverlay::ObserveNeuralFrame(bool applied) noexcept {

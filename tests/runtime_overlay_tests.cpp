@@ -9,6 +9,8 @@
 #include <iostream>
 #include <thread>
 #include <chrono>
+#include "RuntimeConfigurationBenchmark.hpp"
+#include "RuntimeConfigurationSnapshotTests.hpp"
 
 using namespace nrfusion;
 
@@ -108,6 +110,10 @@ void TestOverlayLifecycleAndApply() {
     overlay.OpenMenu();
     assert(overlay.IsMenuOpen());
     assert(shell.Config().targetFps == 90.0f);
+    std::uint64_t cachedGeneration = 0;
+    RuntimeConfig cachedMain{};
+    RuntimeAdvancedConfig cachedAdvanced{};
+    assert(overlay.GetActiveConfigurationIfChanged(cachedGeneration, cachedMain, cachedAdvanced));
 
     // Stage changes in UI draft
     auto draft = overlay.MenuDrawing().MainDraft();
@@ -119,6 +125,9 @@ void TestOverlayLifecycleAndApply() {
     overlay.ApplyStagedConfiguration();
     assert(shell.Config().targetFps == 120.0f);
     assert(shell.Config().mode == RuntimeNrMode::BestQuality);
+    assert(overlay.GetActiveConfigurationIfChanged(cachedGeneration, cachedMain, cachedAdvanced));
+    assert(cachedMain == shell.Config());
+    assert(!overlay.GetActiveConfigurationIfChanged(cachedGeneration, cachedMain, cachedAdvanced));
 
     overlay.CloseMenu();
     assert(!overlay.IsMenuOpen());
@@ -141,12 +150,17 @@ void TestOverlayWorkerLifecycle() {
     std::cout << "[PASS] TestOverlayWorkerLifecycle\n";
 }
 
-int main() {
+int main(int argc, char** argv) {
+    if (argc == 2) {
+        BenchmarkRuntimeConfiguration(argv[1]);
+        return 0;
+    }
     TestLocalization();
     TestToastLifecycle();
     TestMenuDrawingTransactions();
     TestOverlayLifecycleAndApply();
     TestOverlayWorkerLifecycle();
+    TestRuntimeConfigurationSnapshots();
     std::cout << "All runtime overlay tests passed!\n";
     return 0;
 }
