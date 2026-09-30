@@ -1,0 +1,714 @@
+{
+  "reference_commit": "pre-QW1-artifact-recorded-at-dac55cf",
+  "candidate_commit": "16e2ee4363897f812386864c91b22749e622c5f4",
+  "frames": 1200,
+  "warmup": 300,
+  "repeats": 6,
+  "gpu": "NVIDIA GeForce RTX 4050 Laptop GPU, GPU-42d9ac41-51ff-a670-4539-8abbccbda9dc, 617.14",
+  "settings": {
+    "scene": "deterministic pan over NVIDIA OFF JPEG; synthetic depth/motion",
+    "route": "Requiem -> version.dll NGX exports -> D3D12NrExecutor -> driver SR",
+    "precision": "fp8",
+    "nr_scale": 1.0,
+    "nr_passes": 1,
+    "nr_placement": "before_sr",
+    "style": "default",
+    "mfg": "off",
+    "overlay": "closed",
+    "timing_scope": "nr_gpu_ms includes NR preparation, model and composition",
+    "frame_wall_scope": "serialized testbed loop, Present and per-frame GPU fence; not gameplay FPS"
+  },
+  "typeless": true,
+  "proxy_sha256": {
+    "reference": "28e63d87d804e8c2d1f37a7a98c97282fd72b5dcf7c52cc8ccb13dcf6ebe2cc1",
+    "candidate": "0815140865555fd009285d51c633592dc3fe0164c9261ec0458ba742363c8898"
+  },
+  "payload_hashes": {
+    "RequiemGame.exe": "ac53944cd9fe40f9f32cd6b1770993aaf5a093a9de58665119a4777bc93d9171",
+    "nvngx_dlss.dll": "c85f971ce023c9f3492fc7455f0b01a24ba18ea39636407a846902c4360b0b7e",
+    "nvngx_dlssg.dll": "5d5cbf14d2727d47f93fd10bf77bd91708ae122482a6f86fd564971641ebd47b",
+    "NRFusion/internal/nvngx_dlssnr.dll": "e67dee209320cdafe0e93e45675d7aa34323a53acc57a72b2e40a181581c989a",
+    "NRFusion/internal/nvngx.dll_dlssnr.dll": "25ffade884f50cad0174030335fd6216bbd569cb415bc35c958224a8c96f3c4e",
+    "assets/nvidia-dlss5-requiem-off.jpeg": "8d94795df55102affadf67fa779003c466405f4f9c42c46b933a5418f530cc81",
+    "assets/nvidia-dlss5-requiem-on.jpeg": "65018732def9352c1104a871b59db005255133c36320ad0970469636492437a8"
+  },
+  "runs": [
+    {
+      "height": 1080,
+      "repeat": 1,
+      "variant": "reference",
+      "command": [
+        "D:\\Users\\tcfialho\\Documents\\NRFusion\\dist\\RequiemGame\\RequiemGame.exe",
+        "--require-nrfusion-proxy",
+        "--require-nr",
+        "--deterministic-motion",
+        "--width",
+        "1920",
+        "--height",
+        "1080",
+        "--frames",
+        "1200",
+        "--warmup",
+        "300",
+        "--csv",
+        "D:\\Users\\tcfialho\\Documents\\NRFusion\\.temp\\phase1-quickwins\\cumulative-confirm-typeless-1080\\1080-1-reference\\frames.csv",
+        "--typeless-guides",
+        "--capture",
+        "D:\\Users\\tcfialho\\Documents\\NRFusion\\.temp\\phase1-quickwins\\cumulative-confirm-typeless-1080\\1080-1-reference\\capture.ppm"
+      ],
+      "metrics": {
+        "nr_gpu_ms": {
+          "p50": 9.9072,
+          "p95": 10.1632,
+          "p99": 11.030022
+        },
+        "ngx_evaluation_gpu_ms": {
+          "p50": 11.3756,
+          "p95": 11.648204999999999,
+          "p99": 12.448293999999999
+        },
+        "frame_wall_ms": {
+          "p50": 12.43455,
+          "p95": 12.810585,
+          "p99": 13.655807
+        }
+      },
+      "copies": [
+        2
+      ],
+      "copy_bytes": [
+        11059200
+      ]
+    },
+    {
+      "height": 1080,
+      "repeat": 1,
+      "variant": "candidate",
+      "command": [
+        "D:\\Users\\tcfialho\\Documents\\NRFusion\\dist\\RequiemGame\\RequiemGame.exe",
+        "--require-nrfusion-proxy",
+        "--require-nr",
+        "--deterministic-motion",
+        "--width",
+        "1920",
+        "--height",
+        "1080",
+        "--frames",
+        "1200",
+        "--warmup",
+        "300",
+        "--csv",
+        "D:\\Users\\tcfialho\\Documents\\NRFusion\\.temp\\phase1-quickwins\\cumulative-confirm-typeless-1080\\1080-1-candidate\\frames.csv",
+        "--typeless-guides",
+        "--capture",
+        "D:\\Users\\tcfialho\\Documents\\NRFusion\\.temp\\phase1-quickwins\\cumulative-confirm-typeless-1080\\1080-1-candidate\\capture.ppm"
+      ],
+      "metrics": {
+        "nr_gpu_ms": {
+          "p50": 9.86061,
+          "p95": 10.10695,
+          "p99": 11.120726999999999
+        },
+        "ngx_evaluation_gpu_ms": {
+          "p50": 11.3265,
+          "p95": 11.650155,
+          "p99": 12.625708999999999
+        },
+        "frame_wall_ms": {
+          "p50": 12.3902,
+          "p95": 12.74557,
+          "p99": 13.767904
+        }
+      },
+      "copies": [
+        0
+      ],
+      "copy_bytes": [
+        0
+      ]
+    },
+    {
+      "height": 1080,
+      "repeat": 2,
+      "variant": "candidate",
+      "command": [
+        "D:\\Users\\tcfialho\\Documents\\NRFusion\\dist\\RequiemGame\\RequiemGame.exe",
+        "--require-nrfusion-proxy",
+        "--require-nr",
+        "--deterministic-motion",
+        "--width",
+        "1920",
+        "--height",
+        "1080",
+        "--frames",
+        "1200",
+        "--warmup",
+        "300",
+        "--csv",
+        "D:\\Users\\tcfialho\\Documents\\NRFusion\\.temp\\phase1-quickwins\\cumulative-confirm-typeless-1080\\1080-2-candidate\\frames.csv",
+        "--typeless-guides"
+      ],
+      "metrics": {
+        "nr_gpu_ms": {
+          "p50": 9.86317,
+          "p95": 10.11515,
+          "p99": 10.929232999999996
+        },
+        "ngx_evaluation_gpu_ms": {
+          "p50": 11.3275,
+          "p95": 11.5589,
+          "p99": 12.635758999999998
+        },
+        "frame_wall_ms": {
+          "p50": 12.40805,
+          "p95": 12.743545,
+          "p99": 13.693230999999999
+        }
+      },
+      "copies": [
+        0
+      ],
+      "copy_bytes": [
+        0
+      ]
+    },
+    {
+      "height": 1080,
+      "repeat": 2,
+      "variant": "reference",
+      "command": [
+        "D:\\Users\\tcfialho\\Documents\\NRFusion\\dist\\RequiemGame\\RequiemGame.exe",
+        "--require-nrfusion-proxy",
+        "--require-nr",
+        "--deterministic-motion",
+        "--width",
+        "1920",
+        "--height",
+        "1080",
+        "--frames",
+        "1200",
+        "--warmup",
+        "300",
+        "--csv",
+        "D:\\Users\\tcfialho\\Documents\\NRFusion\\.temp\\phase1-quickwins\\cumulative-confirm-typeless-1080\\1080-2-reference\\frames.csv",
+        "--typeless-guides"
+      ],
+      "metrics": {
+        "nr_gpu_ms": {
+          "p50": 9.95584,
+          "p95": 10.193055,
+          "p99": 11.166895
+        },
+        "ngx_evaluation_gpu_ms": {
+          "p50": 11.398150000000001,
+          "p95": 11.62975,
+          "p99": 12.754288999999995
+        },
+        "frame_wall_ms": {
+          "p50": 12.459,
+          "p95": 12.79361,
+          "p99": 13.938297999999996
+        }
+      },
+      "copies": [
+        2
+      ],
+      "copy_bytes": [
+        11059200
+      ]
+    },
+    {
+      "height": 1080,
+      "repeat": 3,
+      "variant": "reference",
+      "command": [
+        "D:\\Users\\tcfialho\\Documents\\NRFusion\\dist\\RequiemGame\\RequiemGame.exe",
+        "--require-nrfusion-proxy",
+        "--require-nr",
+        "--deterministic-motion",
+        "--width",
+        "1920",
+        "--height",
+        "1080",
+        "--frames",
+        "1200",
+        "--warmup",
+        "300",
+        "--csv",
+        "D:\\Users\\tcfialho\\Documents\\NRFusion\\.temp\\phase1-quickwins\\cumulative-confirm-typeless-1080\\1080-3-reference\\frames.csv",
+        "--typeless-guides"
+      ],
+      "metrics": {
+        "nr_gpu_ms": {
+          "p50": 9.94048,
+          "p95": 10.1816,
+          "p99": 11.150668999999999
+        },
+        "ngx_evaluation_gpu_ms": {
+          "p50": 11.385349999999999,
+          "p95": 11.633954999999998,
+          "p99": 12.670337
+        },
+        "frame_wall_ms": {
+          "p50": 12.44905,
+          "p95": 12.817695,
+          "p99": 13.755958
+        }
+      },
+      "copies": [
+        2
+      ],
+      "copy_bytes": [
+        11059200
+      ]
+    },
+    {
+      "height": 1080,
+      "repeat": 3,
+      "variant": "candidate",
+      "command": [
+        "D:\\Users\\tcfialho\\Documents\\NRFusion\\dist\\RequiemGame\\RequiemGame.exe",
+        "--require-nrfusion-proxy",
+        "--require-nr",
+        "--deterministic-motion",
+        "--width",
+        "1920",
+        "--height",
+        "1080",
+        "--frames",
+        "1200",
+        "--warmup",
+        "300",
+        "--csv",
+        "D:\\Users\\tcfialho\\Documents\\NRFusion\\.temp\\phase1-quickwins\\cumulative-confirm-typeless-1080\\1080-3-candidate\\frames.csv",
+        "--typeless-guides"
+      ],
+      "metrics": {
+        "nr_gpu_ms": {
+          "p50": 9.87648,
+          "p95": 10.1541,
+          "p99": 11.053417
+        },
+        "ngx_evaluation_gpu_ms": {
+          "p50": 11.3203,
+          "p95": 11.60825,
+          "p99": 12.491147999999999
+        },
+        "frame_wall_ms": {
+          "p50": 12.37885,
+          "p95": 12.769839999999999,
+          "p99": 13.652854
+        }
+      },
+      "copies": [
+        0
+      ],
+      "copy_bytes": [
+        0
+      ]
+    },
+    {
+      "height": 1080,
+      "repeat": 4,
+      "variant": "candidate",
+      "command": [
+        "D:\\Users\\tcfialho\\Documents\\NRFusion\\dist\\RequiemGame\\RequiemGame.exe",
+        "--require-nrfusion-proxy",
+        "--require-nr",
+        "--deterministic-motion",
+        "--width",
+        "1920",
+        "--height",
+        "1080",
+        "--frames",
+        "1200",
+        "--warmup",
+        "300",
+        "--csv",
+        "D:\\Users\\tcfialho\\Documents\\NRFusion\\.temp\\phase1-quickwins\\cumulative-confirm-typeless-1080\\1080-4-candidate\\frames.csv",
+        "--typeless-guides"
+      ],
+      "metrics": {
+        "nr_gpu_ms": {
+          "p50": 9.862655,
+          "p95": 10.1356,
+          "p99": 11.106514999999998
+        },
+        "ngx_evaluation_gpu_ms": {
+          "p50": 11.3009,
+          "p95": 11.5753,
+          "p99": 12.574844
+        },
+        "frame_wall_ms": {
+          "p50": 12.3646,
+          "p95": 12.751665000000001,
+          "p99": 13.699529
+        }
+      },
+      "copies": [
+        0
+      ],
+      "copy_bytes": [
+        0
+      ]
+    },
+    {
+      "height": 1080,
+      "repeat": 4,
+      "variant": "reference",
+      "command": [
+        "D:\\Users\\tcfialho\\Documents\\NRFusion\\dist\\RequiemGame\\RequiemGame.exe",
+        "--require-nrfusion-proxy",
+        "--require-nr",
+        "--deterministic-motion",
+        "--width",
+        "1920",
+        "--height",
+        "1080",
+        "--frames",
+        "1200",
+        "--warmup",
+        "300",
+        "--csv",
+        "D:\\Users\\tcfialho\\Documents\\NRFusion\\.temp\\phase1-quickwins\\cumulative-confirm-typeless-1080\\1080-4-reference\\frames.csv",
+        "--typeless-guides"
+      ],
+      "metrics": {
+        "nr_gpu_ms": {
+          "p50": 9.936385,
+          "p95": 10.188955,
+          "p99": 11.359373999999999
+        },
+        "ngx_evaluation_gpu_ms": {
+          "p50": 11.3736,
+          "p95": 11.615355,
+          "p99": 12.784652
+        },
+        "frame_wall_ms": {
+          "p50": 12.4352,
+          "p95": 12.797025,
+          "p99": 13.83713
+        }
+      },
+      "copies": [
+        2
+      ],
+      "copy_bytes": [
+        11059200
+      ]
+    },
+    {
+      "height": 1080,
+      "repeat": 5,
+      "variant": "reference",
+      "command": [
+        "D:\\Users\\tcfialho\\Documents\\NRFusion\\dist\\RequiemGame\\RequiemGame.exe",
+        "--require-nrfusion-proxy",
+        "--require-nr",
+        "--deterministic-motion",
+        "--width",
+        "1920",
+        "--height",
+        "1080",
+        "--frames",
+        "1200",
+        "--warmup",
+        "300",
+        "--csv",
+        "D:\\Users\\tcfialho\\Documents\\NRFusion\\.temp\\phase1-quickwins\\cumulative-confirm-typeless-1080\\1080-5-reference\\frames.csv",
+        "--typeless-guides"
+      ],
+      "metrics": {
+        "nr_gpu_ms": {
+          "p50": 9.95123,
+          "p95": 10.194004999999999,
+          "p99": 11.059988
+        },
+        "ngx_evaluation_gpu_ms": {
+          "p50": 11.3915,
+          "p95": 11.632909999999999,
+          "p99": 12.576851
+        },
+        "frame_wall_ms": {
+          "p50": 12.444700000000001,
+          "p95": 12.872544999999999,
+          "p99": 13.662334
+        }
+      },
+      "copies": [
+        2
+      ],
+      "copy_bytes": [
+        11059200
+      ]
+    },
+    {
+      "height": 1080,
+      "repeat": 5,
+      "variant": "candidate",
+      "command": [
+        "D:\\Users\\tcfialho\\Documents\\NRFusion\\dist\\RequiemGame\\RequiemGame.exe",
+        "--require-nrfusion-proxy",
+        "--require-nr",
+        "--deterministic-motion",
+        "--width",
+        "1920",
+        "--height",
+        "1080",
+        "--frames",
+        "1200",
+        "--warmup",
+        "300",
+        "--csv",
+        "D:\\Users\\tcfialho\\Documents\\NRFusion\\.temp\\phase1-quickwins\\cumulative-confirm-typeless-1080\\1080-5-candidate\\frames.csv",
+        "--typeless-guides"
+      ],
+      "metrics": {
+        "nr_gpu_ms": {
+          "p50": 9.856,
+          "p95": 10.183955,
+          "p99": 10.99413
+        },
+        "ngx_evaluation_gpu_ms": {
+          "p50": 11.3121,
+          "p95": 11.664064999999999,
+          "p99": 12.643638
+        },
+        "frame_wall_ms": {
+          "p50": 12.399049999999999,
+          "p95": 12.877065,
+          "p99": 13.686995
+        }
+      },
+      "copies": [
+        0
+      ],
+      "copy_bytes": [
+        0
+      ]
+    },
+    {
+      "height": 1080,
+      "repeat": 6,
+      "variant": "candidate",
+      "command": [
+        "D:\\Users\\tcfialho\\Documents\\NRFusion\\dist\\RequiemGame\\RequiemGame.exe",
+        "--require-nrfusion-proxy",
+        "--require-nr",
+        "--deterministic-motion",
+        "--width",
+        "1920",
+        "--height",
+        "1080",
+        "--frames",
+        "1200",
+        "--warmup",
+        "300",
+        "--csv",
+        "D:\\Users\\tcfialho\\Documents\\NRFusion\\.temp\\phase1-quickwins\\cumulative-confirm-typeless-1080\\1080-6-candidate\\frames.csv",
+        "--typeless-guides"
+      ],
+      "metrics": {
+        "nr_gpu_ms": {
+          "p50": 9.86419,
+          "p95": 10.147005,
+          "p99": 10.913598
+        },
+        "ngx_evaluation_gpu_ms": {
+          "p50": 11.327,
+          "p95": 11.571354999999999,
+          "p99": 12.46396
+        },
+        "frame_wall_ms": {
+          "p50": 12.4058,
+          "p95": 12.82376,
+          "p99": 13.660976999999999
+        }
+      },
+      "copies": [
+        0
+      ],
+      "copy_bytes": [
+        0
+      ]
+    },
+    {
+      "height": 1080,
+      "repeat": 6,
+      "variant": "reference",
+      "command": [
+        "D:\\Users\\tcfialho\\Documents\\NRFusion\\dist\\RequiemGame\\RequiemGame.exe",
+        "--require-nrfusion-proxy",
+        "--require-nr",
+        "--deterministic-motion",
+        "--width",
+        "1920",
+        "--height",
+        "1080",
+        "--frames",
+        "1200",
+        "--warmup",
+        "300",
+        "--csv",
+        "D:\\Users\\tcfialho\\Documents\\NRFusion\\.temp\\phase1-quickwins\\cumulative-confirm-typeless-1080\\1080-6-reference\\frames.csv",
+        "--typeless-guides"
+      ],
+      "metrics": {
+        "nr_gpu_ms": {
+          "p50": 9.92819,
+          "p95": 10.178904999999999,
+          "p99": 11.157858000000001
+        },
+        "ngx_evaluation_gpu_ms": {
+          "p50": 11.393,
+          "p95": 11.6767,
+          "p99": 12.614389
+        },
+        "frame_wall_ms": {
+          "p50": 12.459299999999999,
+          "p95": 12.846789999999999,
+          "p99": 13.728124999999999
+        }
+      },
+      "copies": [
+        2
+      ],
+      "copy_bytes": [
+        11059200
+      ]
+    }
+  ],
+  "summary": {
+    "1080": {
+      "nr_gpu_ms": {
+        "p50": {
+          "before_ms": 9.938432500000001,
+          "after_ms": 9.8629125,
+          "paired_delta_percent": [
+            -0.4702640503876032,
+            -0.930810458986886,
+            -0.6438320885913007,
+            -0.7420203625362665,
+            -0.9569671286866144,
+            -0.6446290814337785
+          ],
+          "median_delta_percent": -0.6933247219850225
+        },
+        "p95": {
+          "before_ms": 10.1852775,
+          "after_ms": 10.1413025,
+          "paired_delta_percent": [
+            -0.5534674118387928,
+            -0.7642949047169778,
+            -0.27009507346585915,
+            -0.5236552718114851,
+            -0.09858735599992396,
+            -0.3133932382706983
+          ],
+          "median_delta_percent": -0.4185242550410917
+        },
+        "p99": {
+          "before_ms": 11.154263499999999,
+          "after_ms": 11.0237735,
+          "paired_delta_percent": [
+            0.8223465012127562,
+            -2.1282728994944766,
+            -0.8721629168617517,
+            -2.225994143691379,
+            -0.5954617672279561,
+            -2.1891298491162114
+          ],
+          "median_delta_percent": -1.5002179081781142
+        }
+      },
+      "ngx_evaluation_gpu_ms": {
+        "p50": {
+          "before_ms": 11.388425,
+          "after_ms": 11.3234,
+          "paired_delta_percent": [
+            -0.4316255845845607,
+            -0.6198374297583409,
+            -0.5713482677300208,
+            -0.6391995498347014,
+            -0.6970109292016136,
+            -0.579303080839122
+          ],
+          "median_delta_percent": -0.5995702552987314
+        },
+        "p95": {
+          "before_ms": 11.633432499999998,
+          "after_ms": 11.591775,
+          "paired_delta_percent": [
+            0.016740776797807833,
+            -0.609213439669809,
+            -0.2209480782760287,
+            -0.3448452501021215,
+            0.26781776872681906,
+            -0.9021812669675611
+          ],
+          "median_delta_percent": -0.2828966641890751
+        },
+        "p99": {
+          "before_ms": 12.642363,
+          "after_ms": 12.6002765,
+          "paired_delta_percent": [
+            1.4252153748939511,
+            -0.9293344380074564,
+            -1.4142402052921055,
+            -1.6410927728028768,
+            0.531031177836172,
+            -1.1925191144810832
+          ],
+          "median_delta_percent": -1.0609267762442698
+        }
+      },
+      "frame_wall_ms": {
+        "p50": {
+          "before_ms": 12.446875,
+          "after_ms": 12.394625,
+          "paired_delta_percent": [
+            -0.35666751108804906,
+            -0.4089413275543796,
+            -0.5638984500825339,
+            -0.5677431806484834,
+            -0.36682282417416223,
+            -0.42939812027962265
+          ],
+          "median_delta_percent": -0.41916972391700114
+        },
+        "p95": {
+          "before_ms": 12.81414,
+          "after_ms": 12.760752499999999,
+          "paired_delta_percent": [
+            -0.5075100005190958,
+            -0.3913281708602945,
+            -0.373351058829241,
+            -0.3544573836497089,
+            0.035113491543437014,
+            -0.17926657164940574
+          ],
+          "median_delta_percent": -0.36390422123947497
+        },
+        "p99": {
+          "before_ms": 13.7420415,
+          "after_ms": 13.690113,
+          "paired_delta_percent": [
+            0.8208742258879242,
+            -1.7582275827364047,
+            -0.7495224978151249,
+            -0.9944330941459634,
+            0.18050356549619284,
+            -0.489127247894372
+          ],
+          "median_delta_percent": -0.6193248728547485
+        }
+      },
+      "captured_rgb_exact": true,
+      "capture_sha256": [
+        "270e16545ceb7a8423240207d2be8fd3709ae3920efef5f486ecd4a2366368dd",
+        "270e16545ceb7a8423240207d2be8fd3709ae3920efef5f486ecd4a2366368dd"
+      ]
+    }
+  },
+  "validated_code_commit": "16e2ee4363897f812386864c91b22749e622c5f4"
+}

@@ -1,0 +1,105 @@
+{
+  "runs": [
+    {
+      "height": 1080,
+      "variant": "reference",
+      "exit": 0,
+      "copies": [
+        2
+      ],
+      "capture_sha256": "c9e727b52e56ad9312578138a0a8633ded578690311ccca86307d323b7406801",
+      "debug_messages": []
+    },
+    {
+      "height": 1080,
+      "variant": "candidate",
+      "exit": 0,
+      "copies": [
+        0
+      ],
+      "capture_sha256": "c9e727b52e56ad9312578138a0a8633ded578690311ccca86307d323b7406801",
+      "debug_messages": []
+    },
+    {
+      "height": 1080,
+      "variant": "candidate-unknown-bridge",
+      "exit": 0,
+      "copies": [
+        2
+      ],
+      "capture_sha256": "c9e727b52e56ad9312578138a0a8633ded578690311ccca86307d323b7406801",
+      "debug_messages": []
+    },
+    {
+      "height": 1440,
+      "variant": "reference",
+      "exit": 0,
+      "copies": [
+        2
+      ],
+      "capture_sha256": "125646e8202efa268ecfa6196cb493d9f3c7ca4021a0512d9f931516d94817b7",
+      "debug_messages": []
+    },
+    {
+      "height": 1440,
+      "variant": "candidate",
+      "exit": 0,
+      "copies": [
+        0
+      ],
+      "capture_sha256": "125646e8202efa268ecfa6196cb493d9f3c7ca4021a0512d9f931516d94817b7",
+      "debug_messages": []
+    },
+    {
+      "height": 1440,
+      "variant": "candidate-unknown-bridge",
+      "exit": 0,
+      "copies": [
+        2
+      ],
+      "capture_sha256": "125646e8202efa268ecfa6196cb493d9f3c7ca4021a0512d9f931516d94817b7",
+      "debug_messages": []
+    },
+    {
+      "height": 2160,
+      "variant": "reference",
+      "exit": 0,
+      "copies": [
+        2
+      ],
+      "capture_sha256": "a6318e2f040365c883afbe263d5d4963cb4a0a92b877dd454a6b6c26dd050d70",
+      "debug_messages": []
+    },
+    {
+      "height": 2160,
+      "variant": "candidate",
+      "exit": 0,
+      "copies": [
+        0
+      ],
+      "capture_sha256": "a6318e2f040365c883afbe263d5d4963cb4a0a92b877dd454a6b6c26dd050d70",
+      "debug_messages": []
+    },
+    {
+      "height": 2160,
+      "variant": "candidate-unknown-bridge",
+      "exit": 0,
+      "copies": [
+        2
+      ],
+      "capture_sha256": "a6318e2f040365c883afbe263d5d4963cb4a0a92b877dd454a6b6c26dd050d70",
+      "debug_messages": []
+    }
+  ],
+  "comparisons": {
+    "1080-candidate": true,
+    "1080-candidate-unknown-bridge": true,
+    "1440-candidate": true,
+    "1440-candidate-unknown-bridge": true,
+    "2160-candidate": true,
+    "2160-candidate-unknown-bridge": true
+  },
+  "scope": "Official Requiem; synthetic guides; debug layer unavailable; unknown-bridge hash fallback",
+  "frames": 180,
+  "warmup": 60
+}

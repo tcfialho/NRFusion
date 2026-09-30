@@ -1,8 +1,111 @@
-# Fase 1 — Quick Wins de Performance: subgate QW1
+# Fase 1 — Quick Wins de Performance: fechamento
 
-**Fase 1 incompleta.** QW1 e QW2 mantidos; QW3 revertido e QW4 descartado; QW5–QW6 pendentes.
-QW1 fechado na continuação: contagem dinâmica de Map/Unmap/CBV, falha de Map e recriação de device testadas.
-A correção preexistente do Death Stranding foi preservada no commit `0ab4bc96d3608e32655bba6b4f5ed5c8598502ba`.
+Os seis itens foram avaliados. **QW1/QW2 preservados; QW6 mantido somente para a combinação qualificada.**
+QW3 revertido, QW4 descartado e QW5 rejeitado. A exigência posterior do usuário de descartar mudanças
+sem ganho convincente substitui os itens originais de manutenção obrigatória de config/descriptor cache.
+
+## Resultado atual
+
+| Change | Before | After | Delta | p95 | p99 | Correctness | Status |
+|---|---:|---:|---:|---|---|---|---|
+| Persistent CB (1080p NR GPU ms) | 9.540095 | 9.550850 | +0.113% | 9.967927 → 9.949440 | 10.997963 → 10.918064 | RGB exact | Mantido; eb3e984 |
+| Logging (µs/INFO call) | 2009.850 | 3.400 | -99.831% | 2100.620 → 3.800 | 2205.485 → 6.302 | Logs preservados; RGB exact | Mantido; e1731b8 |
+| Config cache (1080p NR GPU ms) | 9.892605 | 9.900030 | +0.075% | 11.345493 → 11.238923 | 11.877497 → 11.906638 | RGB exact | Revertido; 4ed0d9b; sem ganho no pipeline |
+| Descriptor cache (1080p NR+DLSS ms) | 11.285500 | 11.279625 | -0.018% pareado | Caudas inconclusivas | Outliers preservados | RGB exact | Rejeitado; f49af63 |
+| Zero-Division | Transfusion atual | Sem patch novo | Não medido | — | — | Assinatura desconhecida; equivalência não qualificada | Rejeitado; 72738d4 |
+| Direct guides (1080p NR+DLSS ms) | 11.391000 | 11.336975 | -0.542% pareado | 11.698315 → 11.689193 (-0.257%) | 12.648431 → 12.509436 (-1.033%) | RGB exact; fallback exact | Mantido; 16e2ee4 |
+| Direct guides (1440p NR+DLSS ms) | 16.981500 | 16.829950 | -0.768% pareado | 19.490210 → 19.375740 (-0.378%) | 20.122622 → 20.056193 (-1.994%) | RGB exact; fallback exact | Mantido; 16e2ee4 |
+| Direct guides (2160p NR+DLSS ms) | 36.905200 | 36.599800 | -0.850% pareado | 38.394182 → 38.139553 (-0.506%) | 39.208512 → 38.991570 (-0.677%) | RGB exact; fallback exact | Mantido; 16e2ee4 |
+
+Os resultados misturam métricas explicitamente identificadas por linha. Logging mede a função real
+isoladamente: **EXPERIMENTO ISOLADO — NÃO VALIDA O PRODUTO FINAL** como ganho de FPS.
+Para QW4/QW6, Before/After são medianas dos percentis por execução; Delta é a mediana das diferenças
+pareadas, que pode diferir da razão entre essas medianas. Não há ganho GPU conclusivo atribuído a QW1/QW2.
+
+## QW6: qualificação, segurança e escopo
+
+- RTX 4050 Laptop SM89 (10DE:28A1); driver gráfico 617.14. O componente NGX efetivamente carregado
+  é 546.19, com fachada 30.0.14.9516. NR/SR/FG são 310.8.0.0; hashes em qualification.json.
+- Qualificação ocorre uma vez no Init; Shutdown invalida o estado. A cada recurso, o caminho consulta
+  papel, formato, desc/subrect e pedido atual. Outras combinações usam o clone original.
+- Depth R32_TYPELESS e motion R32G32_TYPELESS, Texture2D/um mip/uma slice/uma amostra,
+  flags ALLOW_RENDER_TARGET, sem crop de guides. ALLOW_DEPTH_STENCIL e outros formatos não foram
+  qualificados. Pre-SR, scale1, uma passagem, depth invertido, tuning padrão, sem RR.
+- Entradas 1280×720, 1706×960 e 2560×1440 correspondem às **saídas 1080p/1440p/4K** do DLSS.
+  Não houve novo teste de saída 720p nem redução de resolução, precisão ou frequência neural.
+- Clone mantém lifetime/retirement e restauração de estados. No caminho direto, os recursos originais
+  recebem as transições e são restaurados como no caminho tipado existente; não há espera CPU nova.
+- Cópias por frame: 2 → 0; bytes lógicos: 11.059.200 / 19.653.120 / 44.236.800 → 0.
+  Tempo GPU isolado das cópias não foi medido; o NR inclui preparação/modelo/composição.
+- Cinco pares por resolução, 600 frames/150 warmup. Após outlier de p99 em 4K, seis pares adicionais
+  em 1080p/4K com 1200 frames/300 warmup. Ordem A/B alternada. Dados iniciais preservados.
+- Capturas ao final de 180, 600 e 1200 frames: RGB pixel a pixel idêntico. Isso não afirma equivalência
+  bitwise de tensores FP32 nem qualifica todos os cenários temporais de jogos comerciais.
+- Nove execuções de correctness: clone, direto e bridge com um byte anexado, em cada resolução.
+  Bridge com hash desconhecido voltou a 2 cópias/frame; imagem idêntica. Arquivo original restaurado.
+- Debug layer D3D12 indisponível (0x887a002d); tentativa falhou também com a DLL de referência antes
+  de renderizar. Gates físicos de recursos/codec e checks de device removal do Requiem passaram.
+
+## Ganho cumulativo
+
+Referência: DLL original BEFORE de QW1, hash conferido com a evidência histórica. Foi salva enquanto
+HEAD era dac55cf e havia a correção preexistente do Death Stranding no worktree; não é anunciada como
+build de uma árvore pristine. Candidato: código 16e2ee4, incluindo QW1/QW2/QW6.
+
+### 1080p tipado (6 pares)
+
+| Métrica | p50 pareado | p95 pareado | p99 pareado |
+|---|---:|---:|---:|
+| nr_gpu_ms | -0.010% | +0.261% | +0.351% |
+| ngx_evaluation_gpu_ms | -0.109% | +0.579% | +0.086% |
+| frame_wall_ms | -0.144% | +0.513% | +0.345% |
+
+### 1080p typeless (12 pares, duas séries)
+
+| Métrica | p50 pareado | p95 pareado | p99 pareado |
+|---|---:|---:|---:|
+| nr_gpu_ms | -0.813% | -0.539% | -0.608% |
+| ngx_evaluation_gpu_ms | -0.582% | -0.394% | -0.137% |
+| frame_wall_ms | -0.419% | -0.329% | +0.417% |
+
+O caminho tipado não mostrou ganho GPU convincente. O ganho cumulativo NR+DLSS em guides
+typeless qualificados é pequeno, cerca de 0,58% no p50. A primeira série cumulativa tinha p99 NR +1,52%
+e parede +1,03%; a confirmação teve -1,50% e -0,62%, respectivamente. Ambas estão preservadas.
+Não se estabelece uma regressão GPU consistente; o p99 de parede combinado +0,42% permanece
+registrado. Frame-wall contém Present e fence serial do testbed: não é ganho/perda de FPS de gameplay.
+
+## Integração e testes
+
+- Branch standalone/integration; início da fase dac55cf8e38c537ed8f8af2681225918e612f646;
+  início desta continuação 72738d4354d073be2b0f38d691e312a02fea68a8.
+- Commit de benchmark e7b01faf7df5b62727f1e346d9546cc498279d78;
+  commit final de código 16e2ee4363897f812386864c91b22749e622c5f4.
+- Build MSVC Release completo do alvo oficial PASS; CTest 77/77 PASS com gates D3D12 em hardware.
+- Source-size relativo a 0ab4bc9/72738d4: zero violações; nenhum arquivo desta fase acima de 300 linhas.
+- Package/manifest/instalador e smoke do pacote: detalhes e hashes em package-validation.json.
+- Nenhum W4A8/NVFP4/FusedGroupedFfn foi habilitado, corrigido, integrado ou contabilizado como ganho.
+- Sem push/CI remoto nesta continuação; jogos previamente instalados não foram atualizados.
+- Sem limite de 20 minutos e sem novo ZIP, conforme pedido do usuário.
+
+## Evidência reproduzível
+
+Diretório: ../phase1/2026-09-30-qw6-qualified. JSONs por série, CSVs com amostras por frame, telemetria,
+hashes, captura 1080p e logs completos de build/testes. Ferramenta: ../../tools/benchmark_nr_guides.py
+(usar referência/candidata preservadas ou builds correspondentes, pasta --output nova). As DLLs locais
+permanecem em .temp/phase1-quickwins; não foram incorporadas ao Git como código/fixtures.
+
+## Limitações e débitos separados
+
+- Não foi comprovado ganho de FPS nem ausência de regressão em gameplay comercial amplo.
+- Seleção preexistente do loader NGX usa entrada antiga do DriverStore; observada, sem correção fora
+  desta fase. Troca de driver/runtime/bridge fora da chave qualificada mantém clone.
+- Checker padrão contra master encontra RuntimeOverlayWindow.cpp com 322 linhas, preexistente e
+  não alterado nesta fase. O gate relativo ao início da fase passa. Não foi refatorado.
+- Debug layer indisponível e CI/push remoto não executados; não apresentados como aprovados.
+
+## Registro histórico das etapas anteriores
+
+As seções abaixo preservam medições e decisões da época; o fechamento acima define o estado atual.
 
 ## Ambiente e protocolo
 
