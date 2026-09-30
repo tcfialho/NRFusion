@@ -28,7 +28,7 @@ A correção preexistente do Death Stranding foi preservada no commit `0ab4bc96d
 | Logging (µs/INFO call) | 2009.850 | 3.400 | -99.831% | 2100.620 → 3.800 | 2205.485 → 6.302 | Mensagens preservadas; RGB exact | Mantido; e1731b8 |
 | Config cache (µs/getter) | 0.014063 | 0.001563 | -88.889% | 0.014063 → 0.001563 | 0.017969 → 0.001563 | Snapshots coerentes; RGB exact | Revertido por falta de ganho no pipeline | |
 | Descriptor cache | Referência 4ed0d9b | Protótipo testado | NR+DLSS p50 pareado -0.018% | Sem ganho consistente | Outliers no teste | RGB exact | Rejeitado; código restaurado |
-| Zero-Division | — | — | — | — | — | Não testado | QW5 pendente |
+| Zero-Division | Transfusion atual | Sem patch novo | Não medido | — | — | Assinatura desconhecida; domínio numérico não qualificado | Rejeitado |
 | Direct guides | — | — | — | — | — | Não testado | QW6 pendente |
 
 Não há ganho GPU conclusivo. A mudança elimina trabalho redundante: Map, Unmap e CBV creation saíram
@@ -144,3 +144,7 @@ NR GPU 720p: p99 6.644355 → 6.854803 ms (+3.17%); BEFORE variou aproximadament
 - Capturas RGB exact. Cache eliminado do produto por decisão de manutenção mais estrita do usuário.
 - Patch do protótipo, contadores e dados completos preservados em `../phase1/2026-09-30-qw4-rejected`.
 - QW1 e QW2 continuam; QW3 e QW4 descartados. Próxima etapa: QW5 Zero-Division PTX.
+
+## QW5 — rejeitado antes de integração
+
+DLSSG 310.8.0.0, SHA256 5d5cbf14d2727d47f93fd10bf77bd91708ae122482a6f86fd564971641ebd47b. Setenta fatbins extraídos, 31 Blackwell; candidato com 43 div.approx tem 39542 bytes/FNV 1ddb45ec587d4411, diferente do upstream 39638/7a6f5f41105c6d85. Teste genérico real SM89: 6147 diferenças bitwise em 1048576 floats finitos para div.ftz por 1 versus mov; subnormais precisam de qualificação. Isso é experimento isolado, não teste visual do kernel do produto. Sem patch arbitrário/quality warp/benchmark FG, pois gate de assinatura/correctness não passou. Infraestrutura Transfusion atual preservada. Detalhes em ../phase1/2026-09-30-qw5-rejected/decision.json.

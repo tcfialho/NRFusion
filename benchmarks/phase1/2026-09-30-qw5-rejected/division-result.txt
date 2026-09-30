@@ -1,0 +1,1 @@
+samples=1048576 div1_vs_mov_differences=6147 div3_vs_mul_differences=0 example_input=0x00000000 original=0x00000000 replacement=0x00000000
