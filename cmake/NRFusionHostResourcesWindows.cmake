@@ -25,6 +25,11 @@ if (WIN32)
         src/NgxGameProxyD3D12.cpp
         src/NgxGameProxyDiagnostics.cpp
         src/NgxGameProxyOverlay.cpp
+        src/NgxGameNeuralHook.cpp
+        src/NgxGameNeuralFrame.cpp
+        src/GameNeuralTiming.cpp
+        src/GameNeuralQueues.cpp
+        src/GameNeuralControl.cpp
         src/MfgModuleWatcher.cpp
         src/CaptureProvider32.cpp
         src/CaptureProvider32Io.cpp
@@ -38,6 +43,7 @@ if (WIN32)
         NRFUSION_PROXY_RUNTIME=1)
     target_compile_options(nrfusion_proxy PRIVATE /UNRFUSION_CAPTURE32_STATIC)
     target_link_libraries(nrfusion_proxy PRIVATE nrfusion_core d3d11 d3d12 dxgi d3dcompiler user32 gdi32)
+    target_link_libraries(nrfusion_proxy PRIVATE minhook)
     set_target_properties(nrfusion_proxy PROPERTIES OUTPUT_NAME "nrfusion_proxy")
 
     add_executable(nrfusion_proxy_runtime_tests tests/proxy64_runtime_tests.cpp)

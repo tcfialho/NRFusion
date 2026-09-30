@@ -82,6 +82,9 @@ if (WIN32)
         src/DlssgTransfusionRuntime.cpp
         src/DlssgTransfusionPatches.cpp
         src/DlssgTransfusionFatbin.cpp
+        src/StreamlineDlssgHook.cpp
+        src/GameWindowFinder.cpp
+        src/Logger.cpp
         src/SyntheticDx12ProviderLifecycle.cpp
         src/SyntheticDx12ProviderAccounting.cpp
         src/SyntheticDx12ProviderSubmit.cpp
@@ -134,6 +137,7 @@ if (WIN32)
         src/RuntimeOverlayWorker.cpp
     )
     target_link_libraries(nrfusion_core PUBLIC user32 gdi32)
+    include(cmake/NRFusionRuntimeOverlay.cmake)
 endif()
 
 include(CheckLanguage)
@@ -154,7 +158,8 @@ endif()
 target_include_directories(nrfusion_core PUBLIC include)
 target_compile_definitions(nrfusion_core PUBLIC NRFUSION_CAPTURE32_STATIC=1)
 if (MSVC)
-    target_compile_options(nrfusion_core PRIVATE $<$<COMPILE_LANGUAGE:CXX>:/W4 /permissive->)
+    target_compile_options(nrfusion_core PRIVATE $<$<COMPILE_LANGUAGE:CXX>:/W4 /permissive->
+        PUBLIC $<$<COMPILE_LANGUAGE:CXX>:/utf-8>)
 else()
     target_compile_options(nrfusion_core PRIVATE $<$<COMPILE_LANGUAGE:CXX>:-Wall -Wextra -Wpedantic -Werror>)
 endif()
