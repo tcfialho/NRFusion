@@ -1,6 +1,6 @@
 # Fase 1 — Quick Wins de Performance: subgate QW1
 
-**Fase 1 incompleta.** QW1–QW3 implementados e medidos; QW4–QW6 pendentes.
+**Fase 1 incompleta.** QW1 e QW2 mantidos; QW3 revertido e QW4 descartado; QW5–QW6 pendentes.
 QW1 fechado na continuação: contagem dinâmica de Map/Unmap/CBV, falha de Map e recriação de device testadas.
 A correção preexistente do Death Stranding foi preservada no commit `0ab4bc96d3608e32655bba6b4f5ed5c8598502ba`.
 
@@ -27,7 +27,7 @@ A correção preexistente do Death Stranding foi preservada no commit `0ab4bc96d
 | Persistent CB (1080p, NR GPU ms) | 9.540095 | 9.550850 | +0.113% | 9.967927 → 9.949440 | 10.997963 → 10.918064 | RGB exact nas capturas | Mantido; eb3e984 |
 | Logging (µs/INFO call) | 2009.850 | 3.400 | -99.831% | 2100.620 → 3.800 | 2205.485 → 6.302 | Mensagens preservadas; RGB exact | Mantido; e1731b8 |
 | Config cache (µs/getter) | 0.014063 | 0.001563 | -88.889% | 0.014063 → 0.001563 | 0.017969 → 0.001563 | Snapshots coerentes; RGB exact | Revertido por falta de ganho no pipeline | |
-| Descriptor cache | — | — | — | — | — | Não testado | QW4 pendente |
+| Descriptor cache | Referência 4ed0d9b | Protótipo testado | NR+DLSS p50 pareado -0.018% | Sem ganho consistente | Outliers no teste | RGB exact | Rejeitado; código restaurado |
 | Zero-Division | — | — | — | — | — | Não testado | QW5 pendente |
 | Direct guides | — | — | — | — | — | Não testado | QW6 pendente |
 
@@ -131,3 +131,16 @@ NR GPU 720p: p99 6.644355 → 6.854803 ms (+3.17%); BEFORE variou aproximadament
   que já contém ambos; arquivos de codec e Logger não foram revertidos.
 - Rejeição: ganho GPU/FPS não comprovado. A/B sem regressão relevante não é prova de ganho.
 - Próxima etapa: QW4 descriptor caching, medido em 1080p; manter apenas se o ganho for comprovado.
+
+## QW4 — descartado por falta de ganho convincente
+
+- Cache fixo de SRV/UAV por slot e identidade COM, com retenção da resource para evitar reuso falso de ponteiro.
+- Prototype test GPU: 48 slots preenchidos, 240 SRV/96 UAV creates; mais 48 dispatches não aumentam os contadores.
+  Resource trocada reconstrói SRVs. Nenhuma alocação/PSO/heap por frame foi adicionada.
+- A/B 1080p, seis pares em ordem alternada, 1200 frames e 300 warmups, FP8/scale1/Pre-SR/1pass/MFG off.
+- NR+DLSS p50 pareado: -0.0182%; frame-wall p50 pareado: praticamente 0%.
+- NR GPU p50 pareado: -0.1513%, insuficiente para afirmar ganho relevante no pipeline.
+- Outliers em alguns pares impediram atribuir grandes diferenças de cauda ao cache; causa não comprovada.
+- Capturas RGB exact. Cache eliminado do produto por decisão de manutenção mais estrita do usuário.
+- Patch do protótipo, contadores e dados completos preservados em `../phase1/2026-09-30-qw4-rejected`.
+- QW1 e QW2 continuam; QW3 e QW4 descartados. Próxima etapa: QW5 Zero-Division PTX.
