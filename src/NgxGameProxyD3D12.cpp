@@ -121,9 +121,6 @@ DriverApi& Driver() {
 }
 
 struct ProxyFeature {
-    nrfusion::RuntimeConfig configuration{};
-    nrfusion::RuntimeAdvancedConfig advanced{};
-    std::uint64_t configurationGeneration = 0;
     void* driverFeature = nullptr;
     nrfusion::D3D12NrExecutor nr;
     nrfusion::NgxGameProxyOverlay overlay;
@@ -153,9 +150,10 @@ ID3D12Resource* GetResource(Param* params, const char* name) {
 bool RunNeuralPass(ProxyFeature& feature, ID3D12GraphicsCommandList* commands,
                    Param* params) {
     if (!feature.nrReady || !commands || !params) return false;
-    nrfusion::RuntimeOverlay::Instance().GetActiveConfigurationIfChanged(
-        feature.configurationGeneration, feature.configuration, feature.advanced);
-    if (!feature.configuration.enabled) return false;
+    nrfusion::RuntimeConfig config{};
+    nrfusion::RuntimeAdvancedConfig advanced{};
+    nrfusion::RuntimeOverlay::Instance().GetActiveConfiguration(config, advanced);
+    if (!config.enabled) return false;
 
     ID3D12Resource* color = GetResource(params, "Color");
     ID3D12Resource* depth = GetResource(params, "Depth");

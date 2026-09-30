@@ -26,7 +26,7 @@ A correção preexistente do Death Stranding foi preservada no commit `0ab4bc96d
 | Persistent CB (720p, NR GPU ms) | 5.975550 | 5.957630 | -0.300% | 6.190080 → 6.165500 | 6.478394 → 6.395290 | RGB exact nas capturas | Mantido; eb3e984 |
 | Persistent CB (1080p, NR GPU ms) | 9.540095 | 9.550850 | +0.113% | 9.967927 → 9.949440 | 10.997963 → 10.918064 | RGB exact nas capturas | Mantido; eb3e984 |
 | Logging (µs/INFO call) | 2009.850 | 3.400 | -99.831% | 2100.620 → 3.800 | 2205.485 → 6.302 | Mensagens preservadas; RGB exact | Mantido; e1731b8 |
-| Config cache (µs/getter) | 0.014063 | 0.001563 | -88.889% | 0.014063 → 0.001563 | 0.017969 → 0.001563 | Snapshots coerentes; RGB exact | Mantido; commit próprio |
+| Config cache (µs/getter) | 0.014063 | 0.001563 | -88.889% | 0.014063 → 0.001563 | 0.017969 → 0.001563 | Snapshots coerentes; RGB exact | Revertido por falta de ganho no pipeline | |
 | Descriptor cache | — | — | — | — | — | Não testado | QW4 pendente |
 | Zero-Division | — | — | — | — | — | Não testado | QW5 pendente |
 | Direct guides | — | — | — | — | — | Não testado | QW6 pendente |
@@ -122,3 +122,12 @@ NR GPU 720p: p99 6.644355 → 6.854803 ms (+3.17%); BEFORE variou aproximadament
 - A piora inicial de +2.22% no p95 NR não se repetiu como regressão consistente neste A/B.
   Não é prova de equivalência em todos os jogos nem ganho GPU; QW3 mantido pela remoção do mutex/cópia.
 - Resultado completo e percentis de cada par: `../phase1/2026-09-30-qw3-tail-1080p/paired-result.json`.
+
+## Decisão posterior do usuário — QW3 revertido
+
+- O usuário passou a exigir ganho real comprovado, rejeitando o getter isolado como justificativa de manutenção.
+- QW3 revertido no código, sem reescrever histórico; medições de CPU/GPU e A/B continuam preservadas.
+- QW1 (`eb3e984`) e QW2 (`e1731b8`) permanecem ativos. A restauração usa o código de `41b0828`,
+  que já contém ambos; arquivos de codec e Logger não foram revertidos.
+- Rejeição: ganho GPU/FPS não comprovado. A/B sem regressão relevante não é prova de ganho.
+- Próxima etapa: QW4 descriptor caching, medido em 1080p; manter apenas se o ganho for comprovado.

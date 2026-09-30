@@ -62,11 +62,11 @@ void RuntimeOverlay::Initialize(HWND gameWindow, RuntimeShell* shell) {
     }
 
     RuntimeToast::Instance().Initialize(gameWindow_);
-    {
-        std::lock_guard lock(mutex_);
-        LoadConfigurations();
-        ConfigureFrameGeneration();
-        if (shell_) shell_->Initialize(activeMain_);
+    LoadConfigurations();
+    ConfigureFrameGeneration();
+
+    if (shell_) {
+        shell_->Initialize(activeMain_);
     }
 
     UpdateTelemetrySnapshot();
@@ -124,7 +124,6 @@ void RuntimeOverlay::LoadConfigurations() {
     }
 
     generation_ = activeMain_.generation;
-    configurationGeneration_.fetch_add(1, std::memory_order_release);
 }
 
 bool RuntimeOverlay::SaveConfigurations() {
@@ -251,7 +250,6 @@ void RuntimeOverlay::ApplyStagedConfiguration() {
         menuDrawing_.AcceptCommit(proposedMain, proposedAdv);
         activeMain_ = proposedMain;
         activeAdv_ = proposedAdv;
-        configurationGeneration_.fetch_add(1, std::memory_order_release);
 
         ConfigureFrameGeneration();
         const bool saved = SaveConfigurations();
