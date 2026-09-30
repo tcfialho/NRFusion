@@ -111,6 +111,13 @@ bool StreamlineMfg::Initialize(
         return false;
     }
 
+    if (const auto proxy = GetModuleHandleW(L"version.dll")) {
+        if (const auto patchMfg = reinterpret_cast<PatchMfgFn>(
+                GetProcAddress(proxy, "NRFusion_PatchMfgModule"))) {
+            patchMfg(nullptr);
+        }
+    }
+
     impl_->initialized = true;
     impl_->status = "Streamline initialized";
     return true;

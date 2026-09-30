@@ -14,6 +14,7 @@ public:
     void Stop(bool isProcessTerminating = false);
     bool IsRunning() const noexcept { return running_.load(); }
     bool ModuleObserved() const noexcept { return observed_.load(); }
+    void ScanAndPatchLoadedModules();
 
 private:
     MfgModuleWatcher() = default;
