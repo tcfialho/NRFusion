@@ -13,6 +13,7 @@
             DispatchMessageW(&msg);
         }
         if (!g_running) break;
+        guideCopyCounter.Reset();
         if (mfg.Requested()) {
             EnsureWindowFocus(g_hwnd);
         }
@@ -25,6 +26,7 @@
 
         Check(allocator->Reset(), "allocator reset");
         Check(commands->Reset(allocator.Get(), pipeline.Get()), "command reset");
+        guideCopyCounter.Reattach(commands.Get());
         if (simulationFrame != 0) {
             for (auto* guide : {depth.Get(), motion.Get()})
                 requiem::Transition(commands.Get(), guide,
@@ -191,7 +193,8 @@
             timings << simulationFrame << ',' << inputWidth << ',' << inputHeight << ',' << width << ','
                     << height << ',' << evaluationMs << ',' << frameMs << ',' << nrFrame.nrGpuMs << ','
                     << nrFrame.passes << ',' << nrFrame.successfulPasses << ','
-                    << nrFrame.kernelLaunches << ',' << nrFrame.chainCalls << '\n';
+                    << nrFrame.kernelLaunches << ',' << nrFrame.chainCalls << ','
+                    << guideCopyCounter.copies << ',' << guideCopyCounter.bytes << '\n';
         if (capture && simulationFrame + 1 == g_frameLimit) capture->SaveAfterFence(g_capture);
         if (view != lastView) {
             const char* labels[] = {"Entrada original", "Resultado calculado (NGX)", "Referencia NVIDIA (JPEG)"};

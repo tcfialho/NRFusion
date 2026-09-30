@@ -30,6 +30,7 @@
 #include "image.hpp"
 #include "ngx_dlss.hpp"
 #include "frame_resources.hpp"
+#include "guide_copy_counter.hpp"
 #include "streamline_mfg.hpp"
 #include "nrfusion/NrDiagnosticsApi.hpp"
 #include <memory>
@@ -62,6 +63,7 @@ bool g_fixedScene = false;
 // two runs follow the same motion sequence even when wall-clock pacing differs.
 bool g_deterministicMotion = false;
 bool g_debugLayer = false;
+bool g_typelessGuides = false;
 unsigned g_view = 1; // 0 input, 1 calculated, 2 NVIDIA reference
 std::uint64_t g_width = 1920, g_height = 1080;
 std::uint64_t g_warmup = 120;

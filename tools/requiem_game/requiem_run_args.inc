@@ -8,6 +8,8 @@
             g_deterministicMotion = true;
         else if (argument == "--debug-layer")
             g_debugLayer = true;
+        else if (argument == "--typeless-guides")
+            g_typelessGuides = true;
         else if (argument == "--require-nr")
             g_requireNr = true;
         else if (argument == "--require-nrfusion-proxy")
@@ -53,8 +55,9 @@
         throw std::runtime_error("Choose fixed scene or deterministic motion");
     if (g_requireMfg && g_mfgMultiplier < 2)
         throw std::runtime_error("--require-mfg requires --mfg <2..6>");
-    if ((g_width != 1280 || g_height != 720) && (g_width != 1920 || g_height != 1080)) {
-        std::cerr << "Supported output sizes: 1280x720, 1920x1080" << std::endl;
+    if ((g_width != 1280 || g_height != 720) && (g_width != 1920 || g_height != 1080) &&
+        (g_width != 2560 || g_height != 1440) && (g_width != 3840 || g_height != 2160)) {
+        std::cerr << "Supported output sizes: 1280x720, 1920x1080, 2560x1440, 3840x2160" << std::endl;
         return 2;
     }
     if ((!g_csv.empty() || !g_capture.empty()) && (!g_frameLimit || g_frameLimit <= g_warmup)) {
@@ -65,5 +68,5 @@
     if (!g_csv.empty()) {
         timings.open(g_csv);
         if (!timings) { std::cerr << "Cannot open CSV" << std::endl; return 2; }
-        timings << "frame,input_width,input_height,output_width,output_height,ngx_evaluation_gpu_ms,frame_wall_ms,nr_gpu_ms,nr_passes,nr_successes,nvapi_kernels,nvapi_chains\n";
+        timings << "frame,input_width,input_height,output_width,output_height,ngx_evaluation_gpu_ms,frame_wall_ms,nr_gpu_ms,nr_passes,nr_successes,nvapi_kernels,nvapi_chains,guide_copies,guide_copy_bytes\n";
     }
