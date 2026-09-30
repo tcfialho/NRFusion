@@ -10,6 +10,7 @@
 #include <wrl/client.h>
 
 #include "D3D12TestDevice.hpp"
+#include "D3D12CodecApiCounters.hpp"
 
 #include "nrfusion/D3D12NrCodec.hpp"
 
@@ -65,13 +66,16 @@ int main() {
         IID_PPV_ARGS(&list))));
     assert(SUCCEEDED(device->CreateFence(0, D3D12_FENCE_FLAG_NONE, IID_PPV_ARGS(&fence))));
 
+    nrfusion::testing::CodecApiCounters apiCalls(device.Get());
     D3D12NrCodec codec;
     assert(codec.Init(device.Get()));
     assert(codec.Ready());
     auto accounting = codec.Accounting();
     assert(accounting.resourceCount == 48);
+    assert(accounting.mappedConstantBufferCount == 48);
     assert(accounting.descriptorHeapCount == 1);
     assert(accounting.logicalBytes == 48ull * sizeof(D3D12NrCodecConstants));
+    assert(apiCalls.maps == 48 && apiCalls.unmaps == 0 && apiCalls.cbvs == 48);
 
     auto source = Texture(
         device.Get(), D3D12_RESOURCE_FLAG_NONE,
@@ -99,6 +103,7 @@ int main() {
     assert(codec.Dispatch(list.Get(), constants, resources));
     constants.mode = static_cast<std::uint32_t>(D3D12NrCodecMode::Resolve);
     assert(codec.Dispatch(list.Get(), constants, resources));
+    assert(apiCalls.maps == 48 && apiCalls.unmaps == 0 && apiCalls.cbvs == 48);
     assert(SUCCEEDED(list->Close()));
 
     ID3D12CommandList* lists[] = {list.Get()};
@@ -113,9 +118,28 @@ int main() {
 
     assert(device->GetDeviceRemovedReason() == S_OK);
     codec.Shutdown();
+    assert(apiCalls.unmaps == 48);
     accounting = codec.Accounting();
     assert(accounting.resourceCount == 0);
+    assert(accounting.mappedConstantBufferCount == 0);
     assert(accounting.descriptorHeapCount == 0);
     assert(accounting.logicalBytes == 0);
+    assert(!codec.Init(nullptr));
+    assert(!codec.Ready());
+    assert(codec.Init(device.Get()));
+    assert(codec.Accounting().mappedConstantBufferCount == 48);
+    codec.Shutdown();
+    assert(apiCalls.maps == 96 && apiCalls.unmaps == 96 && apiCalls.cbvs == 96);
+    apiCalls.failAtMap = apiCalls.maps + 3;
+    assert(!codec.Init(device.Get()));
+    assert(!codec.Ready());
+    assert(codec.Accounting().resourceCount == 0);
+    assert(codec.Accounting().mappedConstantBufferCount == 0);
+    assert(apiCalls.maps == 99 && apiCalls.unmaps == 98 && apiCalls.cbvs == 98);
+    apiCalls.failAtMap = 0;
+    auto recreatedDevice = nrfusion::testing::CreateD3D12TestDevice();
+    assert(recreatedDevice && codec.Init(recreatedDevice.Get()));
+    assert(codec.Accounting().mappedConstantBufferCount == 48);
+    codec.Shutdown();
     return 0;
 }

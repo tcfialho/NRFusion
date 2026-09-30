@@ -75,18 +75,9 @@ bool D3D12NrCodec::WriteUav(
 }
 
 bool D3D12NrCodec::WriteConstants(
-    Slot& slot, const D3D12NrCodecConstants& constants,
-    D3D12_CPU_DESCRIPTOR_HANDLE handle) noexcept {
-    void* mapped = nullptr;
-    const D3D12_RANGE noRead{0, 0};
-    if (FAILED(slot.constants->Map(0, &noRead, &mapped)) || mapped == nullptr) return false;
-    std::memcpy(mapped, &constants, sizeof(constants));
-    slot.constants->Unmap(0, nullptr);
-
-    D3D12_CONSTANT_BUFFER_VIEW_DESC desc{};
-    desc.BufferLocation = slot.constants->GetGPUVirtualAddress();
-    desc.SizeInBytes = static_cast<UINT>(sizeof(constants));
-    device_->CreateConstantBufferView(&desc, handle);
+    Slot& slot, const D3D12NrCodecConstants& constants) noexcept {
+    if (slot.mappedConstants == nullptr) return false;
+    std::memcpy(slot.mappedConstants, &constants, sizeof(constants));
     return true;
 }
 
@@ -143,8 +134,7 @@ bool D3D12NrCodec::DispatchWithPipeline(
     for (std::uint32_t i = 0; i < kUavCount; ++i) {
         if (!WriteUav(uavs[i], Handle(slotNumber, kSrvCount + i))) return false;
     }
-    if (!WriteConstants(
-            slot, constants, Handle(slotNumber, kSrvCount + kUavCount)))
+    if (!WriteConstants(slot, constants))
         return false;
 
     ID3D12DescriptorHeap* heaps[] = {descriptorHeap_};

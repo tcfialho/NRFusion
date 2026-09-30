@@ -117,12 +117,22 @@ bool D3D12NrCodec::CreateSlots() noexcept {
     buffer.SampleDesc.Count = 1;
     buffer.Layout = D3D12_TEXTURE_LAYOUT_ROW_MAJOR;
 
-    for (Slot& slot : slots_) {
+    for (std::uint32_t slotNumber = 0; slotNumber < kSlotCount; ++slotNumber) {
+        Slot& slot = slots_[slotNumber];
         if (FAILED(device_->CreateCommittedResource(
                 &upload, D3D12_HEAP_FLAG_NONE, &buffer,
                 D3D12_RESOURCE_STATE_GENERIC_READ, nullptr,
                 IID_PPV_ARGS(&slot.constants))))
             return false;
+        const D3D12_RANGE noRead{0, 0};
+        if (FAILED(slot.constants->Map(0, &noRead, &slot.mappedConstants)) ||
+            slot.mappedConstants == nullptr)
+            return false;
+        D3D12_CONSTANT_BUFFER_VIEW_DESC desc{};
+        desc.BufferLocation = slot.constants->GetGPUVirtualAddress();
+        desc.SizeInBytes = static_cast<UINT>(sizeof(D3D12NrCodecConstants));
+        device_->CreateConstantBufferView(
+            &desc, Handle(slotNumber, kSrvCount + kUavCount));
     }
     return true;
 }
@@ -133,6 +143,7 @@ D3D12NrCodecAccounting D3D12NrCodec::Accounting() const noexcept {
     for (const Slot& slot : slots_) {
         if (slot.constants == nullptr) continue;
         ++result.resourceCount;
+        if (slot.mappedConstants != nullptr) ++result.mappedConstantBufferCount;
         result.logicalBytes += sizeof(D3D12NrCodecConstants);
     }
     return result;
@@ -140,6 +151,8 @@ D3D12NrCodecAccounting D3D12NrCodec::Accounting() const noexcept {
 
 void D3D12NrCodec::Shutdown() noexcept {
     for (Slot& slot : slots_) {
+        if (slot.mappedConstants != nullptr && slot.constants != nullptr)
+            slot.constants->Unmap(0, nullptr);
         if (slot.constants != nullptr) slot.constants->Release();
         slot = {};
     }

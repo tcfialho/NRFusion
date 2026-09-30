@@ -77,6 +77,7 @@ struct D3D12NrCodecResources {
 
 struct D3D12NrCodecAccounting {
     std::size_t resourceCount = 0;
+    std::size_t mappedConstantBufferCount = 0;
     std::size_t descriptorHeapCount = 0;
     std::uint64_t logicalBytes = 0;
 };
@@ -113,6 +114,7 @@ private:
 
     struct Slot {
         ID3D12Resource* constants = nullptr;
+        void* mappedConstants = nullptr;
     };
 
     bool CreateRootSignature() noexcept;
@@ -120,8 +122,7 @@ private:
     bool CreateSlots() noexcept;
     bool WriteSrv(ID3D12Resource* resource, D3D12_CPU_DESCRIPTOR_HANDLE handle) noexcept;
     bool WriteUav(ID3D12Resource* resource, D3D12_CPU_DESCRIPTOR_HANDLE handle) noexcept;
-    bool WriteConstants(Slot& slot, const D3D12NrCodecConstants& constants,
-                        D3D12_CPU_DESCRIPTOR_HANDLE handle) noexcept;
+    bool WriteConstants(Slot& slot, const D3D12NrCodecConstants& constants) noexcept;
     bool DispatchWithPipeline(ID3D12GraphicsCommandList* commandList,
                               ID3D12PipelineState* pipeline,
                               const D3D12NrCodecConstants& constants,
