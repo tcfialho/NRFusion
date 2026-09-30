@@ -49,7 +49,9 @@ bool RuntimeNrAdvancedConfig::Valid() const noexcept {
         return false;
 
     if (!InRange(appearance.intensity, 0.0f, 2.0f) ||
-        !InRange(appearance.localStructure, 0.0f, 2.0f))
+        !InRange(appearance.localStructure, 0.0f, 2.0f) ||
+        !InRange(workingScale, 0.25f, 1.0f) || passCount < 1 || passCount > 3 ||
+        !InRange(residualBlend, 0.01f, 1.0f))
         return false;
 
     if (appearance.skinStructure.has_value() &&

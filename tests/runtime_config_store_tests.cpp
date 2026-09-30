@@ -40,6 +40,11 @@ int main() {
     assert(store.Load(88, loaded));
     config.generation = 88;
     assert(loaded == config);
+    config.mfgMode = RuntimeMfgMode::Off;
+    config.displayHzAuto = false;
+    assert(store.Save(config));
+    assert(store.Load(config.generation, loaded));
+    assert(loaded == config);
 
     const RuntimeConfig stable = loaded;
     {

@@ -180,6 +180,12 @@ bool RuntimeAdvancedConfigStore::Load(RuntimeAdvancedConfig& out) const {
             bit = 1u << 14; valid = ParseBool(value, candidate.nr.residualEnabled);
         } else if (key == "multipass_enabled") {
             bit = 1u << 15; valid = ParseBool(value, candidate.nr.multipassEnabled);
+        } else if (key == "multipass_count") {
+            bit = 1u << 18; valid = ParseNumber(value, candidate.nr.passCount);
+        } else if (key == "working_scale") {
+            bit = 1u << 19; valid = ParseNumber(value, candidate.nr.workingScale);
+        } else if (key == "residual_blend") {
+            bit = 1u << 20; valid = ParseNumber(value, candidate.nr.residualBlend);
         } else if (key == "mfg_experimental_56x") {
             bit = 1u << 16; valid = ParseBool(value, candidate.mfg.allowExperimental56x);
         } else if (key == "diagnostics_enabled") {
@@ -191,7 +197,7 @@ bool RuntimeAdvancedConfigStore::Load(RuntimeAdvancedConfig& out) const {
         seen |= bit;
     }
 
-    if (!input.eof() || seen != allFields || !candidate.Valid()) return false;
+    if (!input.eof() || (seen & allFields) != allFields || !candidate.Valid()) return false;
     out = candidate;
     return true;
 }
@@ -229,6 +235,9 @@ bool RuntimeAdvancedConfigStore::Save(const RuntimeAdvancedConfig& config) const
            << "placement=" << PlacementName(config.nr.placement) << '\n'
            << "residual_enabled=" << (config.nr.residualEnabled ? "true" : "false") << '\n'
            << "multipass_enabled=" << (config.nr.multipassEnabled ? "true" : "false") << '\n'
+           << "multipass_count=" << config.nr.passCount << '\n'
+           << "working_scale=" << config.nr.workingScale << '\n'
+           << "residual_blend=" << config.nr.residualBlend << '\n'
            << "mfg_experimental_56x="
            << (config.mfg.allowExperimental56x ? "true" : "false") << '\n'
            << "diagnostics_enabled="

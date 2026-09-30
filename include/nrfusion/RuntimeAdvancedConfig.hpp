@@ -18,6 +18,9 @@ struct RuntimeNrAdvancedConfig {
     NrPlacement placement = NrPlacement::Auto;
     bool residualEnabled = false;
     bool multipassEnabled = false;
+    std::uint32_t passCount = 2;
+    float workingScale = 1.0f;
+    float residualBlend = 0.08f;
 
     bool Valid() const noexcept;
 };

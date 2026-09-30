@@ -32,6 +32,9 @@ int main() {
     config.nr.placement = NrPlacement::AcrossRr;
     config.nr.residualEnabled = true;
     config.nr.multipassEnabled = true;
+    config.nr.passCount = 3;
+    config.nr.workingScale = 0.67f;
+    config.nr.residualBlend = 0.15f;
     config.mfg.allowExperimental56x = true;
     config.diagnostics.enabled = true;
     assert(store.Save(config));
@@ -52,6 +55,9 @@ int main() {
     assert(loaded.nr.placement == NrPlacement::AcrossRr);
     assert(loaded.nr.residualEnabled);
     assert(loaded.nr.multipassEnabled);
+    assert(loaded.nr.passCount == 3);
+    assert(loaded.nr.workingScale == 0.67f);
+    assert(loaded.nr.residualBlend == 0.15f);
     assert(loaded.mfg.allowExperimental56x);
     assert(loaded.diagnostics.enabled);
 

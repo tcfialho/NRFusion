@@ -15,7 +15,8 @@ enum class RuntimeNrMode : std::uint8_t {
 enum class RuntimeMfgMode : std::uint8_t {
     FollowGame,
     Fixed,
-    Dynamic
+    Dynamic,
+    Off
 };
 
 enum class RuntimeMfgQuality : std::uint8_t {
@@ -29,6 +30,7 @@ struct RuntimeConfig {
     RuntimeNrMode mode = RuntimeNrMode::Auto;
     float targetFps = 60.0f;
     float displayHz = 60.0f;
+    bool displayHzAuto = true;
     RuntimeMfgMode mfgMode = RuntimeMfgMode::FollowGame;
     RuntimeMfgQuality mfgQuality = RuntimeMfgQuality::Performance;
     std::uint8_t mfgMultiplier = 2;
@@ -42,7 +44,8 @@ struct RuntimeConfig {
                                  mode == RuntimeNrMode::Custom;
         const bool knownMfgMode = mfgMode == RuntimeMfgMode::FollowGame ||
                                   mfgMode == RuntimeMfgMode::Fixed ||
-                                  mfgMode == RuntimeMfgMode::Dynamic;
+                                  mfgMode == RuntimeMfgMode::Dynamic ||
+                                  mfgMode == RuntimeMfgMode::Off;
         const bool knownMfgQuality =
             mfgQuality == RuntimeMfgQuality::Performance ||
             mfgQuality == RuntimeMfgQuality::Enhanced;

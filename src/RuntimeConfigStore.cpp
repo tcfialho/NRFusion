@@ -48,6 +48,7 @@ bool ParseMfgMode(std::string_view text, RuntimeMfgMode& out) noexcept {
     if (text == "follow_game") out = RuntimeMfgMode::FollowGame;
     else if (text == "fixed") out = RuntimeMfgMode::Fixed;
     else if (text == "dynamic") out = RuntimeMfgMode::Dynamic;
+    else if (text == "off") out = RuntimeMfgMode::Off;
     else return false;
     return true;
 }
@@ -74,6 +75,7 @@ const char* MfgModeName(RuntimeMfgMode mode) noexcept {
     case RuntimeMfgMode::FollowGame: return "follow_game";
     case RuntimeMfgMode::Fixed: return "fixed";
     case RuntimeMfgMode::Dynamic: return "dynamic";
+    case RuntimeMfgMode::Off: return "off";
     }
     return "";
 }
@@ -125,6 +127,9 @@ bool RuntimeConfigStore::Load(
         } else if (key == "display_hz") {
             bit = 1u << 4;
             valid = ParseNumber(value, candidate.displayHz);
+        } else if (key == "display_hz_auto") {
+            bit = 1u << 8;
+            valid = ParseBool(value, candidate.displayHzAuto);
         } else if (key == "mfg_mode") {
             bit = 1u << 5;
             valid = ParseMfgMode(value, candidate.mfgMode);
@@ -144,7 +149,7 @@ bool RuntimeConfigStore::Load(
         seen |= bit;
     }
 
-    if (!input.eof() || seen != allFields || !candidate.Valid()) return false;
+    if (!input.eof() || (seen & allFields) != allFields || !candidate.Valid()) return false;
     out = candidate;
     return true;
 }
@@ -164,6 +169,7 @@ bool RuntimeConfigStore::Save(const RuntimeConfig& config) const {
            << "nr_mode=" << NrModeName(config.mode) << '\n'
            << "target_rendered_fps=" << config.targetFps << '\n'
            << "display_hz=" << config.displayHz << '\n'
+           << "display_hz_auto=" << (config.displayHzAuto ? "true" : "false") << '\n'
            << "mfg_mode=" << MfgModeName(config.mfgMode) << '\n'
            << "mfg_quality=" << MfgQualityName(config.mfgQuality) << '\n'
            << "mfg_multiplier=" << static_cast<unsigned>(config.mfgMultiplier) << '\n';
