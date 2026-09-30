@@ -107,6 +107,7 @@ if (WIN32)
         src/HostServer64Guides.cpp
         src/HostServer64Frame.cpp
         src/D3D12NrExecutorLoader.cpp
+        src/D3D12NrDirectGuideQualification.cpp
         src/D3D12NrExecutorLifecycle.cpp
         src/D3D12NrExecutorDispatch.cpp
         src/D3D12NrExecutorPasses.cpp
@@ -136,7 +137,7 @@ if (WIN32)
         src/RuntimeOverlayInput.cpp
         src/RuntimeOverlayWorker.cpp
     )
-    target_link_libraries(nrfusion_core PUBLIC user32 gdi32)
+    target_link_libraries(nrfusion_core PUBLIC user32 gdi32 dxgi version)
     include(cmake/NRFusionRuntimeOverlay.cmake)
 endif()
 

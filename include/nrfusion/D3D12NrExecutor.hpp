@@ -220,6 +220,7 @@ private:
 
     static void ReleaseRetired(void* context, NrRetiredObject retired) noexcept;
     void DiscoverFloatSlot();
+    bool QualifyDirectGuides(ID3D12Device* device) noexcept;
     bool RetirePassFeatures(std::uint32_t first) noexcept;
     bool RetireFeatureGeneration() noexcept;
     std::uint32_t PreparePassFeatures(
@@ -240,6 +241,7 @@ private:
 
     HMODULE driverModule_ = nullptr;
     bool driverModuleOwned_ = false;
+    bool directGuidesQualified_ = false;
     HMODULE forwarderModule_ = nullptr;
     InitFn driverInit_ = nullptr;
     GetCapFn getCapabilityParams_ = nullptr;

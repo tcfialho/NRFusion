@@ -1,4 +1,5 @@
 #include "nrfusion/D3D12NrExecutor.hpp"
+#include "nrfusion/D3D12GuideFormat.hpp"
 
 #include <algorithm>
 
@@ -149,7 +150,29 @@ bool D3D12NrExecutor::PrepareFrameResources(
                             bool& cloned) -> ID3D12Resource* {
         const D3D12_RESOURCE_DESC sourceDesc = source->GetDesc();
         const DXGI_FORMAT typed = TypedGuideFormat(sourceDesc.Format);
-        if (typed == sourceDesc.Format) {
+        const auto& guideRect = kind == D3D12NrGuideKind::Depth
+            ? context.plan.depth : context.plan.motion;
+        const bool qualifiedRequest = directGuidesQualified_ && request.plan.beforeUpscale &&
+            context.plan.requestedPasses == 1 && !context.plan.reduced && !context.plan.cropColor &&
+            !context.acrossRr && !request.composition.rayReconstruction &&
+            request.tuning[0] == DlssNrTuning{} && request.depthInverted &&
+            guideRect.x == 0 && guideRect.y == 0 &&
+            guideRect.width == sourceDesc.Width && guideRect.height == sourceDesc.Height;
+        const bool qualifiedDesc = sourceDesc.Dimension == D3D12_RESOURCE_DIMENSION_TEXTURE2D &&
+            sourceDesc.DepthOrArraySize == 1 && sourceDesc.MipLevels == 1 &&
+            sourceDesc.SampleDesc.Count == 1 && sourceDesc.SampleDesc.Quality == 0 &&
+            sourceDesc.Layout == D3D12_TEXTURE_LAYOUT_UNKNOWN &&
+            sourceDesc.Flags == D3D12_RESOURCE_FLAG_ALLOW_RENDER_TARGET;
+        const bool directDepth = kind == D3D12NrGuideKind::Depth &&
+            sourceDesc.Format == DXGI_FORMAT_R32_TYPELESS;
+        const bool directMotion = kind == D3D12NrGuideKind::Motion &&
+            sourceDesc.Format == DXGI_FORMAT_R32G32_TYPELESS;
+        const bool direct = (directDepth || directMotion) && CanUseDirectD3D12Guide(
+            qualifiedRequest && qualifiedDesc,
+            directDepth ? D3D12GuideRole::Depth : D3D12GuideRole::Motion,
+            directDepth ? D3D12TypelessGuideFamily::R32 : D3D12TypelessGuideFamily::R32G32,
+            {static_cast<std::uint32_t>(sourceDesc.Width), sourceDesc.Height});
+        if (typed == sourceDesc.Format || direct) {
             if (guideClones_.Get(kind) != nullptr &&
                 !guideClones_.Retire(kind, retirement_))
                 return nullptr;

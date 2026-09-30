@@ -29,4 +29,7 @@ ResourceFormat NormalizeD3D12TypelessGuideFormat(
     D3D12GuideRole role,
     D3D12TypelessGuideFamily family) noexcept;
 
+bool CanUseDirectD3D12Guide(bool runtimeQualified, D3D12GuideRole role,
+                           D3D12TypelessGuideFamily family, Resolution surface) noexcept;
+
 } // namespace nrfusion

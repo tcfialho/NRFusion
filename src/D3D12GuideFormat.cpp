@@ -2,6 +2,18 @@
 
 namespace nrfusion {
 
+bool CanUseDirectD3D12Guide(bool runtimeQualified, D3D12GuideRole role,
+                           D3D12TypelessGuideFamily family, Resolution surface) noexcept {
+    if (!runtimeQualified) return false;
+    const bool formatQualified =
+        (role == D3D12GuideRole::Depth && family == D3D12TypelessGuideFamily::R32) ||
+        (role == D3D12GuideRole::Motion && family == D3D12TypelessGuideFamily::R32G32);
+    return formatQualified &&
+        ((surface.width == 1280 && surface.height == 720) ||
+         (surface.width == 1706 && surface.height == 960) ||
+         (surface.width == 2560 && surface.height == 1440));
+}
+
 ResourceFormat NormalizeD3D12TypedGuideFormat(
     D3D12GuideRole role, ResourceFormat format) noexcept {
     if (role == D3D12GuideRole::Depth) {

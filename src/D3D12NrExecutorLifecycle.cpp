@@ -81,6 +81,7 @@ bool D3D12NrExecutor::EnsureFeatureForEpoch(
 }
 
 void D3D12NrExecutor::Shutdown() {
+    directGuidesQualified_ = false;
     if (feature_ && release_) release_(feature_);
     feature_ = nullptr;
     for (std::uint32_t pass = 1; pass < kD3D12NrMaxPassCount; ++pass) {

@@ -203,6 +203,7 @@ bool D3D12NrExecutor::Init(ID3D12Device* device) {
         return false;
     }
     DiscoverFloatSlot();
+    directGuidesQualified_ = QualifyDirectGuides(device);
     status_ = "initialised";
     return true;
 }
