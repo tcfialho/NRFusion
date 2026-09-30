@@ -6,7 +6,8 @@ A correção preexistente do Death Stranding foi preservada no commit `0ab4bc96d
 
 ## Ambiente e protocolo
 
-- HEAD inicial/final: `dac55cf8e38c537ed8f8af2681225918e612f646`; branch `standalone/integration`.
+- Commit inicial da fase: `dac55cf8e38c537ed8f8af2681225918e612f646`; último commit de código validado:
+  `e1731b8a68f17fbf11e599ea89c21abe6ab74457`; branch `standalone/integration`.
 - RTX 4050 Laptop GPU SM89, driver 617.14; AC, plano Alto desempenho.
 - FP8 NVIDIA real, Pre-SR, WorkingScale 1.0, uma passagem, MFG desligado.
 - Executável oficial `dist/RequiemGame/RequiemGame.exe`, cena/movimento determinísticos.
@@ -22,9 +23,9 @@ A correção preexistente do Death Stranding foi preservada no commit `0ab4bc96d
 
 | Change | Before | After | Delta | p95 | p99 | Correctness | Status |
 |---|---:|---:|---:|---|---|---|---|
-| Persistent CB (720p, NR GPU ms) | 5.975550 | 5.957630 | -0.300% | 6.190080 → 6.165500 | 6.478394 → 6.395290 | RGB exact nas capturas | Validado; não commitado |
-| Persistent CB (1080p, NR GPU ms) | 9.540095 | 9.550850 | +0.113% | 9.967927 → 9.949440 | 10.997963 → 10.918064 | RGB exact nas capturas | Validado; não commitado |
-| Logging (µs/INFO call) | 2009.850 | 3.400 | -99.831% | 2100.620 → 3.800 | 2205.485 → 6.302 | Mensagens preservadas; RGB exact | Mantido; commit próprio |
+| Persistent CB (720p, NR GPU ms) | 5.975550 | 5.957630 | -0.300% | 6.190080 → 6.165500 | 6.478394 → 6.395290 | RGB exact nas capturas | Mantido; eb3e984 |
+| Persistent CB (1080p, NR GPU ms) | 9.540095 | 9.550850 | +0.113% | 9.967927 → 9.949440 | 10.997963 → 10.918064 | RGB exact nas capturas | Mantido; eb3e984 |
+| Logging (µs/INFO call) | 2009.850 | 3.400 | -99.831% | 2100.620 → 3.800 | 2205.485 → 6.302 | Mensagens preservadas; RGB exact | Mantido; e1731b8 |
 | Config cache | — | — | — | — | — | Não testado | QW3 pendente |
 | Descriptor cache | — | — | — | — | — | Não testado | QW4 pendente |
 | Zero-Division | — | — | — | — | — | Não testado | QW5 pendente |
@@ -50,12 +51,12 @@ os contadores em 48/0/48; shutdown executa os 48 Unmap. A instrumentação está
 
 ## Estado e pendências
 
-- Correção preexistente do Death Stranding commitada separadamente. QW1 será registrado em commit próprio.
+- Correção preexistente: `0ab4bc9`. QW1: `eb3e984`. QW2: `e1731b8`. Commits independentes; todos locais.
 - O testbed oficial usa o proxy QW1. Instalador e DLLs de jogos não foram atualizados nesta fase.
-- Working tree ainda não está limpo; não declarar Definition of Done da fase atingida.
+- Working tree limpo após os commits desta sessão; Definition of Done da fase NÃO atingida, pois QW3–QW6 estão pendentes.
 - CI do HEAD inicial: Windows e Portable PASS; Focused falha por dívidas preexistentes
   `src/RuntimeOverlayWindow.cpp` (322 linhas) e `tools/requiem_game/requiem_run_setup.inc` (351).
-- Próxima ação: iniciar QW2 somente após registrar QW1; manter as medições isoladas.
+- Próxima ação exata: QW3, auditar todos os escritores da configuração, medir BEFORE, implementar cache por generation, testar concorrência e medir AFTER.
 
 ## QW2 — encerramento
 
@@ -74,3 +75,9 @@ os contadores em 48/0/48; shutdown executa os 48 Unmap. A instrumentação está
   Frame-wall é serial/contém espera do testbed, não FPS de gameplay. Ganho cumulativo de FPS não foi comprovado.
 - Alteração mantida pela eliminação de flushes normais e logging periódico; nenhum algoritmo visual mudou.
 - QW3–QW6 não executados nesta sessão por limite de 20 minutos do AGENT.md.
+
+## Limitações atuais
+
+- Push e CI dos commits novos ainda não executados: aguardam autorização de publicação.
+- Sem qualificação de gameplay ampla para as otimizações; o gate físico executado foi o pipeline oficial Requiem.
+- Instalador e DLLs nos jogos continuam na versão anterior à Fase 1; o proxy otimizado foi aplicado no Requiem.
