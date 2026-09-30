@@ -104,3 +104,21 @@ os contadores em 48/0/48; shutdown executa os 48 Unmap. A instrumentação está
 ### Ressalva de timing QW3
 
 NR GPU 720p: p99 6.644355 → 6.854803 ms (+3.17%); BEFORE variou aproximadamente 10.51% entre runs e AFTER 5.94%. P95 1080p +2.22%. O teste curto não estabelece regressão estatisticamente significativa nem ganho GPU; manter pelo mutex/cópia eliminados e correctness, com confirmação de tails no A/B cumulativo final. CPU getter muito curto e quantizado pelo clock: não extrapolar nanosegundos para FPS.
+
+## QW3 — confirmação de tails em 1080p
+
+- A pedido do usuário, 720p está excluído das próximas medições. Input DLSS do teste 1080p permanece
+  1280x720, como no baseline Pre-SR; não houve redução de WorkingScale/resolução neural para obter ganho.
+- Referência anterior ao QW3: commit `41b0828`; candidato: `09abdc4`.
+- Referência compilada do source exato desse commit em diretório isolado, com o mesmo MSVC/dependências.
+- Ambos executaram no mesmo `dist/RequiemGame/RequiemGame.exe`; apenas a DLL foi alternada.
+- Seis pares A/B, alternando a ordem a cada par; 1200 frames, 300 warmups e 900 amostras por execução.
+- FP8, WorkingScale 1.0, Pre-SR, uma passagem, MFG off. Shader headers têm hashes idênticos.
+- Capturas RGB idênticas. DLL candidata e configurações originais restauradas ao terminar.
+- p95 NR, mediana das execuções: 11.3454925 → 11.2389225 ms.
+  Mediana das diferenças pareadas: -0.3967%; pares variaram de -4.46% a +3.40%.
+- p50 NR: 9.892605 → 9.90003 ms; p99 NR: 11.877497 → 11.9066375 ms.
+- NR+DLSS p95: 13.1794 → 13.198155 ms, diferença de aproximadamente +0.14% entre medianas.
+- A piora inicial de +2.22% no p95 NR não se repetiu como regressão consistente neste A/B.
+  Não é prova de equivalência em todos os jogos nem ganho GPU; QW3 mantido pela remoção do mutex/cópia.
+- Resultado completo e percentis de cada par: `../phase1/2026-09-30-qw3-tail-1080p/paired-result.json`.
