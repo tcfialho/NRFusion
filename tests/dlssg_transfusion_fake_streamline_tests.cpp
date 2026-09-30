@@ -14,6 +14,7 @@ struct FakeStreamlineClient {
     void SetOptions(nrfusion::DlssgTransfusion& transfusion)
     {
         transfusion.ProcessSetOptions(mode, frames);
+        transfusion.ObserveAcceptedOptions(mode, frames);
     }
 
     void GetState(nrfusion::DlssgTransfusion& transfusion)
@@ -74,6 +75,9 @@ int main()
     assert(client.mode == 0);
     assert(client.frames == 1);
 
+    client.mode = 1;
+    client.SetOptions(transfusion);
+
     transfusion.SetControlMode(nrfusion::MfgControlMode::OverrideFixed);
     transfusion.SetOverrideMultiplier(4);
     for (int i = 0; i < 7; ++i)
@@ -84,13 +88,17 @@ int main()
     }
     client.frames = 1;
     client.SetOptions(transfusion);
+    assert(client.frames == 1);
+    for (int frame = 0; frame < 8; ++frame) transfusion.ObserveRenderedFrame();
+    client.frames = 1;
+    client.SetOptions(transfusion);
     assert(client.frames == 3);
 
     transfusion.SetControlMode(nrfusion::MfgControlMode::Dynamic);
     client.mode = 0;
     client.frames = 3;
     client.SetOptions(transfusion);
-    assert(client.mode == 2);
+    assert(client.mode == 1);
     assert(client.frames == 3);
 
     transfusion.SetControlMode(nrfusion::MfgControlMode::FollowGame);
@@ -98,7 +106,7 @@ int main()
     {
         client.frames = (i & 1) == 0 ? 1u : 3u;
         client.SetOptions(transfusion);
-        assert(client.frames == 3);
+        assert(client.frames == ((i & 1) == 0 ? 1u : 3u));
     }
 
     client.maxFrames = 2;

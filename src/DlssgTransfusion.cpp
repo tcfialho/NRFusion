@@ -1,4 +1,5 @@
 #include "nrfusion/DlssgTransfusion.hpp"
+#include "nrfusion/Logger.hpp"
 
 namespace nrfusion {
 namespace {
@@ -120,33 +121,50 @@ void DlssgTransfusion::TryApply(HMODULE module)
     if (!module)
         return;
 
+    wchar_t modPath[MAX_PATH] = {};
+    if (GetModuleFileNameW(module, modPath, MAX_PATH) == 0)
+    {
+        wcscpy_s(modPath, L"<in-memory module>");
+    }
+
     std::lock_guard lock(m_mutex);
+    NRF_LOG_INFO("Transfusion", "TryApply called on module %p (%ls)", module, modPath);
+
     if (m_lastPatchedModule == module && m_status.moduleFound && m_status.advertiseGatePatched && m_status.blackwellTransfusionActive)
+    {
+        NRF_LOG_INFO("Transfusion", "Module %p (%ls) already patched, skipping duplicate apply", module, modPath);
         return;
+    }
+
+    m_status.moduleFound = true;
+    m_status.failureReason.clear();
 
     if (!HasSupportedArchGates(module))
     {
-        if (!m_status.moduleFound)
-        {
-            m_status.failureReason = "unsupported DLSSG gate signatures";
-            PublishSnapshotLocked(TransfusionFailure::UnsupportedGateSignatures);
-        }
+        m_status.failureReason = "unsupported DLSSG gate signatures";
+        NRF_LOG_WARN("Transfusion", "Unsupported DLSSG gate signatures in %ls", modPath);
+        PublishSnapshotLocked(TransfusionFailure::UnsupportedGateSignatures);
         return;
     }
 
     if (!TransfuseBlackwellFatbins(module))
     {
         m_status.failureReason = "no compatible Blackwell fatbins";
+        NRF_LOG_WARN("Transfusion", "No compatible Blackwell fatbins found in %ls", modPath);
         PublishSnapshotLocked(TransfusionFailure::NoCompatibleBlackwellFatbins);
         return;
     }
+    NRF_LOG_INFO("Transfusion", "Fatbin transfusion succeeded! Blackwell kernels transfused: %u", m_status.blackwellKernelsRewritten);
 
     if (!PatchArchGates(module))
     {
         m_status.failureReason = "DLSSG gate patch failed";
+        NRF_LOG_WARN("Transfusion", "DLSSG gate patch failed in %ls", modPath);
         PublishSnapshotLocked(TransfusionFailure::GatePatchFailed);
         return;
     }
+    NRF_LOG_INFO("Transfusion", "Arch gates patched successfully! AdvertiseGate=%d, ValidateGate=%d",
+                 m_status.advertiseGatePatched, m_status.validateGatePatched);
 
     if (m_uiMode.load(std::memory_order_acquire) == MfgUiMode::Auto)
         PatchHudlessUi(module);
@@ -156,6 +174,7 @@ void DlssgTransfusion::TryApply(HMODULE module)
     m_appliedOnce.store(true, std::memory_order_release);
     m_status.failureReason.clear();
     PublishSnapshotLocked(TransfusionFailure::None);
+    NRF_LOG_INFO("Transfusion", "DLSS-G Transfusion FULLY APPLIED to %ls! Max frames unlocked: 5", modPath);
 }
 
 } // namespace nrfusion

@@ -1,4 +1,5 @@
 #include "nrfusion/DlssgTransfusion.hpp"
+#include "PeMemoryUtils.hpp"
 
 #include <algorithm>
 #include <cstring>
@@ -82,50 +83,34 @@ inline bool Lz4BlockDecompress(const uint8_t* src, size_t src_size, uint8_t* dst
     return in == src_size && out == dst_size;
 }
 
-const IMAGE_NT_HEADERS64* GetNtHeaders(HMODULE module)
-{
-    if (!module) return nullptr;
-    __try {
-        auto* base = reinterpret_cast<uint8_t*>(module);
-        auto* dos = reinterpret_cast<IMAGE_DOS_HEADER*>(base);
-        if (dos->e_magic != IMAGE_DOS_SIGNATURE) return nullptr;
-        if (dos->e_lfanew <= 0 || dos->e_lfanew > 0x10000000) return nullptr;
-        auto* nt = reinterpret_cast<IMAGE_NT_HEADERS64*>(base + dos->e_lfanew);
-        if (nt->Signature != IMAGE_NT_SIGNATURE) return nullptr;
-        return nt;
-    }
-    __except (EXCEPTION_EXECUTE_HANDLER) {
-        return nullptr;
-    }
-}
-
 } // namespace
 
 bool DlssgTransfusion::TransfuseBlackwellFatbins(HMODULE module)
 {
-    __try {
-        const auto* nt = GetNtHeaders(module);
-        if (!nt) return false;
-        auto* base = reinterpret_cast<uint8_t*>(module);
+    const auto* nt = GetNtHeaders(module);
+    if (!nt) return false;
+    auto* base = reinterpret_cast<uint8_t*>(module);
 
-        constexpr char from[] = ".target sm_120";
-        constexpr char to[]   = ".target sm_89 ";
-        static_assert(sizeof(from) == sizeof(to), "Tamanho exato");
+    constexpr char from[] = ".target sm_120";
+    constexpr char to[]   = ".target sm_89 ";
+    static_assert(sizeof(from) == sizeof(to), "Tamanho exato");
 
-        unsigned int rewritten = 0;
-        const IMAGE_SECTION_HEADER* section = IMAGE_FIRST_SECTION(nt);
-        for (unsigned i = 0; i < nt->FileHeader.NumberOfSections; ++i, ++section)
-        {
-            if ((section->Characteristics & IMAGE_SCN_MEM_READ) == 0) continue;
-            if ((section->Characteristics & IMAGE_SCN_MEM_EXECUTE) != 0) continue;
-            if (section->VirtualAddress >= nt->OptionalHeader.SizeOfImage) continue;
+    unsigned int rewritten = 0;
+    const IMAGE_SECTION_HEADER* section = IMAGE_FIRST_SECTION(nt);
+    for (unsigned i = 0; i < nt->FileHeader.NumberOfSections; ++i, ++section)
+    {
+        if ((section->Characteristics & IMAGE_SCN_MEM_READ) == 0) continue;
+        if ((section->Characteristics & IMAGE_SCN_MEM_EXECUTE) != 0) continue;
+        if (section->VirtualAddress >= nt->OptionalHeader.SizeOfImage) continue;
 
-            const size_t available = nt->OptionalHeader.SizeOfImage - section->VirtualAddress;
-            const size_t size = std::min<size_t>(available, static_cast<size_t>(section->Misc.VirtualSize));
-            if (size < kOuterHeader) continue;
-            uint8_t* start = base + section->VirtualAddress;
+        const size_t available = nt->OptionalHeader.SizeOfImage - section->VirtualAddress;
+        const size_t candidateSize = std::min<size_t>(
+            available, static_cast<size_t>(section->Misc.VirtualSize != 0 ? section->Misc.VirtualSize : section->SizeOfRawData));
+        uint8_t* start = base + section->VirtualAddress;
+        const size_t size = GetSafeReadableSpan(start, candidateSize);
+        if (size < kOuterHeader) continue;
 
-            for (uint8_t* c = start; c + kOuterHeader <= start + size;)
+        for (uint8_t* c = start; c + kOuterHeader <= start + size;)
             {
                 if (ReadU32(c) != kFatbinMagic)
                 {
@@ -214,10 +199,6 @@ bool DlssgTransfusion::TransfuseBlackwellFatbins(HMODULE module)
         m_status.blackwellTransfusionActive = (rewritten > 0);
         m_status.blackwellKernelsRewritten = rewritten;
         return (rewritten > 0);
-    }
-    __except (EXCEPTION_EXECUTE_HANDLER) {
-        return false;
-    }
 }
 
 } // namespace nrfusion
