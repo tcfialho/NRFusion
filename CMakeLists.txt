@@ -15,4 +15,5 @@ include(cmake/NRFusionTools.cmake)
 
 if (WIN32)
     include(cmake/NRFusionWindows.cmake)
+    include(cmake/NRFusionLoggerWindows.cmake)
 endif()

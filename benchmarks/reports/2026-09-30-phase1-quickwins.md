@@ -1,6 +1,6 @@
 # Fase 1 — Quick Wins de Performance: subgate QW1
 
-**Fase 1 incompleta.** QW1 implementado e medido; QW2–QW6 não foram implementados nem rejeitados.
+**Fase 1 incompleta.** QW1 e QW2 implementados e medidos; QW3–QW6 pendentes.
 QW1 fechado na continuação: contagem dinâmica de Map/Unmap/CBV, falha de Map e recriação de device testadas.
 A correção preexistente do Death Stranding foi preservada no commit `0ab4bc96d3608e32655bba6b4f5ed5c8598502ba`.
 
@@ -24,7 +24,7 @@ A correção preexistente do Death Stranding foi preservada no commit `0ab4bc96d
 |---|---:|---:|---:|---|---|---|---|
 | Persistent CB (720p, NR GPU ms) | 5.975550 | 5.957630 | -0.300% | 6.190080 → 6.165500 | 6.478394 → 6.395290 | RGB exact nas capturas | Validado; não commitado |
 | Persistent CB (1080p, NR GPU ms) | 9.540095 | 9.550850 | +0.113% | 9.967927 → 9.949440 | 10.997963 → 10.918064 | RGB exact nas capturas | Validado; não commitado |
-| Logging | — | — | — | — | — | Não testado | QW2 pendente |
+| Logging (µs/INFO call) | 2009.850 | 3.400 | -99.831% | 2100.620 → 3.800 | 2205.485 → 6.302 | Mensagens preservadas; RGB exact | Mantido; commit próprio |
 | Config cache | — | — | — | — | — | Não testado | QW3 pendente |
 | Descriptor cache | — | — | — | — | — | Não testado | QW4 pendente |
 | Zero-Division | — | — | — | — | — | Não testado | QW5 pendente |
@@ -56,3 +56,21 @@ os contadores em 48/0/48; shutdown executa os 48 Unmap. A instrumentação está
 - CI do HEAD inicial: Windows e Portable PASS; Focused falha por dívidas preexistentes
   `src/RuntimeOverlayWindow.cpp` (322 linhas) e `tools/requiem_game/requiem_run_setup.inc` (351).
 - Próxima ação: iniciar QW2 somente após registrar QW1; manter as medições isoladas.
+
+## QW2 — encerramento
+
+- QW1 registrado em `eb3e9844a7955f77c13791c241b916bd36f05539`.
+- Logger INFO/DEBUG/WARN usa WriteFile sem FlushFileBuffers; ERROR preserva flush imediato.
+- Flush explícito no shutdown do proxy e no fechamento do logger.
+- Log a cada 120 quadros do NeuralHook removido; logs de initialization/erro/recreation/status mantidos.
+- CPU do logger: **EXPERIMENTO ISOLADO — NÃO VALIDA O PRODUTO FINAL** como ganho de FPS.
+  Compila Logger.cpp real com wrappers de contagem de I/O apenas no teste; cinco runs de 1000 INFO calls,
+  100 warmups/run. Os contadores registram 1000 writes em ambos e flushes 1000 → 0.
+- Teste de política do logger e teste do proxy: PASS. INFO/DEBUG/WARN/ERROR continuam no arquivo,
+  ERROR faz flush e Flush explícito funciona.
+- Pipeline oficial Requiem BEFORE/AFTER: 20 runs cada, 360 frames/run, 60 warmups/run, cinco repetições,
+  NR scale 1.0, FP8, Pre-SR, uma passagem e MFG off. Capturas 720p/1080p RGB bit-identical.
+- GPU p50/p95/p99 e frame-wall p50/p95/p99 estão em `../phase1/2026-09-30-qw2/comparison.json`.
+  Frame-wall é serial/contém espera do testbed, não FPS de gameplay. Ganho cumulativo de FPS não foi comprovado.
+- Alteração mantida pela eliminação de flushes normais e logging periódico; nenhum algoritmo visual mudou.
+- QW3–QW6 não executados nesta sessão por limite de 20 minutos do AGENT.md.

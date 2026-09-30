@@ -47,6 +47,7 @@ extern "C" __declspec(dllexport) void NRFusion_ShutdownRuntime() {
     nrfusion::RuntimeOverlay::Instance().Shutdown();
     nrfusion::StopCaptureD3D11Runtime(false);
     nrfusion::MfgModuleWatcher::Instance().Stop(false);
+    nrfusion::Logger::Instance().Flush();
 }
 
 extern "C" __declspec(dllexport) void NRFusion_SetMenuOpen(int open) {

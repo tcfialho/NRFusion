@@ -15,6 +15,7 @@ Logger::~Logger() noexcept {
     if (initialized_) {
         EnterCriticalSection(&cs_);
         if (fileHandle_ != INVALID_HANDLE_VALUE) {
+            FlushFileBuffers(fileHandle_);
             CloseHandle(fileHandle_);
             fileHandle_ = INVALID_HANDLE_VALUE;
         }
@@ -123,7 +124,7 @@ void Logger::Log(LogLevel level, const char* component, const char* format, ...)
     if (fileHandle_ != INVALID_HANDLE_VALUE) {
         DWORD bytesWritten = 0;
         WriteFile(fileHandle_, lineBuf, static_cast<DWORD>(lineLen), &bytesWritten, nullptr);
-        FlushFileBuffers(fileHandle_);
+        if (level == LogLevel::Error) FlushFileBuffers(fileHandle_);
     }
     LeaveCriticalSection(&cs_);
 }

@@ -125,7 +125,7 @@ int __cdecl HookEvaluate(ID3D12GraphicsCommandList* commands, const void* handle
         advanced.nr.multipassEnabled ? advanced.nr.passCount : 1, feature->control.GpuMilliseconds());
     if (applied) ++feature->applied;
     const auto& status = feature->executor.Status();
-    if (status != feature->lastStatus || (applied && feature->applied % 120 == 1)) {
+    if (status != feature->lastStatus) {
         feature->lastStatus = status;
         NRF_LOG_INFO("NeuralHook", "Game NR handle=%p result=%u applied=%llu calls=%llu before=%d scale=%.2f passes=%u style=%d gpu_ms=%.3f status=%s",
             handle, static_cast<unsigned>(result), feature->applied, feature->calls, context.runBeforeUpscale,
