@@ -8,9 +8,11 @@ grep -q 'Page custom GamePageCreate GamePageLeave' "$installer"
 grep -q 'nsDialogs::SelectFileDialog' "$installer"
 grep -q -- '--api-exit-code' "$installer"
 grep -q -- '--support-exit-code' "$installer"
-grep -q '64-bit Direct3D 11 games that import version.dll' "$installer"
+grep -q 'D3D12 requires native DLSS' "$installer"
 grep -q '!insertmacro TryProxy "version.dll"' "$installer"
-if grep -q 'TryProxy "dxgi.dll"\|TryProxy "winmm.dll"\|TryProxy "dbghelp.dll"' "$installer"; then
+grep -q '!insertmacro TryProxy "dxgi.dll"' "$installer"
+grep -q -- '--proxy-exit-code' "$installer"
+if grep -q 'TryProxy "winmm.dll"\|TryProxy "dbghelp.dll"' "$installer"; then
   echo "FAIL: installer can rename the version proxy to an incompatible loader name" >&2
   exit 1
 fi

@@ -41,6 +41,7 @@ struct GameProbeResult {
     bool proxyVersionOccupied = false;
     bool proxyWinmmOccupied = false;
     bool importsVersionDll = false;
+    bool importsDxgiDll = false;
     std::vector<std::filesystem::path> capabilityEvidence;
 
     bool HasNativeDlssContract() const noexcept {
@@ -58,7 +59,7 @@ public:
     static GameProbeResult Probe(const std::filesystem::path& executable);
     static const char* ApiName(GraphicsApi api) noexcept;
     // Capabilities wired into the shipped standalone proxy, not merely present in the portable core.
-    static RuntimeCapabilities IntegratedCapabilities() noexcept;
+    static RuntimeCapabilities IntegratedCapabilities(GraphicsApi api = GraphicsApi::Unknown) noexcept;
     static GameInstallSupport InstallSupport(const GameProbeResult& result) noexcept;
     static GameInstallSupport InstallSupport(const GameProbeResult& result,
                                              const RuntimeCapabilities& capabilities) noexcept;

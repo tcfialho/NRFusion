@@ -111,7 +111,13 @@ proxy_installed:
   WriteINIStr "$MarkerPath" "Install" "ProxySHA256" "$1"
   WriteINIStr "$MarkerPath" "Install" "Version" "${APP_VERSION}"
   WriteINIStr "$MarkerPath" "Install" "Bitness" "$GameBitness"
-  WriteINIStr "$MarkerPath" "Install" "Transport" "d3d11-host64"
+  ${If} $HasNativeDlss == 1
+  ${AndIf} $GameBitness == 64
+  ${AndIf} $DetectedProxy == 2
+    WriteINIStr "$MarkerPath" "Install" "Transport" "d3d12-ngx"
+  ${Else}
+    WriteINIStr "$MarkerPath" "Install" "Transport" "d3d11-host64"
+  ${EndIf}
   ${If} $HasNativeDlss == 1
     WriteINIStr "$MarkerPath" "Install" "Provider" "native"
   ${Else}

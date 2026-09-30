@@ -87,10 +87,20 @@ int main(int argc, char** argv) {
         return 2;
     }
     const auto result = nrfusion::GameProbe::Probe(argv[1]);
+    auto support = nrfusion::GameProbe::InstallSupport(result, nrfusion::GameProbe::IntegratedCapabilities(result.api));
+    if (result.api == nrfusion::GraphicsApi::D3D12 &&
+        !result.importsVersionDll && !result.importsDxgiDll)
+        support = nrfusion::GameInstallSupport::ProviderUnavailable;
     if (argc == 3 && std::strcmp(argv[2], "--api-exit-code") == 0)
         return ApiExitCode(result.api);
-    if (argc == 3 && std::strcmp(argv[2], "--support-exit-code") == 0)
-        return SupportExitCode(nrfusion::GameProbe::InstallSupport(result, nrfusion::GameProbe::IntegratedCapabilities()));
+    if (argc == 3 && std::strcmp(argv[2], "--support-exit-code") == 0) {
+        return SupportExitCode(support);
+    }
+    if (argc == 3 && std::strcmp(argv[2], "--proxy-exit-code") == 0) {
+        if (result.importsVersionDll) return 1;
+        if (result.api == nrfusion::GraphicsApi::D3D12 && result.importsDxgiDll) return 2;
+        return 0;
+    }
     if (argc == 3 && std::strcmp(argv[2], "--bitness-exit-code") == 0)
         return result.bitness;
     if (argc == 3 && std::strcmp(argv[2], "--dlss-exit-code") == 0)
@@ -109,6 +119,8 @@ int main(int argc, char** argv) {
     std::cout << "reshade=" << (result.hasReShade ? 1 : 0) << "\n";
     std::cout << "optiscaler=" << (result.hasOptiScaler ? 1 : 0) << "\n";
     std::cout << "dxvk=" << (result.hasDxvk ? 1 : 0) << "\n";
-    std::cout << "install_support=" << nrfusion::GameProbe::InstallSupportName(nrfusion::GameProbe::InstallSupport(result, nrfusion::GameProbe::IntegratedCapabilities())) << "\n";
+    std::cout << "imports_version=" << result.importsVersionDll << "\n";
+    std::cout << "imports_dxgi=" << result.importsDxgiDll << "\n";
+    std::cout << "install_support=" << nrfusion::GameProbe::InstallSupportName(support) << "\n";
     return result.api == nrfusion::GraphicsApi::Unknown ? 1 : 0;
 }

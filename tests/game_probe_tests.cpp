@@ -224,6 +224,7 @@ int main() {
 
 
 #include "game_probe_installer_state_tests.inc"
+#include "game_probe_delay_import_tests.inc"
     // IntegratedCapabilities exposes only the D3D11 bridge actually embedded in the standalone
     // version.dll carrier. Other providers remain harness-only until they have a shipped hook.
     {

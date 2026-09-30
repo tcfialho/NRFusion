@@ -211,6 +211,12 @@ DWORD WINAPI CaptureHookWorker(void*) {
 
 } // namespace
 
+#ifdef NRFUSION_PROXY_RUNTIME
+void AttachProxyDxgiFactory(void* factory) {
+    if (factory) PatchFactoryVtable(static_cast<IDXGIFactory*>(factory));
+}
+#endif
+
 void StartCaptureD3D11Hooks() {
     bool expected = false;
     if (!g_hookWorkerStarted.compare_exchange_strong(expected, true)) return;

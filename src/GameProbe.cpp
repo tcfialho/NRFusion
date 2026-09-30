@@ -16,6 +16,8 @@ void DetectVersionImport(const std::filesystem::path& executable, GameProbeResul
     const auto peInfo = InspectPe(executable);
     result.importsVersionDll = std::find(
         peInfo.importedDlls.begin(), peInfo.importedDlls.end(), "version.dll") != peInfo.importedDlls.end();
+    result.importsDxgiDll = std::find(
+        peInfo.importedDlls.begin(), peInfo.importedDlls.end(), "dxgi.dll") != peInfo.importedDlls.end();
 }
 
 } // namespace

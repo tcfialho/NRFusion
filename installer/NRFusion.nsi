@@ -54,6 +54,7 @@ Var ConflictReason
 Var TransactionDir
 Var GameBitness
 Var HasNativeDlss
+Var DetectedProxy
 
 !macro TryProxy NAME
   ${If} $ProxyName == ""
@@ -69,6 +70,11 @@ Function .onInit
   File /oname=SHA256SUMS.txt "..\dist\SHA256SUMS.txt"
   StrCpy $ProbePath "$PLUGINSDIR\NRFusionProbe.exe"
   StrCpy $DistManifestPath "$PLUGINSDIR\SHA256SUMS.txt"
+  ${GetParameters} $0
+  ${GetOptions} "$0" "/GAME=" $GameExe
+  ${If} ${Silent}
+    Call GamePageLeave
+  ${EndIf}
 FunctionEnd
 
 Function GamePageCreate
@@ -113,7 +119,8 @@ Function ResolveManagedProxy
   ${EndIf}
 
   ${If} $R0 != "version.dll"
-    StrCpy $ConflictReason "The previous NRFusion proxy is not compatible with the standalone version.dll carrier. Uninstall that version before upgrading."
+  ${AndIf} $R0 != "dxgi.dll"
+    StrCpy $ConflictReason "The previous NRFusion proxy uses an unsupported carrier. Uninstall that version before upgrading."
     Goto done
   ${EndIf}
 
@@ -152,11 +159,17 @@ Function ResolveProxy
     Return
   ${EndIf}
 
-  !insertmacro TryProxy "version.dll"
+  ${If} $DetectedProxy == 1
+    !insertmacro TryProxy "version.dll"
+  ${ElseIf} $DetectedProxy == 2
+    !insertmacro TryProxy "dxgi.dll"
+  ${EndIf}
 FunctionEnd
 
 Function GamePageLeave
-  ${NSD_GetText} $GamePathEdit $GameExe
+  ${IfNot} ${Silent}
+    ${NSD_GetText} $GamePathEdit $GameExe
+  ${EndIf}
   ${If} $GameExe == ""
     MessageBox MB_ICONSTOP|MB_OK "Select the game executable."
     Abort
@@ -194,7 +207,7 @@ Function GamePageLeave
     MessageBox MB_ICONSTOP|MB_OK "This game is 32-bit and does not use Direct3D 11. NRFusion x86 support only covers 32-bit Direct3D 11 games, so nothing was installed."
     Abort
   ${ElseIf} $SupportCode == 24
-    MessageBox MB_ICONSTOP|MB_OK "This standalone build supports only 64-bit Direct3D 11 games that import version.dll. Nothing was installed."
+    MessageBox MB_ICONSTOP|MB_OK "No installed NRFusion route matches this game. D3D12 requires native DLSS and a version.dll or dxgi.dll import; D3D11 requires version.dll. Nothing was installed."
     Abort
   ${ElseIf} $SupportCode != 0
     MessageBox MB_ICONSTOP|MB_OK "NRFusion could not identify a supported 64-bit Direct3D or Vulkan renderer. Nothing was installed."
@@ -219,6 +232,11 @@ Function GamePageLeave
     Goto probe_failed
   ${EndIf}
 
+  ClearErrors
+  ExecWait '"$ProbePath" "$GameExe" --proxy-exit-code' $DetectedProxy
+  ${If} ${Errors}
+    Goto probe_failed
+  ${EndIf}
   Call ResolveProxy
   ${If} $ConflictReason != ""
     MessageBox MB_ICONSTOP|MB_OK "$ConflictReason"
