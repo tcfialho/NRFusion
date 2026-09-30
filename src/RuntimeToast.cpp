@@ -1,4 +1,6 @@
 #include "nrfusion/RuntimeToast.hpp"
+#include "nrfusion/GameWindowFinder.hpp"
+#include "nrfusion/Logger.hpp"
 #include <commctrl.h>
 
 namespace nrfusion {
@@ -48,21 +50,36 @@ void RuntimeToast::EnsureWindow() {
     wc.hCursor = LoadCursorW(nullptr, MAKEINTRESOURCEW(32512));
     RegisterClassExW(&wc);
 
+    HWND targetParent = parent_;
+    if (!targetParent || !IsWindow(targetParent)) {
+        targetParent = FindGameWindow();
+        parent_ = targetParent;
+    }
+
     int screenW = GetSystemMetrics(SM_CXSCREEN);
     int screenH = GetSystemMetrics(SM_CYSCREEN);
     int x = screenW - kToastWidth - kMarginRight;
     int y = screenH - kToastHeight - kMarginBottom;
 
+    if (targetParent && IsWindow(targetParent)) {
+        RECT prc;
+        if (GetWindowRect(targetParent, &prc)) {
+            x = prc.right - kToastWidth - kMarginRight;
+            y = prc.bottom - kToastHeight - kMarginBottom;
+        }
+    }
+
     hwnd_ = CreateWindowExW(
-        WS_EX_TOPMOST | WS_EX_TOOLWINDOW | WS_EX_NOACTIVATE | WS_EX_LAYERED,
+        WS_EX_TOPMOST | WS_EX_TOOLWINDOW | WS_EX_NOACTIVATE | WS_EX_LAYERED | WS_EX_TRANSPARENT,
         kToastClassName, L"NRFusion Toast",
         WS_POPUP,
         x, y, kToastWidth, kToastHeight,
-        nullptr, nullptr, hInst, this
+        targetParent, nullptr, hInst, this
     );
 
     if (hwnd_) {
         SetLayeredWindowAttributes(hwnd_, 0, 240, LWA_ALPHA);
+        NRF_LOG_INFO("Toast", "Created toast window hwnd=%p owned by parent=%p", hwnd_, targetParent);
     }
 }
 
@@ -152,6 +169,8 @@ LRESULT CALLBACK RuntimeToast::WndProc(HWND hwnd, UINT msg, WPARAM wParam, LPARA
             self->Hide();
         }
         return 0;
+    case WM_MOUSEACTIVATE:
+        return MA_NOACTIVATE;
     case WM_DESTROY:
         return 0;
     default:

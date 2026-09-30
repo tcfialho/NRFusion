@@ -18,6 +18,8 @@ namespace nrfusion {
 
 class RuntimeShell;
 
+enum class ConfigurationResult : std::uint8_t { None, AppliedAndSaved, Invalid, AppliedSaveFailed, Failed };
+
 class RuntimeOverlay {
 public:
     static RuntimeOverlay& Instance();
@@ -41,6 +43,12 @@ public:
 
     RuntimeMenuDrawing& MenuDrawing() noexcept;
     void ApplyStagedConfiguration();
+    void GetActiveConfiguration(RuntimeConfig& main, RuntimeAdvancedConfig& advanced);
+    void ObserveNeuralFrame(bool applied) noexcept;
+    void ObserveNeuralRuntime(bool ready, bool rayReconstruction) noexcept;
+    void ObserveNeuralWork(float scale, bool beforeUpscale, std::uint32_t passes, double gpuMs) noexcept;
+    ConfigurationResult LastConfigurationResult() const noexcept { return configurationResult_.load(); }
+    void SetEditingText(bool editing) noexcept { editingText_.store(editing); }
 
 private:
     RuntimeOverlay();
@@ -49,8 +57,9 @@ private:
     void EnsureUiWindow();
     void DestroyUiWindow();
     void LoadConfigurations();
-    void SaveConfigurations();
+    bool SaveConfigurations();
     void UpdateTelemetrySnapshot();
+    void ConfigureFrameGeneration();
 
     std::mutex mutex_;
     std::atomic<bool> initialized_{false};
@@ -70,6 +79,15 @@ private:
     bool hotkeyUpPressed_ = false;
     bool hotkeyDownPressed_ = false;
     std::atomic<bool> inFrameRendering_{false};
+    std::atomic<std::uint64_t> lastNeuralFrameTick_{0};
+    std::atomic<bool> neuralRuntimeReady_{false};
+    std::atomic<bool> rayReconstruction_{false};
+    std::atomic<bool> beforeUpscale_{false};
+    std::atomic<float> neuralWorkingScale_{1.0f};
+    std::atomic<float> neuralGpuMs_{0.0f};
+    std::atomic<std::uint32_t> neuralPasses_{1};
+    std::atomic<ConfigurationResult> configurationResult_{ConfigurationResult::None};
+    std::atomic<bool> editingText_{false};
     RuntimeShell* shell_ = nullptr;
     std::unique_ptr<RuntimeShell> ownedShell_;
 

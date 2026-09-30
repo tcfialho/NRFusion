@@ -1,4 +1,7 @@
 #include "nrfusion/RuntimeOverlay.hpp"
+#include "nrfusion/Logger.hpp"
+#include "RuntimeOverlayCursor.hpp"
+#include "nrfusion/DlssgTransfusion.hpp"
 
 #ifndef WIN32_LEAN_AND_MEAN
 #define WIN32_LEAN_AND_MEAN
@@ -7,9 +10,104 @@
 
 namespace nrfusion {
 
+void RuntimeOverlay::ConfigureFrameGeneration() {
+    auto& generation = DlssgTransfusion::Instance();
+    generation.SetAutomaticMultiplierLimit(activeAdv_.mfg.allowExperimental56x ? 6u : 4u);
+    if (activeMain_.mfgMode == RuntimeMfgMode::Off) {
+        generation.SetOverrideMultiplier(1);
+        generation.SetControlMode(MfgControlMode::OverrideFixed);
+    } else if (activeMain_.mfgMode == RuntimeMfgMode::Fixed) {
+        generation.SetOverrideMultiplier(activeMain_.mfgMultiplier);
+        generation.SetControlMode(MfgControlMode::OverrideFixed);
+    } else if (activeMain_.mfgMode == RuntimeMfgMode::Dynamic) {
+        generation.SetDynamicTargetFps(activeMain_.displayHzAuto ? 0 : static_cast<std::uint32_t>(activeMain_.displayHz));
+        generation.SetControlMode(MfgControlMode::Dynamic);
+    } else {
+        generation.SetControlMode(MfgControlMode::FollowGame);
+    }
+    NRF_LOG_INFO("Overlay", "Configured NR=%d MFG mode=%u multiplier=%u target=%u",
+        activeMain_.enabled, static_cast<unsigned>(activeMain_.mfgMode), activeMain_.mfgMultiplier,
+        generation.GetDynamicTargetFps());
+}
+
+void RuntimeOverlay::OpenMenu() {
+    if (!initialized_.load()) return;
+    std::lock_guard<std::mutex> lock(mutex_);
+
+    if (shell_) {
+        activeMain_ = shell_->Config();
+    }
+    menuDrawing_.Open(activeMain_, activeAdv_);
+    UpdateTelemetrySnapshot();
+
+    if (inFrameRendering_.load(std::memory_order_acquire)) {
+        BeginOverlayCursorControl();
+        NRF_LOG_INFO("Overlay", "Opened in-frame menu hwnd=%p foreground=%p iconic=%d",
+                     gameWindow_, GetForegroundWindow(), gameWindow_ ? IsIconic(gameWindow_) : 0);
+        return;
+    }
+
+    EnsureUiWindow();
+    if (uiHwnd_) {
+        SetWindowPos(uiHwnd_, HWND_TOPMOST, 0, 0, 0, 0,
+                     SWP_NOMOVE | SWP_NOSIZE | SWP_NOACTIVATE | SWP_SHOWWINDOW);
+        UpdateWindow(uiHwnd_);
+    }
+
+    cursorShowCount_ = 0;
+    int cur = ShowCursor(TRUE);
+    if (cur <= 0) {
+        cursorShowCount_ = 1;
+        while (cur < 0) {
+            cur = ShowCursor(TRUE);
+            cursorShowCount_++;
+        }
+    } else {
+        ShowCursor(FALSE);
+        cursorShowCount_ = 0;
+    }
+    NRF_LOG_INFO("Overlay", "Opened menu (uiHwnd=%p)", uiHwnd_);
+}
+
+void RuntimeOverlay::CloseMenu() {
+    std::lock_guard<std::mutex> lock(mutex_);
+    menuDrawing_.Close();
+    if (uiHwnd_) {
+        ShowWindow(uiHwnd_, SW_HIDE);
+    }
+
+    for (int i = 0; i < cursorShowCount_; ++i) {
+        ShowCursor(FALSE);
+    }
+    cursorShowCount_ = 0;
+    EndOverlayCursorControl();
+    NRF_LOG_INFO("Overlay", "Closed menu");
+}
+
+void RuntimeOverlay::GetActiveConfiguration(RuntimeConfig& main, RuntimeAdvancedConfig& advanced) {
+    std::lock_guard lock(mutex_);
+    main = activeMain_;
+    advanced = activeAdv_;
+}
+
+void RuntimeOverlay::ObserveNeuralFrame(bool applied) noexcept {
+    lastNeuralFrameTick_.store(applied ? GetTickCount64() : 0, std::memory_order_release);
+}
+
+void RuntimeOverlay::ObserveNeuralRuntime(bool ready, bool rayReconstruction) noexcept {
+    neuralRuntimeReady_.store(ready);
+    rayReconstruction_.store(rayReconstruction);
+}
+
+void RuntimeOverlay::ObserveNeuralWork(float scale, bool beforeUpscale, std::uint32_t passes, double gpuMs) noexcept {
+    neuralWorkingScale_.store(scale);
+    beforeUpscale_.store(beforeUpscale);
+    neuralPasses_.store(passes);
+    if (gpuMs > 0) neuralGpuMs_.store(static_cast<float>(gpuMs));
+}
+
 void RuntimeOverlay::PollHotkey() {
     if (!initialized_.load()) return;
-    if (IsMenuOpen() && !InFrameRendering()) ClipCursor(nullptr);
 
     const HWND fg = GetForegroundWindow();
     if (fg) {
@@ -27,13 +125,13 @@ void RuntimeOverlay::PollHotkey() {
 
     if (IsMenuOpen()) {
         const bool escDown = (GetAsyncKeyState(VK_ESCAPE) & 0x8000) != 0;
-        if (escDown && !hotkeyEscPressed_) CloseMenu();
+        if (escDown && !hotkeyEscPressed_ && !editingText_.load()) CloseMenu();
         hotkeyEscPressed_ = escDown;
     } else {
         hotkeyEscPressed_ = false;
     }
 
-    if (IsMenuOpen() && InFrameRendering()) {
+    if (IsMenuOpen() && !editingText_.load()) {
         auto draft = menuDrawing_.MainDraft();
         const bool enabledDown = (GetAsyncKeyState('E') & 0x8000) != 0;
         if (enabledDown && !hotkeyEnabledPressed_) {

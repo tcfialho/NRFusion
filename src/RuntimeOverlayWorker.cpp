@@ -8,20 +8,12 @@
 
 #include "nrfusion/RuntimeOverlayWorker.hpp"
 #include "nrfusion/RuntimeOverlay.hpp"
+#include "nrfusion/GameWindowFinder.hpp"
+#include "nrfusion/Logger.hpp"
 
 #include <chrono>
 
 namespace nrfusion {
-
-namespace {
-
-struct WindowSearchContext {
-    DWORD targetPid{0};
-    HWND bestHwnd{nullptr};
-    LONG bestArea{0};
-};
-
-} // namespace
 
 RuntimeOverlayWorker& RuntimeOverlayWorker::Instance() {
     static RuntimeOverlayWorker instance;
@@ -52,42 +44,7 @@ void RuntimeOverlayWorker::Stop(bool isProcessTerminating) {
 }
 
 HWND RuntimeOverlayWorker::FindGameWindow() {
-    const DWORD currentPid = GetCurrentProcessId();
-    HWND fg = GetForegroundWindow();
-    if (fg) {
-        DWORD fgPid = 0;
-        GetWindowThreadProcessId(fg, &fgPid);
-        if (fgPid == currentPid && IsWindowVisible(fg)) {
-            RECT rc{};
-            GetClientRect(fg, &rc);
-            const LONG area = (rc.right - rc.left) * (rc.bottom - rc.top);
-            if (area > 40000) {
-                return fg;
-            }
-        }
-    }
-
-    WindowSearchContext ctx{currentPid, nullptr, 0};
-    EnumWindows([](HWND hwnd, LPARAM lParam) -> BOOL {
-        auto* c = reinterpret_cast<WindowSearchContext*>(lParam);
-        DWORD pid = 0;
-        GetWindowThreadProcessId(hwnd, &pid);
-        if (pid == c->targetPid && IsWindowVisible(hwnd)) {
-            const LONG exStyle = GetWindowLongW(hwnd, GWL_EXSTYLE);
-            if (!(exStyle & WS_EX_TOOLWINDOW)) {
-                RECT rc{};
-                GetClientRect(hwnd, &rc);
-                const LONG area = (rc.right - rc.left) * (rc.bottom - rc.top);
-                if (area > c->bestArea && area > 40000) {
-                    c->bestArea = area;
-                    c->bestHwnd = hwnd;
-                }
-            }
-        }
-        return TRUE;
-    }, reinterpret_cast<LPARAM>(&ctx));
-
-    return ctx.bestHwnd;
+    return nrfusion::FindGameWindow();
 }
 
 void RuntimeOverlayWorker::ThreadProc() {

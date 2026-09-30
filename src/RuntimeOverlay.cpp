@@ -5,6 +5,10 @@
 #include "nrfusion/RuntimeAdvancedConfigStore.hpp"
 #include "nrfusion/RuntimeShell.hpp"
 #include "RuntimeOverlayWindow.hpp"
+#include "nrfusion/GameWindowFinder.hpp"
+#include "nrfusion/DlssgTransfusion.hpp"
+#include "nrfusion/StreamlineDlssgHook.hpp"
+#include "nrfusion/Logger.hpp"
 
 #include <filesystem>
 #include <vector>
@@ -59,6 +63,7 @@ void RuntimeOverlay::Initialize(HWND gameWindow, RuntimeShell* shell) {
 
     RuntimeToast::Instance().Initialize(gameWindow_);
     LoadConfigurations();
+    ConfigureFrameGeneration();
 
     if (shell_) {
         shell_->Initialize(activeMain_);
@@ -112,16 +117,21 @@ void RuntimeOverlay::LoadConfigurations() {
     if (!advStore.Load(activeAdv_)) {
         activeAdv_ = RuntimeAdvancedConfig{};
     }
+    if (!activeAdv_.nr.precisionAuto && activeAdv_.nr.precision != NrPrecision::Fp8) {
+        activeAdv_.nr.precisionAuto = true;
+        activeAdv_.nr.precision = NrPrecision::Fp8;
+        NRF_LOG_WARN("Overlay", "Unavailable saved precision; using NVIDIA FP8");
+    }
 
     generation_ = activeMain_.generation;
 }
 
-void RuntimeOverlay::SaveConfigurations() {
+bool RuntimeOverlay::SaveConfigurations() {
     const auto dir = GetModuleDirectory();
     RuntimeConfigStore mainStore(dir / "nrfusion.ini");
-    mainStore.Save(activeMain_);
+    const bool mainSaved = mainStore.Save(activeMain_);
     RuntimeAdvancedConfigStore advStore(dir / "nrfusion_advanced.ini");
-    advStore.Save(activeAdv_);
+    return advStore.Save(activeAdv_) && mainSaved;
 }
 
 void RuntimeOverlay::ToggleMenu() {
@@ -129,63 +139,6 @@ void RuntimeOverlay::ToggleMenu() {
         CloseMenu();
     } else {
         OpenMenu();
-    }
-}
-
-void RuntimeOverlay::OpenMenu() {
-    if (!initialized_.load()) return;
-    std::lock_guard<std::mutex> lock(mutex_);
-
-    if (shell_) {
-        activeMain_ = shell_->Config();
-    }
-    menuDrawing_.Open(activeMain_, activeAdv_);
-    UpdateTelemetrySnapshot();
-
-    if (inFrameRendering_.load(std::memory_order_acquire)) return;
-
-    EnsureUiWindow();
-    if (uiHwnd_) {
-        SetWindowPos(uiHwnd_, HWND_TOPMOST, 0, 0, 0, 0,
-                     SWP_NOMOVE | SWP_NOSIZE | SWP_NOACTIVATE | SWP_SHOWWINDOW);
-        UpdateWindow(uiHwnd_);
-    }
-
-    if (GetClipCursor(&savedClipRect_)) {
-        hasSavedClip_ = true;
-    }
-    ClipCursor(nullptr);
-    ReleaseCapture();
-
-    cursorShowCount_ = 0;
-    int cur = ShowCursor(TRUE);
-    if (cur <= 0) {
-        cursorShowCount_ = 1;
-        while (cur < 0) {
-            cur = ShowCursor(TRUE);
-            cursorShowCount_++;
-        }
-    } else {
-        ShowCursor(FALSE);
-        cursorShowCount_ = 0;
-    }
-}
-
-void RuntimeOverlay::CloseMenu() {
-    std::lock_guard<std::mutex> lock(mutex_);
-    menuDrawing_.Close();
-    if (uiHwnd_) {
-        ShowWindow(uiHwnd_, SW_HIDE);
-    }
-
-    for (int i = 0; i < cursorShowCount_; ++i) {
-        ShowCursor(FALSE);
-    }
-    cursorShowCount_ = 0;
-
-    if (hasSavedClip_) {
-        ClipCursor(&savedClipRect_);
-        hasSavedClip_ = false;
     }
 }
 
@@ -204,17 +157,31 @@ bool RuntimeOverlay::InFrameRendering() const noexcept {
 
 void RuntimeOverlay::ShowToast(const std::string& message, ToastType type, std::uint32_t durationMs) {
     if (InFrameRendering()) return;
+    if (!gameWindow_ || !IsWindow(gameWindow_)) {
+        gameWindow_ = FindGameWindow();
+    }
     RuntimeToast::Instance().Show(message, type, durationMs);
 }
 
 void RuntimeOverlay::ShowToast(const std::wstring& message, ToastType type, std::uint32_t durationMs) {
     if (InFrameRendering()) return;
+    if (!gameWindow_ || !IsWindow(gameWindow_)) {
+        gameWindow_ = FindGameWindow();
+    }
     RuntimeToast::Instance().Show(message, type, durationMs);
 }
 
 void RuntimeOverlay::EnsureUiWindow() {
+    if (!gameWindow_ || !IsWindow(gameWindow_)) {
+        gameWindow_ = FindGameWindow();
+    }
     if (!uiHwnd_) {
         uiHwnd_ = RuntimeOverlayWindow::Create(this, gameWindow_);
+    } else if (gameWindow_) {
+        HWND curOwner = GetWindow(uiHwnd_, GW_OWNER);
+        if (!curOwner) {
+            SetWindowLongPtrW(uiHwnd_, GWLP_HWNDPARENT, reinterpret_cast<LONG_PTR>(gameWindow_));
+        }
     }
 }
 
@@ -231,29 +198,35 @@ RuntimeMenuDrawing& RuntimeOverlay::MenuDrawing() noexcept {
 
 void RuntimeOverlay::UpdateTelemetrySnapshot() {
     MenuStatusSnapshot status{};
+    status.neuralRuntimeReady = neuralRuntimeReady_.load();
+    status.rayReconstruction = rayReconstruction_.load();
+    status.beforeUpscale = beforeUpscale_.load();
+    status.workingScale = neuralWorkingScale_.load();
+    status.nrGpuMs = neuralGpuMs_.load();
+    status.passes = neuralPasses_.load();
     if (shell_) {
-        const auto shellStatus = shell_->Status();
         const auto shellCfg = shell_->Config();
-        status.nrActive = (shellStatus.state == RuntimeState::Running) && shellCfg.enabled;
+        const auto lastFrame = lastNeuralFrameTick_.load(std::memory_order_acquire);
+        status.nrActive = shellCfg.enabled && lastFrame && GetTickCount64() - lastFrame <= 500;
         status.currentFps = shellCfg.targetFps;
-        status.effectiveMultiplier = static_cast<std::uint32_t>(shellCfg.mfgMultiplier);
+        status.effectiveMultiplier = static_cast<std::uint8_t>(DlssgTransfusion::Instance().Snapshot().effectiveMultiplier);
         status.precision = activeAdv_.nr.precision;
     } else {
-        status.nrActive = activeMain_.enabled;
+        const auto lastFrame = lastNeuralFrameTick_.load(std::memory_order_acquire);
+        status.nrActive = activeMain_.enabled && lastFrame && GetTickCount64() - lastFrame <= 500;
         status.currentFps = activeMain_.targetFps;
-        status.effectiveMultiplier = 1;
+        status.effectiveMultiplier = static_cast<std::uint8_t>(DlssgTransfusion::Instance().Snapshot().effectiveMultiplier);
     }
     menuDrawing_.UpdateStatus(status);
 }
 
 void RuntimeOverlay::ApplyStagedConfiguration() {
-    std::lock_guard<std::mutex> lock(mutex_);
+    std::unique_lock<std::mutex> lock(mutex_);
     RuntimeConfig proposedMain{};
     RuntimeAdvancedConfig proposedAdv{};
 
     const std::uint64_t currentGen = shell_ ? shell_->Config().generation : generation_;
     const std::uint64_t nextGen = (currentGen >= generation_ ? currentGen : generation_) + 1;
-    generation_ = nextGen;
     if (!menuDrawing_.ProposeCommit(nextGen, &proposedMain, &proposedAdv)) {
         proposedMain = menuDrawing_.MainDraft();
         proposedMain.generation = nextGen;
@@ -261,18 +234,33 @@ void RuntimeOverlay::ApplyStagedConfiguration() {
     }
 
     bool reconfigured = true;
+    if (!proposedMain.Valid() || !proposedAdv.Valid() ||
+        (!proposedAdv.nr.precisionAuto && proposedAdv.nr.precision != NrPrecision::Fp8)) {
+        NRF_LOG_WARN("Overlay", "Configuration rejected: invalid values or unavailable precision");
+        configurationResult_.store(ConfigurationResult::Invalid);
+        ShowToast(RuntimeLocalization::Strings().toastFailed, ToastType::Error, 3000);
+        return;
+    }
     if (shell_) {
         reconfigured = shell_->Reconfigure(proposedMain);
     }
 
     if (reconfigured) {
+        generation_ = nextGen;
         menuDrawing_.AcceptCommit(proposedMain, proposedAdv);
         activeMain_ = proposedMain;
         activeAdv_ = proposedAdv;
-        SaveConfigurations();
+
+        ConfigureFrameGeneration();
+        const bool saved = SaveConfigurations();
+        configurationResult_.store(saved ? ConfigurationResult::AppliedAndSaved : ConfigurationResult::AppliedSaveFailed);
         UpdateTelemetrySnapshot();
-        ShowToast(RuntimeLocalization::Strings().toastSaved, ToastType::Success, 2500);
+        lock.unlock();
+        StreamlineDlssgHook::Instance().TriggerLiveMultiplierUpdate();
+        ShowToast(saved ? RuntimeLocalization::Strings().toastSaved : RuntimeLocalization::Strings().toastFailed,
+                  saved ? ToastType::Success : ToastType::Error, 2500);
     } else {
+        configurationResult_.store(ConfigurationResult::Failed);
         ShowToast(RuntimeLocalization::Strings().toastFailed, ToastType::Error, 3000);
     }
 }

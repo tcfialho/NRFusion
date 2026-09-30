@@ -1,6 +1,8 @@
 #include "RuntimeOverlayWindow.hpp"
 #include "nrfusion/RuntimeOverlay.hpp"
 #include "nrfusion/RuntimeLocalization.hpp"
+#include "nrfusion/GameWindowFinder.hpp"
+#include "nrfusion/Logger.hpp"
 #include <commctrl.h>
 #include <sstream>
 
@@ -60,11 +62,16 @@ HWND RuntimeOverlayWindow::Create(RuntimeOverlay* owner, HWND parent) {
     wc.hCursor = LoadCursorW(nullptr, MAKEINTRESOURCEW(32512));
     RegisterClassExW(&wc);
 
+    HWND targetParent = parent;
+    if (!targetParent || !IsWindow(targetParent)) {
+        targetParent = FindGameWindow();
+    }
+
     int x = 60;
     int y = 60;
-    if (parent && IsWindow(parent)) {
+    if (targetParent && IsWindow(targetParent)) {
         RECT prc;
-        GetWindowRect(parent, &prc);
+        GetWindowRect(targetParent, &prc);
         x = prc.left + 50;
         y = prc.top + 50;
     }
@@ -74,8 +81,9 @@ HWND RuntimeOverlayWindow::Create(RuntimeOverlay* owner, HWND parent) {
         kOverlayClassName, L"NRFusion Menu",
         WS_POPUP | WS_BORDER,
         x, y, kMenuWidth, kMenuHeight,
-        nullptr, nullptr, hInst, owner
+        targetParent, nullptr, hInst, owner
     );
+    NRF_LOG_INFO("OverlayWindow", "Created overlay menu hwnd=%p with owner parent=%p", hwnd, targetParent);
     return hwnd;
 }
 
@@ -167,38 +175,42 @@ void RuntimeOverlayWindow::DrawMainTab(HDC hdc, const RECT& rc, RuntimeOverlay* 
     auto status = owner->MenuDrawing().StatusSnapshot();
     int y = rc.top + 10;
     DrawButtonBox(hdc, RECT{ 20, y, 220, y + 28 }, draft.enabled ? s.enabledOn : s.enabledOff, draft.enabled);
-    y += 40;
+    DrawTextSimple(hdc, status.nrActive ? s.statusNrActive : s.statusNrInactive, 240, y + 6, RGB(140, 200, 140), 13, true);
+    DrawTextSimple(hdc, L"MFG: " + std::to_wstring(status.effectiveMultiplier) + L"X", 350, y + 6, RGB(180, 210, 255), 13, true);
+
+    y += 36;
     DrawTextSimple(hdc, s.nrModeTitle, 20, y, RGB(180, 185, 200), 14, true);
-    y += 24;
+    y += 22;
     const wchar_t* modeNames[] = { s.nrModeAuto, s.nrModeQuality, s.nrModePerf, s.nrModeCustom };
     for (int i = 0; i < 4; ++i) {
         DrawButtonBox(hdc, RECT{ 20 + i * 105, y, 120 + i * 105, y + 26 }, modeNames[i], static_cast<int>(draft.mode) == i);
     }
-    y += 42;
+
+    y += 36;
     std::wstring fpsStr = s.targetFpsPrefix + std::to_wstring(static_cast<int>(draft.targetFps)) + L" FPS";
     DrawTextSimple(hdc, fpsStr, 20, y, RGB(180, 185, 200), 14, true);
     DrawButtonBox(hdc, RECT{ 240, y - 2, 280, y + 24 }, L"-5", false);
     DrawButtonBox(hdc, RECT{ 290, y - 2, 330, y + 24 }, L"+5", false);
-    y += 40;
-    std::wstring hzStr = s.displayHzPrefix + std::to_wstring(static_cast<int>(draft.displayHz)) + L" Hz";
-    DrawTextSimple(hdc, hzStr, 20, y, RGB(180, 185, 200), 14, true);
-    y += 40;
+
+    y += 34;
     DrawTextSimple(hdc, s.mfgModeTitle, 20, y, RGB(180, 185, 200), 14, true);
-    y += 24;
+    y += 22;
     const wchar_t* mfgNames[] = { s.mfgFollowGame, s.mfgFixed, s.mfgDynamic };
     for (int i = 0; i < 3; ++i) {
         DrawButtonBox(hdc, RECT{ 20 + i * 140, y, 150 + i * 140, y + 26 }, mfgNames[i], static_cast<int>(draft.mfgMode) == i);
     }
-    y += 44;
-    RECT stBox = { 20, y, 440, y + 70 };
-    HBRUSH stBrush = CreateSolidBrush(RGB(20, 22, 28));
-    FillRect(hdc, &stBox, stBrush);
-    DeleteObject(stBrush);
-    DrawTextSimple(hdc, s.statusTitle, 30, y + 8, RGB(120, 160, 240), 13, true);
-    DrawTextSimple(hdc, status.nrActive ? s.statusNrActive : s.statusNrInactive, 30, y + 34, RGB(220, 220, 225), 13, false);
-    DrawTextSimple(hdc, L"MFG: " + std::to_wstring(status.effectiveMultiplier) + L"X", 160, y + 34, RGB(220, 220, 225), 13, false);
-    DrawTextSimple(hdc, s.statusOutput + std::to_wstring(static_cast<int>(status.currentFps)) + L" FPS", 280, y + 34, RGB(220, 220, 225), 13, false);
-    DrawButtonBox(hdc, RECT{ 110, rc.bottom - 50, 350, rc.bottom - 15 }, s.btnApply, true);
+
+    y += 34;
+    DrawTextSimple(hdc, L"MFG Frame Multiplier:", 20, y, RGB(180, 185, 200), 14, true);
+    y += 22;
+    const wchar_t* multNames[] = { L"2X (1 frame)", L"3X (2 frames)", L"4X (3 frames)" };
+    const uint8_t multVals[] = { 2, 3, 4 };
+    for (int i = 0; i < 3; ++i) {
+        const bool active = (draft.mfgMultiplier == multVals[i]);
+        DrawButtonBox(hdc, RECT{ 20 + i * 140, y, 150 + i * 140, y + 26 }, multNames[i], active);
+    }
+
+    DrawButtonBox(hdc, RECT{ 110, rc.bottom - 48, 350, rc.bottom - 16 }, s.btnApply, true);
 }
 
 void RuntimeOverlayWindow::DrawAdvancedTab(HDC hdc, const RECT& rc, RuntimeOverlay* owner) {
@@ -248,7 +260,7 @@ void RuntimeOverlayWindow::OnLButtonDown(HWND hwnd, int x, int y, RuntimeOverlay
         InvalidateRect(hwnd, nullptr, FALSE);
         return;
     }
-    if (y >= kMenuHeight - 50 && y <= kMenuHeight - 15 && x >= 110 && x <= 350) {
+    if (y >= kMenuHeight - 48 && y <= kMenuHeight - 16 && x >= 110 && x <= 350) {
         owner->ApplyStagedConfiguration();
         InvalidateRect(hwnd, nullptr, FALSE);
         return;
@@ -258,7 +270,7 @@ void RuntimeOverlayWindow::OnLButtonDown(HWND hwnd, int x, int y, RuntimeOverlay
         if (x >= 20 && x <= 220 && y >= 95 && y <= 123) {
             draft.enabled = !draft.enabled;
             owner->MenuDrawing().StageMain(draft);
-        } else if (y >= 159 && y <= 185) {
+        } else if (y >= 153 && y <= 179) {
             for (int i = 0; i < 4; ++i) {
                 if (x >= 20 + i * 105 && x <= 120 + i * 105) {
                     draft.mode = static_cast<RuntimeNrMode>(i);
@@ -266,9 +278,27 @@ void RuntimeOverlayWindow::OnLButtonDown(HWND hwnd, int x, int y, RuntimeOverlay
                     break;
                 }
             }
-        } else if (y >= 199 && y <= 225) {
+        } else if (y >= 187 && y <= 213) {
             if (x >= 240 && x <= 280) { draft.targetFps = (draft.targetFps > 30.0f) ? draft.targetFps - 5.0f : 30.0f; owner->MenuDrawing().StageMain(draft); }
             else if (x >= 290 && x <= 330) { draft.targetFps = (draft.targetFps < 240.0f) ? draft.targetFps + 5.0f : 240.0f; owner->MenuDrawing().StageMain(draft); }
+        } else if (y >= 245 && y <= 271) {
+            for (int i = 0; i < 3; ++i) {
+                if (x >= 20 + i * 140 && x <= 150 + i * 140) {
+                    draft.mfgMode = static_cast<RuntimeMfgMode>(i);
+                    owner->MenuDrawing().StageMain(draft);
+                    break;
+                }
+            }
+        } else if (y >= 301 && y <= 327) {
+            for (int i = 0; i < 3; ++i) {
+                if (x >= 20 + i * 140 && x <= 150 + i * 140) {
+                    const uint8_t multVals[] = { 2, 3, 4 };
+                    draft.mfgMultiplier = multVals[i];
+                    draft.mfgMode = RuntimeMfgMode::Fixed;
+                    owner->MenuDrawing().StageMain(draft);
+                    break;
+                }
+            }
         }
     } else {
         auto adv = owner->MenuDrawing().AdvancedDraft();

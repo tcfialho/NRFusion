@@ -21,6 +21,12 @@ struct MenuStatusSnapshot {
     float currentFps = 0.0f;
     std::uint32_t width = 0;
     std::uint32_t height = 0;
+    bool neuralRuntimeReady = false;
+    bool rayReconstruction = false;
+    bool beforeUpscale = false;
+    float workingScale = 1.0f;
+    float nrGpuMs = 0.0f;
+    std::uint32_t passes = 1;
 };
 
 class RuntimeMenuDrawing {
