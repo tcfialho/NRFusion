@@ -1,0 +1,56 @@
+{
+  "scope": "official testbed RGBA8 output hashes on every frame; not commercial gameplay qualification",
+  "timing": "NOT performance data: diagnostic copies and SHA256 enabled",
+  "proxy_sha256": {
+    "stock": "fb8deeb246484e347e8f3145a9524a14ce058640c5060ab5ba8a3311bd5e1779",
+    "optimized": "766ff4b4231b97e7b53eb0f641a178928973847ed63de2867bfee01fe98480d8"
+  },
+  "testbed_sha256": "b8722ccd49690251075438747a02126b89184671574e4a855ba46f3cbfc4c4a8",
+  "cases": [
+    {
+      "case": "motion-1080",
+      "height": 1080,
+      "frames": 1000,
+      "exit": 0,
+      "every_frame_rgba_sha256_equal": true,
+      "stock_hash_csv_sha256": "a18f3da50456b15bd3174ae46363ad40f769b3ab6b681ac96e800ad7583a1a91",
+      "optimized_hash_csv_sha256": "a18f3da50456b15bd3174ae46363ad40f769b3ab6b681ac96e800ad7583a1a91"
+    },
+    {
+      "case": "motion-1440",
+      "height": 1440,
+      "frames": 1000,
+      "exit": 0,
+      "every_frame_rgba_sha256_equal": true,
+      "stock_hash_csv_sha256": "7b5a92eed3c25f15bcb4610469e9a6135fed98d35087a44ab2ea86ee7e8eda38",
+      "optimized_hash_csv_sha256": "7b5a92eed3c25f15bcb4610469e9a6135fed98d35087a44ab2ea86ee7e8eda38"
+    },
+    {
+      "case": "motion-2160",
+      "height": 2160,
+      "frames": 1000,
+      "exit": 0,
+      "every_frame_rgba_sha256_equal": true,
+      "stock_hash_csv_sha256": "a1b64b6c55111c65609c087ddc895bd8c7004f89a8b4dbeee4bcc161cde4eb51",
+      "optimized_hash_csv_sha256": "a1b64b6c55111c65609c087ddc895bd8c7004f89a8b4dbeee4bcc161cde4eb51"
+    },
+    {
+      "case": "static-1080",
+      "height": 1080,
+      "frames": 300,
+      "exit": 0,
+      "every_frame_rgba_sha256_equal": true,
+      "stock_hash_csv_sha256": "753612a336f4af1b90783a980176706e840e7dd385251ef0315b42ecc02f7806",
+      "optimized_hash_csv_sha256": "753612a336f4af1b90783a980176706e840e7dd385251ef0315b42ecc02f7806"
+    },
+    {
+      "case": "lifecycle-1080",
+      "height": 1080,
+      "frames": 180,
+      "exit": 0,
+      "every_frame_rgba_sha256_equal": true,
+      "stock_hash_csv_sha256": "3b37bb3aa74c95a0aede471a66e93e9aaa6c4e136a474cbdafc1b52585307b96",
+      "optimized_hash_csv_sha256": "3b37bb3aa74c95a0aede471a66e93e9aaa6c4e136a474cbdafc1b52585307b96"
+    }
+  ]
+}
