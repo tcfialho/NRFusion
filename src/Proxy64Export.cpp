@@ -83,6 +83,12 @@ extern "C" __declspec(dllexport) int NRFusion_MenuIsInFrame() {
     return nrfusion::RuntimeOverlay::Instance().InFrameRendering() ? 1 : 0;
 }
 
+extern "C" __declspec(dllexport) int NRFusion_SetNrDiagnosticEnabled(int enabled) {
+    NRFusion_EnsureRuntime();
+    nrfusion::RuntimeOverlay::Instance().SetDiagnosticEnabledOverride(enabled != 0);
+    return 1;
+}
+
 extern "C" __declspec(dllexport) int NRFusion_MfgModuleObserved() {
     return nrfusion::MfgModuleWatcher::Instance().ModuleObserved() ? 1 : 0;
 }

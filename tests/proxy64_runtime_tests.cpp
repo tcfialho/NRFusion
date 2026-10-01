@@ -21,7 +21,8 @@ int main() {
         GetProcAddress(proxy, "NVSDK_NGX_D3D12_ReleaseFeature") != nullptr;
     const bool hasNrDiagnostics =
         GetProcAddress(proxy, "NRFusion_BeginNrDiagnosticFrame") != nullptr &&
-        GetProcAddress(proxy, "NRFusion_ReadNrDiagnosticFrame") != nullptr;
+        GetProcAddress(proxy, "NRFusion_ReadNrDiagnosticFrame") != nullptr &&
+        GetProcAddress(proxy, "NRFusion_SetNrDiagnosticEnabled") != nullptr;
     const bool hasMenuDiagnostics =
         GetProcAddress(proxy, "NRFusion_SetMenuOpen") != nullptr &&
         GetProcAddress(proxy, "NRFusion_MenuIsOpen") != nullptr &&

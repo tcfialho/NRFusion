@@ -88,6 +88,12 @@ void RuntimeOverlay::GetActiveConfiguration(RuntimeConfig& main, RuntimeAdvanced
     std::lock_guard lock(mutex_);
     main = activeMain_;
     advanced = activeAdv_;
+    const int diagnosticEnabled = diagnosticEnabledOverride_.load(std::memory_order_relaxed);
+    if (diagnosticEnabled >= 0) main.enabled = diagnosticEnabled != 0;
+}
+
+void RuntimeOverlay::SetDiagnosticEnabledOverride(bool enabled) noexcept {
+    diagnosticEnabledOverride_.store(enabled ? 1 : 0, std::memory_order_relaxed);
 }
 
 void RuntimeOverlay::ObserveNeuralFrame(bool applied) noexcept {

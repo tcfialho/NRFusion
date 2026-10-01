@@ -44,6 +44,7 @@ public:
     RuntimeMenuDrawing& MenuDrawing() noexcept;
     void ApplyStagedConfiguration();
     void GetActiveConfiguration(RuntimeConfig& main, RuntimeAdvancedConfig& advanced);
+    void SetDiagnosticEnabledOverride(bool enabled) noexcept;
     void ObserveNeuralFrame(bool applied) noexcept;
     void ObserveNeuralRuntime(bool ready, bool rayReconstruction) noexcept;
     void ObserveNeuralWork(float scale, bool beforeUpscale, std::uint32_t passes, double gpuMs) noexcept;
@@ -79,6 +80,7 @@ private:
     bool hotkeyUpPressed_ = false;
     bool hotkeyDownPressed_ = false;
     std::atomic<bool> inFrameRendering_{false};
+    std::atomic<int> diagnosticEnabledOverride_{-1};
     std::atomic<std::uint64_t> lastNeuralFrameTick_{0};
     std::atomic<bool> neuralRuntimeReady_{false};
     std::atomic<bool> rayReconstruction_{false};
