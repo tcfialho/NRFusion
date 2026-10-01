@@ -13,6 +13,7 @@ if (WIN32)
     add_executable(nrfusion_kernel_replay
         tools/nr_replay/main.cpp tools/nr_replay/ReplayPacket.cpp
         tools/nr_replay/ReplayDevice.cpp tools/nr_replay/ReplayStock.cpp tools/nr_replay/ReplayBenchmark.cpp
+        tools/nr_replay/ReplayChainPacket.cpp tools/nr_replay/ReplayChain.cpp tools/nr_replay/ReplayChainBenchmark.cpp
         src/Sha256.cpp src/NrKernelArchitecture.cpp)
     target_include_directories(nrfusion_kernel_replay PRIVATE include src tools/nr_replay
         "${nrfusion_nvapi_source_SOURCE_DIR}")
