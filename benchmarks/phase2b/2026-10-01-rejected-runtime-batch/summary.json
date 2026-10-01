@@ -1,0 +1,16 @@
+{
+  "status": "REJECTED",
+  "reason": "device hung 0x887a0006 before measured frames",
+  "root_cause": "not proven",
+  "integrated_performance_gain": null,
+  "dry_run": "original stock launches executed immediately; grouping only simulated; timing is not optimization evidence",
+  "isolated_replay": "separate/batched chain passed Exact; does not qualify real runtime batching",
+  "restored_source_head": "238bed81afc4747283b088e9a5d68b89ab7843d9",
+  "evidence_sha256": {
+    "dry-run-results.json": "21cc756ca67e5fab3a73323b2e1f26423862f031c3d9ed54b3b2a51d68415cd7",
+    "failed-run.log": "bd941a254d256d7db291126d7e6fe87a53f67146908e5fb58090d9ca2d6c9566",
+    "failed-runtime.log": "71a5ef5be3b48795159d20184365632fbdfadd25d7ec192aa93e3e6c837b415c",
+    "failed-trial.zip": "3b64a87ed7bda8c965a7c6da7770e80b426729979f05482ec50a8f7fb661acaf"
+  },
+  "archived_logs": "failed-trial.zip"
+}

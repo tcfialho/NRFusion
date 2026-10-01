@@ -1,0 +1,344 @@
+{
+  "status": "STOCK BASELINE; no accepted optimization",
+  "source_base_commit": "238bed81afc4747283b088e9a5d68b89ab7843d9",
+  "gpu": "NVIDIA GeForce RTX 4050 Laptop GPU, 617.14, GPU-42d9ac41-51ff-a670-4539-8abbccbda9dc",
+  "settings": {
+    "NR": "before SR",
+    "passes": 1,
+    "precision": "fp8",
+    "MFG": "off",
+    "kernel_profiler": "off"
+  },
+  "scope": {
+    "nr_gpu_ms": "preparation + NVIDIA NR model + composition/restore",
+    "frame_gpu_ms": "testbed recording from first command to final backbuffer PRESENT transition, before Present; includes final-frame capture copy; MFG off",
+    "nr_model_gpu_ms": "all effective passes including inter-pass transitions; exclude preparation and final composition",
+    "nr_stages_valid": "0 for lifecycle creation/disabled frames; unmeasured intervals are not performance samples"
+  },
+  "image_validation": "100-frame stock output SHA256 unchanged after removal of rejected batch and addition of diagnostics; image visually inspected",
+  "runs": [
+    {
+      "command": [
+        "D:\\Users\\tcfialho\\Documents\\NRFusion\\dist\\RequiemGame\\RequiemGame.exe",
+        "--require-nrfusion-proxy",
+        "--require-nr",
+        "--deterministic-motion",
+        "--width",
+        "1920",
+        "--height",
+        "1080",
+        "--frames",
+        "600",
+        "--warmup",
+        "200",
+        "--csv",
+        "D:\\Users\\tcfialho\\Documents\\NRFusion\\.temp\\phase2b\\final-stock-stages-1080\\frames.csv",
+        "--capture",
+        "D:\\Users\\tcfialho\\Documents\\NRFusion\\.temp\\phase2b\\final-stock-stages-1080\\output.ppm"
+      ],
+      "scope": "official Requiem synthetic-guide testbed; not commercial gameplay",
+      "proxy_sha256": "fb8deeb246484e347e8f3145a9524a14ce058640c5060ab5ba8a3311bd5e1779",
+      "testbed_sha256": "9298735f1ac3c1c874bb4865cb53f8c0bc049c476592972882a13b82c8d9c3a0",
+      "exit": 0,
+      "metrics": {
+        "ngx_evaluation_gpu_ms": {
+          "p50": 11.1299,
+          "p95": 11.616044999999998,
+          "p99": 12.646728
+        },
+        "frame_wall_ms": {
+          "p50": 12.1378,
+          "p95": 12.985594999999998,
+          "p99": 13.672173
+        },
+        "nr_gpu_ms": {
+          "p50": 9.72595,
+          "p95": 10.23036,
+          "p99": 11.175514999999999
+        },
+        "frame_gpu_ms": {
+          "p50": 11.3244,
+          "p95": 11.874424999999997,
+          "p99": 12.83623
+        },
+        "nr_prepare_gpu_ms": {
+          "p50": 0.024576,
+          "p95": 0.026624,
+          "p99": 0.028672
+        },
+        "nr_model_gpu_ms": {
+          "p50": 9.58208,
+          "p95": 10.054189999999998,
+          "p99": 11.026055
+        },
+        "nr_compose_gpu_ms": {
+          "p50": 0.118784,
+          "p95": 0.121856,
+          "p99": 0.29085696
+        }
+      },
+      "image_sha256": "b1fbcc4287aef52c43d8b6824ec08396d68431342a701f089618f67e9688fee6",
+      "samples": 400
+    },
+    {
+      "command": [
+        "D:\\Users\\tcfialho\\Documents\\NRFusion\\dist\\RequiemGame\\RequiemGame.exe",
+        "--require-nrfusion-proxy",
+        "--require-nr",
+        "--deterministic-motion",
+        "--width",
+        "2560",
+        "--height",
+        "1440",
+        "--frames",
+        "600",
+        "--warmup",
+        "200",
+        "--csv",
+        "D:\\Users\\tcfialho\\Documents\\NRFusion\\.temp\\phase2b\\final-stock-stages-1440\\frames.csv",
+        "--capture",
+        "D:\\Users\\tcfialho\\Documents\\NRFusion\\.temp\\phase2b\\final-stock-stages-1440\\output.ppm"
+      ],
+      "scope": "official Requiem synthetic-guide testbed; not commercial gameplay",
+      "proxy_sha256": "fb8deeb246484e347e8f3145a9524a14ce058640c5060ab5ba8a3311bd5e1779",
+      "testbed_sha256": "9298735f1ac3c1c874bb4865cb53f8c0bc049c476592972882a13b82c8d9c3a0",
+      "exit": 0,
+      "metrics": {
+        "ngx_evaluation_gpu_ms": {
+          "p50": 16.724,
+          "p95": 19.355115,
+          "p99": 20.196893999999997
+        },
+        "frame_wall_ms": {
+          "p50": 18.10455,
+          "p95": 20.485615,
+          "p99": 21.464567999999996
+        },
+        "nr_gpu_ms": {
+          "p50": 14.2213,
+          "p95": 16.71447,
+          "p99": 17.682959999999998
+        },
+        "frame_gpu_ms": {
+          "p50": 17.0363,
+          "p95": 19.65383,
+          "p99": 20.504308999999996
+        },
+        "nr_prepare_gpu_ms": {
+          "p50": 0.041984,
+          "p95": 0.045056,
+          "p99": 0.046100479999999985
+        },
+        "nr_model_gpu_ms": {
+          "p50": 13.9648,
+          "p95": 16.42187,
+          "p99": 17.42599
+        },
+        "nr_compose_gpu_ms": {
+          "p50": 0.20992,
+          "p95": 0.214016,
+          "p99": 0.44262399999999974
+        }
+      },
+      "image_sha256": "769ff9d1e4b720915c75cb1874a91aabcb697aa08562741cedc31119c01f4b25",
+      "samples": 400
+    },
+    {
+      "command": [
+        "D:\\Users\\tcfialho\\Documents\\NRFusion\\dist\\RequiemGame\\RequiemGame.exe",
+        "--require-nrfusion-proxy",
+        "--require-nr",
+        "--deterministic-motion",
+        "--width",
+        "3840",
+        "--height",
+        "2160",
+        "--frames",
+        "600",
+        "--warmup",
+        "200",
+        "--csv",
+        "D:\\Users\\tcfialho\\Documents\\NRFusion\\.temp\\phase2b\\final-stock-stages-2160\\frames.csv",
+        "--capture",
+        "D:\\Users\\tcfialho\\Documents\\NRFusion\\.temp\\phase2b\\final-stock-stages-2160\\output.ppm"
+      ],
+      "scope": "official Requiem synthetic-guide testbed; not commercial gameplay",
+      "proxy_sha256": "fb8deeb246484e347e8f3145a9524a14ce058640c5060ab5ba8a3311bd5e1779",
+      "testbed_sha256": "9298735f1ac3c1c874bb4865cb53f8c0bc049c476592972882a13b82c8d9c3a0",
+      "exit": 0,
+      "metrics": {
+        "ngx_evaluation_gpu_ms": {
+          "p50": 36.3771,
+          "p95": 38.033469999999994,
+          "p99": 38.706319
+        },
+        "frame_wall_ms": {
+          "p50": 37.918,
+          "p95": 39.669525,
+          "p99": 40.723549
+        },
+        "nr_gpu_ms": {
+          "p50": 30.57255,
+          "p95": 32.88352,
+          "p99": 33.507365
+        },
+        "frame_gpu_ms": {
+          "p50": 36.9951,
+          "p95": 38.72811,
+          "p99": 39.723525
+        },
+        "nr_prepare_gpu_ms": {
+          "p50": 0.101376,
+          "p95": 0.103424,
+          "p99": 0.11184127999999981
+        },
+        "nr_model_gpu_ms": {
+          "p50": 29.887,
+          "p95": 32.274680000000004,
+          "p99": 32.904275
+        },
+        "nr_compose_gpu_ms": {
+          "p50": 0.503808,
+          "p95": 0.5243391999999999,
+          "p99": 1.1929331999999944
+        }
+      },
+      "image_sha256": "f72047e6ad30ef278335e739bcb3562a62660d879342ba3baba686be29f1dde3",
+      "samples": 400
+    },
+    {
+      "command": [
+        "D:\\Users\\tcfialho\\Documents\\NRFusion\\dist\\RequiemGame\\RequiemGame.exe",
+        "--require-nrfusion-proxy",
+        "--require-nr",
+        "--deterministic-motion",
+        "--width",
+        "1920",
+        "--height",
+        "1080",
+        "--frames",
+        "180",
+        "--warmup",
+        "40",
+        "--csv",
+        "D:\\Users\\tcfialho\\Documents\\NRFusion\\.temp\\phase2b\\final-stock-lifecycle\\frames.csv",
+        "--capture",
+        "D:\\Users\\tcfialho\\Documents\\NRFusion\\.temp\\phase2b\\final-stock-lifecycle\\output.ppm",
+        "--nr-lifecycle"
+      ],
+      "scope": "official Requiem synthetic-guide testbed; not commercial gameplay",
+      "proxy_sha256": "fb8deeb246484e347e8f3145a9524a14ce058640c5060ab5ba8a3311bd5e1779",
+      "testbed_sha256": "9298735f1ac3c1c874bb4865cb53f8c0bc049c476592972882a13b82c8d9c3a0",
+      "exit": 0,
+      "metrics": {
+        "ngx_evaluation_gpu_ms": {
+          "p50": 11.11195,
+          "p95": 12.249964999999998,
+          "p99": 13.608621000000001
+        },
+        "frame_wall_ms": {
+          "p50": 12.12425,
+          "p95": 15.938034999999923,
+          "p99": 165.34672
+        },
+        "nr_gpu_ms": {
+          "p50": 9.68858,
+          "p95": 10.591014999999999,
+          "p99": 12.181106
+        },
+        "frame_gpu_ms": {
+          "p50": 11.30905,
+          "p95": 12.547724999999994,
+          "p99": 14.077181
+        },
+        "nr_prepare_gpu_ms": {
+          "p50": 0.024576,
+          "p95": 0.027648,
+          "p99": 0.05489663999999998
+        },
+        "nr_model_gpu_ms": {
+          "p50": 9.512445,
+          "p95": 10.043064999999999,
+          "p99": 10.501662999999999
+        },
+        "nr_compose_gpu_ms": {
+          "p50": 0.118784,
+          "p95": 0.120832,
+          "p99": 0.2675711999999965
+        }
+      },
+      "image_sha256": "8fb4f4941a9c74196fd6dad3946ab86d513e5b71b47ac80788987a12c2cebbc9",
+      "samples": 140
+    },
+    {
+      "command": [
+        "D:\\Users\\tcfialho\\Documents\\NRFusion\\dist\\RequiemGame\\RequiemGame.exe",
+        "--require-nrfusion-proxy",
+        "--require-nr",
+        "--deterministic-motion",
+        "--width",
+        "1920",
+        "--height",
+        "1080",
+        "--frames",
+        "100",
+        "--warmup",
+        "60",
+        "--csv",
+        "D:\\Users\\tcfialho\\Documents\\NRFusion\\.temp\\phase2b\\final-stock-smoke\\frames.csv",
+        "--capture",
+        "D:\\Users\\tcfialho\\Documents\\NRFusion\\.temp\\phase2b\\final-stock-smoke\\output.ppm"
+      ],
+      "scope": "official Requiem synthetic-guide testbed; not commercial gameplay",
+      "proxy_sha256": "fb8deeb246484e347e8f3145a9524a14ce058640c5060ab5ba8a3311bd5e1779",
+      "testbed_sha256": "9298735f1ac3c1c874bb4865cb53f8c0bc049c476592972882a13b82c8d9c3a0",
+      "exit": 0,
+      "metrics": {
+        "ngx_evaluation_gpu_ms": {
+          "p50": 11.2819,
+          "p95": 12.981505,
+          "p99": 13.038414999999999
+        },
+        "frame_wall_ms": {
+          "p50": 12.2364,
+          "p95": 13.949915,
+          "p99": 14.015957
+        },
+        "nr_gpu_ms": {
+          "p50": 9.84986,
+          "p95": 11.485865,
+          "p99": 11.587749
+        },
+        "frame_gpu_ms": {
+          "p50": 11.47185,
+          "p95": 13.1788,
+          "p99": 13.228024
+        },
+        "nr_prepare_gpu_ms": {
+          "p50": 0.0256,
+          "p95": 0.027699199999999997,
+          "p99": 0.028672
+        },
+        "nr_model_gpu_ms": {
+          "p50": 9.693695000000002,
+          "p95": 11.341510000000001,
+          "p99": 11.441739
+        },
+        "nr_compose_gpu_ms": {
+          "p50": 0.119808,
+          "p95": 0.121856,
+          "p99": 0.21805055999999992
+        }
+      },
+      "image_sha256": "e739c922f660bc366c6a5d9220594b4a97f4106389567d8dcdcd26054e34a83d",
+      "samples": 40
+    }
+  ],
+  "unqualified": [
+    "real MFG GPU baseline",
+    "commercial gameplay",
+    "isolated CPU hook overhead",
+    "optimization end-to-end Exact temporal hashes"
+  ],
+  "next_candidate": "Swin 8h family: 12 calls/frame, 1.264 ms/frame in prior profiling-ON inventory; bound the read/write ranges before variant replay"
+}

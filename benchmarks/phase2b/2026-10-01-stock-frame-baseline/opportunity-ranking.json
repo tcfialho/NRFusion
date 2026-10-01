@@ -1,0 +1,1209 @@
+{
+  "source": "benchmarks\\phase2a\\2026-09-30-inventory\\inventory-1.json",
+  "source_sha256": "eacd3ae3c51d03f53d07f2739f31fcdf8a562c830432de83894e5f8f67cf4ea4",
+  "scope": "profiling ON; denominator is observed NVAPI chain GPU time; not independent whole-driver CUDA coverage",
+  "families": [
+    {
+      "candidate": "cc_tinlayout_fused_swin_8h_256_8_chained_fp8",
+      "calls_per_frame": 12.0,
+      "ms_per_frame": 1.2639999999999965,
+      "shapes": [
+        {
+          "grid": [
+            11,
+            7,
+            1
+          ],
+          "block": [
+            32,
+            8,
+            1
+          ]
+        },
+        {
+          "grid": [
+            11,
+            6,
+            1
+          ],
+          "block": [
+            32,
+            8,
+            1
+          ]
+        }
+      ],
+      "us_per_call": 105.33333333333303,
+      "observed_time_share_percent": 12.91437273645172,
+      "expected_reduction_percent": null,
+      "estimated_frame_impact_ms": null,
+      "memory_traffic_bytes": null,
+      "effort": "unestimated until semantic ABI and replay are complete",
+      "qualification": "measured NVAPI family cost; no qualified replacement"
+    },
+    {
+      "candidate": "cc_split_swin_16h_qkv_512_chained_fp8",
+      "calls_per_frame": 16.0,
+      "ms_per_frame": 0.7568682666666746,
+      "shapes": [
+        {
+          "grid": [
+            6,
+            4,
+            4
+          ],
+          "block": [
+            32,
+            4,
+            1
+          ]
+        },
+        {
+          "grid": [
+            6,
+            3,
+            4
+          ],
+          "block": [
+            32,
+            4,
+            1
+          ]
+        }
+      ],
+      "us_per_call": 47.30426666666716,
+      "observed_time_share_percent": 7.732973819719619,
+      "expected_reduction_percent": null,
+      "estimated_frame_impact_ms": null,
+      "memory_traffic_bytes": null,
+      "effort": "unestimated until semantic ABI and replay are complete",
+      "qualification": "measured NVAPI family cost; no qualified replacement"
+    },
+    {
+      "candidate": "cc_tinlayout_fused_pre_block_swin_1h_32_1_ds_fp8",
+      "calls_per_frame": 1.0,
+      "ms_per_frame": 0.658308266666666,
+      "shapes": [
+        {
+          "grid": [
+            168,
+            96,
+            1
+          ],
+          "block": [
+            32,
+            1,
+            1
+          ]
+        }
+      ],
+      "us_per_call": 658.308266666666,
+      "observed_time_share_percent": 6.725979692421521,
+      "expected_reduction_percent": null,
+      "estimated_frame_impact_ms": null,
+      "memory_traffic_bytes": null,
+      "effort": "unestimated until semantic ABI and replay are complete",
+      "qualification": "measured NVAPI family cost; no qualified replacement"
+    },
+    {
+      "candidate": "cc_tinlayout_fused_swin_4h_128_4_chained_fp8",
+      "calls_per_frame": 8.0,
+      "ms_per_frame": 0.6577237333333328,
+      "shapes": [
+        {
+          "grid": [
+            22,
+            13,
+            1
+          ],
+          "block": [
+            32,
+            4,
+            1
+          ]
+        },
+        {
+          "grid": [
+            21,
+            13,
+            1
+          ],
+          "block": [
+            32,
+            4,
+            1
+          ]
+        },
+        {
+          "grid": [
+            22,
+            12,
+            1
+          ],
+          "block": [
+            32,
+            4,
+            1
+          ]
+        },
+        {
+          "grid": [
+            21,
+            12,
+            1
+          ],
+          "block": [
+            32,
+            4,
+            1
+          ]
+        }
+      ],
+      "us_per_call": 82.2154666666666,
+      "observed_time_share_percent": 6.720007476168716,
+      "expected_reduction_percent": null,
+      "estimated_frame_impact_ms": null,
+      "memory_traffic_bytes": null,
+      "effort": "unestimated until semantic ABI and replay are complete",
+      "qualification": "measured NVAPI family cost; no qualified replacement"
+    },
+    {
+      "candidate": "cc_tinlayout_fused_swin_1h_32_1_chained_fp8",
+      "calls_per_frame": 4.0,
+      "ms_per_frame": 0.5995904000000002,
+      "shapes": [
+        {
+          "grid": [
+            85,
+            48,
+            1
+          ],
+          "block": [
+            32,
+            1,
+            1
+          ]
+        },
+        {
+          "grid": [
+            85,
+            49,
+            1
+          ],
+          "block": [
+            32,
+            1,
+            1
+          ]
+        }
+      ],
+      "us_per_call": 149.89760000000004,
+      "observed_time_share_percent": 6.126055312340352,
+      "expected_reduction_percent": null,
+      "estimated_frame_impact_ms": null,
+      "memory_traffic_bytes": null,
+      "effort": "unestimated until semantic ABI and replay are complete",
+      "qualification": "measured NVAPI family cost; no qualified replacement"
+    },
+    {
+      "candidate": "cc_split_swin_16h_ffwd_512_chained_fp8",
+      "calls_per_frame": 15.0,
+      "ms_per_frame": 0.5431594666666969,
+      "shapes": [
+        {
+          "grid": [
+            6,
+            3,
+            2
+          ],
+          "block": [
+            32,
+            8,
+            1
+          ]
+        }
+      ],
+      "us_per_call": 36.21063111111312,
+      "observed_time_share_percent": 5.549496683438344,
+      "expected_reduction_percent": null,
+      "estimated_frame_impact_ms": null,
+      "memory_traffic_bytes": null,
+      "effort": "unestimated until semantic ABI and replay are complete",
+      "qualification": "measured NVAPI family cost; no qualified replacement"
+    },
+    {
+      "candidate": "cc_tinlayout_fused_post_block_swin_1h_32_fp8",
+      "calls_per_frame": 1.0,
+      "ms_per_frame": 0.5302528000000001,
+      "shapes": [
+        {
+          "grid": [
+            169,
+            97,
+            1
+          ],
+          "block": [
+            32,
+            1,
+            1
+          ]
+        }
+      ],
+      "us_per_call": 530.2528000000001,
+      "observed_time_share_percent": 5.417628404863296,
+      "expected_reduction_percent": null,
+      "estimated_frame_impact_ms": null,
+      "memory_traffic_bytes": null,
+      "effort": "unestimated until semantic ABI and replay are complete",
+      "qualification": "measured NVAPI family cost; no qualified replacement"
+    },
+    {
+      "candidate": "cc_vit_1d_ffn_contract_chained_fp8",
+      "calls_per_frame": 8.0,
+      "ms_per_frame": 0.48009813333332896,
+      "shapes": [
+        {
+          "grid": [
+            24,
+            1,
+            4
+          ],
+          "block": [
+            32,
+            4,
+            1
+          ]
+        }
+      ],
+      "us_per_call": 60.01226666666612,
+      "observed_time_share_percent": 4.905194813244718,
+      "expected_reduction_percent": null,
+      "estimated_frame_impact_ms": null,
+      "memory_traffic_bytes": null,
+      "effort": "unestimated until semantic ABI and replay are complete",
+      "qualification": "measured NVAPI family cost; no qualified replacement"
+    },
+    {
+      "candidate": "cc_vit_1d_ffn_expand_chained_fp8",
+      "calls_per_frame": 7.0,
+      "ms_per_frame": 0.4374774666666612,
+      "shapes": [
+        {
+          "grid": [
+            96,
+            1,
+            1
+          ],
+          "block": [
+            32,
+            4,
+            1
+          ]
+        }
+      ],
+      "us_per_call": 62.49678095238017,
+      "observed_time_share_percent": 4.469736604692967,
+      "expected_reduction_percent": null,
+      "estimated_frame_impact_ms": null,
+      "memory_traffic_bytes": null,
+      "effort": "unestimated until semantic ABI and replay are complete",
+      "qualification": "measured NVAPI family cost; no qualified replacement"
+    },
+    {
+      "candidate": "cc_tinlayout_fused_swin_2h_64_2_chained_fp8",
+      "calls_per_frame": 4.0,
+      "ms_per_frame": 0.3972693333333327,
+      "shapes": [
+        {
+          "grid": [
+            43,
+            25,
+            1
+          ],
+          "block": [
+            32,
+            2,
+            1
+          ]
+        },
+        {
+          "grid": [
+            43,
+            24,
+            1
+          ],
+          "block": [
+            32,
+            2,
+            1
+          ]
+        }
+      ],
+      "us_per_call": 99.31733333333318,
+      "observed_time_share_percent": 4.058927410940155,
+      "expected_reduction_percent": null,
+      "estimated_frame_impact_ms": null,
+      "memory_traffic_bytes": null,
+      "effort": "unestimated until semantic ABI and replay are complete",
+      "qualification": "measured NVAPI family cost; no qualified replacement"
+    },
+    {
+      "candidate": "cc_vit_1d_qkv_chained_fp8",
+      "calls_per_frame": 8.0,
+      "ms_per_frame": 0.3921322666666706,
+      "shapes": [
+        {
+          "grid": [
+            48,
+            1,
+            2
+          ],
+          "block": [
+            32,
+            4,
+            1
+          ]
+        }
+      ],
+      "us_per_call": 49.016533333333825,
+      "observed_time_share_percent": 4.006441656426487,
+      "expected_reduction_percent": null,
+      "estimated_frame_impact_ms": null,
+      "memory_traffic_bytes": null,
+      "effort": "unestimated until semantic ABI and replay are complete",
+      "qualification": "measured NVAPI family cost; no qualified replacement"
+    },
+    {
+      "candidate": "cc_tinlayout_fused_swin_1h_32_1_ds_wait_fp8",
+      "calls_per_frame": 1.0,
+      "ms_per_frame": 0.31124479999999993,
+      "shapes": [
+        {
+          "grid": [
+            84,
+            49,
+            1
+          ],
+          "block": [
+            32,
+            1,
+            1
+          ]
+        }
+      ],
+      "us_per_call": 311.24479999999994,
+      "observed_time_share_percent": 3.1800089869322616,
+      "expected_reduction_percent": null,
+      "estimated_frame_impact_ms": null,
+      "memory_traffic_bytes": null,
+      "effort": "unestimated until semantic ABI and replay are complete",
+      "qualification": "measured NVAPI family cost; no qualified replacement"
+    },
+    {
+      "candidate": "cc_split_swin_16h_ffwd_proj_512_chained_fp8",
+      "calls_per_frame": 15.0,
+      "ms_per_frame": 0.23579733333333694,
+      "shapes": [
+        {
+          "grid": [
+            12,
+            3,
+            1
+          ],
+          "block": [
+            32,
+            4,
+            1
+          ]
+        }
+      ],
+      "us_per_call": 15.719822222222463,
+      "observed_time_share_percent": 2.40915716212664,
+      "expected_reduction_percent": null,
+      "estimated_frame_impact_ms": null,
+      "memory_traffic_bytes": null,
+      "effort": "unestimated until semantic ABI and replay are complete",
+      "qualification": "measured NVAPI family cost; no qualified replacement"
+    },
+    {
+      "candidate": "cc_vit_1d_projection_chained_fp8",
+      "calls_per_frame": 7.0,
+      "ms_per_frame": 0.23123626666667021,
+      "shapes": [
+        {
+          "grid": [
+            24,
+            1,
+            4
+          ],
+          "block": [
+            32,
+            4,
+            1
+          ]
+        }
+      ],
+      "us_per_call": 33.03375238095289,
+      "observed_time_share_percent": 2.3625564382270046,
+      "expected_reduction_percent": null,
+      "estimated_frame_impact_ms": null,
+      "memory_traffic_bytes": null,
+      "effort": "unestimated until semantic ABI and replay are complete",
+      "qualification": "measured NVAPI family cost; no qualified replacement"
+    },
+    {
+      "candidate": "cc_split_swin_16h_proj_512_chained_fp8",
+      "calls_per_frame": 14.0,
+      "ms_per_frame": 0.2103253333333353,
+      "shapes": [
+        {
+          "grid": [
+            12,
+            3,
+            1
+          ],
+          "block": [
+            32,
+            8,
+            1
+          ]
+        }
+      ],
+      "us_per_call": 15.023238095238236,
+      "observed_time_share_percent": 2.1489080305262287,
+      "expected_reduction_percent": null,
+      "estimated_frame_impact_ms": null,
+      "memory_traffic_bytes": null,
+      "effort": "unestimated until semantic ABI and replay are complete",
+      "qualification": "measured NVAPI family cost; no qualified replacement"
+    },
+    {
+      "candidate": "cc_tinlayout_fused_swin_8h_256_8_inpview_tilesync_fp8",
+      "calls_per_frame": 1.0,
+      "ms_per_frame": 0.18030080000000032,
+      "shapes": [
+        {
+          "grid": [
+            11,
+            6,
+            1
+          ],
+          "block": [
+            32,
+            8,
+            1
+          ]
+        }
+      ],
+      "us_per_call": 180.30080000000032,
+      "observed_time_share_percent": 1.8421453606649085,
+      "expected_reduction_percent": null,
+      "estimated_frame_impact_ms": null,
+      "memory_traffic_bytes": null,
+      "effort": "unestimated until semantic ABI and replay are complete",
+      "qualification": "measured NVAPI family cost; no qualified replacement"
+    },
+    {
+      "candidate": "cc_tinlayout_fused_swin_1h_32_1_upsample_tilesync_fp8",
+      "calls_per_frame": 1.0,
+      "ms_per_frame": 0.1510655999999999,
+      "shapes": [
+        {
+          "grid": [
+            84,
+            48,
+            1
+          ],
+          "block": [
+            32,
+            1,
+            1
+          ]
+        }
+      ],
+      "us_per_call": 151.0655999999999,
+      "observed_time_share_percent": 1.5434473623858584,
+      "expected_reduction_percent": null,
+      "estimated_frame_impact_ms": null,
+      "memory_traffic_bytes": null,
+      "effort": "unestimated until semantic ABI and replay are complete",
+      "qualification": "measured NVAPI family cost; no qualified replacement"
+    },
+    {
+      "candidate": "cc_vit_1d_attention_chained_fp8",
+      "calls_per_frame": 8.0,
+      "ms_per_frame": 0.1462613333333336,
+      "shapes": [
+        {
+          "grid": [
+            32,
+            2,
+            1
+          ],
+          "block": [
+            32,
+            4,
+            1
+          ]
+        }
+      ],
+      "us_per_call": 18.2826666666667,
+      "observed_time_share_percent": 1.4943618477825045,
+      "expected_reduction_percent": null,
+      "estimated_frame_impact_ms": null,
+      "memory_traffic_bytes": null,
+      "effort": "unestimated until semantic ABI and replay are complete",
+      "qualification": "measured NVAPI family cost; no qualified replacement"
+    },
+    {
+      "candidate": "cc_tinlayout_fused_swin_1h_32_1_inpview_tilesync_fp8",
+      "calls_per_frame": 1.0,
+      "ms_per_frame": 0.13409706666666693,
+      "shapes": [
+        {
+          "grid": [
+            84,
+            48,
+            1
+          ],
+          "block": [
+            32,
+            1,
+            1
+          ]
+        }
+      ],
+      "us_per_call": 134.09706666666693,
+      "observed_time_share_percent": 1.3700787197770228,
+      "expected_reduction_percent": null,
+      "estimated_frame_impact_ms": null,
+      "memory_traffic_bytes": null,
+      "effort": "unestimated until semantic ABI and replay are complete",
+      "qualification": "measured NVAPI family cost; no qualified replacement"
+    },
+    {
+      "candidate": "cc_tinlayout_fused_swin_1h_32_1_outview_wait_fp8",
+      "calls_per_frame": 1.0,
+      "ms_per_frame": 0.12166826666666643,
+      "shapes": [
+        {
+          "grid": [
+            84,
+            49,
+            1
+          ],
+          "block": [
+            32,
+            1,
+            1
+          ]
+        }
+      ],
+      "us_per_call": 121.66826666666643,
+      "observed_time_share_percent": 1.2430928369709957,
+      "expected_reduction_percent": null,
+      "estimated_frame_impact_ms": null,
+      "memory_traffic_bytes": null,
+      "effort": "unestimated until semantic ABI and replay are complete",
+      "qualification": "measured NVAPI family cost; no qualified replacement"
+    },
+    {
+      "candidate": "cc_tinlayout_fused_swin_2h_64_2_ds_wait_fp8",
+      "calls_per_frame": 1.0,
+      "ms_per_frame": 0.11805866666666683,
+      "shapes": [
+        {
+          "grid": [
+            42,
+            25,
+            1
+          ],
+          "block": [
+            32,
+            2,
+            1
+          ]
+        }
+      ],
+      "us_per_call": 118.05866666666682,
+      "observed_time_share_percent": 1.2062133117894365,
+      "expected_reduction_percent": null,
+      "estimated_frame_impact_ms": null,
+      "memory_traffic_bytes": null,
+      "effort": "unestimated until semantic ABI and replay are complete",
+      "qualification": "measured NVAPI family cost; no qualified replacement"
+    },
+    {
+      "candidate": "cc_tinlayout_fused_swin_8h_256_8_outview_wait_fp8",
+      "calls_per_frame": 1.0,
+      "ms_per_frame": 0.11729493333333287,
+      "shapes": [
+        {
+          "grid": [
+            11,
+            7,
+            1
+          ],
+          "block": [
+            32,
+            8,
+            1
+          ]
+        }
+      ],
+      "us_per_call": 117.29493333333286,
+      "observed_time_share_percent": 1.1984101971233545,
+      "expected_reduction_percent": null,
+      "estimated_frame_impact_ms": null,
+      "memory_traffic_bytes": null,
+      "effort": "unestimated until semantic ABI and replay are complete",
+      "qualification": "measured NVAPI family cost; no qualified replacement"
+    },
+    {
+      "candidate": "cc_tinlayout_fused_swin_8h_256_8_upsample_tilesync_fp8",
+      "calls_per_frame": 1.0,
+      "ms_per_frame": 0.11422719999999996,
+      "shapes": [
+        {
+          "grid": [
+            11,
+            6,
+            1
+          ],
+          "block": [
+            32,
+            8,
+            1
+          ]
+        }
+      ],
+      "us_per_call": 114.22719999999995,
+      "observed_time_share_percent": 1.1670669600009662,
+      "expected_reduction_percent": null,
+      "estimated_frame_impact_ms": null,
+      "memory_traffic_bytes": null,
+      "effort": "unestimated until semantic ABI and replay are complete",
+      "qualification": "measured NVAPI family cost; no qualified replacement"
+    },
+    {
+      "candidate": "cc_tinlayout_fused_swin_8h_256_8_ds_wait_fp8",
+      "calls_per_frame": 1.0,
+      "ms_per_frame": 0.10852693333333305,
+      "shapes": [
+        {
+          "grid": [
+            11,
+            7,
+            1
+          ],
+          "block": [
+            32,
+            8,
+            1
+          ]
+        }
+      ],
+      "us_per_call": 108.52693333333305,
+      "observed_time_share_percent": 1.1088269533312607,
+      "expected_reduction_percent": null,
+      "estimated_frame_impact_ms": null,
+      "memory_traffic_bytes": null,
+      "effort": "unestimated until semantic ABI and replay are complete",
+      "qualification": "measured NVAPI family cost; no qualified replacement"
+    },
+    {
+      "candidate": "cc_tinlayout_fused_swin_4h_128_4_upsample_tilesync_fp8",
+      "calls_per_frame": 1.0,
+      "ms_per_frame": 0.10647893333333333,
+      "shapes": [
+        {
+          "grid": [
+            22,
+            12,
+            1
+          ],
+          "block": [
+            32,
+            4,
+            1
+          ]
+        }
+      ],
+      "us_per_call": 106.47893333333333,
+      "observed_time_share_percent": 1.0879024000367594,
+      "expected_reduction_percent": null,
+      "estimated_frame_impact_ms": null,
+      "memory_traffic_bytes": null,
+      "effort": "unestimated until semantic ABI and replay are complete",
+      "qualification": "measured NVAPI family cost; no qualified replacement"
+    },
+    {
+      "candidate": "cc_tinlayout_fused_swin_2h_64_2_inpview_tilesync_fp8",
+      "calls_per_frame": 1.0,
+      "ms_per_frame": 0.10362880000000037,
+      "shapes": [
+        {
+          "grid": [
+            42,
+            24,
+            1
+          ],
+          "block": [
+            32,
+            2,
+            1
+          ]
+        }
+      ],
+      "us_per_call": 103.62880000000037,
+      "observed_time_share_percent": 1.0587823967019117,
+      "expected_reduction_percent": null,
+      "estimated_frame_impact_ms": null,
+      "memory_traffic_bytes": null,
+      "effort": "unestimated until semantic ABI and replay are complete",
+      "qualification": "measured NVAPI family cost; no qualified replacement"
+    },
+    {
+      "candidate": "cc_tinlayout_fused_swin_4h_128_4_ds_wait_fp8",
+      "calls_per_frame": 1.0,
+      "ms_per_frame": 0.09973333333333337,
+      "shapes": [
+        {
+          "grid": [
+            22,
+            13,
+            1
+          ],
+          "block": [
+            32,
+            4,
+            1
+          ]
+        }
+      ],
+      "us_per_call": 99.73333333333336,
+      "observed_time_share_percent": 1.0189821526229867,
+      "expected_reduction_percent": null,
+      "estimated_frame_impact_ms": null,
+      "memory_traffic_bytes": null,
+      "effort": "unestimated until semantic ABI and replay are complete",
+      "qualification": "measured NVAPI family cost; no qualified replacement"
+    },
+    {
+      "candidate": "cc_tinlayout_fused_swin_2h_64_2_upsample_tilesync_fp8",
+      "calls_per_frame": 1.0,
+      "ms_per_frame": 0.09962239999999982,
+      "shapes": [
+        {
+          "grid": [
+            42,
+            24,
+            1
+          ],
+          "block": [
+            32,
+            2,
+            1
+          ]
+        }
+      ],
+      "us_per_call": 99.62239999999981,
+      "observed_time_share_percent": 1.0178487393195323,
+      "expected_reduction_percent": null,
+      "estimated_frame_impact_ms": null,
+      "memory_traffic_bytes": null,
+      "effort": "unestimated until semantic ABI and replay are complete",
+      "qualification": "measured NVAPI family cost; no qualified replacement"
+    },
+    {
+      "candidate": "cc_tinlayout_fused_swin_2h_64_2_outview_wait_fp8",
+      "calls_per_frame": 1.0,
+      "ms_per_frame": 0.09808639999999992,
+      "shapes": [
+        {
+          "grid": [
+            42,
+            25,
+            1
+          ],
+          "block": [
+            32,
+            2,
+            1
+          ]
+        }
+      ],
+      "us_per_call": 98.08639999999993,
+      "observed_time_share_percent": 1.0021553243486554,
+      "expected_reduction_percent": null,
+      "estimated_frame_impact_ms": null,
+      "memory_traffic_bytes": null,
+      "effort": "unestimated until semantic ABI and replay are complete",
+      "qualification": "measured NVAPI family cost; no qualified replacement"
+    },
+    {
+      "candidate": "cc_tinlayout_fused_swin_4h_128_4_outview_wait_fp8",
+      "calls_per_frame": 1.0,
+      "ms_per_frame": 0.0845525333333336,
+      "shapes": [
+        {
+          "grid": [
+            21,
+            13,
+            1
+          ],
+          "block": [
+            32,
+            4,
+            1
+          ]
+        }
+      ],
+      "us_per_call": 84.5525333333336,
+      "observed_time_share_percent": 0.8638789013274776,
+      "expected_reduction_percent": null,
+      "estimated_frame_impact_ms": null,
+      "memory_traffic_bytes": null,
+      "effort": "unestimated until semantic ABI and replay are complete",
+      "qualification": "measured NVAPI family cost; no qualified replacement"
+    },
+    {
+      "candidate": "cc_tinlayout_fused_swin_4h_128_4_inpview_tilesync_fp8",
+      "calls_per_frame": 1.0,
+      "ms_per_frame": 0.07373653333333295,
+      "shapes": [
+        {
+          "grid": [
+            21,
+            12,
+            1
+          ],
+          "block": [
+            32,
+            4,
+            1
+          ]
+        }
+      ],
+      "us_per_call": 73.73653333333296,
+      "observed_time_share_percent": 0.7533711042408712,
+      "expected_reduction_percent": null,
+      "estimated_frame_impact_ms": null,
+      "memory_traffic_bytes": null,
+      "effort": "unestimated until semantic ABI and replay are complete",
+      "qualification": "measured NVAPI family cost; no qualified replacement"
+    },
+    {
+      "candidate": "cc_vit_1d_ffn_expand_publish_fp8",
+      "calls_per_frame": 1.0,
+      "ms_per_frame": 0.048494933333333316,
+      "shapes": [
+        {
+          "grid": [
+            96,
+            1,
+            1
+          ],
+          "block": [
+            32,
+            4,
+            1
+          ]
+        }
+      ],
+      "us_per_call": 48.494933333333314,
+      "observed_time_share_percent": 0.49547598488611166,
+      "expected_reduction_percent": null,
+      "estimated_frame_impact_ms": null,
+      "memory_traffic_bytes": null,
+      "effort": "unestimated until semantic ABI and replay are complete",
+      "qualification": "measured NVAPI family cost; no qualified replacement"
+    },
+    {
+      "candidate": "cc_vit_1d_projection_wait_fp8",
+      "calls_per_frame": 1.0,
+      "ms_per_frame": 0.030766933333333364,
+      "shapes": [
+        {
+          "grid": [
+            24,
+            1,
+            4
+          ],
+          "block": [
+            32,
+            4,
+            1
+          ]
+        }
+      ],
+      "us_per_call": 30.766933333333363,
+      "observed_time_share_percent": 0.31434782043056103,
+      "expected_reduction_percent": null,
+      "estimated_frame_impact_ms": null,
+      "memory_traffic_bytes": null,
+      "effort": "unestimated until semantic ABI and replay are complete",
+      "qualification": "measured NVAPI family cost; no qualified replacement"
+    },
+    {
+      "candidate": "cc_split_swin_16h_ffwd_inpview_512_tilesync_fp8",
+      "calls_per_frame": 1.0,
+      "ms_per_frame": 0.023769600000000096,
+      "shapes": [
+        {
+          "grid": [
+            6,
+            3,
+            2
+          ],
+          "block": [
+            32,
+            4,
+            1
+          ]
+        }
+      ],
+      "us_per_call": 23.769600000000096,
+      "observed_time_share_percent": 0.2428555966743393,
+      "expected_reduction_percent": null,
+      "estimated_frame_impact_ms": null,
+      "memory_traffic_bytes": null,
+      "effort": "unestimated until semantic ABI and replay are complete",
+      "qualification": "measured NVAPI family cost; no qualified replacement"
+    },
+    {
+      "candidate": "cg2r_copy_kernel",
+      "calls_per_frame": 1.0,
+      "ms_per_frame": 0.023765333333333256,
+      "shapes": [
+        {
+          "grid": [
+            80,
+            45,
+            1
+          ],
+          "block": [
+            16,
+            16,
+            1
+          ]
+        }
+      ],
+      "us_per_call": 23.765333333333256,
+      "observed_time_share_percent": 0.24281200385497398,
+      "expected_reduction_percent": null,
+      "estimated_frame_impact_ms": null,
+      "memory_traffic_bytes": null,
+      "effort": "unestimated until semantic ABI and replay are complete",
+      "qualification": "measured NVAPI family cost; no qualified replacement"
+    },
+    {
+      "candidate": "cc_split_swin_16h_proj_512_outview_wait_fp8",
+      "calls_per_frame": 1.0,
+      "ms_per_frame": 0.018632533333333236,
+      "shapes": [
+        {
+          "grid": [
+            12,
+            3,
+            1
+          ],
+          "block": [
+            32,
+            4,
+            1
+          ]
+        }
+      ],
+      "us_per_call": 18.632533333333235,
+      "observed_time_share_percent": 0.19036984216062286,
+      "expected_reduction_percent": null,
+      "estimated_frame_impact_ms": null,
+      "memory_traffic_bytes": null,
+      "effort": "unestimated until semantic ABI and replay are complete",
+      "qualification": "measured NVAPI family cost; no qualified replacement"
+    },
+    {
+      "candidate": "cc_dec_input_upsample_1024_512_tilesync_fp8",
+      "calls_per_frame": 1.0,
+      "ms_per_frame": 0.018154666666666635,
+      "shapes": [
+        {
+          "grid": [
+            12,
+            3,
+            4
+          ],
+          "block": [
+            32,
+            2,
+            1
+          ]
+        }
+      ],
+      "us_per_call": 18.154666666666635,
+      "observed_time_share_percent": 0.1854874463919059,
+      "expected_reduction_percent": null,
+      "estimated_frame_impact_ms": null,
+      "memory_traffic_bytes": null,
+      "effort": "unestimated until semantic ABI and replay are complete",
+      "qualification": "measured NVAPI family cost; no qualified replacement"
+    },
+    {
+      "candidate": "cc_split_swin_16h_ffwd_proj_inpview_512_chained_fp8",
+      "calls_per_frame": 1.0,
+      "ms_per_frame": 0.01776213333333332,
+      "shapes": [
+        {
+          "grid": [
+            12,
+            3,
+            1
+          ],
+          "block": [
+            32,
+            4,
+            1
+          ]
+        }
+      ],
+      "us_per_call": 17.762133333333317,
+      "observed_time_share_percent": 0.18147690701045943,
+      "expected_reduction_percent": null,
+      "estimated_frame_impact_ms": null,
+      "memory_traffic_bytes": null,
+      "effort": "unestimated until semantic ABI and replay are complete",
+      "qualification": "measured NVAPI family cost; no qualified replacement"
+    },
+    {
+      "candidate": "cc_split_swin_16h_proj_pool_512_chained_fp8",
+      "calls_per_frame": 1.0,
+      "ms_per_frame": 0.01745066666666669,
+      "shapes": [
+        {
+          "grid": [
+            12,
+            3,
+            1
+          ],
+          "block": [
+            32,
+            4,
+            1
+          ]
+        }
+      ],
+      "us_per_call": 17.45066666666669,
+      "observed_time_share_percent": 0.17829463119692066,
+      "expected_reduction_percent": null,
+      "estimated_frame_impact_ms": null,
+      "memory_traffic_bytes": null,
+      "effort": "unestimated until semantic ABI and replay are complete",
+      "qualification": "measured NVAPI family cost; no qualified replacement"
+    },
+    {
+      "candidate": "cc_split_swin_16h_final_head_512_wait_fp8",
+      "calls_per_frame": 1.0,
+      "ms_per_frame": 0.013115733333333318,
+      "shapes": [
+        {
+          "grid": [
+            12,
+            2,
+            1
+          ],
+          "block": [
+            32,
+            8,
+            1
+          ]
+        }
+      ],
+      "us_per_call": 13.115733333333319,
+      "observed_time_share_percent": 0.13400432672355325,
+      "expected_reduction_percent": null,
+      "estimated_frame_impact_ms": null,
+      "memory_traffic_bytes": null,
+      "effort": "unestimated until semantic ABI and replay are complete",
+      "qualification": "measured NVAPI family cost; no qualified replacement"
+    },
+    {
+      "candidate": "cc_vit_1d_repack_2d_to_1d_fp8",
+      "calls_per_frame": 1.0,
+      "ms_per_frame": 0.0060245333333333265,
+      "shapes": [
+        {
+          "grid": [
+            288,
+            1,
+            1
+          ],
+          "block": [
+            256,
+            1,
+            1
+          ]
+        }
+      ],
+      "us_per_call": 6.024533333333326,
+      "observed_time_share_percent": 0.061553060941332845,
+      "expected_reduction_percent": null,
+      "estimated_frame_impact_ms": null,
+      "memory_traffic_bytes": null,
+      "effort": "unestimated until semantic ABI and replay are complete",
+      "qualification": "measured NVAPI family cost; no qualified replacement"
+    },
+    {
+      "candidate": "cc_vit_1d_repack_1d_to_2d_fp8",
+      "calls_per_frame": 1.0,
+      "ms_per_frame": 0.005102933333333343,
+      "shapes": [
+        {
+          "grid": [
+            288,
+            1,
+            1
+          ],
+          "block": [
+            256,
+            1,
+            1
+          ]
+        }
+      ],
+      "us_per_call": 5.102933333333343,
+      "observed_time_share_percent": 0.05213701195880616,
+      "expected_reduction_percent": null,
+      "estimated_frame_impact_ms": null,
+      "memory_traffic_bytes": null,
+      "effort": "unestimated until semantic ABI and replay are complete",
+      "qualification": "measured NVAPI family cost; no qualified replacement"
+    },
+    {
+      "candidate": "cc_cb_clear",
+      "calls_per_frame": 1.0,
+      "ms_per_frame": 0.001681066666666667,
+      "shapes": [
+        {
+          "grid": [
+            208,
+            1,
+            1
+          ],
+          "block": [
+            256,
+            1,
+            1
+          ]
+        }
+      ],
+      "us_per_call": 1.681066666666667,
+      "observed_time_share_percent": 0.01717557082923879,
+      "expected_reduction_percent": null,
+      "estimated_frame_impact_ms": null,
+      "memory_traffic_bytes": null,
+      "effort": "unestimated until semantic ABI and replay are complete",
+      "qualification": "measured NVAPI family cost; no qualified replacement"
+    }
+  ]
+}
