@@ -115,6 +115,13 @@ bool ReplayStock(const Packet& packet, const std::filesystem::path& output,
     kernel.hFunction = stockFunction;
     kernel.gridDim = packet.grid;
     kernel.blockDim = packet.block;
+    wchar_t customWarps[4]{};
+    const auto customWarpsLength = GetEnvironmentVariableW(L"NRFUSION_REPLAY_CUSTOM_WARPS", customWarps, 4);
+    if (customWarpsLength) {
+        if (customPath.empty() || customWarpsLength != 1 || (customWarps[0] != L'4' && customWarps[0] != L'8'))
+            throw std::runtime_error("Unqualified custom replay warp count");
+        kernel.blockDim.y = customWarps[0] == L'8' ? 8 : 4;
+    }
     kernel.dynSharedMemBytes = packet.shared;
     kernel.pParams = parameters.data();
     kernel.paramSize = static_cast<NvU32>(parameters.size());
@@ -154,6 +161,10 @@ bool ReplayStock(const Packet& packet, const std::filesystem::path& output,
     std::ofstream report(output / (variant + "-replay.json"));
     report << std::setprecision(12) << "{\"schema_version\":1,\"diagnostic_input_probe\":" << (inputProbe ? "true" : "false")
         << ",\"variant\":" << std::quoted(variant)
+        << ",\"executed_image_sha256\":" << std::quoted(nrfusion::Sha256Hex(image))
+        << ",\"launch_function\":" << std::quoted(functionName)
+        << ",\"launch_grid\":[" << kernel.gridDim.x << ',' << kernel.gridDim.y << ',' << kernel.gridDim.z << ']'
+        << ",\"launch_block\":[" << kernel.blockDim.x << ',' << kernel.blockDim.y << ',' << kernel.blockDim.z << ']'
         << ",\"module_function_initialization_cpu_ms\":" << initializationMs
         << ",\"driver_jit_cache_state\":\"unknown\""
         << ",\"bit_identical\":" << (exact ? "true" : "false")
