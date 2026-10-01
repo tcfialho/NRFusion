@@ -48,7 +48,10 @@
     requiem::EvaluationTimer evaluationTimer(device.Get(), queue.Get());
     requiem::EvaluationTimer frameTimer(device.Get(), queue.Get());
     std::unique_ptr<requiem::OutputCapture> capture;
-    if (!g_capture.empty()) capture = std::make_unique<requiem::OutputCapture>(device.Get(), calculated.Get());
+    if (!g_capture.empty() || !g_frameHashes.empty())
+        capture = std::make_unique<requiem::OutputCapture>(device.Get(), calculated.Get());
+    std::unique_ptr<requiem::RgbaFrameHasher> frameHasher;
+    if (!g_frameHashes.empty()) frameHasher = std::make_unique<requiem::RgbaFrameHasher>();
 
     ComPtr<ID3D12CommandAllocator> allocator;
     Check(device->CreateCommandAllocator(D3D12_COMMAND_LIST_TYPE_DIRECT, IID_PPV_ARGS(&allocator)),

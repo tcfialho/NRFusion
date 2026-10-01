@@ -5,6 +5,7 @@
 #include <fstream>
 #include <stdexcept>
 #include <vector>
+#include "output_hash.hpp"
 
 namespace requiem {
 inline void RequireGpu(HRESULT result) {
@@ -121,6 +122,22 @@ struct OutputCapture {
         D3D12_RANGE written{0, 0};
         readback->Unmap(0, &written);
         if (!output) throw std::runtime_error("Cannot write capture: " + path);
+    }
+    std::string HashAfterFence(RgbaFrameHasher& hasher) {
+        if (footprint.Footprint.Format != DXGI_FORMAT_R8G8B8A8_UNORM)
+            throw std::runtime_error("Frame hash requires RGBA8 output");
+        unsigned char* pixels = nullptr;
+        D3D12_RANGE read{0, static_cast<SIZE_T>(bytes)}, written{0, 0};
+        RequireGpu(readback->Map(0, &read, reinterpret_cast<void**>(&pixels)));
+        try {
+            const auto hash = hasher.HashRows(pixels + footprint.Offset, footprint.Footprint.RowPitch,
+                                             footprint.Footprint.Width, footprint.Footprint.Height);
+            readback->Unmap(0, &written);
+            return hash;
+        } catch (...) {
+            readback->Unmap(0, &written);
+            throw;
+        }
     }
 };
 } // namespace requiem

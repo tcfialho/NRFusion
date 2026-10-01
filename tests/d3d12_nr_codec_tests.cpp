@@ -13,6 +13,7 @@
 #include "D3D12CodecApiCounters.hpp"
 
 #include "nrfusion/D3D12NrCodec.hpp"
+#include "D3D12CodecExactComparison.hpp"
 
 #include <cassert>
 
@@ -66,6 +67,7 @@ int main() {
         IID_PPV_ARGS(&list))));
     assert(SUCCEEDED(device->CreateFence(0, D3D12_FENCE_FLAG_NONE, IID_PPV_ARGS(&fence))));
 
+    nrfusion::testing::CheckCodecEncodeExact(device.Get(), queue.Get());
     nrfusion::testing::CodecApiCounters apiCalls(device.Get());
     D3D12NrCodec codec;
     assert(codec.Init(device.Get()));

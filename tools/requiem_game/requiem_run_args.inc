@@ -50,6 +50,8 @@
             g_csv = argv[++i];
         else if (argument == "--capture" && i + 1 < argc)
             g_capture = argv[++i];
+        else if (argument == "--frame-hashes" && i + 1 < argc)
+            g_frameHashes = argv[++i];
         else { std::cerr << "Invalid argument: " << argument << std::endl; return 2; }
     }
 
@@ -64,11 +66,18 @@
         std::cerr << "Supported output sizes: 1280x720, 1920x1080, 2560x1440, 3840x2160" << std::endl;
         return 2;
     }
-    if ((!g_csv.empty() || !g_capture.empty()) && (!g_frameLimit || g_frameLimit <= g_warmup)) {
+    if ((!g_csv.empty() || !g_capture.empty() || !g_frameHashes.empty()) &&
+        (!g_frameLimit || g_frameLimit <= g_warmup)) {
         std::cerr << "Capture/CSV requires --frames greater than --warmup" << std::endl;
         return 2;
     }
     std::ofstream timings;
+    std::ofstream frameHashes;
+    if (!g_frameHashes.empty()) {
+        frameHashes.open(g_frameHashes);
+        if (!frameHashes) throw std::runtime_error("Cannot open frame hash CSV");
+        frameHashes << "frame,input_width,input_height,output_width,output_height,rgba_sha256\n";
+    }
     if (!g_csv.empty()) {
         timings.open(g_csv);
         if (!timings) { std::cerr << "Cannot open CSV" << std::endl; return 2; }

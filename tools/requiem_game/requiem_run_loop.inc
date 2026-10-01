@@ -129,7 +129,7 @@
                             D3D12_RESOURCE_STATE_PIXEL_SHADER_RESOURCE);
         requiem::Transition(commands.Get(), colour.Get(), D3D12_RESOURCE_STATE_NON_PIXEL_SHADER_RESOURCE,
                             D3D12_RESOURCE_STATE_PIXEL_SHADER_RESOURCE);
-        if (capture && simulationFrame + 1 == g_frameLimit)
+        if (capture && (frameHasher || simulationFrame + 1 == g_frameLimit))
             capture->Copy(commands.Get(), calculated.Get());
 
         // Evaluation may replace every binding. Restore all state before presenting.
@@ -217,7 +217,13 @@
                     << guideCopyCounter.copies << ',' << guideCopyCounter.bytes << ','
                     << frameGpuMs << ',' << nrStages.valid << ',' << nrStages.preparationGpuMs << ','
                     << nrStages.modelGpuMs << ',' << nrStages.compositionGpuMs << '\n';
-        if (capture && simulationFrame + 1 == g_frameLimit) capture->SaveAfterFence(g_capture);
+        if (frameHasher) {
+            frameHashes << simulationFrame << ',' << inputWidth << ',' << inputHeight << ','
+                        << width << ',' << height << ',' << capture->HashAfterFence(*frameHasher) << '\n';
+            if (!frameHashes) throw std::runtime_error("Cannot write frame hashes");
+        }
+        if (capture && !g_capture.empty() && simulationFrame + 1 == g_frameLimit)
+            capture->SaveAfterFence(g_capture);
         if (view != lastView) {
             const char* labels[] = {"Entrada original", "Resultado calculado (NGX)", "Referencia NVIDIA (JPEG)"};
             SetWindowTextA(g_hwnd, labels[view]);

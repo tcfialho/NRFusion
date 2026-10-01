@@ -68,6 +68,7 @@ unsigned g_view = 1; // 0 input, 1 calculated, 2 NVIDIA reference
 std::uint64_t g_width = 1920, g_height = 1080;
 std::uint64_t g_warmup = 120;
 std::string g_csv, g_capture;
+std::string g_frameHashes;
 std::string g_kernelCsv;
 bool g_requireNr = false;
 bool g_nrLifecycle = false;
