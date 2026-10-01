@@ -22,6 +22,7 @@ target_sources(nrfusion_core PRIVATE src/NrKernelNvapiHooks.cpp src/NrKernelProf
     src/NrKernelResourceObservation.cpp src/NrKernelResourceTargets.c
     src/NrKernelCapture.cpp src/NrKernelCaptureExport.cpp
     src/NrKernelChainCapture.cpp src/NrKernelChainCaptureExport.cpp
+    src/NrSwinKernelCapture.cpp src/NrSwinKernelCaptureExport.cpp
     src/NrKernelReplacement.cpp src/NrKernelArchitecture.cpp)
 set_property(SOURCE src/NrKernelResourceObservation.cpp APPEND
     PROPERTY INCLUDE_DIRECTORIES "${nrfusion_minhook_source_SOURCE_DIR}/include")

@@ -9,6 +9,7 @@
 #include "NrKernelAbiDiscovery.hpp"
 #include "NrKernelCapture.hpp"
 #include "NrKernelChainCapture.hpp"
+#include "NrSwinKernelCapture.hpp"
 #include "NrKernelReplacement.hpp"
 #include "nrfusion/Sha256.hpp"
 
@@ -154,6 +155,7 @@ NvAPI_Status __cdecl Launch(ID3D12GraphicsCommandList* commands,
         CaptureChainAfter(commands, result == NVAPI_OK);
     }
     CaptureAfter(commands, result == NVAPI_OK);
+    CaptureSwinAfter(commands, result == NVAPI_OK);
     return result;
 }
 

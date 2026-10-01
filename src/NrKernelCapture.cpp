@@ -3,6 +3,7 @@
 #include "NrKernelCapture.hpp"
 #include "NrKernelResourceObservation.hpp"
 #include "NrKernelChainCapture.hpp"
+#include "NrSwinKernelCapture.hpp"
 #include <cstring>
 #include <fstream>
 
@@ -15,6 +16,7 @@ CaptureState& Captures() {
 }
 
 void ConfigureCapture() {
+    ConfigureSwinCapture();
     ConfigureChainCapture();
     auto& state = Captures();
     std::lock_guard lock(state.mutex);
@@ -53,6 +55,7 @@ void ConfigureCapture() {
 }
 
 void SelectCaptureModule(const FunctionIdentity& identity, ModuleImage image) {
+    SelectSwinCaptureModule(identity, image);
     SelectChainCaptureModule(identity, image);
     auto& state = Captures();
     std::lock_guard lock(state.mutex);
@@ -61,6 +64,7 @@ void SelectCaptureModule(const FunctionIdentity& identity, ModuleImage image) {
 }
 
 bool PrepareCaptureFrame(ID3D12Device* device) {
+    if (!PrepareSwinCaptureFrame(device)) return false;
     if (!PrepareChainCaptureFrame(device)) return false;
     auto& state = Captures();
     std::lock_guard lock(state.mutex);
@@ -162,6 +166,7 @@ void CaptureAfter(ID3D12GraphicsCommandList* commands, bool successful) {
 }
 
 bool RetireCaptures(ID3D12CommandQueue* queue) {
+    if (!RetireSwinCaptures(queue)) return false;
     if (!RetireChainCaptures(queue)) return false;
     auto& state = Captures();
     std::lock_guard lock(state.mutex);
