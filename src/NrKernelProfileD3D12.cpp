@@ -2,6 +2,8 @@
 #define NOMINMAX
 #include "NrKernelProfileD3D12.hpp"
 #include "NrKernelProfileStatistics.hpp"
+#include "NrKernelAbiDiscovery.hpp"
+#include "NrKernelCapture.hpp"
 
 #include <wrl/client.h>
 #include <algorithm>
@@ -66,7 +68,7 @@ bool BeginFrame(ID3D12Device* device, std::uint64_t frame, const char* csvPath) 
     if (!device || !csvPath || !*csvPath || !NvapiObservationEnabled()) return false;
     auto& state = Frame();
     std::lock_guard lock(state.mutex);
-    if (state.active || !Prepare(state, device)) return false;
+    if (state.active || !Prepare(state, device) || !PrepareCaptureFrame(device)) return false;
     state.frame = frame;
     state.csvPath = csvPath;
     state.commands = nullptr;
@@ -112,7 +114,7 @@ void StartChainTimer(ID3D12GraphicsCommandList* commands, unsigned query) noexce
     commands->EndQuery(state.queries.Get(), D3D12_QUERY_TYPE_TIMESTAMP, query);
 }
 
-void ObserveLaunch(unsigned query, const LaunchRecord& observation) noexcept {
+void ObserveLaunch(unsigned query, const LaunchRecord& observation, const void* parameters) noexcept {
     auto& state = Frame();
     std::lock_guard lock(state.mutex);
     if (!state.active || query >= state.queryCount ||
@@ -121,6 +123,8 @@ void ObserveLaunch(unsigned query, const LaunchRecord& observation) noexcept {
     state.records[index] = observation;
     state.records[index].frame = state.frame;
     state.records[index].sequence = index;
+    ObservePackedArguments(state.records[index], parameters);
+    CaptureBefore(reinterpret_cast<ID3D12GraphicsCommandList*>(observation.commands), state.records[index], parameters);
 }
 
 void EndChain(ID3D12GraphicsCommandList* commands, unsigned query, bool successful) noexcept {
@@ -164,7 +168,7 @@ bool RetireFrame(ID3D12CommandQueue* queue, ID3D12Fence* fence, std::uint64_t co
         path = state.csvPath;
         state.active = false;
     }
-    return WriteFrame(path.c_str(), records.data(), records.size(), ticks.data(), frequency,
+    return RetireCaptures(queue) && WriteFrame(path.c_str(), records.data(), records.size(), ticks.data(), frequency,
                       reinterpret_cast<std::uintptr_t>(queue), dropped);
 }
 

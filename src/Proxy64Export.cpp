@@ -14,6 +14,7 @@
 #include "nrfusion/StreamlineDlssgHook.hpp"
 #include "nrfusion/Logger.hpp"
 #include "nrfusion/NrKernelProfile.hpp"
+#include "NrKernelAbiDiscovery.hpp"
 
 #include <atomic>
 
@@ -48,6 +49,8 @@ extern "C" __declspec(dllexport) void NRFusion_ShutdownRuntime() {
     if (!g_runtimeStarted.exchange(false)) return;
     auto& profiler = nrfusion::NrKernelProfiler::Instance();
     profiler.StopDriverDiscovery();
+    if (!nrfusion::kernelprofile::FlushAbiDiscovery())
+        NRF_LOG_WARN("KernelDiscovery", "Selected kernel ABI metadata capture incomplete");
     const auto report = profiler.Report();
     if (report.frames)
         NRF_LOG_INFO("KernelDiscovery", "%s", profiler.FormatReport().c_str());

@@ -6,6 +6,8 @@
 #include <nvapi.h>
 
 #include "NrKernelProfileD3D12.hpp"
+#include "NrKernelAbiDiscovery.hpp"
+#include "NrKernelCapture.hpp"
 #include "nrfusion/Sha256.hpp"
 
 #include <atomic>
@@ -28,6 +30,7 @@ struct NvapiState {
     struct ModuleIdentity {
         std::uint64_t generation = 0;
         std::array<char, 65> hash{};
+        ModuleImage image;
     };
     std::unordered_map<NVDX_ObjectHandle, ModuleIdentity> modules;
     std::uint64_t generation = 0;
@@ -44,6 +47,7 @@ NvAPI_Status __cdecl CreateModule(ID3D12Device* device, const void* image, NvU32
     const auto result = state.createModule.load()(device, image, bytes, module);
     if (result == NVAPI_OK && module && state.enabled.load(std::memory_order_relaxed)) {
         NvapiState::ModuleIdentity identity{};
+        identity.image = CopyAbiModule(image, bytes);
         if (image && bytes) {
             const auto hash = Sha256Hex({static_cast<const std::uint8_t*>(image), bytes});
             std::memcpy(identity.hash.data(), hash.data(), hash.size());
@@ -72,6 +76,7 @@ NvAPI_Status __cdecl CreateFunction(ID3D12Device* device, NVDX_ObjectHandle modu
         if (found != state.modules.end()) {
             identity.generation = found->second.generation;
             identity.moduleHash = found->second.hash;
+            SelectAbiFunction(identity, found->second.image);
         } else identity.generation = ++state.generation;
         state.functions[*function] = identity;
 
@@ -126,12 +131,13 @@ NvAPI_Status __cdecl Launch(ID3D12GraphicsCommandList* commands,
             record.query = query;
             record.chainCount = count;
             record.chainIndex = index;
-            ObserveLaunch(query, record);
+            ObserveLaunch(query, record, kernel.pParams);
         }
     }
     if (query != UINT32_MAX) StartChainTimer(commands, query);
     const auto result = state.launch.load()(commands, kernels, count);
     if (query != UINT32_MAX) EndChain(commands, query, result == NVAPI_OK);
+    CaptureAfter(commands, result == NVAPI_OK);
     return result;
 }
 
@@ -146,6 +152,7 @@ void* Wrap(std::atomic<Function>& target, void* original, Function replacement) 
 } // namespace
 
 void EnableNvapiObservation(bool enabled) noexcept {
+    if (enabled) ConfigureAbiDiscovery();
     Nvapi().enabled.store(enabled, std::memory_order_relaxed);
 }
 

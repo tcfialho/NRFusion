@@ -40,7 +40,7 @@ bool RetireFrame(ID3D12CommandQueue* queue, ID3D12Fence* fence, std::uint64_t co
                  std::uint64_t& kernels, std::uint64_t& chains);
 unsigned BeginChain(ID3D12GraphicsCommandList* commands, unsigned count) noexcept;
 void StartChainTimer(ID3D12GraphicsCommandList* commands, unsigned query) noexcept;
-void ObserveLaunch(unsigned query, const LaunchRecord& record) noexcept;
+void ObserveLaunch(unsigned query, const LaunchRecord& record, const void* parameters) noexcept;
 void EndChain(ID3D12GraphicsCommandList* commands, unsigned query, bool successful) noexcept;
 bool WriteFrame(const char* path, const LaunchRecord* records, std::size_t count,
                  const std::uint64_t* ticks, std::uint64_t frequency,

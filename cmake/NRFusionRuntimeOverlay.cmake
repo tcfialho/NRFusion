@@ -17,7 +17,12 @@ FetchContent_Declare(nrfusion_nvapi_source
     DOWNLOAD_EXTRACT_TIMESTAMP TRUE)
 FetchContent_MakeAvailable(nrfusion_nvapi_source)
 target_sources(nrfusion_core PRIVATE src/NrKernelNvapiHooks.cpp src/NrKernelProfileD3D12.cpp
-    src/NrKernelProfileExport.cpp src/NrKernelProfileStatistics.cpp src/NrKernelRuntimeIdentity.cpp)
+    src/NrKernelProfileExport.cpp src/NrKernelProfileStatistics.cpp
+    src/NrKernelRuntimeIdentity.cpp src/NrKernelAbiDiscovery.cpp src/NrKernelPointerObservation.cpp
+    src/NrKernelResourceObservation.cpp src/NrKernelResourceTargets.c
+    src/NrKernelCapture.cpp src/NrKernelCaptureExport.cpp)
+set_property(SOURCE src/NrKernelResourceObservation.cpp APPEND
+    PROPERTY INCLUDE_DIRECTORIES "${nrfusion_minhook_source_SOURCE_DIR}/include")
 set_property(SOURCE src/NrKernelNvapiHooks.cpp APPEND
     PROPERTY INCLUDE_DIRECTORIES "${nrfusion_nvapi_source_SOURCE_DIR}")
 add_library(nrfusion_overlay_cursor STATIC src/RuntimeOverlayCursor.cpp)

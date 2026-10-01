@@ -12,12 +12,13 @@
 #include "NgxGameProxyDiagnostics.hpp"
 #include "NgxGameProxyOverlay.hpp"
 #include "NgxGameNeuralHook.hpp"
+#include "NrKernelResourceObservation.hpp"
+#include "NrKernelProfileD3D12.hpp"
 
 #include <array>
 #include <cstdint>
 #include <memory>
 #include <string>
-
 extern "C" void NRFusion_EnsureRuntime();
 extern "C" void NRFusion_ShutdownRuntime();
 
@@ -121,6 +122,7 @@ DriverApi& Driver() {
 }
 
 struct ProxyFeature {
+    ID3D12Device* diagnosticDevice = nullptr;
     void* driverFeature = nullptr;
     nrfusion::D3D12NrExecutor nr;
     nrfusion::NgxGameProxyOverlay overlay;
@@ -211,12 +213,12 @@ bool RunNeuralPass(ProxyFeature& feature, ID3D12GraphicsCommandList* commands,
 }
 
 } // namespace
-
 extern "C" __declspec(dllexport) int __cdecl NVSDK_NGX_D3D12_Init(
     unsigned long long appId, const wchar_t* appPath, ID3D12Device* device,
     const void* info, unsigned int version) {
     nrfusion::RuntimeOverlay::Instance().SetInFrameRendering(true);
     NRFusion_EnsureRuntime();
+    nrfusion::kernelprofile::StartResourceObservation(device);
     auto& driver = Driver();
     if (!driver.Ready()) return 0;
     return driver.init(appId, appPath, device, info, version);
@@ -226,17 +228,16 @@ NVSDK_NGX_D3D12_AllocateParameters(Param** params) {
     auto& driver = Driver();
     return driver.allocate ? driver.allocate(params) : 0;
 }
-
 extern "C" __declspec(dllexport) int __cdecl
 NVSDK_NGX_D3D12_GetCapabilityParameters(Param** params) {
     auto& driver = Driver();
     return driver.capabilities ? driver.capabilities(params) : 0;
 }
-
 extern "C" __declspec(dllexport) int __cdecl NVSDK_NGX_D3D12_CreateFeature(
     ID3D12GraphicsCommandList* commands, int featureId, Param* params,
     void** outputFeature) {
     if (!commands || !params || !outputFeature) return 0;
+    nrfusion::kernelprofile::ObserveCommandBarriers(commands);
     auto& driver = Driver();
     if (!driver.Ready()) return 0;
 
@@ -251,6 +252,7 @@ extern "C" __declspec(dllexport) int __cdecl NVSDK_NGX_D3D12_CreateFeature(
     if (featureId == kFeatureSuperSampling) {
         ID3D12Device* device = nullptr;
         if (SUCCEEDED(commands->GetDevice(IID_PPV_ARGS(&device))) && device) {
+            proxy->diagnosticDevice = device;
             proxy->nrReady = proxy->nr.Load() && proxy->nr.Init(device);
             device->Release();
         }
@@ -258,7 +260,6 @@ extern "C" __declspec(dllexport) int __cdecl NVSDK_NGX_D3D12_CreateFeature(
     *outputFeature = proxy.release();
     return result;
 }
-
 extern "C" __declspec(dllexport) int __cdecl NVSDK_NGX_D3D12_EvaluateFeature(
     ID3D12GraphicsCommandList* commands, const void* opaqueFeature,
     Param* params, void* callback) {
@@ -280,10 +281,10 @@ extern "C" __declspec(dllexport) int __cdecl NVSDK_NGX_D3D12_ReleaseFeature(
     std::unique_ptr<ProxyFeature> feature(
         static_cast<ProxyFeature*>(opaqueFeature));
     feature->nr.Shutdown();
+    nrfusion::kernelprofile::ResetObservedResources(feature->diagnosticDevice);
     auto& driver = Driver();
     return driver.release ? driver.release(feature->driverFeature) : 0;
 }
-
 extern "C" __declspec(dllexport) int __cdecl NVSDK_NGX_D3D12_Shutdown() {
     auto& driver = Driver();
     const int result = driver.shutdown ? driver.shutdown() : 0;
