@@ -1,0 +1,124 @@
+{
+  "schema_version": 1,
+  "date": "2026-10-01",
+  "implementation_head": "7d06ff03fe31ff57c3ff942faf42247b545ad9f5",
+  "branch": "standalone/integration",
+  "phase2b_status": "BLOCKED AT PREREQUISITES; no kernel optimization started",
+  "baseline": {
+    "gpu": "RTX 4050 Laptop SM89",
+    "driver": "617.14",
+    "runtime": "NR 310.8.0.0",
+    "runtime_sha256": "e67dee209320cdafe0e93e45675d7aa34323a53acc57a72b2e40a181581c989a",
+    "output_resolution": [
+      1920,
+      1080
+    ],
+    "input_resolution": [
+      1280,
+      720
+    ],
+    "precision": "FP8",
+    "nr_placement": "pre_sr",
+    "nr_passes": 1,
+    "working_scale": 1,
+    "mfg_multiplier": null,
+    "mfg_enabled": false,
+    "runtime_files_present": [
+      {
+        "path": "D:\\Users\\tcfialho\\Documents\\NRFusion\\dist\\RequiemGame\\nvngx_dlss.dll",
+        "version": "310,8,0,0",
+        "sha256": "c85f971ce023c9f3492fc7455f0b01a24ba18ea39636407a846902c4360b0b7e"
+      },
+      {
+        "path": "D:\\Users\\tcfialho\\Documents\\NRFusion\\dist\\RequiemGame\\nvngx_dlssg.dll",
+        "version": "310,8,0,0",
+        "sha256": "5d5cbf14d2727d47f93fd10bf77bd91708ae122482a6f86fd564971641ebd47b"
+      },
+      {
+        "path": "D:\\Users\\tcfialho\\Documents\\NRFusion\\dist\\RequiemGame\\NRFusion\\internal\\nvngx_dlssnr.dll",
+        "version": "310,8,0,0",
+        "sha256": "e67dee209320cdafe0e93e45675d7aa34323a53acc57a72b2e40a181581c989a"
+      }
+    ],
+    "runtime_file_inventory_scope": "files present in testbed; MFG was not evaluated",
+    "nr_profile_off_median_of_run_p50_ms": 8.047615,
+    "nr_profile_on_median_of_run_p50_ms": 9.17504,
+    "profiler_nr_p50_overhead_percent": 14.00943012308613,
+    "percentile_method": "linear interpolation at (N-1)*quantile; p50 median; per-run statistics in live.json",
+    "frame_gpu_ms": null,
+    "critical_frame_time_ms": null,
+    "cpu_hook_overhead_ms": null,
+    "mfg_gpu_ms": null,
+    "limits": "NGX evaluation GPU interval excludes complete frame; frame_wall_ms includes CPU, Present and GPU waits"
+  },
+  "prerequisites": {
+    "profiler": "PASS for observed native path; overhead measured separately",
+    "explained_time": "100 percent identified native single-kernel submission time; not independent whole-driver coverage",
+    "kernel_identities": "PASS names, module/runtime hashes, launch configurations; handles process local",
+    "launch_sequences": "PASS 480 fresh frames, 156 launches/frame, no drops, cross-run stable",
+    "hot_kernel_semantic_abis": "FAIL outside selected FFN expansion; leading families unresolved",
+    "capture": "PASS only selected FFN expansion; no qualified hot-chain capture",
+    "stock_replay": "PASS three selected captures; not hot-chain replay",
+    "custom_replacement": "PASS selected exact reference; slower than stock",
+    "stock_custom_ab": "PASS selected replay/live lifecycle final image; no whole-sequence bit comparison",
+    "fail_closed_registry": "existing explicit identity/hash/shape gates; fresh smaller-shape stock fallback passed",
+    "lifecycle_recreation": "PASS feature release/recreate and resolution changes in official testbed; no in-process device recreation"
+  },
+  "validation": {
+    "official_release_targets": [
+      "nrfusion_proxy",
+      "nrfusion_requiem_game",
+      "nrfusion_kernel_replay",
+      "nrfusion_ffn_reference"
+    ],
+    "build": "PASS",
+    "focused_ctest": "3/3 PASS",
+    "fresh_exact_replays": 6,
+    "lifecycle": "Stock/Custom, 180 frames each, 749 custom launches, same final image"
+  },
+  "decisions": {
+    "default": "STOCK",
+    "new_optimizations": [],
+    "claimed_performance_gain": null,
+    "w4a8": "REJECT; Phase 2A measured slower and non-exact; no new W4A8 work",
+    "fusion": "DO NOT IMPLEMENT before semantic ABI, verified producer/consumer dependencies and replay"
+  },
+  "next_required_actions": [
+    "Resolve semantic ABI and resource lifetimes for highest-impact selected hot family/chain",
+    "Capture/replay the complete selected chain and prove producer/consumer ranges and rounding boundaries",
+    "Qualify relevant separate replacements against stock before attempting fusion",
+    "Measure complete-frame GPU critical path and CPU hook overhead before claiming frame gains",
+    "Obtain a real MFG baseline before MFG optimization"
+  ],
+  "checklist": [
+    {
+      "item": "Revalidate official build, selected replay and lifecycle at current HEAD",
+      "status": "PASS"
+    },
+    {
+      "item": "Rank measured native kernels and sequences with explicit coverage limits",
+      "status": "PASS"
+    },
+    {
+      "item": "Check semantic ABI/capture/replay prerequisites for dominant candidates",
+      "status": "FAIL"
+    },
+    {
+      "item": "Repair missing Phase 2A hot-chain qualification before kernel optimization",
+      "status": "NOT IMPLEMENTED"
+    }
+  ],
+  "technical_debt": [
+    "profiler event overhead",
+    "external Nsight per-kernel visibility unavailable",
+    "device recreation untested",
+    "long-run temporal equality untested",
+    "shipping-game qualification unperformed"
+  ],
+  "handoff": {
+    "result": "preflight evidence archived; phase2b blocked",
+    "commit": "recorded by following small evidence/report commits",
+    "blocker": "hot semantic ABIs and hot-chain capture/replay/dependencies are not qualified",
+    "next_action": "finish missing Phase 2A hot-chain contracts; do not modify kernels yet"
+  }
+}
