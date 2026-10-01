@@ -10,6 +10,8 @@
             g_debugLayer = true;
         else if (argument == "--typeless-guides")
             g_typelessGuides = true;
+        else if (argument == "--nr-lifecycle")
+            g_nrLifecycle = true;
         else if (argument == "--require-nr")
             g_requireNr = true;
         else if (argument == "--require-nrfusion-proxy")
@@ -51,6 +53,8 @@
         else { std::cerr << "Invalid argument: " << argument << std::endl; return 2; }
     }
 
+    if (g_nrLifecycle && (g_typelessGuides || g_frameLimit < 180))
+        throw std::runtime_error("Lifecycle requires >=180 frames and typed guides");
     if (g_fixedScene && g_deterministicMotion)
         throw std::runtime_error("Choose fixed scene or deterministic motion");
     if (g_requireMfg && g_mfgMultiplier < 2)

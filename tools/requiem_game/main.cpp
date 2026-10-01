@@ -70,6 +70,7 @@ std::uint64_t g_warmup = 120;
 std::string g_csv, g_capture;
 std::string g_kernelCsv;
 bool g_requireNr = false;
+bool g_nrLifecycle = false;
 bool g_requireNrfusionProxy = false;
 bool g_openMenu = false;
 bool g_requireMenu = false;

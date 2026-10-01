@@ -26,12 +26,16 @@
 
         Check(allocator->Reset(), "allocator reset");
         Check(commands->Reset(allocator.Get(), pipeline.Get()), "command reset");
+        bool lifecycleReset = false, lifecycleFeature = false;
+#include "requiem_kernel_lifecycle.inc"
         guideCopyCounter.Reattach(commands.Get());
-        if (simulationFrame != 0) {
+        if (simulationFrame != 0 && !lifecycleReset) {
             for (auto* guide : {depth.Get(), motion.Get()})
                 requiem::Transition(commands.Get(), guide,
                                     D3D12_RESOURCE_STATE_NON_PIXEL_SHADER_RESOURCE,
                                     D3D12_RESOURCE_STATE_RENDER_TARGET);
+        }
+        if (simulationFrame != 0) {
             requiem::Transition(commands.Get(), ui.Get(),
                                 D3D12_RESOURCE_STATE_NON_PIXEL_SHADER_RESOURCE,
                                 D3D12_RESOURCE_STATE_RENDER_TARGET);
@@ -109,7 +113,7 @@
             !g_kernelCsv.empty() && simulationFrame >= g_warmup, g_kernelCsv.c_str()))
             throw std::runtime_error("NR diagnostic frame initialization failed");
         if (!dlss.Evaluate(commands.Get(), colour.Get(), calculated.Get(), depth.Get(), motion.Get(),
-                           0, 0, simulationFrame == 0)) {
+                           0, 0, simulationFrame == 0 || lifecycleFeature)) {
             std::cerr << "[ERRO] " << dlss.Status() << std::endl;
             return 1;
         }
@@ -176,7 +180,12 @@
                 throw std::runtime_error("NR diagnostic read failed after queue completion");
             if (nrFrame.frame != simulationFrame)
                 throw std::runtime_error("NR timing belongs to a different frame");
-            if (simulationFrame >= g_warmup &&
+            const bool nrDisabled = g_nrLifecycle && simulationFrame >= 140 && simulationFrame < 150;
+            if (nrDisabled && (nrFrame.passes || nrFrame.successfulPasses || nrFrame.kernelLaunches))
+                throw std::runtime_error("Disabled NR still executed");
+            if (lifecycleFeature && (nrFrame.passes != 1 || nrFrame.successfulPasses || nrFrame.kernelLaunches))
+                throw std::runtime_error("Unexpected NR recreation-frame execution");
+            if (simulationFrame >= g_warmup && !lifecycleFeature && !nrDisabled &&
                 (nrFrame.passes != 1 || nrFrame.successfulPasses != 1 ||
                  !std::isfinite(nrFrame.nrGpuMs) || nrFrame.nrGpuMs <= 0))
                 throw std::runtime_error("NR did not execute successfully on the measured frame");

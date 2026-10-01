@@ -58,7 +58,7 @@
     RegisterClassExW(&windowClass);
 
     const UINT width = static_cast<UINT>(g_width), height = static_cast<UINT>(g_height);
-    const UINT inputWidth = width * 2 / 3, inputHeight = height * 2 / 3;
+    UINT inputWidth = width * 2 / 3, inputHeight = height * 2 / 3;
     RECT rect{0, 0, (LONG) width, (LONG) height};
     AdjustWindowRect(&rect, WS_OVERLAPPEDWINDOW, FALSE);
     g_hwnd = CreateWindowExW(0, windowClass.lpszClassName, L"NRFusion Requiem Testbed",

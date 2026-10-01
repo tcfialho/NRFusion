@@ -13,7 +13,6 @@ constexpr std::array<const wchar_t*, 6> kCandidates = {
     L"dxgi.dll", L"winmm.dll", L"version.dll", L"nvngx.dll", L"_nvngx.dll", L"nvngx_dlss.dll"};
 
 constexpr int kFeatureSuperSampling = 1;   // NVSDK_NGX_Feature_SuperSampling
-constexpr int kQualityBalanced = 1;        // NVSDK_NGX_PerfQuality_Value_Balanced
 constexpr int kSuccess = 1;                // NVSDK_NGX_Result_Success
 
 template <typename T>
@@ -94,7 +93,7 @@ bool Dlss::Init(ID3D12Device* device, const wchar_t* applicationPath) {
 
 bool Dlss::Create(ID3D12GraphicsCommandList* commands, std::uint32_t renderWidth,
                   std::uint32_t renderHeight, std::uint32_t outputWidth,
-                  std::uint32_t outputHeight) {
+                  std::uint32_t outputHeight, int quality) {
     if (!parameters_) return false;
     renderWidth_ = renderWidth;
     renderHeight_ = renderHeight;
@@ -102,7 +101,7 @@ bool Dlss::Create(ID3D12GraphicsCommandList* commands, std::uint32_t renderWidth
     parameters_->Set(kParamHeight, renderHeight);
     parameters_->Set(kParamOutWidth, outputWidth);
     parameters_->Set(kParamOutHeight, outputHeight);
-    parameters_->Set(kParamPerfQuality, kQualityBalanced);
+    parameters_->Set(kParamPerfQuality, quality);
     parameters_->Set(kParamCreationNodeMask, 1u);
     parameters_->Set(kParamVisibilityNodeMask, 1u);
     // Motion vectors are produced at render resolution and the depth is the usual inverted
@@ -142,9 +141,13 @@ bool Dlss::Evaluate(ID3D12GraphicsCommandList* commands, ID3D12Resource* colour,
     return result == kSuccess;
 }
 
-void Dlss::Shutdown() {
+void Dlss::ReleaseFeature() {
     if (handle_ && release_) release_(handle_);
     handle_ = nullptr;
+}
+
+void Dlss::Shutdown() {
+    ReleaseFeature();
     if (shutdown_) shutdown_();
 }
 

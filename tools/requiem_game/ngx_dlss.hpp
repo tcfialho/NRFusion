@@ -70,7 +70,8 @@ public:
     bool Load();                       // resolve the entry points; false when nothing answers
     bool Init(ID3D12Device* device, const wchar_t* applicationPath);
     bool Create(ID3D12GraphicsCommandList* commands, std::uint32_t renderWidth,
-                std::uint32_t renderHeight, std::uint32_t outputWidth, std::uint32_t outputHeight);
+                std::uint32_t renderHeight, std::uint32_t outputWidth, std::uint32_t outputHeight, int quality = 1);
+    void ReleaseFeature();
     bool Evaluate(ID3D12GraphicsCommandList* commands, ID3D12Resource* colour,
                   ID3D12Resource* output, ID3D12Resource* depth, ID3D12Resource* motion,
                   float jitterX, float jitterY, bool reset);
