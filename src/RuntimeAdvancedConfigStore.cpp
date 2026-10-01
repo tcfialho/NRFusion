@@ -188,6 +188,8 @@ bool RuntimeAdvancedConfigStore::Load(RuntimeAdvancedConfig& out) const {
             bit = 1u << 20; valid = ParseNumber(value, candidate.nr.residualBlend);
         } else if (key == "mfg_experimental_56x") {
             bit = 1u << 16; valid = ParseBool(value, candidate.mfg.allowExperimental56x);
+        } else if (key == "mfg_respect_vram_budget") {
+            bit = 1u << 21; valid = ParseBool(value, candidate.mfg.respectVramBudget);
         } else if (key == "diagnostics_enabled") {
             bit = 1u << 17; valid = ParseBool(value, candidate.diagnostics.enabled);
         } else {
@@ -240,6 +242,7 @@ bool RuntimeAdvancedConfigStore::Save(const RuntimeAdvancedConfig& config) const
            << "residual_blend=" << config.nr.residualBlend << '\n'
            << "mfg_experimental_56x="
            << (config.mfg.allowExperimental56x ? "true" : "false") << '\n'
+           << "mfg_respect_vram_budget=" << (config.mfg.respectVramBudget ? "true" : "false") << '\n'
            << "diagnostics_enabled="
            << (config.diagnostics.enabled ? "true" : "false") << '\n';
     output.flush();

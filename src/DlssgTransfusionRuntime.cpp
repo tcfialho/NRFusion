@@ -9,7 +9,8 @@ namespace nrfusion {
 
 void DlssgTransfusion::SetControlMode(MfgControlMode mode) noexcept
 {
-    m_controlMode.store(mode, std::memory_order_release);
+    if (m_controlMode.exchange(mode, std::memory_order_acq_rel) != mode)
+        m_memoryMultiplierLimit.store(6, std::memory_order_release);
 }
 
 MfgControlMode DlssgTransfusion::GetControlMode() const noexcept
@@ -103,6 +104,23 @@ void DlssgTransfusion::ObserveAcceptedOptions(uint32_t mode, uint32_t generatedF
 
 void DlssgTransfusion::ObserveGenerationLimit(uint32_t frames) noexcept { m_reportedGenerationLimit.store(frames); }
 void DlssgTransfusion::SetAutomaticMultiplierLimit(uint32_t multiplier) noexcept { m_automaticMultiplierLimit.store(std::clamp(multiplier, 2u, 6u)); }
+uint32_t DlssgTransfusion::AutomaticMultiplierLimit() const noexcept {
+    return std::min(m_automaticMultiplierLimit.load(), m_memoryMultiplierLimit.load());
+}
+
+bool DlssgTransfusion::ObserveVramWarning(uint32_t generatedFrames) noexcept {
+    if (!m_respectVramBudget.load() || GetControlMode() != MfgControlMode::Dynamic || generatedFrames <= 1) return false;
+    const auto limit = std::clamp(generatedFrames, 2u, 6u);
+    auto prior = m_memoryMultiplierLimit.load();
+    while (limit < prior) {
+        if (m_memoryMultiplierLimit.compare_exchange_weak(prior, limit)) return true;
+    }
+    return false;
+}
+void DlssgTransfusion::SetRespectVramBudget(bool enabled) noexcept {
+    m_respectVramBudget.store(enabled);
+    if (!enabled) m_memoryMultiplierLimit.store(6);
+}
 bool DlssgTransfusion::TransitionPending() const noexcept { return m_pendingMultiplier.load() != m_activeMultiplier.load(); }
 
 void DlssgTransfusion::ProcessSetOptions(uint32_t& inOutMode, uint32_t& inOutNumFramesToGenerate)
@@ -138,8 +156,8 @@ void DlssgTransfusion::ProcessSetOptions(uint32_t& inOutMode, uint32_t& inOutNum
         const float sourceFps = m_renderedFps.load();
         const uint32_t target = m_dynamicTargetFps.load() ? m_dynamicTargetFps.load() : m_displayRefreshHz.load();
         const uint32_t available = std::max(UnlockedMax(), m_reportedGenerationLimit.load());
-        const uint32_t limit = std::max(2u, std::min(m_automaticMultiplierLimit.load(), available + 1u));
-        uint32_t desired = m_dynamicMultiplier.load();
+        const uint32_t limit = std::max(2u, std::min(AutomaticMultiplierLimit(), available + 1u));
+        uint32_t desired = std::clamp(m_dynamicMultiplier.load(), 2u, limit);
         if (sourceFps > 1) {
             const float needed = target / sourceFps;
             if (needed > desired + 0.15f || needed < desired - 1.15f)

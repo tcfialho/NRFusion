@@ -91,7 +91,7 @@ sl::Result HookSetOptions(const sl::ViewportHandle& viewport, const sl::DLSSGOpt
         applied.numFramesToGenerate = std::max(1u, requested.numFramesToGenerate);
     if (generation.GetControlMode() == MfgControlMode::Dynamic && dynamicSupported.load() && requested.structVersion >= 5) {
         applied.mode = sl::DLSSGMode::eDynamic;
-        applied.numFramesToGenerate = std::max(1u, maximumFrames.load());
+        applied.numFramesToGenerate = std::max(1u, std::min(maximumFrames.load(), generation.AutomaticMultiplierLimit() - 1u));
         applied.dynamicTargetFrameRate = static_cast<float>(generation.GetDynamicTargetFps());
     }
     if (generation.GetControlMode() != MfgControlMode::FollowGame)
@@ -105,6 +105,11 @@ sl::Result HookSetOptions(const sl::ViewportHandle& viewport, const sl::DLSSGOpt
         dynamicActive.store(applied.mode == sl::DLSSGMode::eDynamic);
         updatePending.store(applied.mode != sl::DLSSGMode::eDynamic && generation.TransitionPending());
         generation.ObserveAcceptedOptions(static_cast<uint32_t>(applied.mode), applied.numFramesToGenerate);
+        if (applied.mode != sl::DLSSGMode::eOff && result == sl::Result::eWarnOutOfVRAM &&
+            generation.ObserveVramWarning(applied.numFramesToGenerate)) {
+            updatePending.store(true);
+            NRF_LOG_WARN("StreamlineHook", "MFG Auto VRAM warning: limiting multiplier to %ux until control mode changes or restart", generation.AutomaticMultiplierLimit());
+        }
     }
     LogOptions(requested, applied, result);
     const uint64_t now = GetTickCount64();

@@ -30,7 +30,7 @@ struct RuntimeConfig {
     RuntimeNrMode mode = RuntimeNrMode::Auto;
     float targetFps = 60.0f;
     float displayHz = 60.0f;
-    bool displayHzAuto = true;
+    bool displayHzAuto = false;
     RuntimeMfgMode mfgMode = RuntimeMfgMode::FollowGame;
     RuntimeMfgQuality mfgQuality = RuntimeMfgQuality::Performance;
     std::uint8_t mfgMultiplier = 2;

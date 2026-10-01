@@ -100,6 +100,9 @@ public:
     void ObserveAcceptedOptions(uint32_t mode, uint32_t generatedFrames) noexcept;
     void ObserveGenerationLimit(uint32_t frames) noexcept;
     void SetAutomaticMultiplierLimit(uint32_t multiplier) noexcept;
+    uint32_t AutomaticMultiplierLimit() const noexcept;
+    bool ObserveVramWarning(uint32_t generatedFrames) noexcept;
+    void SetRespectVramBudget(bool enabled) noexcept;
     bool TransitionPending() const noexcept;
 
     // Patches aplicados no carregamento de nvngx_dlssg.dll
@@ -147,6 +150,8 @@ private:
     std::atomic<uint32_t> m_dynamicMultiplier{2};
     std::atomic<uint32_t> m_reportedGenerationLimit{0};
     std::atomic<uint32_t> m_automaticMultiplierLimit{4};
+    std::atomic<uint32_t> m_memoryMultiplierLimit{6};
+    std::atomic<bool> m_respectVramBudget{false};
     std::atomic<uint32_t> m_requestedByGame{0};
     std::atomic<uint32_t> m_effectiveMultiplier{2};
     std::atomic<uint32_t> m_snapshotSequence{0};

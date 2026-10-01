@@ -26,7 +26,8 @@ struct RuntimeNrAdvancedConfig {
 };
 
 struct RuntimeMfgAdvancedConfig {
-    bool allowExperimental56x = false;
+    bool allowExperimental56x = true;
+    bool respectVramBudget = false;
 };
 
 struct RuntimeDiagnosticsConfig {

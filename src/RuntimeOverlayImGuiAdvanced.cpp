@@ -95,8 +95,9 @@ void DrawGenerationOptions(RuntimeOverlay& overlay) {
     const auto runtime = StreamlineDlssgHook::Instance().Status();
     bool changed = DrawMfgMode(main);
     if (main.mfgMode == RuntimeMfgMode::Fixed) changed |= DrawManualMfgMultiplier(main, advanced);
-    changed |= ImGui::Checkbox(MenuLabel("Auto output FPS (monitor)", "FPS de saída automático (monitor)"), &main.displayHzAuto);
-    changed |= ImGui::Checkbox(MenuLabel("Allow 5X/6X in Auto", "Permitir 5X/6X no Automático"), &advanced.mfg.allowExperimental56x);
+    changed |= ImGui::Checkbox(MenuLabel("Use monitor refresh as Dynamic target", "Usar frequência do monitor como meta do Dinâmico"), &main.displayHzAuto);
+    changed |= ImGui::Checkbox(MenuLabel("Enable 5X/6X in Dynamic", "Habilitar 5X/6X no Dinâmico"), &advanced.mfg.allowExperimental56x);
+    changed |= ImGui::Checkbox(MenuLabel("Reduce Dynamic multiplier when VRAM is insufficient", "Reduzir multiplicador Dinâmico quando faltar VRAM"), &advanced.mfg.respectVramBudget);
     if (!main.displayHzAuto)
         changed |= ImGui::SliderFloat(MenuLabel("Output target", "Meta de saída"), &main.displayHz, 30, 360, "%.0f FPS");
     MenuHelp("Output FPS includes generated frames. This target is separate from NR's rendered-FPS budget.",

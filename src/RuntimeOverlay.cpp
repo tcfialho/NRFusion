@@ -109,7 +109,8 @@ void RuntimeOverlay::LoadConfigurations() {
         activeMain_.enabled = true;
         activeMain_.mode = RuntimeNrMode::Auto;
         activeMain_.targetFps = 90.0f;
-        activeMain_.displayHz = 165.0f;
+        activeMain_.displayHz = 60.0f;
+        activeMain_.displayHzAuto = false;
         activeMain_.mfgMode = RuntimeMfgMode::Dynamic;
     }
 

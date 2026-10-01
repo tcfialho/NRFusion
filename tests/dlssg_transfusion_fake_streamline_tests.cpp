@@ -101,6 +101,30 @@ int main()
     assert(client.mode == 1);
     assert(client.frames == 3);
 
+    transfusion.ObserveGenerationLimit(3);
+    assert(!transfusion.ObserveVramWarning(3));
+    transfusion.SetRespectVramBudget(true);
+    assert(transfusion.ObserveVramWarning(3));
+    assert(transfusion.AutomaticMultiplierLimit() == 3);
+    for (int frame = 0; frame < 9; ++frame) {
+        transfusion.ObserveRenderedFrame();
+        client.SetOptions(transfusion);
+    }
+    assert(client.mode == 1 && client.frames >= 1 && client.frames <= 2);
+    assert(transfusion.ObserveVramWarning(2));
+    for (int frame = 0; frame < 9; ++frame) {
+        transfusion.ObserveRenderedFrame();
+        client.SetOptions(transfusion);
+    }
+    assert(client.mode == 1 && client.frames == 1);
+    assert(!transfusion.ObserveVramWarning(1));
+    transfusion.SetRespectVramBudget(false);
+    assert(transfusion.AutomaticMultiplierLimit() == 4);
+    assert(!transfusion.ObserveVramWarning(3));
+    transfusion.SetControlMode(nrfusion::MfgControlMode::OverrideFixed);
+    assert(!transfusion.ObserveVramWarning(3));
+    assert(transfusion.AutomaticMultiplierLimit() == 4);
+
     transfusion.SetControlMode(nrfusion::MfgControlMode::FollowGame);
     for (int i = 0; i < 12; ++i)
     {

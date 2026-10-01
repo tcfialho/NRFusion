@@ -13,6 +13,7 @@ namespace nrfusion {
 void RuntimeOverlay::ConfigureFrameGeneration() {
     auto& generation = DlssgTransfusion::Instance();
     generation.SetAutomaticMultiplierLimit(activeAdv_.mfg.allowExperimental56x ? 6u : 4u);
+    generation.SetRespectVramBudget(activeAdv_.mfg.respectVramBudget);
     if (activeMain_.mfgMode == RuntimeMfgMode::Off) {
         generation.SetOverrideMultiplier(1);
         generation.SetControlMode(MfgControlMode::OverrideFixed);

@@ -17,6 +17,8 @@ int main() {
     assert(!store.Load(loaded));
 
     RuntimeAdvancedConfig config;
+    assert(config.mfg.allowExperimental56x);
+    assert(!config.mfg.respectVramBudget);
     config.nr.precisionAuto = false;
     config.nr.precision = NrPrecision::HybridNvfp4;
     config.nr.appearance.style = Dlss5Style::Cinematic;
@@ -36,6 +38,7 @@ int main() {
     config.nr.workingScale = 0.67f;
     config.nr.residualBlend = 0.15f;
     config.mfg.allowExperimental56x = true;
+    config.mfg.respectVramBudget = true;
     config.diagnostics.enabled = true;
     assert(store.Save(config));
     assert(store.Load(loaded));
@@ -59,6 +62,11 @@ int main() {
     assert(loaded.nr.workingScale == 0.67f);
     assert(loaded.nr.residualBlend == 0.15f);
     assert(loaded.mfg.allowExperimental56x);
+    assert(loaded.mfg.respectVramBudget);
+    config.mfg.respectVramBudget = false;
+    assert(store.Save(config));
+    assert(store.Load(loaded));
+    assert(!loaded.mfg.respectVramBudget);
     assert(loaded.diagnostics.enabled);
 
     const RuntimeAdvancedConfig stable = loaded;
