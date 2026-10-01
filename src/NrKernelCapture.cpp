@@ -2,6 +2,7 @@
 #define NOMINMAX
 #include "NrKernelCapture.hpp"
 #include "NrKernelResourceObservation.hpp"
+#include "NrKernelChainCapture.hpp"
 #include <cstring>
 #include <fstream>
 
@@ -14,6 +15,7 @@ CaptureState& Captures() {
 }
 
 void ConfigureCapture() {
+    ConfigureChainCapture();
     auto& state = Captures();
     std::lock_guard lock(state.mutex);
     state.enabled = false;
@@ -51,6 +53,7 @@ void ConfigureCapture() {
 }
 
 void SelectCaptureModule(const FunctionIdentity& identity, ModuleImage image) {
+    SelectChainCaptureModule(identity, image);
     auto& state = Captures();
     std::lock_guard lock(state.mutex);
     if (state.enabled && state.name == identity.name.data() &&
@@ -58,6 +61,7 @@ void SelectCaptureModule(const FunctionIdentity& identity, ModuleImage image) {
 }
 
 bool PrepareCaptureFrame(ID3D12Device* device) {
+    if (!PrepareChainCaptureFrame(device)) return false;
     auto& state = Captures();
     std::lock_guard lock(state.mutex);
     if (!state.enabled) return true;
@@ -158,6 +162,7 @@ void CaptureAfter(ID3D12GraphicsCommandList* commands, bool successful) {
 }
 
 bool RetireCaptures(ID3D12CommandQueue* queue) {
+    if (!RetireChainCaptures(queue)) return false;
     auto& state = Captures();
     std::lock_guard lock(state.mutex);
     if (!state.enabled) return true;

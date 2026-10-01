@@ -8,6 +8,7 @@
 #include "NrKernelProfileD3D12.hpp"
 #include "NrKernelAbiDiscovery.hpp"
 #include "NrKernelCapture.hpp"
+#include "NrKernelChainCapture.hpp"
 #include "NrKernelReplacement.hpp"
 #include "nrfusion/Sha256.hpp"
 
@@ -148,7 +149,10 @@ NvAPI_Status __cdecl Launch(ID3D12GraphicsCommandList* commands,
     }
     if (query != UINT32_MAX) StartChainTimer(commands, query);
     const auto result = state.launch.load()(commands, custom ? &selected : kernels, count);
-    if (query != UINT32_MAX) EndChain(commands, query, result == NVAPI_OK);
+    if (query != UINT32_MAX) {
+        EndChain(commands, query, result == NVAPI_OK);
+        CaptureChainAfter(commands, result == NVAPI_OK);
+    }
     CaptureAfter(commands, result == NVAPI_OK);
     return result;
 }

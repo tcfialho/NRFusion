@@ -4,6 +4,7 @@
 #include "NrKernelProfileStatistics.hpp"
 #include "NrKernelAbiDiscovery.hpp"
 #include "NrKernelCapture.hpp"
+#include "NrKernelChainCapture.hpp"
 
 #include <wrl/client.h>
 #include <algorithm>
@@ -124,6 +125,7 @@ void ObserveLaunch(unsigned query, const LaunchRecord& observation, const void* 
     state.records[index].frame = state.frame;
     state.records[index].sequence = index;
     ObservePackedArguments(state.records[index], parameters);
+    CaptureChainBefore(reinterpret_cast<ID3D12GraphicsCommandList*>(observation.commands), state.records[index], parameters);
     CaptureBefore(reinterpret_cast<ID3D12GraphicsCommandList*>(observation.commands), state.records[index], parameters);
 }
 
