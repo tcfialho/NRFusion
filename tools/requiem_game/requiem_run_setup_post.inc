@@ -126,6 +126,7 @@
 
     nrfusion::BeginNrDiagnosticFrame beginNrFrame = nullptr;
     nrfusion::ReadNrDiagnosticFrame readNrFrame = nullptr;
+    nrfusion::ReadNrDiagnosticStages readNrStages = nullptr;
     MenuSetOpenFn menuSetOpen = nullptr;
     MenuDrawCountFn menuDrawCount = nullptr;
     MenuStateFn menuIsOpen = nullptr;
@@ -138,6 +139,8 @@
             GetProcAddress(host, "NRFusion_BeginNrDiagnosticFrame"));
         readNrFrame = reinterpret_cast<nrfusion::ReadNrDiagnosticFrame>(
             GetProcAddress(host, "NRFusion_ReadNrDiagnosticFrame"));
+        readNrStages = reinterpret_cast<nrfusion::ReadNrDiagnosticStages>(
+            GetProcAddress(host, "NRFusion_ReadNrDiagnosticStages"));
         if (!beginNrFrame || !readNrFrame)
             throw std::runtime_error("Host lacks the completed-frame NR diagnostic API");
     }

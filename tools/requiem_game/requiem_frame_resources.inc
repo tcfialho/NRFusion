@@ -46,6 +46,7 @@
     uiRtv.ptr += static_cast<SIZE_T>(kBackBuffers + 3) * rtvSize;
     device->CreateRenderTargetView(ui.Get(), nullptr, uiRtv);
     requiem::EvaluationTimer evaluationTimer(device.Get(), queue.Get());
+    requiem::EvaluationTimer frameTimer(device.Get(), queue.Get());
     std::unique_ptr<requiem::OutputCapture> capture;
     if (!g_capture.empty()) capture = std::make_unique<requiem::OutputCapture>(device.Get(), calculated.Get());
 

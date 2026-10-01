@@ -20,6 +20,7 @@
 #include "nrfusion/D3D12NrScratchResources.hpp"
 #include "nrfusion/NrDeferredRetirementQueue.hpp"
 #include "nrfusion/NrSubmissionGate.hpp"
+#include "nrfusion/NrDiagnosticsApi.hpp"
 
 namespace nrfusion {
 
@@ -97,6 +98,7 @@ struct D3D12NrFrameResources {
 };
 
 struct D3D12NrFrameRequest {
+    RecordNrGpuStage recordGpuStage = nullptr;
     D3D12NrFramePlanInput plan{};
     std::array<DlssNrTuning, kD3D12NrMaxPassCount> tuning{};
     D3D12NrComposition composition{};

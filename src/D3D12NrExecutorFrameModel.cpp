@@ -125,6 +125,7 @@ bool D3D12NrExecutor::RunFrameModel(
     }
 
     if (finalAnswer == nullptr) return false;
+    if (request.recordGpuStage) request.recordGpuStage(cmd, NrGpuStage::CompositionBegin);
     ID3D12Resource* resolveOriginal = context.acrossRr
         ? hdrCopy
         : (context.targetSupportsUav ? hdrCopy : context.activeTarget);

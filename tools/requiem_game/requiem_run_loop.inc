@@ -26,6 +26,7 @@
 
         Check(allocator->Reset(), "allocator reset");
         Check(commands->Reset(allocator.Get(), pipeline.Get()), "command reset");
+        frameTimer.Begin(commands.Get());
         bool lifecycleReset = false, lifecycleFeature = false;
 #include "requiem_kernel_lifecycle.inc"
         guideCopyCounter.Reattach(commands.Get());
@@ -154,6 +155,7 @@
         barrier.Transition.StateAfter = D3D12_RESOURCE_STATE_PRESENT;
         commands->ResourceBarrier(1, &barrier);
         mfg.SimulationEnd();
+        frameTimer.End(commands.Get());
         Check(commands->Close(), "close");
 
         ID3D12CommandList* lists[] = {commands.Get()};
@@ -175,6 +177,7 @@
         WaitForGpu();
 
         nrfusion::NrDiagnosticFrame nrFrame{};
+        nrfusion::NrDiagnosticStages nrStages{};
         if (readNrFrame) {
             if (!readNrFrame(queue.Get(), fence.Get(), fenceValue, &nrFrame))
                 throw std::runtime_error("NR diagnostic read failed after queue completion");
@@ -191,10 +194,18 @@
                 throw std::runtime_error("NR did not execute successfully on the measured frame");
         }
         const double evaluationMs = evaluationTimer.ReadAfterFence();
+        const double frameGpuMs = frameTimer.ReadAfterFence();
+        if (readNrStages && !readNrStages(simulationFrame, sizeof(nrStages), &nrStages))
+            throw std::runtime_error("NR stage timing belongs to a different or unretired frame");
+        if (readNrStages && nrFrame.successfulPasses &&
+            (!nrStages.valid || std::abs(nrStages.preparationGpuMs + nrStages.modelGpuMs +
+                     nrStages.compositionGpuMs - nrFrame.nrGpuMs) > 0.000001))
+            throw std::runtime_error("NR stage intervals do not cover the complete NR pass");
         const double frameMs = std::chrono::duration<double, std::milli>(
             std::chrono::high_resolution_clock::now() - curTime).count();
         Check(device->GetDeviceRemovedReason(), "device status after evaluation");
-        if (simulationFrame >= g_warmup && (!std::isfinite(evaluationMs) || evaluationMs <= 0)) {
+        if (simulationFrame >= g_warmup && (!std::isfinite(evaluationMs) || evaluationMs <= 0 ||
+            !std::isfinite(frameGpuMs) || frameGpuMs < evaluationMs)) {
             std::cerr << "[ERRO] invalid evaluation timestamp" << std::endl;
             return 1;
         }
@@ -203,7 +214,9 @@
                     << height << ',' << evaluationMs << ',' << frameMs << ',' << nrFrame.nrGpuMs << ','
                     << nrFrame.passes << ',' << nrFrame.successfulPasses << ','
                     << nrFrame.kernelLaunches << ',' << nrFrame.chainCalls << ','
-                    << guideCopyCounter.copies << ',' << guideCopyCounter.bytes << '\n';
+                    << guideCopyCounter.copies << ',' << guideCopyCounter.bytes << ','
+                    << frameGpuMs << ',' << nrStages.valid << ',' << nrStages.preparationGpuMs << ','
+                    << nrStages.modelGpuMs << ',' << nrStages.compositionGpuMs << '\n';
         if (capture && simulationFrame + 1 == g_frameLimit) capture->SaveAfterFence(g_capture);
         if (view != lastView) {
             const char* labels[] = {"Entrada original", "Resultado calculado (NGX)", "Referencia NVIDIA (JPEG)"};

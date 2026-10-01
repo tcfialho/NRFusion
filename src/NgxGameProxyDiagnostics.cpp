@@ -22,6 +22,9 @@ struct DiagnosticState {
     ComPtr<ID3D12QueryHeap> queries;
     ComPtr<ID3D12Resource> readback;
     nrfusion::NrDiagnosticFrame result{};
+    nrfusion::NrDiagnosticStages stages{};
+    unsigned stageMask = 0;
+    bool retired = false;
     bool active = false;
     bool passOpen = false;
 };
@@ -40,7 +43,7 @@ bool EnsureResources(DiagnosticState& state, ID3D12Device* device) {
 
     D3D12_QUERY_HEAP_DESC query{};
     query.Type = D3D12_QUERY_HEAP_TYPE_TIMESTAMP;
-    query.Count = 2;
+    query.Count = 4;
     if (FAILED(device->CreateQueryHeap(&query, IID_PPV_ARGS(&state.queries))))
         return false;
 
@@ -48,7 +51,7 @@ bool EnsureResources(DiagnosticState& state, ID3D12Device* device) {
     heap.Type = D3D12_HEAP_TYPE_READBACK;
     D3D12_RESOURCE_DESC buffer{};
     buffer.Dimension = D3D12_RESOURCE_DIMENSION_BUFFER;
-    buffer.Width = 2 * sizeof(std::uint64_t);
+    buffer.Width = 4 * sizeof(std::uint64_t);
     buffer.Height = buffer.DepthOrArraySize = buffer.MipLevels = 1;
     buffer.SampleDesc.Count = 1;
     buffer.Layout = D3D12_TEXTURE_LAYOUT_ROW_MAJOR;
@@ -63,6 +66,20 @@ bool EnsureResources(DiagnosticState& state, ID3D12Device* device) {
 } // namespace
 
 namespace nrfusion::ngxproxy {
+
+void RecordDiagnosticGpuStage(ID3D12GraphicsCommandList* commands, NrGpuStage marker) noexcept {
+    const auto stage = static_cast<unsigned>(marker);
+    if (!g_active.load(std::memory_order_relaxed) || !commands || stage < 2 || stage > 3) return;
+    auto& state = State();
+    std::lock_guard guard(state.mutex);
+    if (!state.active || !state.passOpen) return;
+    commands->EndQuery(state.queries.Get(), D3D12_QUERY_TYPE_TIMESTAMP, stage);
+    state.stageMask |= 1u << (stage - 2);
+}
+
+RecordNrGpuStage DiagnosticGpuStageRecorder() noexcept {
+    return g_active.load(std::memory_order_relaxed) ? RecordDiagnosticGpuStage : nullptr;
+}
 
 void BeginDiagnosticPass(ID3D12GraphicsCommandList* commands) noexcept {
     if (!g_active.load(std::memory_order_relaxed) || !commands) return;
@@ -83,7 +100,7 @@ void EndDiagnosticPass(
     if (!state.active || !state.passOpen) return;
     commands->EndQuery(state.queries.Get(), D3D12_QUERY_TYPE_TIMESTAMP, 1);
     commands->ResolveQueryData(
-        state.queries.Get(), D3D12_QUERY_TYPE_TIMESTAMP, 0, 2,
+        state.queries.Get(), D3D12_QUERY_TYPE_TIMESTAMP, 0, state.stageMask == 3 ? 4 : 2,
         state.readback.Get(), 0);
     state.passOpen = false;
     state.result.successfulPasses = successful ? 1 : 0;
@@ -100,6 +117,10 @@ extern "C" __declspec(dllexport) int NRFusion_BeginNrDiagnosticFrame(
     if (profile && !nrfusion::kernelprofile::BeginFrame(device, frame, csvPath)) return 0;
     state.result = {};
     state.result.frame = frame;
+    state.stages = {};
+    state.stages.frame = frame;
+    state.stageMask = 0;
+    state.retired = false;
     state.active = true;
     state.passOpen = false;
     g_active.store(true, std::memory_order_relaxed);
@@ -117,12 +138,20 @@ extern "C" __declspec(dllexport) int NRFusion_ReadNrDiagnosticFrame(
     UINT64 frequency = 0;
     if (FAILED(queue->GetTimestampFrequency(&frequency)) || frequency == 0) return 0;
     std::uint64_t* ticks = nullptr;
-    D3D12_RANGE read{0, 2 * sizeof(std::uint64_t)};
+    D3D12_RANGE read{0, 4 * sizeof(std::uint64_t)};
     if (FAILED(state.readback->Map(0, &read, reinterpret_cast<void**>(&ticks)))) return 0;
     if (state.result.passes != 0 && ticks[1] > ticks[0]) {
         state.result.nrGpuMs =
             static_cast<double>(ticks[1] - ticks[0]) * 1000.0 /
             static_cast<double>(frequency);
+    }
+    if (state.result.successfulPasses && state.stageMask == 3 &&
+        ticks[0] <= ticks[2] && ticks[2] <= ticks[3] && ticks[3] <= ticks[1]) {
+        const double scale = 1000.0 / static_cast<double>(frequency);
+        state.stages.valid = 1;
+        state.stages.preparationGpuMs = static_cast<double>(ticks[2] - ticks[0]) * scale;
+        state.stages.modelGpuMs = static_cast<double>(ticks[3] - ticks[2]) * scale;
+        state.stages.compositionGpuMs = static_cast<double>(ticks[1] - ticks[3]) * scale;
     }
     D3D12_RANGE written{0, 0};
     state.readback->Unmap(0, &written);
@@ -130,6 +159,18 @@ extern "C" __declspec(dllexport) int NRFusion_ReadNrDiagnosticFrame(
             state.result.kernelLaunches, state.result.chainCalls)) return 0;
     *output = state.result;
     state.active = false;
+    state.retired = true;
     g_active.store(false, std::memory_order_relaxed);
+    return 1;
+}
+
+extern "C" __declspec(dllexport) int NRFusion_ReadNrDiagnosticStages(
+    std::uint64_t frame, std::uint32_t bytes, nrfusion::NrDiagnosticStages* output) {
+    if (!output || bytes != sizeof(*output)) return 0;
+    auto& state = State();
+    std::lock_guard guard(state.mutex);
+    if (!state.retired || state.stages.frame != frame) return 0;
+    if (state.result.successfulPasses && !state.stages.valid) return 0;
+    *output = state.stages;
     return 1;
 }

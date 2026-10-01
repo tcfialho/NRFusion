@@ -72,5 +72,5 @@
     if (!g_csv.empty()) {
         timings.open(g_csv);
         if (!timings) { std::cerr << "Cannot open CSV" << std::endl; return 2; }
-        timings << "frame,input_width,input_height,output_width,output_height,ngx_evaluation_gpu_ms,frame_wall_ms,nr_gpu_ms,nr_passes,nr_successes,nvapi_kernels,nvapi_chains,guide_copies,guide_copy_bytes\n";
+        timings << "frame,input_width,input_height,output_width,output_height,ngx_evaluation_gpu_ms,frame_wall_ms,nr_gpu_ms,nr_passes,nr_successes,nvapi_kernels,nvapi_chains,guide_copies,guide_copy_bytes,frame_gpu_ms,nr_stages_valid,nr_prepare_gpu_ms,nr_model_gpu_ms,nr_compose_gpu_ms\n";
     }

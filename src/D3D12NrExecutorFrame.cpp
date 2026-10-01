@@ -158,6 +158,7 @@ D3D12NrFrameResult D3D12NrExecutor::ExecuteMainFrame(
         return D3D12NrFrameResult::Failed;
     }
 
+    if (request.recordGpuStage) request.recordGpuStage(cmdList, NrGpuStage::ModelBegin);
     const bool modelOk = RunFrameModel(
         cmdList, resources, request, context, effectivePasses);
     RestoreFrameResources(cmdList, resources, request, context);

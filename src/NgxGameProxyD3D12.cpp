@@ -205,6 +205,7 @@ bool RunNeuralPass(ProxyFeature& feature, ID3D12GraphicsCommandList* commands,
     request.outputState = D3D12_RESOURCE_STATE_UNORDERED_ACCESS;
 
     nrfusion::ngxproxy::BeginDiagnosticPass(commands);
+    request.recordGpuStage = nrfusion::ngxproxy::DiagnosticGpuStageRecorder();
     const auto result = feature.nr.ExecuteFrame(commands, resources, request);
     nrfusion::ngxproxy::EndDiagnosticPass(
         commands, result == nrfusion::D3D12NrFrameResult::Applied);

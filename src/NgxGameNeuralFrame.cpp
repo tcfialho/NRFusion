@@ -86,6 +86,7 @@ D3D12NrFrameResult ExecuteGameNeuralFrame(D3D12NrExecutor& executor,
         request.tuning[pass].autoMask = appearance.automaticMask != TriState::Off;
     }
     ngxproxy::BeginDiagnosticPass(commands);
+    request.recordGpuStage = ngxproxy::DiagnosticGpuStageRecorder();
     const auto result = executor.ExecuteFrame(commands, resources, request);
     ngxproxy::EndDiagnosticPass(commands, result == D3D12NrFrameResult::Applied);
     return result;
