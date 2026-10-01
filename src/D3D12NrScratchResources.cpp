@@ -134,46 +134,6 @@ bool D3D12NrScratchResources::Matches(const D3D12NrScratchDesc& desc) const noex
     return Complete() && desc_ == desc;
 }
 
-bool D3D12NrScratchResources::Ensure(
-    ID3D12Device* device, const D3D12NrScratchDesc& desc,
-    NrDeferredRetirementQueue& retirement) noexcept {
-    if (!Valid(desc)) return false;
-    if (Matches(desc)) return true;
-    if (ActiveCount() > NrDeferredRetirementQueue::kCapacity - retirement.Size()) return false;
-
-    Surface nextOutput = MakeSurface(
-        Create(device, desc.format, desc.workWidth, desc.workHeight),
-        desc.format, desc.workWidth, desc.workHeight);
-    Surface nextColor = MakeSurface(
-        Create(device, desc.format, desc.frameWidth, desc.frameHeight),
-        desc.format, desc.frameWidth, desc.frameHeight);
-    Surface nextHdr = MakeSurface(
-        Create(device, desc.format, desc.frameWidth, desc.frameHeight),
-        desc.format, desc.frameWidth, desc.frameHeight);
-
-    if (nextOutput.resource == nullptr ||
-        nextColor.resource == nullptr ||
-        nextHdr.resource == nullptr) {
-        Release(nextOutput);
-        Release(nextColor);
-        Release(nextHdr);
-        return false;
-    }
-
-    if (!ParkAll(retirement)) {
-        Release(nextOutput);
-        Release(nextColor);
-        Release(nextHdr);
-        return false;
-    }
-
-    output_ = nextOutput;
-    colorCopy_ = nextColor;
-    hdrCopy_ = nextHdr;
-    desc_ = desc;
-    return true;
-}
-
 bool D3D12NrScratchResources::EnsureOptional(
     ID3D12Device* device, D3D12NrScratchKind kind,
     DXGI_FORMAT format, std::uint32_t width, std::uint32_t height,
