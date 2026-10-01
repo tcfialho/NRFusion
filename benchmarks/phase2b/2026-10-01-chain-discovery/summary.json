@@ -1,0 +1,807 @@
+{
+  "schema_version": 1,
+  "phase2b_complete": false,
+  "performance_gain": null,
+  "default_path": "stock; no experimental kernel integrated",
+  "experiments": [
+    {
+      "variant": "tiled-first",
+      "exact_captures": 3,
+      "status": "REJECT",
+      "comparisons": [
+        {
+          "capture": 0,
+          "stock": {
+            "warmup": 50,
+            "samples": 300,
+            "median_us": 56.32,
+            "p95_us": 58.368,
+            "p99_us": 59.392,
+            "scope": "isolated kernel GPU time; UAV ordering outside timestamp interval"
+          },
+          "candidate": {
+            "warmup": 50,
+            "samples": 300,
+            "median_us": 65.536,
+            "p95_us": 67.584,
+            "p99_us": 67.584,
+            "scope": "isolated kernel GPU time; UAV ordering outside timestamp interval"
+          },
+          "median_delta_percent": 16.36363636363636
+        },
+        {
+          "capture": 1,
+          "stock": {
+            "warmup": 50,
+            "samples": 300,
+            "median_us": 51.2,
+            "p95_us": 53.248,
+            "p99_us": 53.248,
+            "scope": "isolated kernel GPU time; UAV ordering outside timestamp interval"
+          },
+          "candidate": {
+            "warmup": 50,
+            "samples": 300,
+            "median_us": 59.392,
+            "p95_us": 61.44,
+            "p99_us": 61.44,
+            "scope": "isolated kernel GPU time; UAV ordering outside timestamp interval"
+          },
+          "median_delta_percent": 15.999999999999993
+        },
+        {
+          "capture": 2,
+          "stock": {
+            "warmup": 50,
+            "samples": 300,
+            "median_us": 51.2,
+            "p95_us": 52.224,
+            "p99_us": 53.248,
+            "scope": "isolated kernel GPU time; UAV ordering outside timestamp interval"
+          },
+          "candidate": {
+            "warmup": 50,
+            "samples": 300,
+            "median_us": 59.392,
+            "p95_us": 61.44,
+            "p99_us": 61.44,
+            "scope": "isolated kernel GPU time; UAV ordering outside timestamp interval"
+          },
+          "median_delta_percent": 15.999999999999993
+        }
+      ],
+      "reason": "slower than stock in all captured workloads",
+      "scope": "EXPERIMENTO ISOLADO \u2014 N\u00c3O VALIDA O PRODUTO FINAL",
+      "identity_limit": "early exploratory reports predate executed-image hash recording; none is production qualified"
+    },
+    {
+      "variant": "tiled-128",
+      "exact_captures": 3,
+      "status": "REJECT",
+      "comparisons": [
+        {
+          "capture": 0,
+          "stock": {
+            "warmup": 50,
+            "samples": 300,
+            "median_us": 56.32,
+            "p95_us": 58.368,
+            "p99_us": 229.376,
+            "scope": "isolated kernel GPU time; UAV ordering outside timestamp interval"
+          },
+          "candidate": {
+            "warmup": 50,
+            "samples": 300,
+            "median_us": 61.44,
+            "p95_us": 63.488,
+            "p99_us": 234.496,
+            "scope": "isolated kernel GPU time; UAV ordering outside timestamp interval"
+          },
+          "median_delta_percent": 9.090909090909083
+        },
+        {
+          "capture": 1,
+          "stock": {
+            "warmup": 50,
+            "samples": 300,
+            "median_us": 56.32,
+            "p95_us": 58.368,
+            "p99_us": 59.392,
+            "scope": "isolated kernel GPU time; UAV ordering outside timestamp interval"
+          },
+          "candidate": {
+            "warmup": 50,
+            "samples": 300,
+            "median_us": 61.44,
+            "p95_us": 63.488,
+            "p99_us": 282.624,
+            "scope": "isolated kernel GPU time; UAV ordering outside timestamp interval"
+          },
+          "median_delta_percent": 9.090909090909083
+        },
+        {
+          "capture": 2,
+          "stock": {
+            "warmup": 50,
+            "samples": 300,
+            "median_us": 56.32,
+            "p95_us": 58.368,
+            "p99_us": 59.392,
+            "scope": "isolated kernel GPU time; UAV ordering outside timestamp interval"
+          },
+          "candidate": {
+            "warmup": 50,
+            "samples": 300,
+            "median_us": 61.44,
+            "p95_us": 63.488,
+            "p99_us": 279.552,
+            "scope": "isolated kernel GPU time; UAV ordering outside timestamp interval"
+          },
+          "median_delta_percent": 9.090909090909083
+        }
+      ],
+      "reason": "slower than stock in all captured workloads",
+      "scope": "EXPERIMENTO ISOLADO \u2014 N\u00c3O VALIDA O PRODUTO FINAL",
+      "identity_limit": "early exploratory reports predate executed-image hash recording; none is production qualified"
+    },
+    {
+      "variant": "tiled-prefetch",
+      "exact_captures": 3,
+      "status": "REJECT",
+      "comparisons": [
+        {
+          "capture": 0,
+          "stock": {
+            "warmup": 50,
+            "samples": 300,
+            "median_us": 56.32,
+            "p95_us": 58.368,
+            "p99_us": 229.376,
+            "scope": "isolated kernel GPU time; UAV ordering outside timestamp interval"
+          },
+          "candidate": {
+            "warmup": 50,
+            "samples": 300,
+            "median_us": 64.512,
+            "p95_us": 65.536,
+            "p99_us": 247.808,
+            "scope": "isolated kernel GPU time; UAV ordering outside timestamp interval"
+          },
+          "median_delta_percent": 14.54545454545455
+        },
+        {
+          "capture": 1,
+          "stock": {
+            "warmup": 50,
+            "samples": 300,
+            "median_us": 56.32,
+            "p95_us": 58.368,
+            "p99_us": 230.4,
+            "scope": "isolated kernel GPU time; UAV ordering outside timestamp interval"
+          },
+          "candidate": {
+            "warmup": 50,
+            "samples": 300,
+            "median_us": 64.512,
+            "p95_us": 65.536,
+            "p99_us": 66.56,
+            "scope": "isolated kernel GPU time; UAV ordering outside timestamp interval"
+          },
+          "median_delta_percent": 14.54545454545455
+        },
+        {
+          "capture": 2,
+          "stock": {
+            "warmup": 50,
+            "samples": 300,
+            "median_us": 56.832,
+            "p95_us": 58.368,
+            "p99_us": 264.192,
+            "scope": "isolated kernel GPU time; UAV ordering outside timestamp interval"
+          },
+          "candidate": {
+            "warmup": 50,
+            "samples": 300,
+            "median_us": 64.512,
+            "p95_us": 65.536,
+            "p99_us": 66.56,
+            "scope": "isolated kernel GPU time; UAV ordering outside timestamp interval"
+          },
+          "median_delta_percent": 13.513513513513509
+        }
+      ],
+      "reason": "slower than stock in all captured workloads",
+      "scope": "EXPERIMENTO ISOLADO \u2014 N\u00c3O VALIDA O PRODUTO FINAL",
+      "identity_limit": "early exploratory reports predate executed-image hash recording; none is production qualified"
+    },
+    {
+      "variant": "tiled-eight-warps",
+      "exact_captures": 3,
+      "status": "REJECT",
+      "comparisons": [
+        {
+          "capture": 0,
+          "stock": {
+            "warmup": 50,
+            "samples": 300,
+            "median_us": 56.32,
+            "p95_us": 58.368,
+            "p99_us": 268.288,
+            "scope": "isolated kernel GPU time; UAV ordering outside timestamp interval"
+          },
+          "candidate": {
+            "warmup": 50,
+            "samples": 300,
+            "median_us": 64.512,
+            "p95_us": 65.536,
+            "p99_us": 275.456,
+            "scope": "isolated kernel GPU time; UAV ordering outside timestamp interval"
+          },
+          "median_delta_percent": 14.54545454545455
+        },
+        {
+          "capture": 1,
+          "stock": {
+            "warmup": 50,
+            "samples": 300,
+            "median_us": 56.32,
+            "p95_us": 58.368,
+            "p99_us": 230.4,
+            "scope": "isolated kernel GPU time; UAV ordering outside timestamp interval"
+          },
+          "candidate": {
+            "warmup": 50,
+            "samples": 300,
+            "median_us": 64.512,
+            "p95_us": 65.536,
+            "p99_us": 241.664,
+            "scope": "isolated kernel GPU time; UAV ordering outside timestamp interval"
+          },
+          "median_delta_percent": 14.54545454545455
+        },
+        {
+          "capture": 2,
+          "stock": {
+            "warmup": 50,
+            "samples": 300,
+            "median_us": 56.832,
+            "p95_us": 58.368,
+            "p99_us": 230.4,
+            "scope": "isolated kernel GPU time; UAV ordering outside timestamp interval"
+          },
+          "candidate": {
+            "warmup": 50,
+            "samples": 300,
+            "median_us": 64.512,
+            "p95_us": 65.536,
+            "p99_us": 277.504,
+            "scope": "isolated kernel GPU time; UAV ordering outside timestamp interval"
+          },
+          "median_delta_percent": 13.513513513513509
+        }
+      ],
+      "reason": "slower than stock in all captured workloads",
+      "scope": "EXPERIMENTO ISOLADO \u2014 N\u00c3O VALIDA O PRODUTO FINAL",
+      "identity_limit": "early exploratory reports predate executed-image hash recording; none is production qualified"
+    },
+    {
+      "variant": "tiled-k128",
+      "exact_captures": 3,
+      "status": "REJECT",
+      "comparisons": [
+        {
+          "capture": 0,
+          "stock": {
+            "warmup": 50,
+            "samples": 300,
+            "median_us": 56.32,
+            "p95_us": 58.368,
+            "p99_us": 275.456,
+            "scope": "isolated kernel GPU time; UAV ordering outside timestamp interval"
+          },
+          "candidate": {
+            "warmup": 50,
+            "samples": 300,
+            "median_us": 92.16,
+            "p95_us": 98.304,
+            "p99_us": 316.416,
+            "scope": "isolated kernel GPU time; UAV ordering outside timestamp interval"
+          },
+          "median_delta_percent": 63.636363636363626
+        },
+        {
+          "capture": 1,
+          "stock": {
+            "warmup": 50,
+            "samples": 300,
+            "median_us": 56.32,
+            "p95_us": 58.368,
+            "p99_us": 286.72,
+            "scope": "isolated kernel GPU time; UAV ordering outside timestamp interval"
+          },
+          "candidate": {
+            "warmup": 50,
+            "samples": 300,
+            "median_us": 92.16,
+            "p95_us": 98.304,
+            "p99_us": 323.584,
+            "scope": "isolated kernel GPU time; UAV ordering outside timestamp interval"
+          },
+          "median_delta_percent": 63.636363636363626
+        },
+        {
+          "capture": 2,
+          "stock": {
+            "warmup": 50,
+            "samples": 300,
+            "median_us": 56.32,
+            "p95_us": 58.368,
+            "p99_us": 59.392,
+            "scope": "isolated kernel GPU time; UAV ordering outside timestamp interval"
+          },
+          "candidate": {
+            "warmup": 50,
+            "samples": 300,
+            "median_us": 92.16,
+            "p95_us": 98.304,
+            "p99_us": 329.728,
+            "scope": "isolated kernel GPU time; UAV ordering outside timestamp interval"
+          },
+          "median_delta_percent": 63.636363636363626
+        }
+      ],
+      "reason": "slower than stock in all captured workloads",
+      "scope": "EXPERIMENTO ISOLADO \u2014 N\u00c3O VALIDA O PRODUTO FINAL",
+      "identity_limit": "early exploratory reports predate executed-image hash recording; none is production qualified"
+    },
+    {
+      "variant": "tiled-k128-loop",
+      "exact_captures": 3,
+      "status": "REJECT",
+      "comparisons": [
+        {
+          "capture": 0,
+          "stock": {
+            "warmup": 50,
+            "samples": 300,
+            "median_us": 57.344,
+            "p95_us": 59.392,
+            "p99_us": 231.424,
+            "scope": "isolated kernel GPU time; UAV ordering outside timestamp interval"
+          },
+          "candidate": {
+            "warmup": 50,
+            "samples": 300,
+            "median_us": 70.656,
+            "p95_us": 72.704,
+            "p99_us": 252.928,
+            "scope": "isolated kernel GPU time; UAV ordering outside timestamp interval"
+          },
+          "median_delta_percent": 23.214285714285722
+        },
+        {
+          "capture": 1,
+          "stock": {
+            "warmup": 50,
+            "samples": 300,
+            "median_us": 56.32,
+            "p95_us": 58.368,
+            "p99_us": 234.496,
+            "scope": "isolated kernel GPU time; UAV ordering outside timestamp interval"
+          },
+          "candidate": {
+            "warmup": 50,
+            "samples": 300,
+            "median_us": 70.656,
+            "p95_us": 72.704,
+            "p99_us": 264.192,
+            "scope": "isolated kernel GPU time; UAV ordering outside timestamp interval"
+          },
+          "median_delta_percent": 25.454545454545464
+        },
+        {
+          "capture": 2,
+          "stock": {
+            "warmup": 50,
+            "samples": 300,
+            "median_us": 56.32,
+            "p95_us": 58.368,
+            "p99_us": 237.568,
+            "scope": "isolated kernel GPU time; UAV ordering outside timestamp interval"
+          },
+          "candidate": {
+            "warmup": 50,
+            "samples": 300,
+            "median_us": 70.656,
+            "p95_us": 72.704,
+            "p99_us": 256,
+            "scope": "isolated kernel GPU time; UAV ordering outside timestamp interval"
+          },
+          "median_delta_percent": 25.454545454545464
+        }
+      ],
+      "reason": "slower than stock in all captured workloads",
+      "scope": "EXPERIMENTO ISOLADO \u2014 N\u00c3O VALIDA O PRODUTO FINAL",
+      "identity_limit": "early exploratory reports predate executed-image hash recording; none is production qualified"
+    },
+    {
+      "variant": "tiled-cpasync",
+      "exact_captures": 3,
+      "status": "REJECT",
+      "comparisons": [
+        {
+          "capture": 0,
+          "stock": {
+            "warmup": 50,
+            "samples": 300,
+            "median_us": 56.32,
+            "p95_us": 58.368,
+            "p99_us": 235.52,
+            "scope": "isolated kernel GPU time; UAV ordering outside timestamp interval"
+          },
+          "candidate": {
+            "warmup": 50,
+            "samples": 300,
+            "median_us": 63.488,
+            "p95_us": 64.512,
+            "p99_us": 242.688,
+            "scope": "isolated kernel GPU time; UAV ordering outside timestamp interval"
+          },
+          "median_delta_percent": 12.72727272727272
+        },
+        {
+          "capture": 1,
+          "stock": {
+            "warmup": 50,
+            "samples": 300,
+            "median_us": 57.344,
+            "p95_us": 58.368,
+            "p99_us": 232.448,
+            "scope": "isolated kernel GPU time; UAV ordering outside timestamp interval"
+          },
+          "candidate": {
+            "warmup": 50,
+            "samples": 300,
+            "median_us": 63.488,
+            "p95_us": 64.512,
+            "p99_us": 284.672,
+            "scope": "isolated kernel GPU time; UAV ordering outside timestamp interval"
+          },
+          "median_delta_percent": 10.71428571428572
+        },
+        {
+          "capture": 2,
+          "stock": {
+            "warmup": 50,
+            "samples": 300,
+            "median_us": 56.32,
+            "p95_us": 58.368,
+            "p99_us": 59.392,
+            "scope": "isolated kernel GPU time; UAV ordering outside timestamp interval"
+          },
+          "candidate": {
+            "warmup": 50,
+            "samples": 300,
+            "median_us": 63.488,
+            "p95_us": 64.512,
+            "p99_us": 290.816,
+            "scope": "isolated kernel GPU time; UAV ordering outside timestamp interval"
+          },
+          "median_delta_percent": 12.72727272727272
+        }
+      ],
+      "reason": "slower than stock in all captured workloads",
+      "scope": "EXPERIMENTO ISOLADO \u2014 N\u00c3O VALIDA O PRODUTO FINAL",
+      "identity_limit": "early exploratory reports predate executed-image hash recording; none is production qualified"
+    },
+    {
+      "variant": "tiled-cpasync-rowbounds",
+      "exact_captures": 3,
+      "status": "REJECT",
+      "comparisons": [
+        {
+          "capture": 0,
+          "stock": {
+            "warmup": 50,
+            "samples": 300,
+            "median_us": 57.344,
+            "p95_us": 58.368,
+            "p99_us": 59.392,
+            "scope": "isolated kernel GPU time; UAV ordering outside timestamp interval"
+          },
+          "candidate": {
+            "warmup": 50,
+            "samples": 300,
+            "median_us": 88.064,
+            "p95_us": 90.112,
+            "p99_us": 314.368,
+            "scope": "isolated kernel GPU time; UAV ordering outside timestamp interval"
+          },
+          "median_delta_percent": 53.571428571428555
+        },
+        {
+          "capture": 1,
+          "stock": {
+            "warmup": 50,
+            "samples": 300,
+            "median_us": 57.344,
+            "p95_us": 58.368,
+            "p99_us": 214.016,
+            "scope": "isolated kernel GPU time; UAV ordering outside timestamp interval"
+          },
+          "candidate": {
+            "warmup": 50,
+            "samples": 300,
+            "median_us": 88.064,
+            "p95_us": 90.112,
+            "p99_us": 310.272,
+            "scope": "isolated kernel GPU time; UAV ordering outside timestamp interval"
+          },
+          "median_delta_percent": 53.571428571428555
+        },
+        {
+          "capture": 2,
+          "stock": {
+            "warmup": 50,
+            "samples": 300,
+            "median_us": 56.32,
+            "p95_us": 58.368,
+            "p99_us": 259.072,
+            "scope": "isolated kernel GPU time; UAV ordering outside timestamp interval"
+          },
+          "candidate": {
+            "warmup": 50,
+            "samples": 300,
+            "median_us": 88.064,
+            "p95_us": 90.112,
+            "p99_us": 312.32,
+            "scope": "isolated kernel GPU time; UAV ordering outside timestamp interval"
+          },
+          "median_delta_percent": 56.363636363636346
+        }
+      ],
+      "reason": "slower than stock in all captured workloads",
+      "scope": "EXPERIMENTO ISOLADO \u2014 N\u00c3O VALIDA O PRODUTO FINAL",
+      "identity_limit": "early exploratory reports predate executed-image hash recording; none is production qualified"
+    },
+    {
+      "variant": "tiled-cpasync-tail",
+      "exact_captures": 3,
+      "status": "REJECT",
+      "comparisons": [
+        {
+          "capture": 0,
+          "stock": {
+            "warmup": 50,
+            "samples": 300,
+            "median_us": 56.32,
+            "p95_us": 58.368,
+            "p99_us": 230.4,
+            "scope": "isolated kernel GPU time; UAV ordering outside timestamp interval"
+          },
+          "candidate": {
+            "warmup": 50,
+            "samples": 300,
+            "median_us": 68.608,
+            "p95_us": 70.656,
+            "p99_us": 245.76,
+            "scope": "isolated kernel GPU time; UAV ordering outside timestamp interval"
+          },
+          "median_delta_percent": 21.818181818181827
+        },
+        {
+          "capture": 1,
+          "stock": {
+            "warmup": 50,
+            "samples": 300,
+            "median_us": 56.32,
+            "p95_us": 58.368,
+            "p99_us": 66.56,
+            "scope": "isolated kernel GPU time; UAV ordering outside timestamp interval"
+          },
+          "candidate": {
+            "warmup": 50,
+            "samples": 300,
+            "median_us": 67.584,
+            "p95_us": 70.656,
+            "p99_us": 283.648,
+            "scope": "isolated kernel GPU time; UAV ordering outside timestamp interval"
+          },
+          "median_delta_percent": 19.999999999999996
+        },
+        {
+          "capture": 2,
+          "stock": {
+            "warmup": 50,
+            "samples": 300,
+            "median_us": 56.32,
+            "p95_us": 58.368,
+            "p99_us": 273.408,
+            "scope": "isolated kernel GPU time; UAV ordering outside timestamp interval"
+          },
+          "candidate": {
+            "warmup": 50,
+            "samples": 300,
+            "median_us": 67.584,
+            "p95_us": 70.656,
+            "p99_us": 295.936,
+            "scope": "isolated kernel GPU time; UAV ordering outside timestamp interval"
+          },
+          "median_delta_percent": 19.999999999999996
+        }
+      ],
+      "reason": "slower than stock in all captured workloads",
+      "scope": "EXPERIMENTO ISOLADO \u2014 N\u00c3O VALIDA O PRODUTO FINAL",
+      "identity_limit": "early exploratory reports predate executed-image hash recording; none is production qualified"
+    },
+    {
+      "variant": "tiled-ldmatrix",
+      "exact_captures": 3,
+      "status": "REJECT",
+      "comparisons": [
+        {
+          "capture": 0,
+          "stock": {
+            "warmup": 50,
+            "samples": 300,
+            "median_us": 56.32,
+            "p95_us": 58.368,
+            "p99_us": 229.376,
+            "scope": "isolated kernel GPU time; UAV ordering outside timestamp interval"
+          },
+          "candidate": {
+            "warmup": 50,
+            "samples": 300,
+            "median_us": 70.656,
+            "p95_us": 72.704,
+            "p99_us": 248.832,
+            "scope": "isolated kernel GPU time; UAV ordering outside timestamp interval"
+          },
+          "median_delta_percent": 25.454545454545464
+        },
+        {
+          "capture": 1,
+          "stock": {
+            "warmup": 50,
+            "samples": 300,
+            "median_us": 56.32,
+            "p95_us": 58.368,
+            "p99_us": 59.392,
+            "scope": "isolated kernel GPU time; UAV ordering outside timestamp interval"
+          },
+          "candidate": {
+            "warmup": 50,
+            "samples": 300,
+            "median_us": 69.632,
+            "p95_us": 72.704,
+            "p99_us": 290.816,
+            "scope": "isolated kernel GPU time; UAV ordering outside timestamp interval"
+          },
+          "median_delta_percent": 23.636363636363654
+        },
+        {
+          "capture": 2,
+          "stock": {
+            "warmup": 50,
+            "samples": 300,
+            "median_us": 56.32,
+            "p95_us": 58.368,
+            "p99_us": 59.392,
+            "scope": "isolated kernel GPU time; UAV ordering outside timestamp interval"
+          },
+          "candidate": {
+            "warmup": 50,
+            "samples": 300,
+            "median_us": 69.632,
+            "p95_us": 72.704,
+            "p99_us": 295.936,
+            "scope": "isolated kernel GPU time; UAV ordering outside timestamp interval"
+          },
+          "median_delta_percent": 23.636363636363654
+        }
+      ],
+      "reason": "slower than stock in all captured workloads",
+      "scope": "EXPERIMENTO ISOLADO \u2014 N\u00c3O VALIDA O PRODUTO FINAL",
+      "identity_limit": "early exploratory reports predate executed-image hash recording; none is production qualified"
+    }
+  ],
+  "ptx_variant": {
+    "status": "REJECT",
+    "reason": "SM120 PTX uses elect/cp.async.bulk/mbarrier.expect_tx unavailable on SM89"
+  },
+  "chain_observation": {
+    "schema_version": 1,
+    "status": "same-process chain argument relations verified",
+    "frames": [
+      60,
+      61,
+      62,
+      63,
+      64,
+      65,
+      66,
+      67
+    ],
+    "launch_sequences": [
+      62,
+      63,
+      64
+    ],
+    "edges": [
+      {
+        "producer": "cc_vit_1d_projection_chained_fp8",
+        "producer_field_offset": 16,
+        "consumer": "cc_vit_1d_ffn_expand_chained_fp8",
+        "consumer_field_offset": 0,
+        "matching_frames": 8,
+        "role": "projection output candidate to known expansion input",
+        "evidence": "same-process address, observed D3D12 resource identity and offset",
+        "limits": "address relation proven; projection/contraction semantic access ranges and replay remain unqualified"
+      },
+      {
+        "producer": "cc_vit_1d_ffn_expand_chained_fp8",
+        "producer_field_offset": 16,
+        "consumer": "cc_vit_1d_ffn_contract_chained_fp8",
+        "consumer_field_offset": 0,
+        "matching_frames": 8,
+        "role": "known expansion output to contraction input candidate",
+        "evidence": "same-process address, observed D3D12 resource identity and offset",
+        "limits": "address relation proven; projection/contraction semantic access ranges and replay remain unqualified"
+      },
+      {
+        "producer": "cc_vit_1d_projection_chained_fp8",
+        "producer_field_offset": 16,
+        "consumer": "cc_vit_1d_ffn_contract_chained_fp8",
+        "consumer_field_offset": 8,
+        "matching_frames": 8,
+        "role": "additional contraction input candidate; projection intermediate has multiple consumers",
+        "evidence": "same-process address, observed D3D12 resource identity and offset",
+        "limits": "address relation proven; projection/contraction semantic access ranges and replay remain unqualified"
+      },
+      {
+        "producer": "cc_vit_1d_projection_chained_fp8",
+        "producer_field_offset": 56,
+        "consumer": "cc_vit_1d_ffn_expand_chained_fp8",
+        "consumer_field_offset": 48,
+        "matching_frames": 8,
+        "role": "projection completion candidate to known expansion ready flags",
+        "evidence": "same-process address, observed D3D12 resource identity and offset",
+        "limits": "address relation proven; projection/contraction semantic access ranges and replay remain unqualified"
+      },
+      {
+        "producer": "cc_vit_1d_ffn_expand_chained_fp8",
+        "producer_field_offset": 56,
+        "consumer": "cc_vit_1d_ffn_contract_chained_fp8",
+        "consumer_field_offset": 48,
+        "matching_frames": 8,
+        "role": "known expansion done flags to contraction ready candidate",
+        "evidence": "same-process address, observed D3D12 resource identity and offset",
+        "limits": "address relation proven; projection/contraction semantic access ranges and replay remain unqualified"
+      }
+    ],
+    "fusion_gate": "NOT PASSED; full semantic ABI, capture/replay and separate replacements still needed",
+    "intermediate_policy": "KEEP projection output; it is also passed to contraction at offset 8",
+    "performance_gain": null
+  },
+  "validation": {
+    "official_release_build": "PASS proxy and replay",
+    "focused_ctest": "3/3 PASS",
+    "old_selected_stock_custom_replays": "6/6 exact after changes",
+    "legacy_single_kernel_capture": "8 frames, sequence 63, PASS",
+    "invalid_sequence": "workload exit 0; collection disabled",
+    "duplicate_selector": "workload exit 0; collection disabled",
+    "stock_replay_warp_override": "rejected before launch/output",
+    "stock_chain_workload": "40 measured frames, 6240 stock launches, no drops, NR succeeds"
+  },
+  "artifact_hashes": {
+    "build-windows-validation/Release/nrfusion_proxy.dll": "c3bdeea8d8901ff2658d0679204152150d5e916bcf52cc1e34038bb80e1ee3bc",
+    "dist/RequiemGame/version.dll": "c3bdeea8d8901ff2658d0679204152150d5e916bcf52cc1e34038bb80e1ee3bc",
+    "build-windows-validation/Release/NRFusionKernelReplay.exe": "fa07ed7aec01c22fcf2b9aaec7e26afe2f7acb47be4d79c8ceee3c211e9ac9fc"
+  },
+  "handoff": {
+    "result": "same-process argument/resource relations observed; slower variants rejected",
+    "blocker": "no winning optimization; projection/contraction semantic ranges and replay still unqualified",
+    "next_action": "resolve every projection/contraction input/state range and capture/replay complete chain before fusion",
+    "goal": "entregar a F2 B obtendo alguma melhoria ou otimizacao em relacao ao baseline; active"
+  }
+}

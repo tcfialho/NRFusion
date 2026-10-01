@@ -1,0 +1,206 @@
+[
+  {
+    "capture": 0,
+    "variant": "stock",
+    "exit": 0,
+    "replay": {
+      "schema_version": 1,
+      "diagnostic_input_probe": false,
+      "variant": "stock",
+      "launch_block": [
+        32,
+        4,
+        1
+      ],
+      "module_function_initialization_cpu_ms": 28.0089,
+      "driver_jit_cache_state": "unknown",
+      "bit_identical": true,
+      "differing_output_bytes": 0,
+      "done_bit_identical": true,
+      "max_abs_error": 0,
+      "mean_abs_error": 0,
+      "rms_error": 0,
+      "expected_sha256": "15caef635cd2f599c32c431ecc66fefc1ab53c76d11ac56a7b36b9e911b113e8",
+      "actual_sha256": "15caef635cd2f599c32c431ecc66fefc1ab53c76d11ac56a7b36b9e911b113e8"
+    },
+    "benchmark": {
+      "warmup": 50,
+      "samples": 300,
+      "median_us": 56.32,
+      "p95_us": 58.368,
+      "p99_us": 229.376,
+      "scope": "isolated kernel GPU time; UAV ordering outside timestamp interval"
+    },
+    "stderr": ""
+  },
+  {
+    "capture": 0,
+    "variant": "tiled",
+    "exit": 0,
+    "replay": {
+      "schema_version": 1,
+      "diagnostic_input_probe": false,
+      "variant": "custom",
+      "launch_block": [
+        32,
+        4,
+        1
+      ],
+      "module_function_initialization_cpu_ms": 22.5522,
+      "driver_jit_cache_state": "unknown",
+      "bit_identical": true,
+      "differing_output_bytes": 0,
+      "done_bit_identical": true,
+      "max_abs_error": 0,
+      "mean_abs_error": 0,
+      "rms_error": 0,
+      "expected_sha256": "15caef635cd2f599c32c431ecc66fefc1ab53c76d11ac56a7b36b9e911b113e8",
+      "actual_sha256": "15caef635cd2f599c32c431ecc66fefc1ab53c76d11ac56a7b36b9e911b113e8"
+    },
+    "benchmark": {
+      "warmup": 50,
+      "samples": 300,
+      "median_us": 70.656,
+      "p95_us": 72.704,
+      "p99_us": 248.832,
+      "scope": "isolated kernel GPU time; UAV ordering outside timestamp interval"
+    },
+    "stderr": ""
+  },
+  {
+    "capture": 1,
+    "variant": "stock",
+    "exit": 0,
+    "replay": {
+      "schema_version": 1,
+      "diagnostic_input_probe": false,
+      "variant": "stock",
+      "launch_block": [
+        32,
+        4,
+        1
+      ],
+      "module_function_initialization_cpu_ms": 28.1212,
+      "driver_jit_cache_state": "unknown",
+      "bit_identical": true,
+      "differing_output_bytes": 0,
+      "done_bit_identical": true,
+      "max_abs_error": 0,
+      "mean_abs_error": 0,
+      "rms_error": 0,
+      "expected_sha256": "ec0a2dd0175b83d46dc76e4a34a5d9b62c5105f5c18e4d21522a2e5c9e2c64db",
+      "actual_sha256": "ec0a2dd0175b83d46dc76e4a34a5d9b62c5105f5c18e4d21522a2e5c9e2c64db"
+    },
+    "benchmark": {
+      "warmup": 50,
+      "samples": 300,
+      "median_us": 56.32,
+      "p95_us": 58.368,
+      "p99_us": 59.392,
+      "scope": "isolated kernel GPU time; UAV ordering outside timestamp interval"
+    },
+    "stderr": ""
+  },
+  {
+    "capture": 1,
+    "variant": "tiled",
+    "exit": 0,
+    "replay": {
+      "schema_version": 1,
+      "diagnostic_input_probe": false,
+      "variant": "custom",
+      "launch_block": [
+        32,
+        4,
+        1
+      ],
+      "module_function_initialization_cpu_ms": 21.4928,
+      "driver_jit_cache_state": "unknown",
+      "bit_identical": true,
+      "differing_output_bytes": 0,
+      "done_bit_identical": true,
+      "max_abs_error": 0,
+      "mean_abs_error": 0,
+      "rms_error": 0,
+      "expected_sha256": "ec0a2dd0175b83d46dc76e4a34a5d9b62c5105f5c18e4d21522a2e5c9e2c64db",
+      "actual_sha256": "ec0a2dd0175b83d46dc76e4a34a5d9b62c5105f5c18e4d21522a2e5c9e2c64db"
+    },
+    "benchmark": {
+      "warmup": 50,
+      "samples": 300,
+      "median_us": 69.632,
+      "p95_us": 72.704,
+      "p99_us": 290.816,
+      "scope": "isolated kernel GPU time; UAV ordering outside timestamp interval"
+    },
+    "stderr": ""
+  },
+  {
+    "capture": 2,
+    "variant": "stock",
+    "exit": 0,
+    "replay": {
+      "schema_version": 1,
+      "diagnostic_input_probe": false,
+      "variant": "stock",
+      "launch_block": [
+        32,
+        4,
+        1
+      ],
+      "module_function_initialization_cpu_ms": 28.2472,
+      "driver_jit_cache_state": "unknown",
+      "bit_identical": true,
+      "differing_output_bytes": 0,
+      "done_bit_identical": true,
+      "max_abs_error": 0,
+      "mean_abs_error": 0,
+      "rms_error": 0,
+      "expected_sha256": "905a067fd1d49ed121a85386b958e83bc623e8f6d66a4582c2be96339b7417ca",
+      "actual_sha256": "905a067fd1d49ed121a85386b958e83bc623e8f6d66a4582c2be96339b7417ca"
+    },
+    "benchmark": {
+      "warmup": 50,
+      "samples": 300,
+      "median_us": 56.32,
+      "p95_us": 58.368,
+      "p99_us": 59.392,
+      "scope": "isolated kernel GPU time; UAV ordering outside timestamp interval"
+    },
+    "stderr": ""
+  },
+  {
+    "capture": 2,
+    "variant": "tiled",
+    "exit": 0,
+    "replay": {
+      "schema_version": 1,
+      "diagnostic_input_probe": false,
+      "variant": "custom",
+      "launch_block": [
+        32,
+        4,
+        1
+      ],
+      "module_function_initialization_cpu_ms": 21.495,
+      "driver_jit_cache_state": "unknown",
+      "bit_identical": true,
+      "differing_output_bytes": 0,
+      "done_bit_identical": true,
+      "max_abs_error": 0,
+      "mean_abs_error": 0,
+      "rms_error": 0,
+      "expected_sha256": "905a067fd1d49ed121a85386b958e83bc623e8f6d66a4582c2be96339b7417ca",
+      "actual_sha256": "905a067fd1d49ed121a85386b958e83bc623e8f6d66a4582c2be96339b7417ca"
+    },
+    "benchmark": {
+      "warmup": 50,
+      "samples": 300,
+      "median_us": 69.632,
+      "p95_us": 72.704,
+      "p99_us": 295.936,
+      "scope": "isolated kernel GPU time; UAV ordering outside timestamp interval"
+    },
+    "stderr": ""
+  }
+]
