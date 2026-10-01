@@ -1,0 +1,6 @@
+{
+  "changed_field": "input offset0 -> offset8",
+  "official_workload_exit": 0,
+  "capture_packages": 0,
+  "contract_sha256": "a0433a4bb35954dfc347ad586c338ba002c64e3768d093f79b678728e5dc4e45"
+}

@@ -1,0 +1,26 @@
+{
+  "build-windows-validation/Release/nrfusion_proxy.dll": {
+    "sha256": "d59edf9f43e6eb9e802bfdf8e9ca2e5e4c72843b5ec29c85075fef55f5dff2f7",
+    "bytes": 943104
+  },
+  "dist/RequiemGame/version.dll": {
+    "sha256": "d59edf9f43e6eb9e802bfdf8e9ca2e5e4c72843b5ec29c85075fef55f5dff2f7",
+    "bytes": 943104
+  },
+  "build-windows-validation/Release/NRFusionKernelReplay.exe": {
+    "sha256": "8afa334313f8f27ae02bd95f962c82f8d8b43b997e6456db89d371921029e3ae",
+    "bytes": 132608
+  },
+  "build-windows-validation/Release/RequiemGame.exe": {
+    "sha256": "5fae6333a638001d2e58bfb75fa31a1d697ec1121caf170aec73a35f46d46edf",
+    "bytes": 155648
+  },
+  "dist/RequiemGame/RequiemGame.exe": {
+    "sha256": "5fae6333a638001d2e58bfb75fa31a1d697ec1121caf170aec73a35f46d46edf",
+    "bytes": 155648
+  },
+  "build-windows-validation/generated/nrfusion_ffn_reference_sm89.cubin": {
+    "sha256": "35fdfab506841b69a49e43487471d4ba00a7a4b6a8d44cc7c95dd6ee15284c73",
+    "bytes": 11176
+  }
+}

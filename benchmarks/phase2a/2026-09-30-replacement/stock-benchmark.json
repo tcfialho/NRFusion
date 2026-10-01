@@ -1,0 +1,1 @@
+{"warmup":50,"samples":300,"median_us":55.296,"p95_us":58.368,"p99_us":240.64,"scope":"isolated kernel GPU time; UAV ordering outside timestamp interval"}

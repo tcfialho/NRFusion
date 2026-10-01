@@ -1,0 +1,80 @@
+{
+  "schema_version": 1,
+  "kernel": "cc_vit_1d_ffn_expand_chained_fp8",
+  "backend": "nvapi_d3d12",
+  "module_sha256": "bdc0cafe89442d2fa64ab168905e5ebcfe4bb7592604d0b4b2fca2db063b7a2b",
+  "parameter_count": 1,
+  "parameter_bytes": 72,
+  "alignment": 8,
+  "shape": {
+    "width": 12,
+    "height": 24,
+    "M": 288,
+    "K": 1024,
+    "N": 4096,
+    "padded_M": 288
+  },
+  "grid": [
+    96,
+    1,
+    1
+  ],
+  "block": [
+    32,
+    4,
+    1
+  ],
+  "shared_bytes": 0,
+  "ranges": [
+    {
+      "name": "input",
+      "field_offset": 0,
+      "bytes": 294912,
+      "access": "read"
+    },
+    {
+      "name": "output",
+      "field_offset": 16,
+      "bytes": 1179648,
+      "access": "write"
+    },
+    {
+      "name": "weights",
+      "field_offset": 24,
+      "bytes": 4194304,
+      "access": "read"
+    },
+    {
+      "name": "ready",
+      "field_offset": 48,
+      "bytes": 512,
+      "access": "read"
+    },
+    {
+      "name": "done",
+      "field_offset": 56,
+      "bytes": 512,
+      "access": "write"
+    }
+  ],
+  "roles": "potential read/write roles confirmed in PTX; weights role is a candidate",
+  "range_evidence": {
+    "input": "16-row storage tiles; 1024 FP8 channels",
+    "output": "18 storage tiles of 65536 bytes for this shape",
+    "weights": "1024x4096 FP8 matrix; tiled address maximum4194303; no coefficient prefix",
+    "ready": "eight K slices per 128-row tile; 96 used bytes inside a 512-byte bank",
+    "done": "(M_tile*32+N_tile)*4; 384 used bytes inside a 512-byte bank"
+  },
+  "observed_frames": [
+    60,
+    61,
+    62,
+    63,
+    64,
+    65,
+    66,
+    67
+  ],
+  "ptx_sha256": "d489a6bd07d8941d29e80857fc44971100bd18c128c5dfa6ca4d1821e9284b7c",
+  "numerics": "E4M3 operands; FP16 MMA accumulation; cubic SiLU; FP8 output; custom replay exact across three real captures"
+}

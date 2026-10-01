@@ -1,0 +1,13 @@
+NRKCAP1
+cc_vit_1d_ffn_expand_chained_fp8
+bdc0cafe89442d2fa64ab168905e5ebcfe4bb7592604d0b4b2fca2db063b7a2b
+72
+12 24
+96 1 1
+32 4 1
+0
+input 0 294912
+output 16 1179648
+weights 24 4194304
+ready 48 512
+done 56 512

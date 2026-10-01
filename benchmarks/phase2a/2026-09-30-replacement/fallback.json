@@ -1,0 +1,16 @@
+[
+  {
+    "mode": "Stock",
+    "exit": 0,
+    "records": 6240,
+    "custom": 0,
+    "image_sha256": "b63c40f9b71bca37a38d7a6ce5345ffdc65ee50a1a75adef6bf8a1c7b1e51afc"
+  },
+  {
+    "mode": "Custom",
+    "exit": 0,
+    "records": 6240,
+    "custom": 0,
+    "image_sha256": "b63c40f9b71bca37a38d7a6ce5345ffdc65ee50a1a75adef6bf8a1c7b1e51afc"
+  }
+]
