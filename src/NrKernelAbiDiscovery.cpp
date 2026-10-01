@@ -13,6 +13,10 @@
 #include <iomanip>
 #include <mutex>
 #include <string>
+#include <charconv>
+#include <cctype>
+#include <sstream>
+#include <algorithm>
 
 namespace nrfusion::kernelprofile {
 namespace {
@@ -25,7 +29,6 @@ struct Observation {
     std::array<BufferObservation, kArgumentsLimit / 8> buffers{};
 };
 struct AbiState {
-    std::mutex mutex;
     std::string name;
     std::filesystem::path output;
     FunctionIdentity function{};
@@ -34,69 +37,96 @@ struct AbiState {
     unsigned count = 0;
     unsigned provenBytes = 0;
     std::string provenModuleHash;
+    unsigned requestedSequence = UINT32_MAX;
 };
 
-AbiState& Abi() {
-    static AbiState state;
-    return state;
+struct AbiRegistry {
+    std::mutex mutex;
+    std::vector<std::unique_ptr<AbiState>> entries;
+};
+
+AbiRegistry& Abi() {
+    static AbiRegistry registry;
+    return registry;
 }
 
 } // namespace
 
 void ConfigureAbiDiscovery() {
     ConfigureCapture();
-    auto& state = Abi();
-    std::lock_guard lock(state.mutex);
+    auto& registry = Abi();
+    std::lock_guard lock(registry.mutex);
     discoveryEnabled.store(false, std::memory_order_relaxed);
-    state.name.clear();
-    state.function = {};
-    state.image.reset();
-    state.count = 0;
-    state.provenBytes = 0;
-    state.provenModuleHash.clear();
+    registry.entries.clear();
     char name[512]{};
     wchar_t output[32768]{};
     const auto nameLength = GetEnvironmentVariableA("NRFUSION_KERNEL_ABI", name, sizeof(name));
     const auto outputLength = GetEnvironmentVariableW(L"NRFUSION_KERNEL_ABI_DIR", output, 32768);
     if (!nameLength || nameLength >= sizeof(name) || !outputLength || outputLength >= 32768) return;
-    state.name = name;
-    state.output = output;
-    std::ifstream proof(state.output / "layout-proof.txt");
-    std::string hash;
-    unsigned parameters = 0, bytes = 0;
-    if (proof >> hash >> parameters >> bytes && parameters == 1 && bytes && bytes <= kArgumentsLimit) {
-        state.provenBytes = bytes;
-        state.provenModuleHash = hash;
-        InitializePointerObservation();
+    std::istringstream selection(name);
+    std::string token;
+    std::vector<std::unique_ptr<AbiState>> configured;
+    while (std::getline(selection, token, ',')) {
+        if (configured.size() == 4 || token.empty()) return;
+        auto state = std::make_unique<AbiState>();
+        const auto separator = token.find('@');
+        state->name = token.substr(0, separator);
+        if (state->name.empty() || !std::all_of(state->name.begin(), state->name.end(),
+            [](unsigned char character) { return std::isalnum(character) || character == '_'; })) return;
+        if (separator != std::string::npos) {
+            const char* first = token.data() + separator + 1;
+            const char* last = token.data() + token.size();
+            const auto parsed = std::from_chars(first, last, state->requestedSequence);
+            if (parsed.ec != std::errc{} || parsed.ptr != last || state->requestedSequence >= 8192) return;
+        }
+        const bool multiple = std::strchr(name, ',') != nullptr;
+        state->output = multiple ? std::filesystem::path(output) / token : std::filesystem::path(output);
+        if (std::any_of(configured.begin(), configured.end(), [&state](const auto& existing) {
+            return existing->name == state->name && existing->requestedSequence == state->requestedSequence;
+        })) return;
+        std::ifstream proof(state->output / "layout-proof.txt");
+        unsigned parameters = 0, bytes = 0;
+        std::string hash;
+        if (proof >> hash >> parameters >> bytes && parameters == 1 && bytes && bytes <= kArgumentsLimit) {
+            state->provenBytes = bytes;
+            state->provenModuleHash = hash;
+            InitializePointerObservation();
+        }
+        configured.push_back(std::move(state));
     }
+    if (configured.empty() || name[nameLength - 1] == ',') return;
+    registry.entries = std::move(configured);
     discoveryEnabled.store(true, std::memory_order_relaxed);
 }
 
 ModuleImage CopyAbiModule(const void* image, std::uint32_t bytes) {
     if (!discoveryEnabled.load(std::memory_order_relaxed)) return {};
-    auto& state = Abi();
-    std::lock_guard lock(state.mutex);
-    if (state.name.empty() || !image || !bytes || bytes > 64 * 1024 * 1024) return {};
+    auto& registry = Abi();
+    std::lock_guard lock(registry.mutex);
+    if (registry.entries.empty() || !image || !bytes || bytes > 64 * 1024 * 1024) return {};
     const auto* first = static_cast<const std::uint8_t*>(image);
     return std::make_shared<const std::vector<std::uint8_t>>(first, first + bytes);
 }
 
 void SelectAbiFunction(const FunctionIdentity& identity, ModuleImage image) {
     if (!discoveryEnabled.load(std::memory_order_relaxed)) return;
-    auto& state = Abi();
-    std::lock_guard lock(state.mutex);
-    if (state.name != identity.name.data() || state.function.function || !image || identity.truncated) return;
-    state.function = identity;
-    state.image = std::move(image);
-    SelectCaptureModule(identity, state.image);
+    auto& registry = Abi();
+    std::lock_guard lock(registry.mutex);
+    if (!image || identity.truncated) return;
+    for (auto& entry : registry.entries) {
+        auto& state = *entry;
+        if (state.name != identity.name.data() || state.function.function) continue;
+        state.function = identity;
+        state.image = image;
+        SelectCaptureModule(identity, state.image);
+    }
 }
 
-void ObservePackedArguments(const LaunchRecord& record, const void* parameters) noexcept {
-    if (!discoveryEnabled.load(std::memory_order_relaxed)) return;
-    auto& state = Abi();
-    std::lock_guard lock(state.mutex);
+namespace {
+void ObserveArguments(AbiState& state, const LaunchRecord& record, const void* parameters) noexcept {
     if (record.identity.function != state.function.function || !state.image || !parameters ||
         state.count == kObservationLimit || record.parameterBytes > kArgumentsLimit) return;
+    if (state.requestedSequence != UINT32_MAX && record.sequence != state.requestedSequence) return;
     if (state.count && (record.frame == state.observations[state.count - 1].record.frame ||
         record.sequence != state.observations[0].record.sequence)) return;
     auto& observation = state.observations[state.count++];
@@ -113,10 +143,7 @@ void ObservePackedArguments(const LaunchRecord& record, const void* parameters) 
     }
 }
 
-bool FlushAbiDiscovery() {
-    if (!discoveryEnabled.load(std::memory_order_relaxed)) return true;
-    auto& state = Abi();
-    std::lock_guard lock(state.mutex);
+bool WriteAbiDiscovery(AbiState& state) {
     if (state.name.empty()) return true;
     if (!state.image || !state.count) return false;
     std::filesystem::create_directories(state.output);
@@ -126,6 +153,8 @@ bool FlushAbiDiscovery() {
     std::ofstream metadata(state.output / "metadata.json");
     metadata << "{\n  \"schema_version\": 1,\n  \"kind\": \"host argument bytes and kernel image; no device buffers\",\n"
         << "  \"kernel\": " << std::quoted(state.name) << ",\n"
+        << "  \"requested_sequence\": " << (state.requestedSequence == UINT32_MAX
+            ? "null" : std::to_string(state.requestedSequence)) << ",\n"
         << "  \"backend\": \"nvapi_d3d12\",\n"
         << "  \"module_sha256\": " << std::quoted(state.function.moduleHash.data()) << ",\n"
         << "  \"image_bytes\": " << state.image->size() << ",\n"
@@ -170,6 +199,23 @@ bool FlushAbiDiscovery() {
         if (!pointers) return false;
     }
     return static_cast<bool>(metadata);
+}
+}
+
+void ObservePackedArguments(const LaunchRecord& record, const void* parameters) noexcept {
+    if (!discoveryEnabled.load(std::memory_order_relaxed)) return;
+    auto& registry = Abi();
+    std::lock_guard lock(registry.mutex);
+    for (auto& state : registry.entries) ObserveArguments(*state, record, parameters);
+}
+
+bool FlushAbiDiscovery() {
+    if (!discoveryEnabled.load(std::memory_order_relaxed)) return true;
+    auto& registry = Abi();
+    std::lock_guard lock(registry.mutex);
+    for (auto& state : registry.entries)
+        if (!WriteAbiDiscovery(*state)) return false;
+    return true;
 }
 
 } // namespace nrfusion::kernelprofile
