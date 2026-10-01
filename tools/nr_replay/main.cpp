@@ -1,5 +1,6 @@
 #include "Replay.hpp"
 #include "ReplayChain.hpp"
+#include "ReplaySwin.hpp"
 #include <iostream>
 
 int main(int argc, char** argv) {
@@ -8,6 +9,12 @@ int main(int argc, char** argv) {
         return 2;
     }
     try {
+        if (std::filesystem::exists(std::filesystem::path(argv[1]) / "swin.json")) {
+            const auto packet = nrreplay::LoadSwinPacket(argv[1]);
+            const bool exact = nrreplay::ReplaySwin(packet, argv[2], argc == 4 ? argv[3] : "");
+            std::cout << "swin_bit_identical=" << exact << '\n';
+            return exact ? 0 : 1;
+        }
         if (std::filesystem::exists(std::filesystem::path(argv[1]) / "chain.json")) {
             if (argc != 3) throw std::runtime_error("Custom image is not qualified for chain replay");
             wchar_t mode[4]{};
