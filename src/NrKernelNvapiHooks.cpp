@@ -8,12 +8,14 @@
 #include "NrKernelProfileD3D12.hpp"
 #include "NrKernelAbiDiscovery.hpp"
 #include "NrKernelCapture.hpp"
+#include "NrKernelReplacement.hpp"
 #include "nrfusion/Sha256.hpp"
 
 #include <atomic>
 #include <cstring>
 #include <mutex>
 #include <unordered_map>
+#include <vector>
 
 namespace nrfusion::kernelprofile {
 namespace {
@@ -79,7 +81,12 @@ NvAPI_Status __cdecl CreateFunction(ID3D12Device* device, NVDX_ObjectHandle modu
             SelectAbiFunction(identity, found->second.image);
         } else identity.generation = ++state.generation;
         state.functions[*function] = identity;
-
+        lock.unlock();
+        using Query = void*(__cdecl*)(unsigned);
+        const auto query = reinterpret_cast<Query>(GetProcAddress(GetModuleHandleW(L"nvapi64.dll"), "nvapi_QueryInterface"));
+        if (query) { query(0x41c65285); query(0xdf295ea6); }
+        PrepareReplacement(device, identity, state.createModule.load(), state.createFunction.load(),
+                           state.destroyModule.load());
     }
     return result;
 }
@@ -90,6 +97,7 @@ NvAPI_Status __cdecl DestroyFunction(ID3D12Device* device, NVDX_ObjectHandle fun
     if (result == NVAPI_OK) {
         std::lock_guard lock(state.mutex);
         state.functions.erase(function);
+        ForgetReplacement(device, function, state.destroyFunction.load(), state.destroyModule.load());
     }
     return result;
 }
@@ -102,6 +110,7 @@ NvAPI_Status __cdecl DestroyModule(ID3D12Device* device, NVDX_ObjectHandle modul
         state.modules.erase(module);
         for (auto entry = state.functions.begin(); entry != state.functions.end();) {
             if (entry->second.module == reinterpret_cast<std::uintptr_t>(module)) {
+                ForgetReplacement(device, entry->first, state.destroyFunction.load(), state.destroyModule.load());
                 entry = state.functions.erase(entry);
             }
             else ++entry;
@@ -113,6 +122,8 @@ NvAPI_Status __cdecl DestroyModule(ID3D12Device* device, NVDX_ObjectHandle modul
 NvAPI_Status __cdecl Launch(ID3D12GraphicsCommandList* commands,
                             const NVAPI_CU_KERNEL_LAUNCH_PARAMS* kernels, NvU32 count) {
     auto& state = Nvapi();
+    NVAPI_CU_KERNEL_LAUNCH_PARAMS selected{};
+    const bool custom = count == 1 && kernels && SelectReplacement(kernels[0], selected);
     const bool enabled = state.enabled.load(std::memory_order_relaxed);
     const unsigned query = enabled ? BeginChain(commands, count) : UINT32_MAX;
     if (query != UINT32_MAX && kernels) {
@@ -129,13 +140,14 @@ NvAPI_Status __cdecl Launch(ID3D12GraphicsCommandList* commands,
             record.sharedBytes = kernel.dynSharedMemBytes;
             record.parameterBytes = kernel.paramSize;
             record.query = query;
+            record.custom = custom;
             record.chainCount = count;
             record.chainIndex = index;
             ObserveLaunch(query, record, kernel.pParams);
         }
     }
     if (query != UINT32_MAX) StartChainTimer(commands, query);
-    const auto result = state.launch.load()(commands, kernels, count);
+    const auto result = state.launch.load()(commands, custom ? &selected : kernels, count);
     if (query != UINT32_MAX) EndChain(commands, query, result == NVAPI_OK);
     CaptureAfter(commands, result == NVAPI_OK);
     return result;
@@ -154,6 +166,35 @@ void* Wrap(std::atomic<Function>& target, void* original, Function replacement) 
 void EnableNvapiObservation(bool enabled) noexcept {
     if (enabled) ConfigureAbiDiscovery();
     Nvapi().enabled.store(enabled, std::memory_order_relaxed);
+}
+
+void RetireNvapiDevice(ID3D12Device* device) {
+    auto& state = Nvapi();
+    if (!state.enabled.load()) return;
+    DeactivateReplacements(device);
+    std::lock_guard lock(state.mutex);
+    for (auto& [function, identity] : state.functions) {
+        if (identity.device != reinterpret_cast<std::uintptr_t>(device)) continue;
+        identity.generation = 0;
+    }
+}
+
+void RefreshNvapiDevice(ID3D12Device* device) {
+    auto& state = Nvapi();
+    if (!state.enabled.load()) return;
+    std::vector<FunctionIdentity> identities;
+    {
+        std::lock_guard lock(state.mutex);
+        const auto generation = ++state.generation;
+        for (auto& [function, identity] : state.functions) {
+            if (identity.device != reinterpret_cast<std::uintptr_t>(device)) continue;
+            identity.generation = generation;
+            identities.push_back(identity);
+        }
+    }
+    for (const auto& identity : identities)
+        PrepareReplacement(device, identity, state.createModule.load(), state.createFunction.load(),
+                           state.destroyModule.load());
 }
 
 bool NvapiObservationEnabled() noexcept {

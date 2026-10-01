@@ -20,10 +20,10 @@ target_sources(nrfusion_core PRIVATE src/NrKernelNvapiHooks.cpp src/NrKernelProf
     src/NrKernelProfileExport.cpp src/NrKernelProfileStatistics.cpp
     src/NrKernelRuntimeIdentity.cpp src/NrKernelAbiDiscovery.cpp src/NrKernelPointerObservation.cpp
     src/NrKernelResourceObservation.cpp src/NrKernelResourceTargets.c
-    src/NrKernelCapture.cpp src/NrKernelCaptureExport.cpp)
+    src/NrKernelCapture.cpp src/NrKernelCaptureExport.cpp src/NrKernelReplacement.cpp src/NrKernelArchitecture.cpp)
 set_property(SOURCE src/NrKernelResourceObservation.cpp APPEND
     PROPERTY INCLUDE_DIRECTORIES "${nrfusion_minhook_source_SOURCE_DIR}/include")
-set_property(SOURCE src/NrKernelNvapiHooks.cpp APPEND
+set_property(SOURCE src/NrKernelNvapiHooks.cpp src/NrKernelReplacement.cpp APPEND
     PROPERTY INCLUDE_DIRECTORIES "${nrfusion_nvapi_source_SOURCE_DIR}")
 add_library(nrfusion_overlay_cursor STATIC src/RuntimeOverlayCursor.cpp)
 target_include_directories(nrfusion_overlay_cursor PRIVATE include src)

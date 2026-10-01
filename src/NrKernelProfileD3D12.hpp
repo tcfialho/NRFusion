@@ -28,10 +28,13 @@ struct LaunchRecord {
     std::uint64_t frame = 0;
     std::uint64_t sequence = 0;
     bool successful = false;
+    bool custom = false;
 };
 
 void EnableNvapiObservation(bool enabled) noexcept;
 bool NvapiObservationEnabled() noexcept;
+void RefreshNvapiDevice(ID3D12Device* device);
+void RetireNvapiDevice(ID3D12Device* device);
 void* InterceptNvapiInterface(std::uint32_t id, void* original) noexcept;
 bool BeginFrame(ID3D12Device* device, std::uint64_t frame, const char* csvPath);
 void BeginNeuralPass(ID3D12GraphicsCommandList* commands) noexcept;

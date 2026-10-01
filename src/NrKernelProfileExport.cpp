@@ -47,7 +47,7 @@ bool WriteFrame(const char* path, const LaunchRecord* records, std::size_t count
         state.csv << "schema,frame,sequence,backend,function_identity,module_identity,generation,"
             "device_identity,command_list_identity,queue_identity,name,name_truncated,"
             "grid_x,grid_y,grid_z,block_x,block_y,block_z,shared_bytes,param_bytes,"
-            "chain_id,chain_count,chain_index,gpu_ms,chain_gpu_ms,success,droppedSamples,module_sha256\n";
+            "chain_id,chain_count,chain_index,gpu_ms,chain_gpu_ms,success,droppedSamples,module_sha256,custom\n";
     }
     auto& csv = state.csv;
     csv << std::setprecision(12);
@@ -69,7 +69,7 @@ bool WriteFrame(const char* path, const LaunchRecord* records, std::size_t count
         if (valid && record.chainCount == 1) csv << ms;
         csv << ',';
         if (valid) csv << ms;
-        csv << ',' << record.successful << ',' << dropped << ',' << identity.moduleHash.data() << '\n';
+        csv << ',' << record.successful << ',' << dropped << ',' << identity.moduleHash.data() << ',' << record.custom << '\n';
     }
     csv.flush();
     return static_cast<bool>(csv);
