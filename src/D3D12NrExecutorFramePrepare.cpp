@@ -103,12 +103,13 @@ bool D3D12NrExecutor::PrepareFrameResources(
         scratch_.Get(D3D12NrScratchKind::ColorCopy);
     ID3D12Resource* const hdrCopy =
         scratch_.Get(D3D12NrScratchKind::HdrCopy);
+    const bool preserveOriginal = context.acrossRr || context.targetSupportsUav || !codec_.CanSkipKeep();
     D3D12NrCodecResources encodeResources{};
     encodeResources.source = context.activeTarget;
     encodeResources.previousEdit =
         request.composition.useGameExposure ? resources.exposure : nullptr;
     encodeResources.target = colorCopy;
-    encodeResources.keep = hdrCopy;
+    encodeResources.keep = preserveOriginal ? hdrCopy : nullptr;
     if (!codec_.Dispatch(
             cmd, EncodeConstants(request, context.plan.activeColor.width,
                                  context.plan.activeColor.height),
@@ -117,8 +118,9 @@ bool D3D12NrExecutor::PrepareFrameResources(
     if (!scratch_.Transition(
             cmd, D3D12NrScratchKind::ColorCopy,
             D3D12_RESOURCE_STATE_UNORDERED_ACCESS,
-            D3D12_RESOURCE_STATE_NON_PIXEL_SHADER_RESOURCE) ||
-        !scratch_.Transition(
+            D3D12_RESOURCE_STATE_NON_PIXEL_SHADER_RESOURCE))
+        return false;
+    if (preserveOriginal && !scratch_.Transition(
             cmd, D3D12NrScratchKind::HdrCopy,
             D3D12_RESOURCE_STATE_UNORDERED_ACCESS,
             D3D12_RESOURCE_STATE_NON_PIXEL_SHADER_RESOURCE))

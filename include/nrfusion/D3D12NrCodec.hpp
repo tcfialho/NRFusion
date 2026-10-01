@@ -98,6 +98,7 @@ public:
                           const D3D12NrCodecResources& resources) noexcept;
     void Shutdown() noexcept;
     D3D12NrCodecAccounting Accounting() const noexcept;
+    bool CanSkipKeep() const noexcept { return encodeNoKeepPipelineState_ != nullptr; }
 
     bool Ready() const noexcept {
         return device_ != nullptr && rootSignature_ != nullptr &&
@@ -135,6 +136,7 @@ private:
     ID3D12Device* device_ = nullptr;
     ID3D12RootSignature* rootSignature_ = nullptr;
     ID3D12PipelineState* pipelineState_ = nullptr;
+    ID3D12PipelineState* encodeNoKeepPipelineState_ = nullptr;
     ID3D12PipelineState* residualPipelineState_ = nullptr;
     ID3D12DescriptorHeap* descriptorHeap_ = nullptr;
     std::array<Slot, kSlotCount> slots_{};

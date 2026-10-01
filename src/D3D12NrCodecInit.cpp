@@ -1,6 +1,7 @@
 #include "nrfusion/D3D12NrCodec.hpp"
 
 #include "DlssNr_Shader.h"
+#include "DlssNr_NoKeep.h"
 #include "dlssnr_residual_Shader.h"
 
 namespace nrfusion {
@@ -91,9 +92,17 @@ bool D3D12NrCodec::CreatePipelines() noexcept {
 
     desc.CS.pShaderBytecode = dlssnr_residual_cso;
     desc.CS.BytecodeLength = sizeof(dlssnr_residual_cso);
-    return SUCCEEDED(device_->CreateComputePipelineState(
-        &desc, IID_PPV_ARGS(&residualPipelineState_))) &&
-        residualPipelineState_ != nullptr;
+    if (FAILED(device_->CreateComputePipelineState(
+        &desc, IID_PPV_ARGS(&residualPipelineState_))) || !residualPipelineState_) return false;
+    desc.CS.pShaderBytecode = DlssNr_no_keep_cso;
+    desc.CS.BytecodeLength = sizeof(DlssNr_no_keep_cso);
+    const HRESULT optionalCreated = device_->CreateComputePipelineState(
+        &desc, IID_PPV_ARGS(&encodeNoKeepPipelineState_));
+    if (FAILED(optionalCreated) && encodeNoKeepPipelineState_) {
+        encodeNoKeepPipelineState_->Release();
+        encodeNoKeepPipelineState_ = nullptr;
+    }
+    return true;
 }
 
 bool D3D12NrCodec::CreateSlots() noexcept {
@@ -158,11 +167,13 @@ void D3D12NrCodec::Shutdown() noexcept {
     }
     if (descriptorHeap_ != nullptr) descriptorHeap_->Release();
     if (residualPipelineState_ != nullptr) residualPipelineState_->Release();
+    if (encodeNoKeepPipelineState_ != nullptr) encodeNoKeepPipelineState_->Release();
     if (pipelineState_ != nullptr) pipelineState_->Release();
     if (rootSignature_ != nullptr) rootSignature_->Release();
     if (device_ != nullptr) device_->Release();
     descriptorHeap_ = nullptr;
     residualPipelineState_ = nullptr;
+    encodeNoKeepPipelineState_ = nullptr;
     pipelineState_ = nullptr;
     rootSignature_ = nullptr;
     device_ = nullptr;

@@ -10,6 +10,14 @@ from pathlib import Path
 EXPECTED_FXC_BLOB = "987eb4cae3c343ab024a4b693dbb73660360dbc4"
 
 VARIANTS = {
+    "no-keep": {
+        "source_blob": "4a6102820f736e9349ffed370259d094f2a7f4ae",
+        "cso_blob": "8bbe804744e36ce81caa6ab85a66330f8849addf",
+        "header_blob": "23f54a819a5503b078e99f2d3a05521eea1e6661",
+        "cso_name": "DlssNr_NoKeep.cso",
+        "header_name": "DlssNr_NoKeep.h",
+        "symbol": "DlssNr_no_keep_cso",
+    },
     "main": {
         "source_blob": "4a6102820f736e9349ffed370259d094f2a7f4ae",
         "cso_blob": "d6eaab373d6f07142af5c283c1acc4b49edba351",
@@ -99,9 +107,16 @@ def main() -> int:
     args.output_dir.mkdir(parents=True, exist_ok=True)
     cso_path = args.output_dir / profile["cso_name"]
     header_path = args.output_dir / profile["header_name"]
+    compile_source = args.source
+    if args.variant == "no-keep":
+        statement = b"gKeep[id.xy] = float4(frame, source.a);"
+        if source.count(statement) != 1:
+            raise RuntimeError("Expected unique encode keep store was not found")
+        compile_source = args.output_dir / "DlssNr_NoKeep.hlsl"
+        compile_source.write_bytes(source.replace(statement, b""))
     subprocess.run([
         str(fxc), "-T", "cs_5_0", "-E", "CSMain", "-O3",
-        str(args.source), "-Fo", str(cso_path),
+        str(compile_source), "-Fo", str(cso_path),
     ], check=True)
 
     cso = cso_path.read_bytes()

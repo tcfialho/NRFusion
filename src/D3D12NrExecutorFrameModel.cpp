@@ -155,9 +155,10 @@ bool D3D12NrExecutor::RunFrameModel(
                        D3D12_RESOURCE_STATE_UNORDERED_ACCESS)) {
             return false;
         }
-    } else if (!scratch_.Transition(
+    } else if (scratch_.State(D3D12NrScratchKind::HdrCopy) != D3D12_RESOURCE_STATE_UNORDERED_ACCESS &&
+               !scratch_.Transition(
                    cmd, D3D12NrScratchKind::HdrCopy,
-                   D3D12_RESOURCE_STATE_NON_PIXEL_SHADER_RESOURCE,
+                   scratch_.State(D3D12NrScratchKind::HdrCopy),
                    D3D12_RESOURCE_STATE_UNORDERED_ACCESS)) {
         return false;
     }

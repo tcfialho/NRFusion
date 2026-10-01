@@ -12,6 +12,8 @@ set(NRFUSION_DLSSNR_RESIDUAL_SOURCE
 
 set(NRFUSION_DLSSNR_SHADER_CSO "${NRFUSION_DLSSNR_GENERATED_DIR}/DlssNr_Shader.cso")
 set(NRFUSION_DLSSNR_SHADER_HEADER "${NRFUSION_DLSSNR_GENERATED_DIR}/DlssNr_Shader.h")
+set(NRFUSION_DLSSNR_NO_KEEP_CSO "${NRFUSION_DLSSNR_GENERATED_DIR}/DlssNr_NoKeep.cso")
+set(NRFUSION_DLSSNR_NO_KEEP_HEADER "${NRFUSION_DLSSNR_GENERATED_DIR}/DlssNr_NoKeep.h")
 set(NRFUSION_DLSSNR_RESIDUAL_CSO
     "${NRFUSION_DLSSNR_GENERATED_DIR}/dlssnr_residual_Shader.cso")
 set(NRFUSION_DLSSNR_RESIDUAL_HEADER
@@ -21,11 +23,18 @@ add_custom_command(
     OUTPUT
         "${NRFUSION_DLSSNR_SHADER_CSO}"
         "${NRFUSION_DLSSNR_SHADER_HEADER}"
+        "${NRFUSION_DLSSNR_NO_KEEP_CSO}"
+        "${NRFUSION_DLSSNR_NO_KEEP_HEADER}"
         "${NRFUSION_DLSSNR_RESIDUAL_CSO}"
         "${NRFUSION_DLSSNR_RESIDUAL_HEADER}"
     COMMAND ${CMAKE_COMMAND} -E make_directory "${NRFUSION_DLSSNR_GENERATED_DIR}"
     COMMAND "${Python3_EXECUTABLE}" "${CMAKE_CURRENT_SOURCE_DIR}/tools/generate_dlssnr_shader.py"
             --variant main
+            --source "${NRFUSION_DLSSNR_SHADER_SOURCE}"
+            --output-dir "${NRFUSION_DLSSNR_GENERATED_DIR}"
+            --fxc "${NRFUSION_FXC_EXECUTABLE}"
+    COMMAND "${Python3_EXECUTABLE}" "${CMAKE_CURRENT_SOURCE_DIR}/tools/generate_dlssnr_shader.py"
+            --variant no-keep
             --source "${NRFUSION_DLSSNR_SHADER_SOURCE}"
             --output-dir "${NRFUSION_DLSSNR_GENERATED_DIR}"
             --fxc "${NRFUSION_FXC_EXECUTABLE}"
@@ -45,5 +54,7 @@ add_custom_target(nrfusion_dlssnr_shader_codegen
     DEPENDS
         "${NRFUSION_DLSSNR_SHADER_CSO}"
         "${NRFUSION_DLSSNR_SHADER_HEADER}"
+        "${NRFUSION_DLSSNR_NO_KEEP_CSO}"
+        "${NRFUSION_DLSSNR_NO_KEEP_HEADER}"
         "${NRFUSION_DLSSNR_RESIDUAL_CSO}"
         "${NRFUSION_DLSSNR_RESIDUAL_HEADER}")
