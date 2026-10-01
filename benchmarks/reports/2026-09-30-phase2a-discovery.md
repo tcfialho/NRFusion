@@ -1,6 +1,18 @@
 # NRFusion — Fase 2A: evidence and handoff
 
-Runtime pipeline validated through discovery, ABI, real capture, stock replay and one exact custom live replacement. Phase 2A gates are satisfied on the current local branch. No push or installer publication performed.
+Selected-kernel runtime pipeline validated through discovery, ABI, real capture, stock replay and one exact custom live replacement. Hot-family semantic ABI and hot-chain capture/replay qualification remain incomplete for the Phase 2B prerequisites. No push or installer publication performed.
+
+## Phase 2B prerequisite audit — 2026-10-01
+
+Phase 2B is blocked before kernel optimization. The selected FFN expansion contract does not qualify the leading families or adjacent kernels for fusion. `src/NrKernelCapture.cpp` and `tools/nr_replay/ReplayPacket.cpp` accept only that qualified expansion name/module/shape; they cannot capture or replay a complete hot chain. Launch adjacency does not prove producer/consumer dependencies.
+
+Fresh official Release builds passed for proxy, testbed, replay and exact reference; focused CTests passed 3/3. Six selected stock/custom replays passed bit equality. Live lifecycle A/B passed with 749 custom launches, smaller-shape stock fallback and identical final image. This verifies the selected infrastructure, not temporal Exactness of an optimized sequence.
+
+Two fresh stock traces cover 480 measured frames, 156 launches/frame, zero drops and 100% named/module-hashed native single-kernel submission time. Leading family: `cc_tinlayout_fused_swin_8h_256_8_chained_fp8`, 1.159 ms/frame, 13.47% of observed kernel time. Leading assessed adjacent sequence: projection → FFN expansion → FFN contraction, 1.004 ms/frame, 11.67%; its dependencies remain unconfirmed. Family and sequence costs overlap and must not be summed. The Phase 2A and current rankings are separate snapshots, not a performance BEFORE/AFTER.
+
+Stock NR profiling-OFF run p50 values were 8.029 and 8.066 ms; profiling-ON run p50 was 9.175 ms in both runs, approximately 14.01% profiling overhead. Per-run p50/p95/p99 are archived. Complete-frame GPU time, CPU hook overhead and MFG GPU baseline were not measured; NGX evaluation GPU time and serialized frame wall time do not substitute for them. No optimization or performance gain is claimed; stock remains selected and W4A8 remains rejected.
+
+Evidence, rankings, raw traces, replay results, artifact hashes and required next actions: `benchmarks/phase2b/2026-10-01-preflight/summary.json`. Required Phase 2A repair: resolve semantic ABI/ranges/lifetimes for the chosen hot family/chain, capture and replay the complete chain, prove dependency and rounding boundaries, then qualify separate replacements before fusion. This repair was not implemented by the prerequisite audit.
 
 ## Baseline
 
