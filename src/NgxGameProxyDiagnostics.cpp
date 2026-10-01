@@ -7,6 +7,7 @@
 
 #include "NgxGameProxyDiagnostics.hpp"
 #include "nrfusion/NrDiagnosticsApi.hpp"
+#include "NrKernelProfileD3D12.hpp"
 
 #include <atomic>
 #include <cstdint>
@@ -71,6 +72,7 @@ void BeginDiagnosticPass(ID3D12GraphicsCommandList* commands) noexcept {
     commands->EndQuery(state.queries.Get(), D3D12_QUERY_TYPE_TIMESTAMP, 0);
     state.passOpen = true;
     state.result.passes = 1;
+    nrfusion::kernelprofile::BeginNeuralPass(commands);
 }
 
 void EndDiagnosticPass(
@@ -85,15 +87,17 @@ void EndDiagnosticPass(
         state.readback.Get(), 0);
     state.passOpen = false;
     state.result.successfulPasses = successful ? 1 : 0;
+    nrfusion::kernelprofile::EndNeuralPass();
 }
 
 } // namespace nrfusion::ngxproxy
 extern "C" __declspec(dllexport) int NRFusion_BeginNrDiagnosticFrame(
-    ID3D12Device* device, std::uint64_t frame, int profile, const char*) {
-    if (!device || profile != 0) return 0;
+    ID3D12Device* device, std::uint64_t frame, int profile, const char* csvPath) {
+    if (!device) return 0;
     auto& state = State();
     std::lock_guard guard(state.mutex);
     if (state.active || !EnsureResources(state, device)) return 0;
+    if (profile && !nrfusion::kernelprofile::BeginFrame(device, frame, csvPath)) return 0;
     state.result = {};
     state.result.frame = frame;
     state.active = true;
@@ -122,6 +126,8 @@ extern "C" __declspec(dllexport) int NRFusion_ReadNrDiagnosticFrame(
     }
     D3D12_RANGE written{0, 0};
     state.readback->Unmap(0, &written);
+    if (!nrfusion::kernelprofile::RetireFrame(queue, fence, completion,
+            state.result.kernelLaunches, state.result.chainCalls)) return 0;
     *output = state.result;
     state.active = false;
     g_active.store(false, std::memory_order_relaxed);

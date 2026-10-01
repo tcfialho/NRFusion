@@ -13,6 +13,7 @@
 #include "nrfusion/RuntimeOverlayWorker.hpp"
 #include "nrfusion/StreamlineDlssgHook.hpp"
 #include "nrfusion/Logger.hpp"
+#include "nrfusion/NrKernelProfile.hpp"
 
 #include <atomic>
 
@@ -35,6 +36,8 @@ extern "C" __declspec(dllexport) void NRFusion_EnsureRuntime() {
     PinProxyModule();
     nrfusion::Logger::Instance().Initialize(nullptr);
     NRF_LOG_INFO("Proxy", "NRFusion_EnsureRuntime: starting watchers and runtime");
+    if (nrfusion::NrKernelProfiler::Instance().StartDriverDiscovery())
+        NRF_LOG_INFO("KernelDiscovery", "NVAPI interface observation enabled");
     nrfusion::StreamlineDlssgHook::Instance().Install();
     nrfusion::MfgModuleWatcher::Instance().Start();
     nrfusion::StartCaptureD3D11Runtime();
@@ -43,6 +46,15 @@ extern "C" __declspec(dllexport) void NRFusion_EnsureRuntime() {
 
 extern "C" __declspec(dllexport) void NRFusion_ShutdownRuntime() {
     if (!g_runtimeStarted.exchange(false)) return;
+    auto& profiler = nrfusion::NrKernelProfiler::Instance();
+    profiler.StopDriverDiscovery();
+    const auto report = profiler.Report();
+    if (report.frames)
+        NRF_LOG_INFO("KernelDiscovery", "%s", profiler.FormatReport().c_str());
+    for (const auto& entry : profiler.DriverInterfaces())
+        NRF_LOG_INFO("KernelDiscovery", "interface=0x%08x function=0x%llx observations=%llu",
+            entry.interfaceId, static_cast<unsigned long long>(entry.functionId),
+            static_cast<unsigned long long>(entry.observations));
     nrfusion::RuntimeOverlayWorker::Instance().Stop(false);
     nrfusion::RuntimeOverlay::Instance().Shutdown();
     nrfusion::StopCaptureD3D11Runtime(false);

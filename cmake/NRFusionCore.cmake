@@ -35,6 +35,8 @@ add_library(nrfusion_core STATIC
     src/TemporalHistoryRegistry.cpp
     src/PipelinedExecutorState.cpp
     src/NrKernelProfile.cpp
+    src/NrKernelProfileReport.cpp
+    src/NrKernelDriverDiscovery.cpp
     src/GameProbe.cpp
     src/GameProbeInspect.cpp
     src/GameProbeDetection.cpp

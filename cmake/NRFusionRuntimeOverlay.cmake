@@ -10,12 +10,23 @@ FetchContent_Declare(nrfusion_minhook_source
     URL_HASH SHA256=172708123daa0c98d20d3a980b16a50be14af243dc95dee6f79c24193ad010e4
     DOWNLOAD_EXTRACT_TIMESTAMP TRUE)
 FetchContent_MakeAvailable(nrfusion_minhook_source)
+FetchContent_Declare(nrfusion_nvapi_source
+    URL https://codeload.github.com/NVIDIA/nvapi/zip/70d337db9186e968eab622f7e786de7e437faf3d
+    URL_HASH SHA256=fa979b5d8d5115a106a24d331806c9b0a573035043fec441a6579ccfc2b5669b
+    SOURCE_SUBDIR nrfusion_headers_only
+    DOWNLOAD_EXTRACT_TIMESTAMP TRUE)
+FetchContent_MakeAvailable(nrfusion_nvapi_source)
+target_sources(nrfusion_core PRIVATE src/NrKernelNvapiHooks.cpp src/NrKernelProfileD3D12.cpp
+    src/NrKernelProfileExport.cpp src/NrKernelProfileStatistics.cpp src/NrKernelRuntimeIdentity.cpp)
+set_property(SOURCE src/NrKernelNvapiHooks.cpp APPEND
+    PROPERTY INCLUDE_DIRECTORIES "${nrfusion_nvapi_source_SOURCE_DIR}")
 add_library(nrfusion_overlay_cursor STATIC src/RuntimeOverlayCursor.cpp)
 target_include_directories(nrfusion_overlay_cursor PRIVATE include src)
 target_link_libraries(nrfusion_overlay_cursor PRIVATE minhook user32)
-target_link_libraries(nrfusion_core PRIVATE nrfusion_overlay_cursor)
+target_link_libraries(nrfusion_core PRIVATE nrfusion_overlay_cursor minhook)
 target_sources(nrfusion_core PRIVATE src/StreamlineDlssgOptions.cpp)
-set_property(SOURCE src/StreamlineDlssgHook.cpp src/StreamlineDlssgOptions.cpp APPEND
+set_property(SOURCE src/StreamlineDlssgHook.cpp src/StreamlineDlssgOptions.cpp
+    src/NrKernelDriverDiscovery.cpp APPEND
     PROPERTY INCLUDE_DIRECTORIES "${nrfusion_minhook_source_SOURCE_DIR}/include"
                                 "${nrfusion_streamline_source_SOURCE_DIR}/include")
 FetchContent_Declare(nrfusion_imgui_source

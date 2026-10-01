@@ -28,3 +28,9 @@ NRFusion's public source/developer distribution does not include NVIDIA's propri
   The required attribution and MIT text are preserved in `licenses/RenoDX_ATTRIBUTION.txt`.
 - Generated `DlssNr_Shader.cso` and `DlssNr_Shader.h` are not committed. The generator verifies
   their locked Git blob IDs before accepting them.
+# NVAPI SDK headers
+
+NRFusion uses the NVIDIA NVAPI SDK headers at commit `70d337db9186e968eab622f7e786de7e437faf3d`.
+They declare the driver interfaces observed by the optional neural kernel profiler.
+The driver DLL remains supplied by NVIDIA; NRFusion does not distribute an NVAPI static library.
+SDK header license: `licenses/NVAPI_LICENSE.txt` (MIT).
