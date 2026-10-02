@@ -2,6 +2,7 @@
 
 #include "nrfusion/FrameContract.hpp"
 
+#include <dxgiformat.h>
 #include <cstdint>
 
 namespace nrfusion {
@@ -12,6 +13,7 @@ enum class D3D12GuideRole : std::uint8_t {
 };
 
 enum class D3D12TypelessGuideFamily : std::uint8_t {
+    Unknown = 0,
     R32,
     R16,
     R24G8,
@@ -31,5 +33,8 @@ ResourceFormat NormalizeD3D12TypelessGuideFormat(
 
 bool CanUseDirectD3D12Guide(bool runtimeQualified, D3D12GuideRole role,
                            D3D12TypelessGuideFamily family, Resolution surface) noexcept;
+
+D3D12TypelessGuideFamily ClassifyD3D12GuideFormat(DXGI_FORMAT format) noexcept;
+bool IsDirectD3D12GuideCandidate(D3D12GuideRole role, DXGI_FORMAT format) noexcept;
 
 } // namespace nrfusion
