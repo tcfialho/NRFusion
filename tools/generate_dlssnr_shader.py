@@ -18,6 +18,14 @@ VARIANTS = {
         "header_name": "DlssNr_NoKeep.h",
         "symbol": "DlssNr_no_keep_cso",
     },
+    "resolve-in-place": {
+        "source_blob": "4a6102820f736e9349ffed370259d094f2a7f4ae",
+        "cso_blob": "9391f936b80ce6c03240ce58c5693cf77312f6d9",
+        "header_blob": "cd55850763ded67dab860524c545b8e376adf039",
+        "cso_name": "DlssNr_ResolveInPlace.cso",
+        "header_name": "DlssNr_ResolveInPlace.h",
+        "symbol": "DlssNr_resolve_in_place_cso",
+    },
     "main": {
         "source_blob": "4a6102820f736e9349ffed370259d094f2a7f4ae",
         "cso_blob": "d6eaab373d6f07142af5c283c1acc4b49edba351",
@@ -33,6 +41,14 @@ VARIANTS = {
         "cso_name": "dlssnr_residual_Shader.cso",
         "header_name": "dlssnr_residual_Shader.h",
         "symbol": "dlssnr_residual_cso",
+    },
+    "residual-in-place": {
+        "source_blob": "1aa829e15bd849be6b38e3f9a4265d0405f444be",
+        "cso_blob": "e2c9978578eda151f5329ba15cc3ef87f3a995d5",
+        "header_blob": "4bd8deb98373c5c8024964c2fe65bced8c438486",
+        "cso_name": "DlssNr_ResidualInPlace.cso",
+        "header_name": "DlssNr_ResidualInPlace.h",
+        "symbol": "dlssnr_residual_in_place_cso",
     },
 }
 
@@ -114,6 +130,33 @@ def main() -> int:
             raise RuntimeError("Expected unique encode keep store was not found")
         compile_source = args.output_dir / "DlssNr_NoKeep.hlsl"
         compile_source.write_bytes(source.replace(statement, b""))
+    elif args.variant == "resolve-in-place":
+        old_stmt_crlf = (
+            b"    float4 originalSample = gCompareMode == 1 ? gOriginal.SampleLevel(gLinear, cmpUv, 0)\r\n"
+            b"                                              : gOriginal.Load(int3(id.xy, 0));"
+        )
+        old_stmt_lf = (
+            b"    float4 originalSample = gCompareMode == 1 ? gOriginal.SampleLevel(gLinear, cmpUv, 0)\n"
+            b"                                              : gOriginal.Load(int3(id.xy, 0));"
+        )
+        new_stmt = b"    float4 originalSample = gTarget[id.xy];"
+        if old_stmt_crlf in source:
+            source_mod = source.replace(old_stmt_crlf, new_stmt)
+        elif old_stmt_lf in source:
+            source_mod = source.replace(old_stmt_lf, new_stmt)
+        else:
+            raise RuntimeError("Expected unique Resolve original sample statement was not found")
+        compile_source = args.output_dir / "DlssNr_ResolveInPlace.hlsl"
+        compile_source.write_bytes(source_mod)
+    elif args.variant == "residual-in-place":
+        old_stmt = b"        float4 base  = gSource.Load(int3(id.xy, 0));"
+        new_stmt = b"        float4 base  = gTarget[id.xy];"
+        if old_stmt not in source:
+            raise RuntimeError("Expected unique residual load statement was not found")
+        source_mod = source.replace(old_stmt, new_stmt)
+        source_mod = source_mod.replace(b"    gTarget[id.xy] = gSource.Load(int3(id.xy, 0));", b"    /* in-place no-op */")
+        compile_source = args.output_dir / "DlssNr_ResidualInPlace.hlsl"
+        compile_source.write_bytes(source_mod)
     subprocess.run([
         str(fxc), "-T", "cs_5_0", "-E", "CSMain", "-O3",
         str(compile_source), "-Fo", str(cso_path),

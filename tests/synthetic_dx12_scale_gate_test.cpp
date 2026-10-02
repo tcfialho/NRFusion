@@ -270,10 +270,10 @@ int main() {
         !RunScaleGate(gpu, provider, 0.5f, input.Get(), 32, 32)) return 1;
 
     accounting = provider.Accounting();
-    assert(accounting.resourceCount == 6);
+    assert(accounting.resourceCount == 4);
     assert(accounting.descriptorHeapCount == 1);
     assert(accounting.logicalBytes ==
-           3ull * 64ull * 64ull * 8ull + 3ull * 32ull * 32ull * 8ull);
+           2ull * 64ull * 64ull * 8ull + 2ull * 32ull * 32ull * 8ull);
     assert(accounting.logicalBytesExact);
 
     provider.Shutdown();

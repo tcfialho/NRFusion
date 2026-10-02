@@ -2,7 +2,9 @@
 
 #include "DlssNr_Shader.h"
 #include "DlssNr_NoKeep.h"
+#include "DlssNr_ResolveInPlace.h"
 #include "dlssnr_residual_Shader.h"
+#include "DlssNr_ResidualInPlace.h"
 
 namespace nrfusion {
 
@@ -104,6 +106,22 @@ bool D3D12NrCodec::CreatePipelines() noexcept {
         encodeNoKeepPipelineState_->Release();
         encodeNoKeepPipelineState_ = nullptr;
     }
+    desc.CS.pShaderBytecode = DlssNr_resolve_in_place_cso;
+    desc.CS.BytecodeLength = sizeof(DlssNr_resolve_in_place_cso);
+    const HRESULT resolveInPlaceCreated = device_->CreateComputePipelineState(
+        &desc, IID_PPV_ARGS(&resolveInPlacePipelineState_));
+    if (FAILED(resolveInPlaceCreated) && resolveInPlacePipelineState_) {
+        resolveInPlacePipelineState_->Release();
+        resolveInPlacePipelineState_ = nullptr;
+    }
+    desc.CS.pShaderBytecode = dlssnr_residual_in_place_cso;
+    desc.CS.BytecodeLength = sizeof(dlssnr_residual_in_place_cso);
+    const HRESULT residualInPlaceCreated = device_->CreateComputePipelineState(
+        &desc, IID_PPV_ARGS(&residualInPlacePipelineState_));
+    if (FAILED(residualInPlaceCreated) && residualInPlacePipelineState_) {
+        residualInPlacePipelineState_->Release();
+        residualInPlacePipelineState_ = nullptr;
+    }
     return true;
 }
 
@@ -177,13 +195,17 @@ void D3D12NrCodec::Shutdown() noexcept {
         slot = {};
     }
     if (descriptorHeap_ != nullptr) descriptorHeap_->Release();
+    if (residualInPlacePipelineState_ != nullptr) residualInPlacePipelineState_->Release();
     if (residualPipelineState_ != nullptr) residualPipelineState_->Release();
+    if (resolveInPlacePipelineState_ != nullptr) resolveInPlacePipelineState_->Release();
     if (encodeNoKeepPipelineState_ != nullptr) encodeNoKeepPipelineState_->Release();
     if (pipelineState_ != nullptr) pipelineState_->Release();
     if (rootSignature_ != nullptr) rootSignature_->Release();
     if (device_ != nullptr) device_->Release();
     descriptorHeap_ = nullptr;
+    residualInPlacePipelineState_ = nullptr;
     residualPipelineState_ = nullptr;
+    resolveInPlacePipelineState_ = nullptr;
     encodeNoKeepPipelineState_ = nullptr;
     pipelineState_ = nullptr;
     rootSignature_ = nullptr;

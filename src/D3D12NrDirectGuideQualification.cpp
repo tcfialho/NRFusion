@@ -34,30 +34,36 @@ bool HasVersion(const std::wstring& path, DWORD high, DWORD low) {
 
 bool D3D12NrExecutor::QualifyDirectGuides(ID3D12Device* device) noexcept {
     try {
+        if (device == nullptr) return false;
         Microsoft::WRL::ComPtr<IDXGIFactory4> factory;
         Microsoft::WRL::ComPtr<IDXGIAdapter1> adapter;
         DXGI_ADAPTER_DESC1 adapterDesc{};
         if (FAILED(CreateDXGIFactory1(IID_PPV_ARGS(&factory))) ||
             FAILED(factory->EnumAdapterByLuid(device->GetAdapterLuid(), IID_PPV_ARGS(&adapter))) ||
             FAILED(adapter->GetDesc1(&adapterDesc)) ||
-            adapterDesc.VendorId != 0x10de || adapterDesc.DeviceId != 0x28a1)
+            adapterDesc.VendorId != 0x10de)
             return false;
 
-        constexpr DWORD driverHigh = (32u << 16);
-        constexpr DWORD driverLow = (16u << 16) | 1714u;
-        WIN32_FILE_ATTRIBUTE_DATA snippetAttributes{};
-        const bool graphicsQualified =
-            HasVersion(ModulePath(GetModuleHandleW(L"nvwgf2umx.dll")), driverHigh, driverLow);
-        const bool ngxQualified = HasVersion(ModulePath(GetModuleHandleW(L"_nvngx.dll")),
-                                              (31u << 16), (15u << 16) | 4619u);
-        const bool qualified =
-            graphicsQualified && ngxQualified &&
-            HasVersion(ModulePath(driverModule_), (30u << 16), (14u << 16) | 9516u) &&
-            HasVersion(snippetPath_, (310u << 16) | 8u, 0) &&
-            GetFileAttributesExW(snippetPath_.c_str(), GetFileExInfoStandard, &snippetAttributes) &&
-            snippetAttributes.nFileSizeHigh == 0 && snippetAttributes.nFileSizeLow == 165840496u &&
-            Sha256FileEquals(ModulePath(forwarderModule_),
-                "25ffade884f50cad0174030335fd6216bbd569cb415bc35c958224a8c96f3c4e");
+        D3D12_FEATURE_DATA_D3D12_OPTIONS options{};
+        if (FAILED(device->CheckFeatureSupport(D3D12_FEATURE_D3D12_OPTIONS, &options, sizeof(options))) ||
+            options.ResourceBindingTier < D3D12_RESOURCE_BINDING_TIER_1)
+            return false;
+
+        D3D12_FEATURE_DATA_FORMAT_SUPPORT formatSupportDepth{ DXGI_FORMAT_R32_FLOAT };
+        const bool depthSupport = SUCCEEDED(device->CheckFeatureSupport(
+            D3D12_FEATURE_FORMAT_SUPPORT, &formatSupportDepth, sizeof(formatSupportDepth))) &&
+            ((formatSupportDepth.Support1 & (D3D12_FORMAT_SUPPORT1_TEXTURE2D | D3D12_FORMAT_SUPPORT1_SHADER_SAMPLE | D3D12_FORMAT_SUPPORT1_SHADER_LOAD)) != 0);
+
+        D3D12_FEATURE_DATA_FORMAT_SUPPORT formatSupportMotion{ DXGI_FORMAT_R16G16_FLOAT };
+        const bool motionSupport = SUCCEEDED(device->CheckFeatureSupport(
+            D3D12_FEATURE_FORMAT_SUPPORT, &formatSupportMotion, sizeof(formatSupportMotion))) &&
+            ((formatSupportMotion.Support1 & (D3D12_FORMAT_SUPPORT1_TEXTURE2D | D3D12_FORMAT_SUPPORT1_SHADER_SAMPLE | D3D12_FORMAT_SUPPORT1_SHADER_LOAD)) != 0);
+
+        const bool graphicsQualified = (GetModuleHandleW(L"nvwgf2umx.dll") != nullptr);
+        const bool ngxQualified = (GetModuleHandleW(L"_nvngx.dll") != nullptr ||
+                                   GetModuleHandleW(L"nvngx.dll") != nullptr);
+
+        const bool qualified = depthSupport && motionSupport && (graphicsQualified || ngxQualified);
         NRF_LOG_INFO("NRGuides", "Typeless direct guides: %s (GPU=%04x graphics=%d NGX=%d)",
                      qualified ? "qualified" : "clone fallback", adapterDesc.DeviceId,
                      graphicsQualified, ngxQualified);

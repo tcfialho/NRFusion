@@ -78,7 +78,7 @@ std::uint64_t D3D12NrScratchResources::LogicalBytes(
     return pixels > max / bytesPerPixel ? 0 : pixels * bytesPerPixel;
 }
 
-D3D12NrScratchAccounting D3D12NrScratchResources::Accounting() const noexcept {
+D3D12NrScratchAccounting D3D12NrScratchResources::Accounting(const NrDeferredRetirementQueue* retirement) const noexcept {
     D3D12NrScratchAccounting result{};
     constexpr D3D12NrScratchKind kinds[] = {
         D3D12NrScratchKind::Output,
@@ -94,6 +94,8 @@ D3D12NrScratchAccounting D3D12NrScratchResources::Accounting() const noexcept {
         D3D12NrScratchKind::ResidualComposed,
     };
 
+    const auto max = (std::numeric_limits<std::uint64_t>::max)();
+
     for (const auto kind : kinds) {
         const Surface* surface = Slot(kind);
         if (surface == nullptr || surface->resource == nullptr) continue;
@@ -102,17 +104,53 @@ D3D12NrScratchAccounting D3D12NrScratchResources::Accounting() const noexcept {
         const std::uint64_t bytes = LogicalBytes(*surface);
         if (bytes == 0) {
             result.logicalBytesExact = false;
-            continue;
-        }
-
-        const auto max = (std::numeric_limits<std::uint64_t>::max)();
-        if (result.logicalBytes > max - bytes) {
+        } else if (result.logicalBytes > max - bytes) {
             result.logicalBytes = max;
             result.logicalBytesExact = false;
-            continue;
+        } else {
+            result.logicalBytes += bytes;
         }
-        result.logicalBytes += bytes;
+
+        const std::uint64_t phys = surface->physicalBytes;
+        if (phys == 0) {
+            result.physicalBytesExact = false;
+        } else if (result.physicalBytes > max - phys) {
+            result.physicalBytes = max;
+            result.physicalBytesExact = false;
+        } else {
+            result.physicalBytes += phys;
+        }
     }
+
+    std::uint64_t totalLogical = result.logicalBytes;
+    std::uint64_t totalPhysical = result.physicalBytes;
+
+    if (retirement != nullptr) {
+        const auto retAcc = retirement->ResourceAccounting();
+        result.retiredCount = retAcc.resourceCount;
+        if (totalLogical <= max - retAcc.logicalBytes) {
+            totalLogical += retAcc.logicalBytes;
+        } else {
+            totalLogical = max;
+        }
+        if (totalPhysical <= max - retAcc.physicalBytes) {
+            totalPhysical += retAcc.physicalBytes;
+        } else {
+            totalPhysical = max;
+        }
+        if (!retAcc.logicalBytesExact) {
+            result.logicalBytesExact = false;
+        }
+        if (!retAcc.physicalBytesExact) {
+            result.physicalBytesExact = false;
+        }
+    }
+
+    peakLogicalBytes_ = (std::max)(peakLogicalBytes_, totalLogical);
+    peakPhysicalBytes_ = (std::max)(peakPhysicalBytes_, totalPhysical);
+    result.peakLogicalBytes = peakLogicalBytes_;
+    result.peakPhysicalBytes = peakPhysicalBytes_;
+
     return result;
 }
 

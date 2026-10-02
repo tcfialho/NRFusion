@@ -1,4 +1,5 @@
 #include "nrfusion/D3D12NrScratchResources.hpp"
+#include "nrfusion/D3D12NrAllocationTracker.hpp"
 
 namespace nrfusion {
 namespace {
@@ -12,22 +13,42 @@ bool Valid(const D3D12NrScratchDesc& desc) noexcept {
            desc.workWidth != 0 && desc.workHeight != 0;
 }
 
+constexpr std::uint32_t BytesPerPixel(DXGI_FORMAT format) noexcept {
+    switch (format) {
+    case DXGI_FORMAT_R16G16B16A16_FLOAT:
+    case DXGI_FORMAT_R16G16B16A16_UNORM:
+    case DXGI_FORMAT_R32G32_FLOAT:
+        return 8;
+    case DXGI_FORMAT_R8G8B8A8_UNORM:
+    case DXGI_FORMAT_B8G8R8A8_UNORM:
+    case DXGI_FORMAT_R10G10B10A2_UNORM:
+    case DXGI_FORMAT_R16G16_FLOAT:
+    case DXGI_FORMAT_R32_FLOAT:
+        return 4;
+    default:
+        return 0;
+    }
+}
+
 } // namespace
 
 D3D12NrScratchResources::Surface D3D12NrScratchResources::MakeSurface(
     ID3D12Resource* resource, DXGI_FORMAT format,
-    std::uint32_t width, std::uint32_t height) noexcept {
+    std::uint32_t width, std::uint32_t height,
+    std::uint64_t physicalBytes) noexcept {
     Surface surface{};
     surface.resource = resource;
     surface.format = format;
     surface.width = width;
     surface.height = height;
+    surface.physicalBytes = physicalBytes;
     return surface;
 }
 
 ID3D12Resource* D3D12NrScratchResources::Create(
     ID3D12Device* device, DXGI_FORMAT format,
-    std::uint32_t width, std::uint32_t height) noexcept {
+    std::uint32_t width, std::uint32_t height,
+    std::uint64_t* outPhysicalBytes) noexcept {
     if (device == nullptr || !Valid(format, width, height)) return nullptr;
 
     D3D12_HEAP_PROPERTIES heap{};
@@ -44,6 +65,13 @@ ID3D12Resource* D3D12NrScratchResources::Create(
     desc.Layout = D3D12_TEXTURE_LAYOUT_UNKNOWN;
     desc.Flags = D3D12_RESOURCE_FLAG_ALLOW_UNORDERED_ACCESS;
 
+    if (outPhysicalBytes != nullptr) {
+        const D3D12_RESOURCE_ALLOCATION_INFO allocInfo = device->GetResourceAllocationInfo(0, 1, &desc);
+        *outPhysicalBytes = (allocInfo.SizeInBytes != 0 && allocInfo.SizeInBytes != static_cast<UINT64>(-1))
+            ? allocInfo.SizeInBytes
+            : (static_cast<std::uint64_t>(width) * height * BytesPerPixel(format));
+    }
+
     ID3D12Resource* resource = nullptr;
     const HRESULT result = device->CreateCommittedResource(
         &heap, D3D12_HEAP_FLAG_NONE, &desc,
@@ -57,11 +85,32 @@ void D3D12NrScratchResources::Release(Surface& surface) noexcept {
     surface = {};
 }
 
+std::uint64_t D3D12NrScratchResources::PhysicalBytes(const Surface& surface) noexcept {
+    if (surface.resource == nullptr) return 0;
+    return surface.physicalBytes != 0 ? surface.physicalBytes : LogicalBytes(surface);
+}
+
+std::uint64_t D3D12NrScratchResources::PhysicalBytes(D3D12NrScratchKind kind) const noexcept {
+    const Surface* surface = Slot(kind);
+    return surface == nullptr ? 0 : PhysicalBytes(*surface);
+}
+
 bool D3D12NrScratchResources::Park(
-    Surface& surface, NrDeferredRetirementQueue& retirement) noexcept {
+    Surface& surface, NrDeferredRetirementQueue& retirement,
+    const char* kindName,
+    ID3D12Fence* fence,
+    std::uint64_t fenceValue) noexcept {
     if (surface.resource == nullptr) return true;
     void* object = surface.resource;
-    if (!retirement.Park(object, NrRetiredObjectKind::Resource, NrDeferredRetirementQueue::kDefaultDelay, LogicalBytes(surface))) return false;
+    if (!retirement.Park(object, NrRetiredObjectKind::Resource,
+                         NrDeferredRetirementQueue::kDefaultDelay,
+                         LogicalBytes(surface),
+                         surface.physicalBytes,
+                         fence,
+                         fenceValue)) return false;
+    if (kindName != nullptr) {
+        D3D12NrAllocationTracker::Instance().RecordRetirement("Scratch", kindName);
+    }
     surface = {};
     return true;
 }
@@ -109,25 +158,28 @@ std::size_t D3D12NrScratchResources::ActiveCount() const noexcept {
            static_cast<std::size_t>(residualComposed_.resource != nullptr);
 }
 
-bool D3D12NrScratchResources::ParkAll(NrDeferredRetirementQueue& retirement) noexcept {
+bool D3D12NrScratchResources::ParkAll(
+    NrDeferredRetirementQueue& retirement,
+    ID3D12Fence* fence,
+    std::uint64_t fenceValue) noexcept {
     if (ActiveCount() > NrDeferredRetirementQueue::kCapacity - retirement.Size()) return false;
-    return Park(output_, retirement) &&
-           Park(colorCopy_, retirement) &&
-           Park(hdrCopy_, retirement) &&
-           Park(passScratch_, retirement) &&
-           Park(colorSmall_, retirement) &&
-           Park(outputNative_, retirement) &&
-           Park(activeColor_, retirement) &&
-           Park(residualEdited_, retirement) &&
-           Park(residualHistory0_, retirement) &&
-           Park(residualHistory1_, retirement) &&
-           Park(residualComposed_, retirement);
+    return Park(output_, retirement, KindToString(D3D12NrScratchKind::Output), fence, fenceValue) &&
+           Park(colorCopy_, retirement, KindToString(D3D12NrScratchKind::ColorCopy), fence, fenceValue) &&
+           Park(hdrCopy_, retirement, KindToString(D3D12NrScratchKind::HdrCopy), fence, fenceValue) &&
+           Park(passScratch_, retirement, KindToString(D3D12NrScratchKind::PassScratch), fence, fenceValue) &&
+           Park(colorSmall_, retirement, KindToString(D3D12NrScratchKind::ColorSmall), fence, fenceValue) &&
+           Park(outputNative_, retirement, KindToString(D3D12NrScratchKind::OutputNative), fence, fenceValue) &&
+           Park(activeColor_, retirement, KindToString(D3D12NrScratchKind::ActiveColor), fence, fenceValue) &&
+           Park(residualEdited_, retirement, KindToString(D3D12NrScratchKind::ResidualEdited), fence, fenceValue) &&
+           Park(residualHistory0_, retirement, KindToString(D3D12NrScratchKind::ResidualHistory0), fence, fenceValue) &&
+           Park(residualHistory1_, retirement, KindToString(D3D12NrScratchKind::ResidualHistory1), fence, fenceValue) &&
+           Park(residualComposed_, retirement, KindToString(D3D12NrScratchKind::ResidualComposed), fence, fenceValue);
 }
 
 bool D3D12NrScratchResources::Complete() const noexcept {
     return output_.resource != nullptr &&
            colorCopy_.resource != nullptr &&
-           hdrCopy_.resource != nullptr;
+           (!desc_.needsHdrCopy || hdrCopy_.resource != nullptr);
 }
 
 bool D3D12NrScratchResources::Matches(const D3D12NrScratchDesc& desc) const noexcept {
@@ -137,7 +189,9 @@ bool D3D12NrScratchResources::Matches(const D3D12NrScratchDesc& desc) const noex
 bool D3D12NrScratchResources::EnsureOptional(
     ID3D12Device* device, D3D12NrScratchKind kind,
     DXGI_FORMAT format, std::uint32_t width, std::uint32_t height,
-    NrDeferredRetirementQueue& retirement) noexcept {
+    NrDeferredRetirementQueue& retirement,
+    ID3D12Fence* fence,
+    std::uint64_t fenceValue) noexcept {
     if (device == nullptr || IsCoreKind(kind) || !Valid(format, width, height)) return false;
     Surface* surface = Slot(kind);
     if (surface == nullptr) return false;
@@ -148,19 +202,34 @@ bool D3D12NrScratchResources::EnsureOptional(
         retirement.Size() == NrDeferredRetirementQueue::kCapacity)
         return false;
 
-    Surface next = MakeSurface(Create(device, format, width, height), format, width, height);
+    std::uint64_t physicalBytes = 0;
+    ID3D12Resource* res = Create(device, format, width, height, &physicalBytes);
+    Surface next = MakeSurface(res, format, width, height, physicalBytes);
     if (next.resource == nullptr) return false;
-    if (!Park(*surface, retirement)) {
+    if (!Park(*surface, retirement, KindToString(kind), fence, fenceValue)) {
         Release(next);
         return false;
     }
     *surface = next;
+    D3D12NrAllocationTracker::Instance().RecordAllocation({
+        "Scratch",
+        KindToString(kind),
+        format,
+        width,
+        height,
+        LogicalBytes(next),
+        next.physicalBytes,
+        false,
+        true
+    });
     return true;
 }
 
 bool D3D12NrScratchResources::RetireUnused(
     const D3D12NrScratchUsage& usage,
-    NrDeferredRetirementQueue& retirement) noexcept {
+    NrDeferredRetirementQueue& retirement,
+    ID3D12Fence* fence,
+    std::uint64_t fenceValue) noexcept {
     struct Candidate {
         D3D12NrScratchKind kind;
         bool keep;
@@ -173,7 +242,7 @@ bool D3D12NrScratchResources::RetireUnused(
         {D3D12NrScratchKind::ResidualEdited, usage.residual},
         {D3D12NrScratchKind::ResidualHistory0, usage.residual},
         {D3D12NrScratchKind::ResidualHistory1, usage.residual},
-        {D3D12NrScratchKind::ResidualComposed, usage.residual},
+        {D3D12NrScratchKind::ResidualComposed, usage.residualComposed},
     };
 
     std::size_t retireCount = 0;
@@ -189,23 +258,28 @@ bool D3D12NrScratchResources::RetireUnused(
     for (const auto& candidate : candidates) {
         if (candidate.keep) continue;
         Surface* surface = Slot(candidate.kind);
-        if (surface != nullptr && !Park(*surface, retirement)) return false;
+        if (surface != nullptr && !Park(*surface, retirement, KindToString(candidate.kind), fence, fenceValue)) return false;
     }
     return true;
 }
 
 bool D3D12NrScratchResources::Retire(
-    D3D12NrScratchKind kind, NrDeferredRetirementQueue& retirement) noexcept {
+    D3D12NrScratchKind kind, NrDeferredRetirementQueue& retirement,
+    ID3D12Fence* fence,
+    std::uint64_t fenceValue) noexcept {
     Surface* surface = Slot(kind);
     if (surface == nullptr) return false;
     if (surface->resource != nullptr &&
         retirement.Size() == NrDeferredRetirementQueue::kCapacity)
         return false;
-    return Park(*surface, retirement);
+    return Park(*surface, retirement, KindToString(kind), fence, fenceValue);
 }
 
-bool D3D12NrScratchResources::Retire(NrDeferredRetirementQueue& retirement) noexcept {
-    if (!ParkAll(retirement)) return false;
+bool D3D12NrScratchResources::Retire(
+    NrDeferredRetirementQueue& retirement,
+    ID3D12Fence* fence,
+    std::uint64_t fenceValue) noexcept {
+    if (!ParkAll(retirement, fence, fenceValue)) return false;
     desc_ = {};
     return true;
 }

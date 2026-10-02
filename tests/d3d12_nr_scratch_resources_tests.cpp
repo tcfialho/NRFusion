@@ -270,5 +270,72 @@ int main() {
     scratch.ReleaseAfterIdle();
     usageScratch.ReleaseAfterIdle();
     reuseScratch.ReleaseAfterIdle();
+
+    D3D12NrScratchResources noHdrScratch;
+    NrDeferredRetirementQueue noHdrRetirement;
+    D3D12NrScratchDesc noHdrDesc{
+        native.format, native.frameWidth, native.frameHeight, native.workWidth, native.workHeight, false};
+    assert(noHdrScratch.Ensure(gpu.device.Get(), noHdrDesc, noHdrRetirement));
+    assert(noHdrScratch.Complete());
+    assert(noHdrScratch.Get(D3D12NrScratchKind::Output) != nullptr);
+    assert(noHdrScratch.Get(D3D12NrScratchKind::ColorCopy) != nullptr);
+    assert(noHdrScratch.Get(D3D12NrScratchKind::HdrCopy) == nullptr);
+    assert(noHdrScratch.Accounting().resourceCount == 2);
+    assert(noHdrScratch.Accounting().logicalBytes == workBytes + frameBytes);
+
+    D3D12NrScratchDesc withHdrDesc{
+        native.format, native.frameWidth, native.frameHeight, native.workWidth, native.workHeight, true};
+    assert(noHdrScratch.Ensure(gpu.device.Get(), withHdrDesc, noHdrRetirement));
+    assert(noHdrScratch.Complete());
+    assert(noHdrScratch.Get(D3D12NrScratchKind::HdrCopy) != nullptr);
+    assert(noHdrScratch.Accounting().resourceCount == 3);
+
+    assert(noHdrScratch.Ensure(gpu.device.Get(), noHdrDesc, noHdrRetirement));
+    assert(noHdrScratch.Complete());
+    assert(noHdrScratch.Get(D3D12NrScratchKind::HdrCopy) == nullptr);
+    assert(noHdrRetirement.Size() == 1);
+    unsigned noHdrReleased = 0;
+    noHdrRetirement.DrainAfterIdle(&noHdrReleased, &ReleaseRetired);
+    assert(noHdrReleased == 1);
+    noHdrScratch.ReleaseAfterIdle();
+
+    // Fence-backed early retirement test during resolution resize:
+    {
+        Microsoft::WRL::ComPtr<ID3D12Fence> fence;
+        assert(SUCCEEDED(gpu.device->CreateFence(0, D3D12_FENCE_FLAG_NONE, IID_PPV_ARGS(&fence))));
+
+        nrfusion::NrDeferredRetirementQueue fenceRetirement{};
+        nrfusion::D3D12NrScratchResources fenceScratch{};
+        D3D12NrScratchDesc descA{
+            DXGI_FORMAT_R16G16B16A16_FLOAT, 1920, 1080, 1920, 1080, false};
+        assert(fenceScratch.Ensure(gpu.device.Get(), descA, fenceRetirement));
+        assert(fenceScratch.Complete());
+        assert(fenceRetirement.Size() == 0);
+
+        // Resize to 1440p and retire old 1080p surfaces backed by fence at completionValue = 10:
+        D3D12NrScratchDesc descB{
+            DXGI_FORMAT_R16G16B16A16_FLOAT, 2560, 1440, 2560, 1440, false};
+        assert(fenceScratch.Ensure(gpu.device.Get(), descB, fenceRetirement, fence.Get(), 10));
+        assert(fenceScratch.Complete());
+        assert(fenceRetirement.Size() == 2); // Output + ColorCopy parked
+
+        // First tick: fence completedValue is 0 (< 10). Should NOT release:
+        unsigned released = 0;
+        fenceRetirement.Tick(&released, &ReleaseRetired);
+        assert(released == 0);
+        assert(fenceRetirement.Size() == 2);
+
+        // Signal fence to 10:
+        assert(SUCCEEDED(fence->Signal(10)));
+        assert(fence->GetCompletedValue() == 10);
+
+        // Second tick: fence value 10 reached! Should release immediately on 1st tick after completion!
+        fenceRetirement.Tick(&released, &ReleaseRetired);
+        assert(released == 2);
+        assert(fenceRetirement.Size() == 0);
+
+        fenceScratch.ReleaseAfterIdle();
+    }
+
     return 0;
 }

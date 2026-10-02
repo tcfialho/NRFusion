@@ -54,8 +54,7 @@ cbuffer ResidualExtractCB : register(b0) {
     float4 g_extractPadding2;
 };
 
-Texture2D<float4>   g_neuralOutput : register(t0);
-Texture2D<float4>   g_neuralInput  : register(t1);
+Texture2D<float4>   g_neuralInput  : register(t0);
 RWTexture2D<float4> g_lowResidual  : register(u0);
 
 [numthreads(THREAD_GROUP_X, THREAD_GROUP_Y, 1)]
@@ -63,7 +62,7 @@ void CSExtractResidual(uint3 id : SV_DispatchThreadID) {
     if (id.x >= g_workWidth || id.y >= g_workHeight) return;
 
     int3 coord = int3(id.xy, 0);
-    float4 nOut = g_neuralOutput.Load(coord);
+    float4 nOut = g_lowResidual[id.xy];
     float4 nIn  = g_neuralInput.Load(coord);
 
     if (any(isnan(nOut)) || any(isinf(nOut))) nOut = 0.0f;

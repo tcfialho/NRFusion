@@ -3,6 +3,7 @@ add_library(nrfusion_d3d11_carrier_slice STATIC
     src/SyntheticDx12ProviderAccounting.cpp
     src/SyntheticDx12ProviderSubmit.cpp
     src/SyntheticDx12ProviderResidual.cpp
+    src/D3D12NrAllocationTracker.cpp
     src/NvofMotionProvider.cpp
     src/SyntheticDx11BridgeProvider.cpp
     src/SyntheticDx11BridgeResources.cpp

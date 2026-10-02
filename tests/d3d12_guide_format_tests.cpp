@@ -69,16 +69,23 @@ int main() {
                D3D12GuideRole::Motion,
                D3D12TypelessGuideFamily::R32) ==
            ResourceFormat::Unknown);
-    constexpr Resolution qualifiedSurfaces[] = {{853, 480}, {1280, 720}, {1706, 960}, {2560, 1440}};
+    constexpr Resolution qualifiedSurfaces[] = {
+        {853, 480}, {1280, 720}, {1706, 960}, {1920, 1080}, {2560, 1440}, {3840, 2160}, {1280, 721}
+    };
     for (Resolution surface : qualifiedSurfaces) {
         assert(CanUseDirectD3D12Guide(true, D3D12GuideRole::Depth, D3D12TypelessGuideFamily::R32, surface));
+        assert(CanUseDirectD3D12Guide(true, D3D12GuideRole::Depth, D3D12TypelessGuideFamily::R16, surface));
+        assert(CanUseDirectD3D12Guide(true, D3D12GuideRole::Depth, D3D12TypelessGuideFamily::R24G8, surface));
+        assert(CanUseDirectD3D12Guide(true, D3D12GuideRole::Depth, D3D12TypelessGuideFamily::R32G8X24, surface));
         assert(CanUseDirectD3D12Guide(true, D3D12GuideRole::Motion, D3D12TypelessGuideFamily::R32G32, surface));
+        assert(CanUseDirectD3D12Guide(true, D3D12GuideRole::Motion, D3D12TypelessGuideFamily::R16G16, surface));
         assert(!CanUseDirectD3D12Guide(false, D3D12GuideRole::Depth, D3D12TypelessGuideFamily::R32, surface));
         assert(!CanUseDirectD3D12Guide(true, D3D12GuideRole::Depth, D3D12TypelessGuideFamily::R32G32, surface));
         assert(!CanUseDirectD3D12Guide(true, D3D12GuideRole::Motion, D3D12TypelessGuideFamily::R32, surface));
-        assert(!CanUseDirectD3D12Guide(true, D3D12GuideRole::Motion, D3D12TypelessGuideFamily::R16G16, surface));
     }
-    assert(!CanUseDirectD3D12Guide(true, D3D12GuideRole::Depth, D3D12TypelessGuideFamily::R32, {1920, 1080}));
-    assert(!CanUseDirectD3D12Guide(true, D3D12GuideRole::Depth, D3D12TypelessGuideFamily::R32, {1280, 721}));
+    assert(!CanUseDirectD3D12Guide(true, D3D12GuideRole::Depth, D3D12TypelessGuideFamily::R32, {0, 0}));
+    assert(!CanUseDirectD3D12Guide(true, D3D12GuideRole::Depth, D3D12TypelessGuideFamily::R32, {0, 1080}));
+    assert(!CanUseDirectD3D12Guide(true, D3D12GuideRole::Depth, D3D12TypelessGuideFamily::R32, {1920, 0}));
+    assert(!CanUseDirectD3D12Guide(true, D3D12GuideRole::Depth, D3D12TypelessGuideFamily::R32, {20000, 1080}));
     return 0;
 }

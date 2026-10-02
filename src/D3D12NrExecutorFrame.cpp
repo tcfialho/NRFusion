@@ -49,6 +49,12 @@ D3D12NrFrameResult D3D12NrExecutor::ExecuteMainFrame(
                        request.composition.runBeforeUpscale &&
                        request.composition.rayReconstruction;
 
+    if (request.completionFence != nullptr) {
+        lastCompletionFence_ = request.completionFence;
+        lastCompletionValue_ = request.completionValue;
+    }
+    retirement_.Tick(this, &D3D12NrExecutor::ReleaseRetired);
+
     if (cachedTargetResource_ != context.target) {
         cachedTargetResource_ = context.target;
         cachedTargetDesc_ = context.target->GetDesc();
@@ -126,48 +132,77 @@ D3D12NrFrameResult D3D12NrExecutor::ExecuteMainFrame(
         device = device_;
     }
     context.device = device;
+    bool ok = codec_.Init(device);
+    const bool canResolveInPlace =
+        context.targetSupportsUav &&
+        !context.cropColor &&
+        !context.acrossRr &&
+        request.composition.compareMode == 0 &&
+        codec_.CanResolveInPlace() &&
+        codec_.CanSkipKeep();
+    const bool needsHdrCopy = !canResolveInPlace;
+    D3D12_FEATURE_DATA_FORMAT_SUPPORT targetFormatSupport{targetDesc.Format, D3D12_FORMAT_SUPPORT1_NONE, D3D12_FORMAT_SUPPORT2_NONE};
+    const bool targetSupportsUavTypedLoad =
+        SUCCEEDED(device->CheckFeatureSupport(D3D12_FEATURE_FORMAT_SUPPORT, &targetFormatSupport, sizeof(targetFormatSupport))) &&
+        (targetFormatSupport.Support2 & D3D12_FORMAT_SUPPORT2_UAV_TYPED_LOAD) != 0;
+    const bool canApplyResidualInPlace =
+        context.targetSupportsUav &&
+        (targetDesc.Flags & D3D12_RESOURCE_FLAG_ALLOW_UNORDERED_ACCESS) != 0 &&
+        targetSupportsUavTypedLoad &&
+        codec_.CanApplyResidualInPlace();
+    const bool needsResidualComposed = context.acrossRr && !canApplyResidualInPlace;
+
     D3D12NrScratchDesc scratchDesc{
         targetDesc.Format, context.plan.activeColor.width, context.plan.activeColor.height,
-        context.plan.work.width, context.plan.work.height};
+        context.plan.work.width, context.plan.work.height, needsHdrCopy};
     if (request.reset || !scratch_.Matches(scratchDesc)) {
         residualHistoryPrimed_ = false;
         residualStoreValid_ = false;
         codec_.ResetSlotCache();
     }
-    bool ok = codec_.Init(device) && scratch_.Ensure(device, scratchDesc, retirement_);
+    ok = ok && scratch_.Ensure(device, scratchDesc, retirement_, lastCompletionFence_.Get(), lastCompletionValue_);
     const D3D12NrScratchUsage scratchUsage{
         effectivePasses > 1, context.plan.reduced, false,
-        context.cropColor, context.acrossRr};
-    ok = ok && scratch_.RetireUnused(scratchUsage, retirement_);
+        context.cropColor, context.acrossRr, needsResidualComposed};
+    ok = ok && scratch_.RetireUnused(scratchUsage, retirement_, lastCompletionFence_.Get(), lastCompletionValue_);
     if (effectivePasses > 1)
         ok = ok && scratch_.EnsureOptional(
             device, D3D12NrScratchKind::PassScratch, targetDesc.Format,
-            context.plan.work.width, context.plan.work.height, retirement_);
+            context.plan.work.width, context.plan.work.height, retirement_,
+            lastCompletionFence_.Get(), lastCompletionValue_);
     if (context.plan.reduced)
         ok = ok && scratch_.EnsureOptional(
             device, D3D12NrScratchKind::ColorSmall, targetDesc.Format,
-            context.plan.work.width, context.plan.work.height, retirement_);
+            context.plan.work.width, context.plan.work.height, retirement_,
+            lastCompletionFence_.Get(), lastCompletionValue_);
     if (context.cropColor)
         ok = ok && scratch_.EnsureOptional(
             device, D3D12NrScratchKind::ActiveColor, targetDesc.Format,
-            context.plan.activeColor.width, context.plan.activeColor.height, retirement_);
+            context.plan.activeColor.width, context.plan.activeColor.height, retirement_,
+            lastCompletionFence_.Get(), lastCompletionValue_);
     if (context.acrossRr) {
         const D3D12_RESOURCE_DESC outputDesc = resources.output->GetDesc();
         ok = ok &&
             scratch_.EnsureOptional(
                 device, D3D12NrScratchKind::ResidualEdited, targetDesc.Format,
-                context.plan.activeColor.width, context.plan.activeColor.height, retirement_) &&
+                context.plan.activeColor.width, context.plan.activeColor.height, retirement_,
+                lastCompletionFence_.Get(), lastCompletionValue_) &&
             scratch_.EnsureOptional(
                 device, D3D12NrScratchKind::ResidualHistory0,
                 DXGI_FORMAT_R16G16B16A16_FLOAT,
-                context.plan.activeColor.width, context.plan.activeColor.height, retirement_) &&
+                context.plan.activeColor.width, context.plan.activeColor.height, retirement_,
+                lastCompletionFence_.Get(), lastCompletionValue_) &&
             scratch_.EnsureOptional(
                 device, D3D12NrScratchKind::ResidualHistory1,
                 DXGI_FORMAT_R16G16B16A16_FLOAT,
-                context.plan.activeColor.width, context.plan.activeColor.height, retirement_) &&
-            scratch_.EnsureOptional(
+                context.plan.activeColor.width, context.plan.activeColor.height, retirement_,
+                lastCompletionFence_.Get(), lastCompletionValue_);
+        if (needsResidualComposed) {
+            ok = ok && scratch_.EnsureOptional(
                 device, D3D12NrScratchKind::ResidualComposed, outputDesc.Format,
-                static_cast<std::uint32_t>(outputDesc.Width), outputDesc.Height, retirement_);
+                static_cast<std::uint32_t>(outputDesc.Width), outputDesc.Height, retirement_,
+                lastCompletionFence_.Get(), lastCompletionValue_);
+        }
     }
     if (!ok) return D3D12NrFrameResult::Failed;
 

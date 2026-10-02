@@ -1,10 +1,20 @@
 #include "nrfusion/D3D12NrGuideClones.hpp"
+#include "nrfusion/D3D12NrAllocationTracker.hpp"
 
+#include <algorithm>
 #include <cstddef>
 #include <limits>
 
 namespace nrfusion {
 namespace {
+
+const char* KindToString(D3D12NrGuideKind kind) noexcept {
+    switch (kind) {
+    case D3D12NrGuideKind::Depth: return "Depth";
+    case D3D12NrGuideKind::Motion: return "Motion";
+    }
+    return "Unknown";
+}
 
 std::uint32_t BytesPerPixel(DXGI_FORMAT format) noexcept {
     switch (format) {
@@ -45,11 +55,19 @@ bool D3D12NrGuideClones::SameDesc(
 }
 
 ID3D12Resource* D3D12NrGuideClones::Create(
-    ID3D12Device* device, const D3D12_RESOURCE_DESC& desc) noexcept {
+    ID3D12Device* device, const D3D12_RESOURCE_DESC& desc,
+    std::uint64_t* outPhysicalBytes) noexcept {
     if (device == nullptr || desc.Format == DXGI_FORMAT_UNKNOWN ||
         desc.Dimension != D3D12_RESOURCE_DIMENSION_TEXTURE2D ||
         desc.Width == 0 || desc.Height == 0)
         return nullptr;
+
+    if (outPhysicalBytes != nullptr) {
+        const auto allocInfo = device->GetResourceAllocationInfo(0, 1, &desc);
+        *outPhysicalBytes = (allocInfo.SizeInBytes != (std::numeric_limits<std::uint64_t>::max)())
+                                ? allocInfo.SizeInBytes
+                                : 0;
+    }
 
     D3D12_HEAP_PROPERTIES heap{};
     heap.Type = D3D12_HEAP_TYPE_DEFAULT;
@@ -75,12 +93,17 @@ std::uint64_t D3D12NrGuideClones::LogicalBytes(const Clone& clone) noexcept {
 }
 
 bool D3D12NrGuideClones::Park(
-    Clone& clone, NrDeferredRetirementQueue& retirement) noexcept {
+    Clone& clone, NrDeferredRetirementQueue& retirement,
+    D3D12NrGuideKind kind,
+    ID3D12Fence* fence,
+    std::uint64_t fenceValue) noexcept {
     if (clone.resource == nullptr) return true;
+    D3D12NrAllocationTracker::Instance().RecordRetirement("GuideClone", KindToString(kind));
     void* object = clone.resource;
     if (!retirement.Park(
             object, NrRetiredObjectKind::Resource,
-            NrDeferredRetirementQueue::kDefaultDelay, LogicalBytes(clone)))
+            NrDeferredRetirementQueue::kDefaultDelay, LogicalBytes(clone),
+            clone.physicalBytes, fence, fenceValue))
         return false;
     clone = {};
     return true;
@@ -111,7 +134,9 @@ const D3D12NrGuideClones::Clone* D3D12NrGuideClones::Slot(
 bool D3D12NrGuideClones::Ensure(
     ID3D12Device* device, D3D12NrGuideKind kind,
     ID3D12Resource* source, DXGI_FORMAT typedFormat,
-    NrDeferredRetirementQueue& retirement) noexcept {
+    NrDeferredRetirementQueue& retirement,
+    ID3D12Fence* fence,
+    std::uint64_t fenceValue) noexcept {
     Clone* clone = Slot(kind);
     if (device == nullptr || clone == nullptr || source == nullptr ||
         typedFormat == DXGI_FORMAT_UNKNOWN)
@@ -125,9 +150,10 @@ bool D3D12NrGuideClones::Ensure(
         retirement.Size() == NrDeferredRetirementQueue::kCapacity)
         return false;
 
-    ID3D12Resource* resource = Create(device, wanted);
+    std::uint64_t physicalBytes = 0;
+    ID3D12Resource* resource = Create(device, wanted, &physicalBytes);
     if (resource == nullptr) return false;
-    if (!Park(*clone, retirement)) {
+    if (!Park(*clone, retirement, kind, fence, fenceValue)) {
         resource->Release();
         return false;
     }
@@ -135,25 +161,36 @@ bool D3D12NrGuideClones::Ensure(
     clone->resource = resource;
     clone->desc = wanted;
     clone->state = D3D12_RESOURCE_STATE_COPY_DEST;
+    clone->physicalBytes = physicalBytes;
+    D3D12NrAllocationTracker::Instance().RecordAllocation(
+        "GuideClone", KindToString(kind), wanted.Format,
+        static_cast<std::uint32_t>(wanted.Width), wanted.Height,
+        LogicalBytes(*clone), physicalBytes, true, true);
     return true;
 }
 
 bool D3D12NrGuideClones::Retire(
-    D3D12NrGuideKind kind, NrDeferredRetirementQueue& retirement) noexcept {
+    D3D12NrGuideKind kind, NrDeferredRetirementQueue& retirement,
+    ID3D12Fence* fence,
+    std::uint64_t fenceValue) noexcept {
     Clone* clone = Slot(kind);
     if (clone == nullptr) return false;
     if (clone->resource != nullptr &&
         retirement.Size() == NrDeferredRetirementQueue::kCapacity)
         return false;
-    return Park(*clone, retirement);
+    return Park(*clone, retirement, kind, fence, fenceValue);
 }
 
-bool D3D12NrGuideClones::Retire(NrDeferredRetirementQueue& retirement) noexcept {
+bool D3D12NrGuideClones::Retire(
+    NrDeferredRetirementQueue& retirement,
+    ID3D12Fence* fence,
+    std::uint64_t fenceValue) noexcept {
     const std::size_t active =
         static_cast<std::size_t>(depth_.resource != nullptr) +
         static_cast<std::size_t>(motion_.resource != nullptr);
     if (active > NrDeferredRetirementQueue::kCapacity - retirement.Size()) return false;
-    return Park(depth_, retirement) && Park(motion_, retirement);
+    return Park(depth_, retirement, D3D12NrGuideKind::Depth, fence, fenceValue) &&
+           Park(motion_, retirement, D3D12NrGuideKind::Motion, fence, fenceValue);
 }
 
 bool D3D12NrGuideClones::Transition(
@@ -194,23 +231,44 @@ D3D12_RESOURCE_STATES D3D12NrGuideClones::State(D3D12NrGuideKind kind) const noe
 D3D12NrGuideCloneAccounting D3D12NrGuideClones::Accounting() const noexcept {
     D3D12NrGuideCloneAccounting result{};
     const Clone* clones[] = {&depth_, &motion_};
+    const auto max = (std::numeric_limits<std::uint64_t>::max)();
+
     for (const Clone* clone : clones) {
         if (clone->resource == nullptr) continue;
         ++result.resourceCount;
+
         const std::uint64_t bytes = LogicalBytes(*clone);
         if (bytes == 0) {
             result.logicalBytesExact = false;
-            continue;
-        }
-        const auto max = (std::numeric_limits<std::uint64_t>::max)();
-        if (result.logicalBytes > max - bytes) {
+        } else if (result.logicalBytes > max - bytes) {
             result.logicalBytes = max;
             result.logicalBytesExact = false;
-            continue;
+        } else {
+            result.logicalBytes += bytes;
         }
-        result.logicalBytes += bytes;
+
+        const std::uint64_t phys = clone->physicalBytes;
+        if (phys == 0) {
+            result.physicalBytesExact = false;
+        } else if (result.physicalBytes > max - phys) {
+            result.physicalBytes = max;
+            result.physicalBytesExact = false;
+        } else {
+            result.physicalBytes += phys;
+        }
     }
+
+    peakLogicalBytes_ = (std::max)(peakLogicalBytes_, result.logicalBytes);
+    peakPhysicalBytes_ = (std::max)(peakPhysicalBytes_, result.physicalBytes);
+    result.peakLogicalBytes = peakLogicalBytes_;
+    result.peakPhysicalBytes = peakPhysicalBytes_;
+
     return result;
+}
+
+std::uint64_t D3D12NrGuideClones::PhysicalBytes(D3D12NrGuideKind kind) const noexcept {
+    const Clone* clone = Slot(kind);
+    return clone ? clone->physicalBytes : 0;
 }
 
 } // namespace nrfusion

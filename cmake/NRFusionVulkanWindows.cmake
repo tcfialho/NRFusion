@@ -89,6 +89,7 @@ add_executable(nrfusion_vulkan_external_interop_tests
     src/SyntheticDx12ProviderAccounting.cpp
     src/SyntheticDx12ProviderSubmit.cpp
     src/SyntheticDx12ProviderResidual.cpp
+    src/D3D12NrAllocationTracker.cpp
     src/VulkanCarrierContract.cpp
     $<TARGET_OBJECTS:nrfusion_vulkan_provider_compile>)
 target_include_directories(nrfusion_vulkan_external_interop_tests PRIVATE

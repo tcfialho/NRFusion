@@ -1,5 +1,6 @@
 #include "nrfusion/SyntheticDx12Provider.hpp"
 #include "nrfusion/MatchedResidualShader.hpp"
+#include "nrfusion/D3D12NrAllocationTracker.hpp"
 
 #include <d3dcompiler.h>
 
@@ -41,7 +42,6 @@ bool SyntheticDx12Provider::Initialize(const ProviderContext& context) {
             slot.lowDepth.Reset();
             slot.lowMotion.Reset();
             slot.lowNeuralOut.Reset();
-            slot.lowResidual.Reset();
             slot.inUse = false;
             slot.activeWorkId = 0;
         }
@@ -106,10 +106,13 @@ void SyntheticDx12Provider::Shutdown() {
         s.lowDepth.Reset();
         s.lowMotion.Reset();
         s.lowNeuralOut.Reset();
-        s.lowResidual.Reset();
+        s.physicalBytes = 0;
         s.inUse = false;
         s.activeWorkId = 0;
     }
+
+    D3D12NrAllocationTracker::Instance().RecordRetirement("SyntheticDx12", "lowColor");
+    D3D12NrAllocationTracker::Instance().RecordRetirement("SyntheticDx12", "lowNeuralOut");
 
     srvUavHeap_.Reset();
     descriptorSize_ = 0;
@@ -220,7 +223,7 @@ bool SyntheticDx12Provider::EnsureShaders() {
 bool SyntheticDx12Provider::EnsureSlotResources(uint32_t slot, Resolution workRes) {
     if (slot >= kRingSlots || !workRes.Valid()) return false;
     Slot& s = ringSlots_[slot];
-    if (s.resolution == workRes && s.lowColor && s.lowResidual && s.lowNeuralOut) {
+    if (s.resolution == workRes && s.lowColor && s.lowNeuralOut) {
         return true;
     }
 
@@ -228,7 +231,6 @@ bool SyntheticDx12Provider::EnsureSlotResources(uint32_t slot, Resolution workRe
     s.lowDepth.Reset();
     s.lowMotion.Reset();
     s.lowNeuralOut.Reset();
-    s.lowResidual.Reset();
 
     D3D12_HEAP_PROPERTIES defaultHeap{};
     defaultHeap.Type = D3D12_HEAP_TYPE_DEFAULT;
@@ -253,10 +255,19 @@ bool SyntheticDx12Provider::EnsureSlotResources(uint32_t slot, Resolution workRe
                                                D3D12_RESOURCE_STATE_COMMON, nullptr,
                                                IID_PPV_ARGS(&s.lowNeuralOut)))) return false;
 
-    // 3. lowResidual
-    if (FAILED(device_->CreateCommittedResource(&defaultHeap, D3D12_HEAP_FLAG_NONE, &resDesc,
-                                               D3D12_RESOURCE_STATE_COMMON, nullptr,
-                                               IID_PPV_ARGS(&s.lowResidual)))) return false;
+    const auto allocInfo = device_->GetResourceAllocationInfo(0, 1, &resDesc);
+    const uint64_t perResPhysicalBytes = (allocInfo.SizeInBytes != (std::numeric_limits<std::uint64_t>::max)())
+                                             ? allocInfo.SizeInBytes
+                                             : 0;
+    const std::uint64_t logicalBytes = static_cast<std::uint64_t>(workRes.width) * workRes.height * 8;
+    s.physicalBytes = perResPhysicalBytes * 2;
+
+    D3D12NrAllocationTracker::Instance().RecordAllocation(
+        "SyntheticDx12", "lowColor", DXGI_FORMAT_R16G16B16A16_FLOAT,
+        workRes.width, workRes.height, logicalBytes, perResPhysicalBytes, true, true);
+    D3D12NrAllocationTracker::Instance().RecordAllocation(
+        "SyntheticDx12", "lowNeuralOut", DXGI_FORMAT_R16G16B16A16_FLOAT,
+        workRes.width, workRes.height, logicalBytes, perResPhysicalBytes, true, true);
 
     s.resolution = workRes;
     return true;
