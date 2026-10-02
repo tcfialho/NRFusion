@@ -68,6 +68,8 @@ int main() {
     assert(SUCCEEDED(device->CreateFence(0, D3D12_FENCE_FLAG_NONE, IID_PPV_ARGS(&fence))));
 
     nrfusion::testing::CheckCodecEncodeExact(device.Get(), queue.Get());
+    nrfusion::testing::CheckCodecResolveExact(device.Get(), queue.Get());
+    nrfusion::testing::CheckCodecResidualExact(device.Get(), queue.Get());
     nrfusion::testing::CodecApiCounters apiCalls(device.Get());
     D3D12NrCodec codec;
     assert(codec.Init(device.Get()));

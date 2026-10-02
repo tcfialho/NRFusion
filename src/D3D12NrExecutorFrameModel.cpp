@@ -126,9 +126,12 @@ bool D3D12NrExecutor::RunFrameModel(
 
     if (finalAnswer == nullptr) return false;
     if (request.recordGpuStage) request.recordGpuStage(cmd, NrGpuStage::CompositionBegin);
-    ID3D12Resource* resolveOriginal = context.acrossRr
-        ? hdrCopy
-        : (context.targetSupportsUav ? hdrCopy : context.activeTarget);
+    const bool inPlaceResolve = (hdrCopy == nullptr);
+    ID3D12Resource* resolveOriginal = inPlaceResolve
+        ? nullptr
+        : (context.acrossRr
+               ? hdrCopy
+               : (context.targetSupportsUav ? hdrCopy : context.activeTarget));
     ID3D12Resource* resolveTarget = context.acrossRr
         ? residualEdited
         : (context.targetSupportsUav ? context.activeTarget : hdrCopy);
@@ -155,7 +158,8 @@ bool D3D12NrExecutor::RunFrameModel(
                        D3D12_RESOURCE_STATE_UNORDERED_ACCESS)) {
             return false;
         }
-    } else if (scratch_.State(D3D12NrScratchKind::HdrCopy) != D3D12_RESOURCE_STATE_UNORDERED_ACCESS &&
+    } else if (hdrCopy != nullptr &&
+               scratch_.State(D3D12NrScratchKind::HdrCopy) != D3D12_RESOURCE_STATE_UNORDERED_ACCESS &&
                !scratch_.Transition(
                    cmd, D3D12NrScratchKind::HdrCopy,
                    scratch_.State(D3D12NrScratchKind::HdrCopy),

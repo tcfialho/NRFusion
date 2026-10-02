@@ -100,6 +100,8 @@ public:
     void ResetSlotCache() noexcept;
     D3D12NrCodecAccounting Accounting() const noexcept;
     bool CanSkipKeep() const noexcept { return encodeNoKeepPipelineState_ != nullptr; }
+    bool CanResolveInPlace() const noexcept { return resolveInPlacePipelineState_ != nullptr; }
+    bool CanApplyResidualInPlace() const noexcept { return residualInPlacePipelineState_ != nullptr; }
 
     bool Ready() const noexcept {
         return device_ != nullptr && rootSignature_ != nullptr &&
@@ -154,7 +156,9 @@ private:
     ID3D12RootSignature* rootSignature_ = nullptr;
     ID3D12PipelineState* pipelineState_ = nullptr;
     ID3D12PipelineState* encodeNoKeepPipelineState_ = nullptr;
+    ID3D12PipelineState* resolveInPlacePipelineState_ = nullptr;
     ID3D12PipelineState* residualPipelineState_ = nullptr;
+    ID3D12PipelineState* residualInPlacePipelineState_ = nullptr;
     ID3D12DescriptorHeap* descriptorHeap_ = nullptr;
     std::array<Slot, kSlotCount> slots_{};
     std::array<ResourceDescCacheEntry, 8> descCache_{};

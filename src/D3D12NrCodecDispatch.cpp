@@ -119,7 +119,12 @@ bool D3D12NrCodec::Dispatch(
         return false;
     ID3D12PipelineState* pipeline = pipelineState_;
     if (constants.mode == static_cast<std::uint32_t>(D3D12NrCodecMode::Encode) &&
-        !resources.keep && CanSkipKeep()) pipeline = encodeNoKeepPipelineState_;
+        !resources.keep && CanSkipKeep()) {
+        pipeline = encodeNoKeepPipelineState_;
+    } else if (constants.mode == static_cast<std::uint32_t>(D3D12NrCodecMode::Resolve) &&
+               !resources.original && CanResolveInPlace()) {
+        pipeline = resolveInPlacePipelineState_;
+    }
     return DispatchWithPipeline(commandList, pipeline, constants, resources);
 }
 
@@ -128,7 +133,13 @@ bool D3D12NrCodec::DispatchResidual(
     const D3D12NrCodecConstants& constants,
     const D3D12NrCodecResources& resources) noexcept {
     if (constants.mode > 1u) return false;
-    return DispatchWithPipeline(commandList, residualPipelineState_, constants, resources);
+    ID3D12PipelineState* pipeline = residualPipelineState_;
+    if (constants.mode == 1u &&
+        resources.source == resources.target &&
+        CanApplyResidualInPlace()) {
+        pipeline = residualInPlacePipelineState_;
+    }
+    return DispatchWithPipeline(commandList, pipeline, constants, resources);
 }
 
 bool D3D12NrCodec::DispatchWithPipeline(
@@ -150,12 +161,18 @@ bool D3D12NrCodec::DispatchWithPipeline(
     Slot& slot = slots_[slotNumber];
     slotIndex_ = (slotIndex_ + 1) % kActiveSlots;
 
+    const bool isInPlace = (pipeline == resolveInPlacePipelineState_ ||
+                            pipeline == residualInPlacePipelineState_);
+    ID3D12Resource* srvPrimary = (isInPlace && resources.source == resources.target)
+        ? (resources.model != nullptr ? resources.model : resources.source)
+        : resources.source;
+
     ID3D12Resource* srvs[kSrvCount] = {
-        resources.source,
-        resources.model != nullptr ? resources.model : resources.source,
-        resources.original != nullptr ? resources.original : resources.source,
-        resources.motion != nullptr ? resources.motion : resources.source,
-        resources.previousEdit != nullptr ? resources.previousEdit : resources.source,
+        srvPrimary,
+        resources.model != nullptr ? resources.model : srvPrimary,
+        resources.original != nullptr ? resources.original : srvPrimary,
+        resources.motion != nullptr ? resources.motion : srvPrimary,
+        resources.previousEdit != nullptr ? resources.previousEdit : srvPrimary,
     };
     ID3D12Resource* uavs[kUavCount] = {
         resources.target,
@@ -166,7 +183,7 @@ bool D3D12NrCodec::DispatchWithPipeline(
     bool sourceSrvDescBuilt = false;
     for (std::uint32_t i = 0; i < kSrvCount; ++i) {
         if (slot.srvs[i] != srvs[i]) {
-            if (srvs[i] == resources.source) {
+            if (srvs[i] == resources.source && !isInPlace) {
                 if (!sourceSrvDescBuilt) {
                     const D3D12_RESOURCE_DESC* sourceDesc = GetResourceDesc(resources.source);
                     if (sourceDesc == nullptr || !BuildSrvDesc(*sourceDesc, sourceSrvDesc)) return false;

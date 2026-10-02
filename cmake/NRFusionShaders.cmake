@@ -19,14 +19,23 @@ set(NRFUSION_DLSSNR_RESIDUAL_CSO
 set(NRFUSION_DLSSNR_RESIDUAL_HEADER
     "${NRFUSION_DLSSNR_GENERATED_DIR}/dlssnr_residual_Shader.h")
 
+set(NRFUSION_DLSSNR_RESOLVE_IN_PLACE_CSO "${NRFUSION_DLSSNR_GENERATED_DIR}/DlssNr_ResolveInPlace.cso")
+set(NRFUSION_DLSSNR_RESOLVE_IN_PLACE_HEADER "${NRFUSION_DLSSNR_GENERATED_DIR}/DlssNr_ResolveInPlace.h")
+set(NRFUSION_DLSSNR_RESIDUAL_IN_PLACE_CSO "${NRFUSION_DLSSNR_GENERATED_DIR}/DlssNr_ResidualInPlace.cso")
+set(NRFUSION_DLSSNR_RESIDUAL_IN_PLACE_HEADER "${NRFUSION_DLSSNR_GENERATED_DIR}/DlssNr_ResidualInPlace.h")
+
 add_custom_command(
     OUTPUT
         "${NRFUSION_DLSSNR_SHADER_CSO}"
         "${NRFUSION_DLSSNR_SHADER_HEADER}"
         "${NRFUSION_DLSSNR_NO_KEEP_CSO}"
         "${NRFUSION_DLSSNR_NO_KEEP_HEADER}"
+        "${NRFUSION_DLSSNR_RESOLVE_IN_PLACE_CSO}"
+        "${NRFUSION_DLSSNR_RESOLVE_IN_PLACE_HEADER}"
         "${NRFUSION_DLSSNR_RESIDUAL_CSO}"
         "${NRFUSION_DLSSNR_RESIDUAL_HEADER}"
+        "${NRFUSION_DLSSNR_RESIDUAL_IN_PLACE_CSO}"
+        "${NRFUSION_DLSSNR_RESIDUAL_IN_PLACE_HEADER}"
     COMMAND ${CMAKE_COMMAND} -E make_directory "${NRFUSION_DLSSNR_GENERATED_DIR}"
     COMMAND "${Python3_EXECUTABLE}" "${CMAKE_CURRENT_SOURCE_DIR}/tools/generate_dlssnr_shader.py"
             --variant main
@@ -39,7 +48,17 @@ add_custom_command(
             --output-dir "${NRFUSION_DLSSNR_GENERATED_DIR}"
             --fxc "${NRFUSION_FXC_EXECUTABLE}"
     COMMAND "${Python3_EXECUTABLE}" "${CMAKE_CURRENT_SOURCE_DIR}/tools/generate_dlssnr_shader.py"
+            --variant resolve-in-place
+            --source "${NRFUSION_DLSSNR_SHADER_SOURCE}"
+            --output-dir "${NRFUSION_DLSSNR_GENERATED_DIR}"
+            --fxc "${NRFUSION_FXC_EXECUTABLE}"
+    COMMAND "${Python3_EXECUTABLE}" "${CMAKE_CURRENT_SOURCE_DIR}/tools/generate_dlssnr_shader.py"
             --variant residual
+            --source "${NRFUSION_DLSSNR_RESIDUAL_SOURCE}"
+            --output-dir "${NRFUSION_DLSSNR_GENERATED_DIR}"
+            --fxc "${NRFUSION_FXC_EXECUTABLE}"
+    COMMAND "${Python3_EXECUTABLE}" "${CMAKE_CURRENT_SOURCE_DIR}/tools/generate_dlssnr_shader.py"
+            --variant residual-in-place
             --source "${NRFUSION_DLSSNR_RESIDUAL_SOURCE}"
             --output-dir "${NRFUSION_DLSSNR_GENERATED_DIR}"
             --fxc "${NRFUSION_FXC_EXECUTABLE}"
@@ -56,5 +75,9 @@ add_custom_target(nrfusion_dlssnr_shader_codegen
         "${NRFUSION_DLSSNR_SHADER_HEADER}"
         "${NRFUSION_DLSSNR_NO_KEEP_CSO}"
         "${NRFUSION_DLSSNR_NO_KEEP_HEADER}"
+        "${NRFUSION_DLSSNR_RESOLVE_IN_PLACE_CSO}"
+        "${NRFUSION_DLSSNR_RESOLVE_IN_PLACE_HEADER}"
         "${NRFUSION_DLSSNR_RESIDUAL_CSO}"
-        "${NRFUSION_DLSSNR_RESIDUAL_HEADER}")
+        "${NRFUSION_DLSSNR_RESIDUAL_HEADER}"
+        "${NRFUSION_DLSSNR_RESIDUAL_IN_PLACE_CSO}"
+        "${NRFUSION_DLSSNR_RESIDUAL_IN_PLACE_HEADER}")
