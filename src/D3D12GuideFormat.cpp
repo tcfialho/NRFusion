@@ -9,7 +9,8 @@ bool CanUseDirectD3D12Guide(bool runtimeQualified, D3D12GuideRole role,
         (role == D3D12GuideRole::Depth && family == D3D12TypelessGuideFamily::R32) ||
         (role == D3D12GuideRole::Motion && family == D3D12TypelessGuideFamily::R32G32);
     return formatQualified &&
-        ((surface.width == 1280 && surface.height == 720) ||
+        ((surface.width == 853 && surface.height == 480) ||
+         (surface.width == 1280 && surface.height == 720) ||
          (surface.width == 1706 && surface.height == 960) ||
          (surface.width == 2560 && surface.height == 1440));
 }

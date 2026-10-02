@@ -69,7 +69,7 @@ int main() {
                D3D12GuideRole::Motion,
                D3D12TypelessGuideFamily::R32) ==
            ResourceFormat::Unknown);
-    constexpr Resolution qualifiedSurfaces[] = {{1280, 720}, {1706, 960}, {2560, 1440}};
+    constexpr Resolution qualifiedSurfaces[] = {{853, 480}, {1280, 720}, {1706, 960}, {2560, 1440}};
     for (Resolution surface : qualifiedSurfaces) {
         assert(CanUseDirectD3D12Guide(true, D3D12GuideRole::Depth, D3D12TypelessGuideFamily::R32, surface));
         assert(CanUseDirectD3D12Guide(true, D3D12GuideRole::Motion, D3D12TypelessGuideFamily::R32G32, surface));
