@@ -208,6 +208,7 @@ bool StreamlineMfg::SetDevice(
     }
     *proxyDevice = static_cast<ID3D12Device*>(upgraded);
     impl_->status = "Streamline device ready";
+    ApplyFocusHooks();
     return true;
 #endif
 }

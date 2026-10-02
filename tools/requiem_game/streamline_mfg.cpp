@@ -22,6 +22,7 @@
 #include <sl_dlss_g.h>
 #include <sl_pcl.h>
 #include <sl_reflex.h>
+#include <tlhelp32.h>
 #endif
 
 namespace requiem {
@@ -171,6 +172,7 @@ static bool HookModuleImport(HMODULE module, const char* targetDll, const char* 
                 auto* importByName = reinterpret_cast<PIMAGE_IMPORT_BY_NAME>(
                     reinterpret_cast<BYTE*>(module) + origThunk->u1.AddressOfData);
                 if (strcmp(reinterpret_cast<const char*>(importByName->Name), targetFunc) == 0) {
+                    if (thunk->u1.Function == reinterpret_cast<uintptr_t>(newFunc)) return true;
                     DWORD oldProtect = 0;
                     if (VirtualProtect(&thunk->u1.Function, sizeof(void*), PAGE_READWRITE, &oldProtect)) {
                         if (origFunc && !*origFunc) {
@@ -188,12 +190,18 @@ static bool HookModuleImport(HMODULE module, const char* targetDll, const char* 
 }
 
 static void ApplyFocusHooks() {
-    HookModuleImport(GetModuleHandleW(L"sl.common.dll"), "USER32.dll", "GetForegroundWindow",
-                     reinterpret_cast<void*>(&SlHookGetForegroundWindow),
-                     reinterpret_cast<void**>(&g_realGetForegroundWindow));
-    HookModuleImport(GetModuleHandleW(L"sl.dlss_g.dll"), "USER32.dll", "GetForegroundWindow",
-                     reinterpret_cast<void*>(&SlHookGetForegroundWindow),
-                     reinterpret_cast<void**>(&g_realGetForegroundWindow));
+    HANDLE snap = CreateToolhelp32Snapshot(TH32CS_SNAPMODULE, GetCurrentProcessId());
+    if (snap == INVALID_HANDLE_VALUE) return;
+    MODULEENTRY32W me{};
+    me.dwSize = sizeof(me);
+    if (Module32FirstW(snap, &me)) {
+        do {
+            HookModuleImport(me.hModule, "USER32.dll", "GetForegroundWindow",
+                             reinterpret_cast<void*>(&SlHookGetForegroundWindow),
+                             reinterpret_cast<void**>(&g_realGetForegroundWindow));
+        } while (Module32NextW(snap, &me));
+    }
+    CloseHandle(snap);
 }
 #endif
 

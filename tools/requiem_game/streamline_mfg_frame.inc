@@ -13,6 +13,7 @@ bool StreamlineMfg::BeginFrame(
     return false;
 #else
     if (!impl_->ready || !commands || !depth || !motion) return false;
+    if (frameIndex <= 2) ApplyFocusHooks();
     impl_->currentFrame = frameIndex;
     impl_->frame = nullptr;
     auto result =
