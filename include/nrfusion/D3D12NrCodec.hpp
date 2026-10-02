@@ -97,6 +97,7 @@ public:
                           const D3D12NrCodecConstants& constants,
                           const D3D12NrCodecResources& resources) noexcept;
     void Shutdown() noexcept;
+    void ResetSlotCache() noexcept;
     D3D12NrCodecAccounting Accounting() const noexcept;
     bool CanSkipKeep() const noexcept { return encodeNoKeepPipelineState_ != nullptr; }
 
@@ -112,10 +113,18 @@ private:
     static constexpr std::uint32_t kCbvCount = 1;
     static constexpr std::uint32_t kDescriptorCount = kSrvCount + kUavCount + kCbvCount;
     static constexpr std::uint32_t kSlotCount = 48;
+    static constexpr std::uint32_t kActiveSlots = 12;
 
     struct Slot {
         ID3D12Resource* constants = nullptr;
         void* mappedConstants = nullptr;
+        ID3D12Resource* srvs[kSrvCount]{};
+        ID3D12Resource* uavs[kUavCount]{};
+    };
+
+    struct ResourceDescCacheEntry {
+        ID3D12Resource* resource{nullptr};
+        D3D12_RESOURCE_DESC desc{};
     };
 
     bool CreateRootSignature() noexcept;
@@ -123,6 +132,8 @@ private:
     bool CreateSlots() noexcept;
     bool WriteSrv(ID3D12Resource* resource, D3D12_CPU_DESCRIPTOR_HANDLE handle) noexcept;
     bool WriteUav(ID3D12Resource* resource, D3D12_CPU_DESCRIPTOR_HANDLE handle) noexcept;
+    const D3D12_RESOURCE_DESC* GetResourceDesc(ID3D12Resource* resource) noexcept;
+
     bool WriteConstants(Slot& slot, const D3D12NrCodecConstants& constants) noexcept;
     bool DispatchWithPipeline(ID3D12GraphicsCommandList* commandList,
                               ID3D12PipelineState* pipeline,
@@ -146,6 +157,8 @@ private:
     ID3D12PipelineState* residualPipelineState_ = nullptr;
     ID3D12DescriptorHeap* descriptorHeap_ = nullptr;
     std::array<Slot, kSlotCount> slots_{};
+    std::array<ResourceDescCacheEntry, 8> descCache_{};
+    std::uint32_t descCacheNext_ = 0;
     std::uint32_t slotIndex_ = 0;
     std::uint32_t descriptorSize_ = 0;
 };

@@ -16,6 +16,8 @@ bool D3D12NrCodec::Init(ID3D12Device* device) noexcept {
 
     device_ = device;
     device_->AddRef();
+    slotIndex_ = 0;
+    ResetSlotCache();
     descriptorSize_ =
         device_->GetDescriptorHandleIncrementSize(D3D12_DESCRIPTOR_HEAP_TYPE_CBV_SRV_UAV);
 
@@ -158,7 +160,16 @@ D3D12NrCodecAccounting D3D12NrCodec::Accounting() const noexcept {
     return result;
 }
 
+void D3D12NrCodec::ResetSlotCache() noexcept {
+    for (Slot& slot : slots_) {
+        for (auto& s : slot.srvs) s = nullptr;
+        for (auto& u : slot.uavs) u = nullptr;
+    }
+    for (auto& entry : descCache_) entry = {};
+}
+
 void D3D12NrCodec::Shutdown() noexcept {
+    ResetSlotCache();
     for (Slot& slot : slots_) {
         if (slot.mappedConstants != nullptr && slot.constants != nullptr)
             slot.constants->Unmap(0, nullptr);

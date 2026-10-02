@@ -132,6 +132,7 @@ D3D12NrFrameResult D3D12NrExecutor::ExecuteMainFrame(
     if (request.reset || !scratch_.Matches(scratchDesc)) {
         residualHistoryPrimed_ = false;
         residualStoreValid_ = false;
+        codec_.ResetSlotCache();
     }
     bool ok = codec_.Init(device) && scratch_.Ensure(device, scratchDesc, retirement_);
     const D3D12NrScratchUsage scratchUsage{
