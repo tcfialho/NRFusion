@@ -1,4 +1,6 @@
 #include "nrfusion/D3D12NrExecutor.hpp"
+#include "nrfusion/D3D12NrVramMetric.hpp"
+#include "nrfusion/Logger.hpp"
 
 namespace nrfusion {
 
@@ -93,6 +95,21 @@ void D3D12NrExecutor::Shutdown() {
         passNeedsReset_[pass] = false;
         passCreateFailed_[pass] = false;
     }
+
+    const auto scratchAcc = scratch_.Accounting(&retirement_);
+    const auto guideAcc = guideClones_.Accounting();
+    const uint64_t steadyLogical = scratchAcc.logicalBytes + guideAcc.logicalBytes;
+    const uint64_t steadyPhysical = scratchAcc.physicalBytes + guideAcc.physicalBytes;
+    const uint64_t peakLogical = scratchAcc.peakLogicalBytes + guideAcc.peakLogicalBytes;
+    const uint64_t peakPhysical = scratchAcc.peakPhysicalBytes + guideAcc.peakPhysicalBytes;
+    const uint64_t processVram = QueryProcessDedicatedVram(device_);
+    NRF_LOG_INFO("VRAM", "steadyLogical=%llu steadyPhysical=%llu peakLogical=%llu peakPhysical=%llu processDedicated=%llu",
+                 static_cast<unsigned long long>(steadyLogical),
+                 static_cast<unsigned long long>(steadyPhysical),
+                 static_cast<unsigned long long>(peakLogical),
+                 static_cast<unsigned long long>(peakPhysical),
+                 static_cast<unsigned long long>(processVram));
+
     retirement_.DrainAfterIdle(this, &D3D12NrExecutor::ReleaseRetired);
     scratch_.ReleaseAfterIdle();
     guideClones_.ReleaseAfterIdle();
@@ -128,8 +145,15 @@ void D3D12NrExecutor::Shutdown() {
         device_->Release();
         device_ = nullptr;
     }
+    lastCompletionFence_.Reset();
+    lastCompletionValue_ = 0;
     snippetPath_.clear();
     status_ = "shut down";
+}
+
+void D3D12NrExecutor::SetCompletionFence(ID3D12Fence* fence, std::uint64_t completionValue) noexcept {
+    lastCompletionFence_ = fence;
+    lastCompletionValue_ = completionValue;
 }
 
 } // namespace nrfusion

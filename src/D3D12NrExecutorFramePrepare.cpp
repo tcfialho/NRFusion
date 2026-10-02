@@ -103,7 +103,7 @@ bool D3D12NrExecutor::PrepareFrameResources(
         scratch_.Get(D3D12NrScratchKind::ColorCopy);
     ID3D12Resource* const hdrCopy =
         scratch_.Get(D3D12NrScratchKind::HdrCopy);
-    const bool preserveOriginal = context.acrossRr || context.targetSupportsUav || !codec_.CanSkipKeep();
+    const bool preserveOriginal = (hdrCopy != nullptr);
     D3D12NrCodecResources encodeResources{};
     encodeResources.source = context.activeTarget;
     encodeResources.previousEdit =
@@ -133,38 +133,40 @@ bool D3D12NrExecutor::PrepareFrameResources(
         }
         const D3D12_RESOURCE_DESC& sourceDesc = cachedGuideDescs_[slot];
         const DXGI_FORMAT typed = TypedGuideFormat(sourceDesc.Format);
-        bool useDirect = (typed == sourceDesc.Format);
-        if (!useDirect && baseQualified) {
-            const bool directDepth = (kind == D3D12NrGuideKind::Depth) &&
-                (sourceDesc.Format == DXGI_FORMAT_R32_TYPELESS);
-            const bool directMotion = (kind == D3D12NrGuideKind::Motion) &&
-                (sourceDesc.Format == DXGI_FORMAT_R32G32_TYPELESS);
-            if (directDepth || directMotion) {
-                const auto& guideRect = (kind == D3D12NrGuideKind::Depth)
-                    ? context.plan.depth : context.plan.motion;
-                const bool qualifiedRequest = guideRect.x == 0 && guideRect.y == 0 &&
-                    guideRect.width == sourceDesc.Width && guideRect.height == sourceDesc.Height;
-                const bool qualifiedDesc = sourceDesc.Dimension == D3D12_RESOURCE_DIMENSION_TEXTURE2D &&
-                    sourceDesc.DepthOrArraySize == 1 && sourceDesc.MipLevels == 1 &&
-                    sourceDesc.SampleDesc.Count == 1 && sourceDesc.SampleDesc.Quality == 0 &&
-                    sourceDesc.Layout == D3D12_TEXTURE_LAYOUT_UNKNOWN &&
-                    sourceDesc.Flags == D3D12_RESOURCE_FLAG_ALLOW_RENDER_TARGET;
+        const D3D12GuideRole role = (kind == D3D12NrGuideKind::Depth)
+            ? D3D12GuideRole::Depth : D3D12GuideRole::Motion;
+        const D3D12TypelessGuideFamily family = ClassifyD3D12GuideFormat(sourceDesc.Format);
+        const bool candidate = IsDirectD3D12GuideCandidate(role, sourceDesc.Format);
+
+        bool useDirect = false;
+        if (baseQualified && candidate) {
+            const auto& guideRect = (kind == D3D12NrGuideKind::Depth)
+                ? context.plan.depth : context.plan.motion;
+            const bool qualifiedRequest = (guideRect.x == 0 && guideRect.y == 0 &&
+                guideRect.width == sourceDesc.Width && guideRect.height == sourceDesc.Height);
+            const bool qualifiedDesc = (sourceDesc.Dimension == D3D12_RESOURCE_DIMENSION_TEXTURE2D &&
+                sourceDesc.DepthOrArraySize == 1 && sourceDesc.MipLevels == 1 &&
+                sourceDesc.SampleDesc.Count == 1 && sourceDesc.SampleDesc.Quality == 0 &&
+                sourceDesc.Layout == D3D12_TEXTURE_LAYOUT_UNKNOWN &&
+                !(sourceDesc.Flags & D3D12_RESOURCE_FLAG_DENY_SHADER_RESOURCE));
+            const bool noAliasing = (source != context.target) &&
+                (source != scratch_.Get(D3D12NrScratchKind::Output));
+
+            if (qualifiedRequest && qualifiedDesc && noAliasing) {
                 useDirect = CanUseDirectD3D12Guide(
-                    qualifiedRequest && qualifiedDesc,
-                    directDepth ? D3D12GuideRole::Depth : D3D12GuideRole::Motion,
-                    directDepth ? D3D12TypelessGuideFamily::R32 : D3D12TypelessGuideFamily::R32G32,
-                    {static_cast<std::uint32_t>(sourceDesc.Width), sourceDesc.Height});
+                    true, role, family,
+                    {static_cast<std::uint32_t>(sourceDesc.Width), static_cast<std::uint32_t>(sourceDesc.Height)});
             }
         }
         if (useDirect) {
             if (guideClones_.Get(kind) != nullptr &&
-                !guideClones_.Retire(kind, retirement_))
+                !guideClones_.Retire(kind, retirement_, lastCompletionFence_.Get(), lastCompletionValue_))
                 return nullptr;
             cloned = false;
             return source;
         }
 
-        if (!guideClones_.Ensure(context.device, kind, source, typed, retirement_))
+        if (!guideClones_.Ensure(context.device, kind, source, typed, retirement_, lastCompletionFence_.Get(), lastCompletionValue_))
             return nullptr;
         if (!TransitionExternal(
                 cmd, source, state, D3D12_RESOURCE_STATE_COPY_SOURCE))

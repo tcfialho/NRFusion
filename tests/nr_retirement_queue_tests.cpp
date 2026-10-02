@@ -1,10 +1,22 @@
 #include "nrfusion/NrDeferredRetirementQueue.hpp"
+#include "nrfusion/D3D12NrAllocationTracker.hpp"
 
 #include <cassert>
 #include <cstddef>
 #include <cstdint>
 #include <cstdlib>
 #include <new>
+
+#if defined(_WIN32)
+#include <d3d12.h>
+#else
+struct ID3D12Fence {
+    virtual unsigned long long GetCompletedValue() = 0;
+    virtual unsigned long AddRef() = 0;
+    virtual unsigned long Release() = 0;
+    virtual ~ID3D12Fence() = default;
+};
+#endif
 
 namespace {
 
@@ -22,6 +34,32 @@ void Release(void* context, nrfusion::NrRetiredObject retired) noexcept {
     if (retired.kind == nrfusion::NrRetiredObjectKind::Feature) ++log.features;
     else ++log.resources;
 }
+
+#if defined(_WIN32)
+struct MockFence final : ID3D12Fence {
+    ULONG refCount = 1;
+    UINT64 completed = 0;
+    HRESULT STDMETHODCALLTYPE QueryInterface(REFIID, void**) noexcept override { return E_NOINTERFACE; }
+    ULONG STDMETHODCALLTYPE AddRef() noexcept override { return ++refCount; }
+    ULONG STDMETHODCALLTYPE Release() noexcept override { return --refCount; }
+    HRESULT STDMETHODCALLTYPE GetPrivateData(REFGUID, UINT*, void*) noexcept override { return E_NOTIMPL; }
+    HRESULT STDMETHODCALLTYPE SetPrivateData(REFGUID, UINT, const void*) noexcept override { return E_NOTIMPL; }
+    HRESULT STDMETHODCALLTYPE SetPrivateDataInterface(REFGUID, const IUnknown*) noexcept override { return E_NOTIMPL; }
+    HRESULT STDMETHODCALLTYPE SetName(LPCWSTR) noexcept override { return E_NOTIMPL; }
+    HRESULT STDMETHODCALLTYPE GetDevice(REFIID, void**) noexcept override { return E_NOTIMPL; }
+    UINT64 STDMETHODCALLTYPE GetCompletedValue() noexcept override { return completed; }
+    HRESULT STDMETHODCALLTYPE SetEventOnCompletion(UINT64, HANDLE) noexcept override { return E_NOTIMPL; }
+    HRESULT STDMETHODCALLTYPE Signal(UINT64 val) noexcept override { completed = val; return S_OK; }
+};
+#else
+struct MockFence final : ID3D12Fence {
+    unsigned long refCount = 1;
+    unsigned long long completed = 0;
+    unsigned long long GetCompletedValue() override { return completed; }
+    unsigned long AddRef() override { return ++refCount; }
+    unsigned long Release() override { return --refCount; }
+};
+#endif
 
 }
 
@@ -72,11 +110,13 @@ int main() {
 
     int resource = 2;
     void* resourcePtr = &resource;
-    assert(queue.Park(resourcePtr, NrRetiredObjectKind::Resource, 2, 4096));
+    assert(queue.Park(resourcePtr, NrRetiredObjectKind::Resource, 2, 4096, 65536));
     auto accounting = queue.ResourceAccounting();
     assert(accounting.resourceCount == 1);
     assert(accounting.logicalBytes == 4096);
+    assert(accounting.physicalBytes == 65536);
     assert(accounting.logicalBytesExact);
+    assert(accounting.physicalBytesExact);
     queue.Tick(&log, Release);
     assert(log.resources == 0);
     queue.Tick(&log, Release);
@@ -84,6 +124,7 @@ int main() {
     accounting = queue.ResourceAccounting();
     assert(accounting.resourceCount == 0);
     assert(accounting.logicalBytes == 0);
+    assert(accounting.physicalBytes == 0);
 
     int held = 3;
     void* heldPtr = &held;
@@ -124,6 +165,88 @@ int main() {
         queue.Tick(&log, Release);
     }
     assert(gAllocations == allocationsBefore);
+
+    nrfusion::D3D12NrAllocationTracker::Instance().Clear();
+    nrfusion::D3D12NrAllocationTracker::Instance().RecordAllocation(
+        "TestOwner", "TestKind", DXGI_FORMAT_R16G16B16A16_FLOAT,
+        1920, 1080, 1920 * 1080 * 8, 16777216, true, true);
+    assert(nrfusion::D3D12NrAllocationTracker::Instance().TotalLogicalBytes() == 1920 * 1080 * 8);
+    assert(nrfusion::D3D12NrAllocationTracker::Instance().TotalPhysicalBytes() == 16777216);
+    assert(nrfusion::D3D12NrAllocationTracker::Instance().ActiveAllocationCount() == 1);
+    nrfusion::D3D12NrAllocationTracker::Instance().RecordRetirement("TestOwner", "TestKind");
+    assert(nrfusion::D3D12NrAllocationTracker::Instance().TotalLogicalBytes() == 0);
+    assert(nrfusion::D3D12NrAllocationTracker::Instance().ActiveAllocationCount() == 0);
+
+    // Fence-backed early retirement test:
+    {
+        MockFence fence;
+        fence.completed = 10;
+        int value = 42;
+        void* ptr = &value;
+        const std::size_t initialResources = log.resources;
+        assert(queue.Park(ptr, NrRetiredObjectKind::Resource, 32, 1024, 4096, &fence, 10));
+        assert(ptr == nullptr);
+        assert(queue.Size() == 1);
+        queue.Tick(&log, Release);
+        // Completed fence causes immediate release on 1st tick!
+        assert(queue.Size() == 0);
+        assert(log.resources == initialResources + 1);
+        assert(log.last == &value);
+    }
+
+    // Fence not completed yet, waits, then releases when signaled:
+    {
+        MockFence fence;
+        fence.completed = 5;
+        int value = 99;
+        void* ptr = &value;
+        const std::size_t initialResources = log.resources;
+        assert(queue.Park(ptr, NrRetiredObjectKind::Resource, 32, 1024, 4096, &fence, 10));
+        assert(queue.Size() == 1);
+        queue.Tick(&log, Release);
+        // Not completed (5 < 10), so not released yet:
+        assert(queue.Size() == 1);
+        assert(log.resources == initialResources);
+
+        // Now fence completes:
+        fence.completed = 10;
+        queue.Tick(&log, Release);
+        assert(queue.Size() == 0);
+        assert(log.resources == initialResources + 1);
+        assert(log.last == &value);
+    }
+
+    // Fence never completes: falls back to delay countdown:
+    {
+        MockFence fence;
+        fence.completed = 0;
+        int value = 123;
+        void* ptr = &value;
+        const std::size_t initialResources = log.resources;
+        assert(queue.Park(ptr, NrRetiredObjectKind::Resource, 3, 1024, 4096, &fence, 999));
+        assert(queue.Size() == 1);
+        queue.Tick(&log, Release);
+        assert(queue.Size() == 1); // 2 frames left
+        queue.Tick(&log, Release);
+        assert(queue.Size() == 1); // 1 frame left
+        queue.Tick(&log, Release);
+        assert(queue.Size() == 0); // Released by delay fallback!
+        assert(log.resources == initialResources + 1);
+    }
+
+    // Zero allocations with fence under load:
+    {
+        MockFence fence;
+        fence.completed = 1;
+        const std::size_t allocsBefore = gAllocations;
+        for (std::uint32_t i = 0; i < 10000; ++i) {
+            int value = 0;
+            void* ptr = &value;
+            assert(queue.Park(ptr, NrRetiredObjectKind::Resource, 32, 0, 0, &fence, 1));
+            queue.Tick(&log, Release);
+        }
+        assert(gAllocations == allocsBefore);
+    }
 
     return 0;
 }

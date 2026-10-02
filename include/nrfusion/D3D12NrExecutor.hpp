@@ -9,6 +9,7 @@
 #include <windows.h>
 #include <d3d11.h>
 #include <d3d12.h>
+#include <wrl/client.h>
 
 #include <array>
 #include <cstdint>
@@ -112,6 +113,8 @@ struct D3D12NrFrameRequest {
     D3D12_RESOURCE_STATES depthState = D3D12_RESOURCE_STATE_NON_PIXEL_SHADER_RESOURCE;
     D3D12_RESOURCE_STATES motionState = D3D12_RESOURCE_STATE_NON_PIXEL_SHADER_RESOURCE;
     D3D12_RESOURCE_STATES exposureState = D3D12_RESOURCE_STATE_NON_PIXEL_SHADER_RESOURCE;
+    ID3D12Fence* completionFence = nullptr;
+    std::uint64_t completionValue = 0;
 };
 
 enum class D3D12NrFrameResult : std::uint8_t {
@@ -132,6 +135,8 @@ public:
     bool Load();
 
     bool Init(ID3D12Device* device);
+
+    void SetCompletionFence(ID3D12Fence* fence, std::uint64_t completionValue) noexcept;
 
     bool EnsureFeature(ID3D12GraphicsCommandList* cmdList, uint32_t width, uint32_t height,
                        const DlssNrTuning& tuning = {});
@@ -264,6 +269,8 @@ private:
     bool justBuilt_ = false;
     NrSubmissionGate submissionGate_{};
     NrDeferredRetirementQueue retirement_{};
+    Microsoft::WRL::ComPtr<ID3D12Fence> lastCompletionFence_{};
+    std::uint64_t lastCompletionValue_ = 0;
     D3D12NrScratchResources scratch_{};
     D3D12NrGuideClones guideClones_{};
     D3D12NrCodec codec_{};
