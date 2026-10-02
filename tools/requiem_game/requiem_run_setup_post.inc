@@ -135,6 +135,12 @@
         ? GetModuleHandleA(dlss.Library().c_str()) : nullptr;
 
     if (g_requireNr) {
+        using SetEnabledFn = int(__cdecl*)(int);
+        const auto setNrDiagnosticEnabled = host ? reinterpret_cast<SetEnabledFn>(
+            GetProcAddress(host, "NRFusion_SetNrDiagnosticEnabled")) : nullptr;
+        if (setNrDiagnosticEnabled) {
+            setNrDiagnosticEnabled(1);
+        }
         beginNrFrame = reinterpret_cast<nrfusion::BeginNrDiagnosticFrame>(
             GetProcAddress(host, "NRFusion_BeginNrDiagnosticFrame"));
         readNrFrame = reinterpret_cast<nrfusion::ReadNrDiagnosticFrame>(
