@@ -37,6 +37,12 @@ enum class TransfusionFailure : std::uint8_t {
     GatePatchFailed
 };
 
+enum class MfgKernelSelector : uint32_t {
+    Selective = 0, // Transfuse compute kernels (main_kernel), keep utility/capture kernels stock Ada
+    All = 1,       // Transfuse all SM120 kernels
+    StockOnly = 2  // Keep all kernels as stock Ada (no fatbin transfusion)
+};
+
 struct TransfusionSnapshot {
     bool moduleFound = false;
     bool archGatesPatched = false;
@@ -46,6 +52,8 @@ struct TransfusionSnapshot {
     bool uirPatched = false;
     bool qualityFixActive = false;
     std::uint32_t blackwellKernelsRewritten = 0;
+    std::uint32_t blackwellKernelsKeptStock = 0;
+    MfgKernelSelector kernelSelector = MfgKernelSelector::Selective;
     std::uint32_t requestedByGame = 0;
     std::uint32_t effectiveMultiplier = 2;
     std::uint32_t unlockedMax = 0;
@@ -54,6 +62,7 @@ struct TransfusionSnapshot {
 
 static_assert(std::atomic<std::uint8_t>::is_always_lock_free);
 static_assert(std::atomic<std::uint32_t>::is_always_lock_free);
+static_assert(std::atomic<MfgKernelSelector>::is_always_lock_free);
 
 struct TransfusionStatus {
     bool moduleFound = false;
@@ -63,6 +72,8 @@ struct TransfusionStatus {
     unsigned int archGatesCount = 0;
     bool blackwellTransfusionActive = false;
     unsigned int blackwellKernelsRewritten = 0;
+    unsigned int blackwellKernelsKeptStock = 0;
+    MfgKernelSelector kernelSelector = MfgKernelSelector::Selective;
     bool uirPatched = false;
     bool qualityFixActive = false;
     uint32_t requestedByGame = 0;     // 0 = off, 1 = 2X, 2 = 3X, 3 = 4X
@@ -91,6 +102,9 @@ public:
 
     void SetMotionVectorMode(MfgMotionVectorMode mode) noexcept;
     MfgMotionVectorMode GetMotionVectorMode() const noexcept;
+
+    void SetKernelSelector(MfgKernelSelector selector) noexcept;
+    MfgKernelSelector GetKernelSelector() const noexcept;
 
     void SetDynamicTargetFps(uint32_t fps) noexcept;
     uint32_t GetDynamicTargetFps() const noexcept;
@@ -122,6 +136,9 @@ public:
     TransfusionSnapshot Snapshot() const noexcept;
     TransfusionStatus Status() const;
 
+    bool TransfuseBlackwellFatbins(HMODULE module);
+    void ResetForTesting() noexcept;
+
 private:
     DlssgTransfusion();
     ~DlssgTransfusion() = default;
@@ -129,7 +146,6 @@ private:
     bool HasSupportedArchGates(HMODULE module) const;
     bool PatchArchGates(HMODULE module);
     bool PatchHudlessUi(HMODULE module);
-    bool TransfuseBlackwellFatbins(HMODULE module);
     uint32_t UnlockedMaxLocked() const noexcept;
     void PublishSnapshotLocked(TransfusionFailure failure) noexcept;
 
@@ -157,6 +173,8 @@ private:
     std::atomic<uint32_t> m_snapshotSequence{0};
     std::atomic<uint32_t> m_snapshotFlags{0};
     std::atomic<uint32_t> m_snapshotKernels{0};
+    std::atomic<uint32_t> m_snapshotKernelsKeptStock{0};
+    std::atomic<MfgKernelSelector> m_kernelSelector{MfgKernelSelector::Selective};
     std::atomic<std::uint8_t> m_snapshotFailure{
         static_cast<std::uint8_t>(TransfusionFailure::None)};
 

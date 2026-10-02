@@ -16,7 +16,7 @@ inline const IMAGE_NT_HEADERS64* GetNtHeaders(HMODULE module)
     MEMORY_BASIC_INFORMATION mbi = {};
     if (VirtualQuery(module, &mbi, sizeof(mbi)) != sizeof(mbi)) return nullptr;
     if (mbi.State != MEM_COMMIT || (mbi.Protect & (PAGE_NOACCESS | PAGE_GUARD)) != 0) return nullptr;
-    if (mbi.Type != MEM_IMAGE) return nullptr;
+    if (mbi.Type != MEM_IMAGE && mbi.Type != MEM_PRIVATE) return nullptr;
 
     auto* base = reinterpret_cast<uint8_t*>(module);
     if (mbi.RegionSize < sizeof(IMAGE_DOS_HEADER)) return nullptr;
@@ -28,7 +28,7 @@ inline const IMAGE_NT_HEADERS64* GetNtHeaders(HMODULE module)
     MEMORY_BASIC_INFORMATION ntMbi = {};
     if (VirtualQuery(base + ntHeaderOffset, &ntMbi, sizeof(ntMbi)) != sizeof(ntMbi)) return nullptr;
     if (ntMbi.State != MEM_COMMIT || (ntMbi.Protect & (PAGE_NOACCESS | PAGE_GUARD)) != 0) return nullptr;
-    if (ntMbi.Type != MEM_IMAGE) return nullptr;
+    if (ntMbi.Type != MEM_IMAGE && ntMbi.Type != MEM_PRIVATE) return nullptr;
     const size_t bytesAvailable = (static_cast<uint8_t*>(ntMbi.BaseAddress) + ntMbi.RegionSize) - (base + ntHeaderOffset);
     if (bytesAvailable < sizeof(IMAGE_NT_HEADERS64)) return nullptr;
 

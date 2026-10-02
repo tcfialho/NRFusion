@@ -208,5 +208,156 @@ int main()
     assert(transfusion.UnlockedMax() == 0);
 
     assert(VirtualFree(image, 0, MEM_RELEASE) != 0);
+
+    // Verify selector default and mutation
+    assert(transfusion.GetKernelSelector() == nrfusion::MfgKernelSelector::Selective);
+    assert(transfusion.Snapshot().kernelSelector == nrfusion::MfgKernelSelector::Selective);
+    assert(transfusion.Snapshot().blackwellKernelsKeptStock == 0);
+
+    transfusion.SetKernelSelector(nrfusion::MfgKernelSelector::All);
+    assert(transfusion.GetKernelSelector() == nrfusion::MfgKernelSelector::All);
+    assert(transfusion.Snapshot().kernelSelector == nrfusion::MfgKernelSelector::All);
+
+    transfusion.SetKernelSelector(nrfusion::MfgKernelSelector::StockOnly);
+    assert(transfusion.GetKernelSelector() == nrfusion::MfgKernelSelector::StockOnly);
+    assert(transfusion.Snapshot().kernelSelector == nrfusion::MfgKernelSelector::StockOnly);
+
+    transfusion.SetKernelSelector(nrfusion::MfgKernelSelector::Selective);
+    assert(transfusion.GetKernelSelector() == nrfusion::MfgKernelSelector::Selective);
+
+    // Run deep adaptive selector test
+    {
+        auto writeMockFatbin = [](std::uint8_t* fatbin, const char* ptxContent) {
+            const std::uint32_t magic = 0xBA55ED50u;
+            const std::uint16_t headerSize = 0x10;
+            std::memcpy(fatbin, &magic, sizeof(magic));
+            std::memcpy(fatbin + 6, &headerSize, sizeof(headerSize));
+
+            auto* blackwell = fatbin + 16;
+            const std::uint16_t ptxKind = 1;
+            const std::uint32_t imageHeader = 32;
+            const std::uint64_t blackwellPayload = static_cast<std::uint64_t>(std::strlen(ptxContent) + 1);
+            const std::uint32_t blackwellArch = 120;
+            std::memcpy(blackwell, &ptxKind, sizeof(ptxKind));
+            std::memcpy(blackwell + 4, &imageHeader, sizeof(imageHeader));
+            std::memcpy(blackwell + 8, &blackwellPayload, sizeof(blackwellPayload));
+            std::memcpy(blackwell + 28, &blackwellArch, sizeof(blackwellArch));
+            std::memcpy(blackwell + imageHeader, ptxContent, static_cast<size_t>(blackwellPayload));
+
+            auto* ada = blackwell + imageHeader + blackwellPayload;
+            const std::uint16_t cubinKind = 2;
+            const std::uint64_t adaPayload = 1;
+            const std::uint32_t adaArch = 89;
+            std::memcpy(ada, &cubinKind, sizeof(cubinKind));
+            std::memcpy(ada + 4, &imageHeader, sizeof(imageHeader));
+            std::memcpy(ada + 8, &adaPayload, sizeof(adaPayload));
+            std::memcpy(ada + 28, &adaArch, sizeof(adaArch));
+
+            const std::uint64_t fatSize = imageHeader + blackwellPayload + imageHeader + adaPayload;
+            std::memcpy(fatbin + 8, &fatSize, sizeof(fatSize));
+        };
+
+        const std::size_t imageSize2 = 0x4000;
+        auto createModule = [&]() -> std::uint8_t* {
+            auto* img = static_cast<std::uint8_t*>(
+                VirtualAlloc(nullptr, imageSize2, MEM_COMMIT | MEM_RESERVE, PAGE_READWRITE));
+            assert(img != nullptr);
+            std::memset(img, 0, imageSize2);
+
+            auto* dosHeader = reinterpret_cast<IMAGE_DOS_HEADER*>(img);
+            dosHeader->e_magic = IMAGE_DOS_SIGNATURE;
+            dosHeader->e_lfanew = 0x80;
+            auto* ntHeader = reinterpret_cast<IMAGE_NT_HEADERS64*>(img + dosHeader->e_lfanew);
+            ntHeader->Signature = IMAGE_NT_SIGNATURE;
+            ntHeader->FileHeader.NumberOfSections = 1;
+            ntHeader->FileHeader.SizeOfOptionalHeader = sizeof(IMAGE_OPTIONAL_HEADER64);
+            ntHeader->OptionalHeader.SizeOfImage = static_cast<DWORD>(imageSize2);
+            auto* sec = IMAGE_FIRST_SECTION(ntHeader);
+            sec->VirtualAddress = 0x400;
+            sec->Misc.VirtualSize = 0x2000;
+            sec->Characteristics = IMAGE_SCN_MEM_READ;
+
+            // Fatbin 1: compute kernel
+            writeMockFatbin(img + 0x400, ".target sm_120\n.entry main_kernel\n");
+
+            // Fatbin 2: utility kernel
+            writeMockFatbin(img + 0x800, ".target sm_120\n.entry cuda_font_kernel\n");
+
+            return img;
+        };
+
+        // Subtest 1: Selective (default) -> main_kernel rewritten, cuda_font_kernel kept stock
+        {
+            auto* img = createModule();
+            transfusion.ResetForTesting();
+            assert(transfusion.GetKernelSelector() == nrfusion::MfgKernelSelector::Selective);
+
+            const bool ok = transfusion.TransfuseBlackwellFatbins(reinterpret_cast<HMODULE>(img));
+            assert(ok);
+            const auto status = transfusion.Status();
+            assert(status.blackwellKernelsRewritten == 1);
+            assert(status.blackwellKernelsKeptStock == 1);
+            assert(status.blackwellTransfusionActive);
+
+            // Compute kernel (fb1) rewritten to sm_89 and parked
+            auto* fb1 = img + 0x400;
+            assert(std::memcmp(fb1 + 16 + 32, ".target sm_89 ", 14) == 0);
+            uint32_t fb1Arch = 0;
+            std::memcpy(&fb1Arch, fb1 + 16 + 28, sizeof(fb1Arch));
+            assert(fb1Arch == 89);
+
+            // Utility kernel (fb2) kept stock sm_120
+            auto* fb2 = img + 0x800;
+            assert(std::memcmp(fb2 + 16 + 32, ".target sm_120", 14) == 0);
+            uint32_t fb2Arch = 0;
+            std::memcpy(&fb2Arch, fb2 + 16 + 28, sizeof(fb2Arch));
+            assert(fb2Arch == 120);
+
+            VirtualFree(img, 0, MEM_RELEASE);
+        }
+
+        // Subtest 2: All -> both rewritten
+        {
+            auto* img = createModule();
+            transfusion.ResetForTesting();
+            transfusion.SetKernelSelector(nrfusion::MfgKernelSelector::All);
+
+            const bool ok = transfusion.TransfuseBlackwellFatbins(reinterpret_cast<HMODULE>(img));
+            assert(ok);
+            const auto status = transfusion.Status();
+            assert(status.blackwellKernelsRewritten == 2);
+            assert(status.blackwellKernelsKeptStock == 0);
+            assert(status.blackwellTransfusionActive);
+
+            auto* fb1 = img + 0x400;
+            assert(std::memcmp(fb1 + 16 + 32, ".target sm_89 ", 14) == 0);
+            auto* fb2 = img + 0x800;
+            assert(std::memcmp(fb2 + 16 + 32, ".target sm_89 ", 14) == 0);
+
+            VirtualFree(img, 0, MEM_RELEASE);
+        }
+
+        // Subtest 3: StockOnly -> neither rewritten
+        {
+            auto* img = createModule();
+            transfusion.ResetForTesting();
+            transfusion.SetKernelSelector(nrfusion::MfgKernelSelector::StockOnly);
+
+            const bool ok = transfusion.TransfuseBlackwellFatbins(reinterpret_cast<HMODULE>(img));
+            assert(ok);
+            const auto status = transfusion.Status();
+            assert(status.blackwellKernelsRewritten == 0);
+            assert(status.blackwellKernelsKeptStock == 2);
+            assert(!status.blackwellTransfusionActive);
+
+            auto* fb1 = img + 0x400;
+            assert(std::memcmp(fb1 + 16 + 32, ".target sm_120", 14) == 0);
+            auto* fb2 = img + 0x800;
+            assert(std::memcmp(fb2 + 16 + 32, ".target sm_120", 14) == 0);
+
+            VirtualFree(img, 0, MEM_RELEASE);
+        }
+    }
+
     return 0;
 }

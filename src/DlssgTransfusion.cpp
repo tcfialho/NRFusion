@@ -28,6 +28,52 @@ DlssgTransfusion& DlssgTransfusion::Instance()
 DlssgTransfusion::DlssgTransfusion()
 {
     m_status.effectiveMultiplier = 2;
+    char envBuf[32] = {};
+    if (GetEnvironmentVariableA("NRFUSION_MFG_SELECTOR", envBuf, sizeof(envBuf)) > 0)
+    {
+        if (_stricmp(envBuf, "all") == 0)
+        {
+            m_status.kernelSelector = MfgKernelSelector::All;
+        }
+        else if (_stricmp(envBuf, "stock") == 0 || _stricmp(envBuf, "stockonly") == 0)
+        {
+            m_status.kernelSelector = MfgKernelSelector::StockOnly;
+        }
+        else
+        {
+            m_status.kernelSelector = MfgKernelSelector::Selective;
+        }
+    }
+    m_kernelSelector.store(m_status.kernelSelector, std::memory_order_relaxed);
+}
+
+void DlssgTransfusion::SetKernelSelector(MfgKernelSelector selector) noexcept
+{
+    std::lock_guard lock(m_mutex);
+    m_status.kernelSelector = selector;
+    m_kernelSelector.store(selector, std::memory_order_release);
+    const auto currentFailure = static_cast<TransfusionFailure>(
+        m_snapshotFailure.load(std::memory_order_relaxed));
+    PublishSnapshotLocked(currentFailure);
+}
+
+MfgKernelSelector DlssgTransfusion::GetKernelSelector() const noexcept
+{
+    return m_kernelSelector.load(std::memory_order_acquire);
+}
+
+void DlssgTransfusion::ResetForTesting() noexcept
+{
+    std::lock_guard lock(m_mutex);
+    m_status = TransfusionStatus{};
+    m_lastPatchedModule = nullptr;
+    m_appliedOnce.store(false, std::memory_order_relaxed);
+    m_activeMultiplier.store(0, std::memory_order_relaxed);
+    m_pendingMultiplier.store(0, std::memory_order_relaxed);
+    m_stabilityCount.store(0, std::memory_order_relaxed);
+    m_kernelSelector.store(MfgKernelSelector::Selective, std::memory_order_relaxed);
+    m_snapshotKernelsKeptStock.store(0, std::memory_order_relaxed);
+    PublishSnapshotLocked(TransfusionFailure::None);
 }
 
 bool DlssgTransfusion::IsPending() const noexcept
@@ -39,7 +85,7 @@ uint32_t DlssgTransfusion::UnlockedMaxLocked() const noexcept
 {
     return m_status.advertiseGatePatched &&
            m_status.validateGatePatched &&
-           m_status.blackwellKernelsRewritten > 0 ? 5u : 0u;
+           (m_status.blackwellKernelsRewritten > 0 || m_status.kernelSelector == MfgKernelSelector::StockOnly) ? 5u : 0u;
 }
 
 uint32_t DlssgTransfusion::UnlockedMax() const noexcept
@@ -55,6 +101,8 @@ TransfusionSnapshot DlssgTransfusion::Snapshot() const noexcept
         if ((begin & 1u) != 0) continue;
         const auto flags = m_snapshotFlags.load(std::memory_order_relaxed);
         const auto kernels = m_snapshotKernels.load(std::memory_order_relaxed);
+        const auto kernelsKeptStock = m_snapshotKernelsKeptStock.load(std::memory_order_relaxed);
+        const auto selector = m_kernelSelector.load(std::memory_order_relaxed);
         const auto failure = static_cast<TransfusionFailure>(
             m_snapshotFailure.load(std::memory_order_relaxed));
         if (begin != m_snapshotSequence.load(std::memory_order_acquire))
@@ -70,13 +118,16 @@ TransfusionSnapshot DlssgTransfusion::Snapshot() const noexcept
         snapshot.uirPatched = HasFlag(flags, kUirPatched);
         snapshot.qualityFixActive = HasFlag(flags, kQualityFixActive);
         snapshot.blackwellKernelsRewritten = kernels;
+        snapshot.blackwellKernelsKeptStock = kernelsKeptStock;
+        snapshot.kernelSelector = selector;
         snapshot.requestedByGame =
             m_requestedByGame.load(std::memory_order_acquire);
         snapshot.effectiveMultiplier =
             m_effectiveMultiplier.load(std::memory_order_acquire);
         snapshot.unlockedMax =
             snapshot.advertiseGatePatched &&
-            snapshot.validateGatePatched && kernels > 0 ? 5u : 0u;
+            snapshot.validateGatePatched &&
+            (kernels > 0 || selector == MfgKernelSelector::StockOnly) ? 5u : 0u;
         snapshot.failure = failure;
         return snapshot;
     }
@@ -99,6 +150,10 @@ void DlssgTransfusion::PublishSnapshotLocked(
     m_snapshotFlags.store(flags, std::memory_order_relaxed);
     m_snapshotKernels.store(
         m_status.blackwellKernelsRewritten, std::memory_order_relaxed);
+    m_snapshotKernelsKeptStock.store(
+        m_status.blackwellKernelsKeptStock, std::memory_order_relaxed);
+    m_kernelSelector.store(
+        m_status.kernelSelector, std::memory_order_relaxed);
     m_snapshotFailure.store(
         static_cast<std::uint8_t>(failure), std::memory_order_relaxed);
     m_snapshotSequence.fetch_add(1, std::memory_order_release);
@@ -130,7 +185,8 @@ void DlssgTransfusion::TryApply(HMODULE module)
     std::lock_guard lock(m_mutex);
     NRF_LOG_INFO("Transfusion", "TryApply called on module %p (%ls)", module, modPath);
 
-    if (m_lastPatchedModule == module && m_status.moduleFound && m_status.advertiseGatePatched && m_status.blackwellTransfusionActive)
+    if (m_lastPatchedModule == module && m_status.moduleFound && m_status.advertiseGatePatched &&
+        (m_status.blackwellTransfusionActive || m_status.kernelSelector == MfgKernelSelector::StockOnly))
     {
         NRF_LOG_INFO("Transfusion", "Module %p (%ls) already patched, skipping duplicate apply", module, modPath);
         return;
@@ -154,7 +210,8 @@ void DlssgTransfusion::TryApply(HMODULE module)
         PublishSnapshotLocked(TransfusionFailure::NoCompatibleBlackwellFatbins);
         return;
     }
-    NRF_LOG_INFO("Transfusion", "Fatbin transfusion succeeded! Blackwell kernels transfused: %u", m_status.blackwellKernelsRewritten);
+    NRF_LOG_INFO("Transfusion", "Fatbin transfusion completed! Rewritten: %u, Kept stock: %u",
+                 m_status.blackwellKernelsRewritten, m_status.blackwellKernelsKeptStock);
 
     if (!PatchArchGates(module))
     {

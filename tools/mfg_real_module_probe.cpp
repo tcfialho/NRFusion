@@ -30,6 +30,8 @@ int wmain(int argc, wchar_t** argv) {
         << " advertise=" << status.advertiseGatePatched
         << " validate=" << status.validateGatePatched
         << " kernels=" << status.blackwellKernelsRewritten
+        << " kept_stock=" << status.blackwellKernelsKeptStock
+        << " selector=" << static_cast<uint32_t>(status.kernelSelector)
         << " unlocked_max=" << transfusion.UnlockedMax()
         << " blackwell=" << status.blackwellTransfusionActive
         << " uir=" << status.uirPatched
@@ -41,8 +43,8 @@ int wmain(int argc, wchar_t** argv) {
         status.archGatesPatched &&
         status.advertiseGatePatched &&
         status.validateGatePatched &&
-        status.blackwellTransfusionActive &&
-        status.blackwellKernelsRewritten > 0 &&
+        (status.kernelSelector == nrfusion::MfgKernelSelector::StockOnly ||
+         (status.blackwellTransfusionActive && status.blackwellKernelsRewritten > 0)) &&
         transfusion.UnlockedMax() >= 3;
     FreeLibrary(module);
     return ok ? 0 : 1;
