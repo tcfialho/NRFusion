@@ -57,10 +57,73 @@ D3D12NrFrameResult D3D12NrExecutor::ApplyStoredResidual(
         }
         device = device_;
     }
-    const bool ready = codec_.Init(device) &&
-        scratch_.EnsureOptional(
-            device, D3D12NrScratchKind::ResidualComposed, outputDesc.Format,
-            static_cast<std::uint32_t>(outputDesc.Width), outputDesc.Height, retirement_);
+    if (!codec_.Init(device)) {
+        residualHistoryPrimed_ = false;
+        return D3D12NrFrameResult::Failed;
+    }
+
+    D3D12_FEATURE_DATA_FORMAT_SUPPORT formatSupport{outputDesc.Format, D3D12_FORMAT_SUPPORT1_NONE, D3D12_FORMAT_SUPPORT2_NONE};
+    const bool formatSupportsUav =
+        SUCCEEDED(device->CheckFeatureSupport(D3D12_FEATURE_FORMAT_SUPPORT, &formatSupport, sizeof(formatSupport))) &&
+        (formatSupport.Support2 & D3D12_FORMAT_SUPPORT2_UAV_TYPED_LOAD) != 0;
+
+    const bool canApplyInPlace =
+        (outputDesc.Flags & D3D12_RESOURCE_FLAG_ALLOW_UNORDERED_ACCESS) != 0 &&
+        formatSupportsUav &&
+        codec_.CanApplyResidualInPlace();
+
+    D3D12NrCodecConstants constants{};
+    constants.mode = 1;
+    constants.width = static_cast<std::uint32_t>(outputDesc.Width);
+    constants.height = outputDesc.Height;
+    constants.transferStrength = std::clamp(strength, 0.0f, 1.0f);
+
+    ID3D12Resource* history = scratch_.Get(
+        residualHistoryIndex_ == 0
+            ? D3D12NrScratchKind::ResidualHistory0
+            : D3D12NrScratchKind::ResidualHistory1);
+    if (history == nullptr) {
+        residualHistoryPrimed_ = false;
+        return D3D12NrFrameResult::Failed;
+    }
+
+    if (canApplyInPlace) {
+        D3D12_RESOURCE_STATES outputState = request.outputState;
+        if (outputState != D3D12_RESOURCE_STATE_UNORDERED_ACCESS &&
+            !TransitionExternal(cmd, resources.output, outputState,
+                                D3D12_RESOURCE_STATE_UNORDERED_ACCESS)) {
+            residualHistoryPrimed_ = false;
+            return D3D12NrFrameResult::Failed;
+        }
+
+        D3D12NrCodecResources codecResources{};
+        codecResources.source = resources.output;
+        codecResources.model = history;
+        codecResources.target = resources.output;
+
+        const bool applied = codec_.DispatchResidual(cmd, constants, codecResources);
+        if (applied) {
+            if (outputState != request.outputState) {
+                TransitionExternal(cmd, resources.output, outputState, request.outputState);
+            } else if (outputState == D3D12_RESOURCE_STATE_UNORDERED_ACCESS) {
+                D3D12_RESOURCE_BARRIER uavBarrier{};
+                uavBarrier.Type = D3D12_RESOURCE_BARRIER_TYPE_UAV;
+                uavBarrier.UAV.pResource = resources.output;
+                cmd->ResourceBarrier(1, &uavBarrier);
+            }
+            return D3D12NrFrameResult::Applied;
+        }
+
+        if (outputState != request.outputState) {
+            TransitionExternal(cmd, resources.output, outputState, request.outputState);
+        }
+        residualHistoryPrimed_ = false;
+        return D3D12NrFrameResult::Failed;
+    }
+
+    const bool ready = scratch_.EnsureOptional(
+        device, D3D12NrScratchKind::ResidualComposed, outputDesc.Format,
+        static_cast<std::uint32_t>(outputDesc.Width), outputDesc.Height, retirement_);
     if (!ready) {
         residualHistoryPrimed_ = false;
         return D3D12NrFrameResult::Failed;
@@ -92,18 +155,9 @@ D3D12NrFrameResult D3D12NrExecutor::ApplyStoredResidual(
         return D3D12NrFrameResult::Failed;
     }
 
-    D3D12NrCodecConstants constants{};
-    constants.mode = 1;
-    constants.width = static_cast<std::uint32_t>(outputDesc.Width);
-    constants.height = outputDesc.Height;
-    constants.transferStrength = std::clamp(strength, 0.0f, 1.0f);
-
     D3D12NrCodecResources codecResources{};
     codecResources.source = resources.output;
-    codecResources.model = scratch_.Get(
-        residualHistoryIndex_ == 0
-            ? D3D12NrScratchKind::ResidualHistory0
-            : D3D12NrScratchKind::ResidualHistory1);
+    codecResources.model = history;
     codecResources.target = composed;
 
     const bool applied = codec_.DispatchResidual(cmd, constants, codecResources);
