@@ -209,23 +209,30 @@ bool D3D12NrScratchResources::Retire(NrDeferredRetirementQueue& retirement) noex
     return true;
 }
 
-bool D3D12NrScratchResources::Transition(
-    ID3D12GraphicsCommandList* cmdList, D3D12NrScratchKind kind,
-    D3D12_RESOURCE_STATES expected, D3D12_RESOURCE_STATES next) noexcept {
+bool D3D12NrScratchResources::QueueTransition(
+    D3D12NrScratchKind kind, D3D12_RESOURCE_STATES expected,
+    D3D12_RESOURCE_STATES next, D3D12_RESOURCE_BARRIER& barrier) noexcept {
     Surface* surface = Slot(kind);
-    if (cmdList == nullptr || surface == nullptr ||
-        surface->resource == nullptr || surface->state != expected)
+    if (surface == nullptr || surface->resource == nullptr || surface->state != expected)
         return false;
     if (expected == next) return true;
-
-    D3D12_RESOURCE_BARRIER barrier{};
     barrier.Type = D3D12_RESOURCE_BARRIER_TYPE_TRANSITION;
     barrier.Transition.pResource = surface->resource;
     barrier.Transition.Subresource = D3D12_RESOURCE_BARRIER_ALL_SUBRESOURCES;
     barrier.Transition.StateBefore = expected;
     barrier.Transition.StateAfter = next;
-    cmdList->ResourceBarrier(1, &barrier);
     surface->state = next;
+    return true;
+}
+
+bool D3D12NrScratchResources::Transition(
+    ID3D12GraphicsCommandList* cmdList, D3D12NrScratchKind kind,
+    D3D12_RESOURCE_STATES expected, D3D12_RESOURCE_STATES next) noexcept {
+    if (cmdList == nullptr) return false;
+    if (expected == next) return true;
+    D3D12_RESOURCE_BARRIER barrier{};
+    if (!QueueTransition(kind, expected, next, barrier)) return false;
+    cmdList->ResourceBarrier(1, &barrier);
     return true;
 }
 

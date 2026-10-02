@@ -96,6 +96,7 @@ void D3D12NrExecutor::Shutdown() {
     retirement_.DrainAfterIdle(this, &D3D12NrExecutor::ReleaseRetired);
     scratch_.ReleaseAfterIdle();
     guideClones_.ReleaseAfterIdle();
+    cachedGuideResources_[0] = cachedGuideResources_[1] = nullptr;
     codec_.Shutdown();
     residualHistoryIndex_ = 0;
     residualHistoryPrimed_ = false;

@@ -115,42 +115,18 @@ bool D3D12NrExecutor::PrepareFrameResources(
                                  context.plan.activeColor.height),
             encodeResources))
         return false;
-    if (!scratch_.Transition(
-            cmd, D3D12NrScratchKind::ColorCopy,
-            D3D12_RESOURCE_STATE_UNORDERED_ACCESS,
-            D3D12_RESOURCE_STATE_NON_PIXEL_SHADER_RESOURCE))
-        return false;
-    if (preserveOriginal && !scratch_.Transition(
-            cmd, D3D12NrScratchKind::HdrCopy,
-            D3D12_RESOURCE_STATE_UNORDERED_ACCESS,
-            D3D12_RESOURCE_STATE_NON_PIXEL_SHADER_RESOURCE))
-        return false;
-
     context.modelInput = colorCopy;
-    if (context.plan.reduced) {
-        D3D12NrCodecConstants scale{};
-        scale.mode = static_cast<std::uint32_t>(D3D12NrCodecMode::Downsample);
-        scale.width = context.plan.work.width;
-        scale.height = context.plan.work.height;
-        ID3D12Resource* const colorSmall =
-            scratch_.Get(D3D12NrScratchKind::ColorSmall);
-        D3D12NrCodecResources scaleResources{};
-        scaleResources.source = context.modelInput;
-        scaleResources.target = colorSmall;
-        if (!codec_.Dispatch(cmd, scale, scaleResources) ||
-            !scratch_.Transition(
-                cmd, D3D12NrScratchKind::ColorSmall,
-                D3D12_RESOURCE_STATE_UNORDERED_ACCESS,
-                D3D12_RESOURCE_STATE_NON_PIXEL_SHADER_RESOURCE))
-            return false;
-        context.modelInput = colorSmall;
-    }
 
     auto prepareGuide = [&](D3D12NrGuideKind kind, ID3D12Resource* source,
                             D3D12_RESOURCE_STATES& state,
                             D3D12_RESOURCE_STATES arrival,
                             bool& cloned) -> ID3D12Resource* {
-        const D3D12_RESOURCE_DESC sourceDesc = source->GetDesc();
+        const std::size_t slot = (kind == D3D12NrGuideKind::Depth) ? 0 : 1;
+        if (cachedGuideResources_[slot] != source) {
+            cachedGuideResources_[slot] = source;
+            cachedGuideDescs_[slot] = source->GetDesc();
+        }
+        const D3D12_RESOURCE_DESC& sourceDesc = cachedGuideDescs_[slot];
         const DXGI_FORMAT typed = TypedGuideFormat(sourceDesc.Format);
         const auto& guideRect = kind == D3D12NrGuideKind::Depth
             ? context.plan.depth : context.plan.motion;
@@ -178,9 +154,8 @@ bool D3D12NrExecutor::PrepareFrameResources(
             if (guideClones_.Get(kind) != nullptr &&
                 !guideClones_.Retire(kind, retirement_))
                 return nullptr;
-            return TransitionExternal(
-                cmd, source, state, D3D12_RESOURCE_STATE_NON_PIXEL_SHADER_RESOURCE)
-                ? source : nullptr;
+            cloned = false;
+            return source;
         }
 
         if (!guideClones_.Ensure(context.device, kind, source, typed, retirement_))
@@ -204,7 +179,57 @@ bool D3D12NrExecutor::PrepareFrameResources(
     context.motionIn = prepareGuide(
         D3D12NrGuideKind::Motion, resources.motion, context.motionState,
         request.motionState, context.motionCloned);
-    return context.depthIn != nullptr && context.motionIn != nullptr;
+    if (context.depthIn == nullptr || context.motionIn == nullptr)
+        return false;
+
+    D3D12_RESOURCE_BARRIER barriers[4]{};
+    UINT barrierCount = 0;
+    if (!scratch_.QueueTransition(
+            D3D12NrScratchKind::ColorCopy,
+            D3D12_RESOURCE_STATE_UNORDERED_ACCESS,
+            D3D12_RESOURCE_STATE_NON_PIXEL_SHADER_RESOURCE,
+            barriers[barrierCount++]))
+        return false;
+    if (preserveOriginal && !scratch_.QueueTransition(
+            D3D12NrScratchKind::HdrCopy,
+            D3D12_RESOURCE_STATE_UNORDERED_ACCESS,
+            D3D12_RESOURCE_STATE_NON_PIXEL_SHADER_RESOURCE,
+            barriers[barrierCount++]))
+        return false;
+    auto queueExt = [&](ID3D12Resource* res, D3D12_RESOURCE_STATES& st) {
+        if (res == nullptr || st == D3D12_RESOURCE_STATE_NON_PIXEL_SHADER_RESOURCE) return;
+        barriers[barrierCount].Type = D3D12_RESOURCE_BARRIER_TYPE_TRANSITION;
+        barriers[barrierCount].Transition.pResource = res;
+        barriers[barrierCount].Transition.Subresource = D3D12_RESOURCE_BARRIER_ALL_SUBRESOURCES;
+        barriers[barrierCount].Transition.StateBefore = st;
+        barriers[barrierCount].Transition.StateAfter = D3D12_RESOURCE_STATE_NON_PIXEL_SHADER_RESOURCE;
+        st = D3D12_RESOURCE_STATE_NON_PIXEL_SHADER_RESOURCE;
+        ++barrierCount;
+    };
+    if (!context.depthCloned) queueExt(resources.depth, context.depthState);
+    if (!context.motionCloned) queueExt(resources.motion, context.motionState);
+    if (barrierCount > 0)
+        cmd->ResourceBarrier(barrierCount, barriers);
+
+    if (context.plan.reduced) {
+        D3D12NrCodecConstants scale{};
+        scale.mode = static_cast<std::uint32_t>(D3D12NrCodecMode::Downsample);
+        scale.width = context.plan.work.width;
+        scale.height = context.plan.work.height;
+        ID3D12Resource* const colorSmall =
+            scratch_.Get(D3D12NrScratchKind::ColorSmall);
+        D3D12NrCodecResources scaleResources{};
+        scaleResources.source = context.modelInput;
+        scaleResources.target = colorSmall;
+        if (!codec_.Dispatch(cmd, scale, scaleResources) ||
+            !scratch_.Transition(
+                cmd, D3D12NrScratchKind::ColorSmall,
+                D3D12_RESOURCE_STATE_UNORDERED_ACCESS,
+                D3D12_RESOURCE_STATE_NON_PIXEL_SHADER_RESOURCE))
+            return false;
+        context.modelInput = colorSmall;
+    }
+    return true;
 }
 
 void D3D12NrExecutor::RestoreFrameResources(
