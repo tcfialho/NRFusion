@@ -1,0 +1,586 @@
+{
+  "status": "STOCK retained for Swin; no qualified faster model variant",
+  "family": "cc_tinlayout_fused_swin_8h_256_8_chained_fp8",
+  "observed_cost_1080p": {
+    "calls_per_frame": 12,
+    "ms_per_frame": 1.2639999999999965,
+    "source": "profiling ON phase2a inventory; denominator is observed NVAPI time"
+  },
+  "resolved_capture": {
+    "parent_extents": [
+      97484288,
+      147719680
+    ],
+    "parameter_bytes": 88,
+    "pointer_offsets": [
+      0,
+      8,
+      16,
+      48,
+      64
+    ],
+    "parent_aliases_preserved": true,
+    "three_real_captures": true,
+    "stock_replay_exact": true,
+    "post_timing_exact": true
+  },
+  "resource_usage_sm89": {
+    "registers_per_thread": 166,
+    "threads_per_block": 256,
+    "shared_bytes": 16384,
+    "stack_bytes": 0,
+    "local_bytes": 0,
+    "register_limited_CTA_per_SM": 1
+  },
+  "cache_patch": {
+    "changed_policy_bits": 44,
+    "arithmetic_changes": false,
+    "ready_wait_changes": false,
+    "store_changes": false,
+    "quality": "bit-identical on all three captures and after timed repetitions",
+    "performance": "initial 9 percent isolated median difference not reproducible in paired/reverse runs; stock and candidate mostly tie; p95/p99 unstable",
+    "decision": "no runtime integration; keep stock"
+  },
+  "sm86_experimental": {
+    "bit_identical": false,
+    "differing_output_bytes": 349680,
+    "median_us": 234.496,
+    "stock_reference_us": 101.376,
+    "decision": "reject: slower and non-Exact; no benefit to expose as user option"
+  },
+  "stock_replays": [
+    {
+      "capture": 0,
+      "exit": 0,
+      "stdout": "swin_bit_identical=1\n",
+      "stderr": "",
+      "replay": {
+        "scope": "isolated Swin replay; complete parent bytes compared",
+        "executed_image_sha256": "d59f0e95e2be4211068886ea4e0f3e6a1e492b4b0c16c37bfa6d21c448f379f8",
+        "parents": [
+          {
+            "bytes": 97484288,
+            "differing_bytes": 0,
+            "first_mismatch": 18446744073709551615,
+            "actual_sha256": "3e43dcfef6c9f896994d5253f7677cd3d6728dc5e7e59f59cc9f4da0c9e1f08f"
+          },
+          {
+            "bytes": 147719680,
+            "differing_bytes": 0,
+            "first_mismatch": 18446744073709551615,
+            "actual_sha256": "a5513b1845c98a486985ed04f38e66a1854cce33c2aba3a505866028bd4ee3e5"
+          }
+        ],
+        "bit_identical": true
+      },
+      "post_benchmark": {
+        "post_benchmark_bit_identical": true
+      },
+      "benchmark": {
+        "warmup": 50,
+        "samples": 300,
+        "median_us": 101.376,
+        "p95_us": 102.4,
+        "p99_us": 103.424,
+        "scope": "isolated kernel GPU time; UAV ordering outside timestamp interval"
+      }
+    },
+    {
+      "capture": 1,
+      "exit": 0,
+      "stdout": "swin_bit_identical=1\n",
+      "stderr": "",
+      "replay": {
+        "scope": "isolated Swin replay; complete parent bytes compared",
+        "executed_image_sha256": "d59f0e95e2be4211068886ea4e0f3e6a1e492b4b0c16c37bfa6d21c448f379f8",
+        "parents": [
+          {
+            "bytes": 97484288,
+            "differing_bytes": 0,
+            "first_mismatch": 18446744073709551615,
+            "actual_sha256": "256487b8ad4cb2dbfe8aff2b5d34ad8b5b56b9f988d377282ede7975f004532b"
+          },
+          {
+            "bytes": 147719680,
+            "differing_bytes": 0,
+            "first_mismatch": 18446744073709551615,
+            "actual_sha256": "a5513b1845c98a486985ed04f38e66a1854cce33c2aba3a505866028bd4ee3e5"
+          }
+        ],
+        "bit_identical": true
+      },
+      "post_benchmark": {
+        "post_benchmark_bit_identical": true
+      },
+      "benchmark": {
+        "warmup": 50,
+        "samples": 300,
+        "median_us": 101.376,
+        "p95_us": 102.4,
+        "p99_us": 104.448,
+        "scope": "isolated kernel GPU time; UAV ordering outside timestamp interval"
+      }
+    },
+    {
+      "capture": 2,
+      "exit": 0,
+      "stdout": "swin_bit_identical=1\n",
+      "stderr": "",
+      "replay": {
+        "scope": "isolated Swin replay; complete parent bytes compared",
+        "executed_image_sha256": "d59f0e95e2be4211068886ea4e0f3e6a1e492b4b0c16c37bfa6d21c448f379f8",
+        "parents": [
+          {
+            "bytes": 97484288,
+            "differing_bytes": 0,
+            "first_mismatch": 18446744073709551615,
+            "actual_sha256": "32eea9c38d3446620943f50f9cf1145a0bc79fea8b0b639af75b4593a1bd7b99"
+          },
+          {
+            "bytes": 147719680,
+            "differing_bytes": 0,
+            "first_mismatch": 18446744073709551615,
+            "actual_sha256": "a5513b1845c98a486985ed04f38e66a1854cce33c2aba3a505866028bd4ee3e5"
+          }
+        ],
+        "bit_identical": true
+      },
+      "post_benchmark": {
+        "post_benchmark_bit_identical": true
+      },
+      "benchmark": {
+        "warmup": 50,
+        "samples": 300,
+        "median_us": 101.376,
+        "p95_us": 102.4,
+        "p99_us": 104.448,
+        "scope": "isolated kernel GPU time; UAV ordering outside timestamp interval"
+      }
+    }
+  ],
+  "paired_comparison": [
+    {
+      "pair": 1,
+      "variant": "stock",
+      "exit": 0,
+      "replay": {
+        "scope": "isolated Swin replay; complete parent bytes compared",
+        "executed_image_sha256": "d59f0e95e2be4211068886ea4e0f3e6a1e492b4b0c16c37bfa6d21c448f379f8",
+        "parents": [
+          {
+            "bytes": 97484288,
+            "differing_bytes": 0,
+            "first_mismatch": 18446744073709551615,
+            "actual_sha256": "3e43dcfef6c9f896994d5253f7677cd3d6728dc5e7e59f59cc9f4da0c9e1f08f"
+          },
+          {
+            "bytes": 147719680,
+            "differing_bytes": 0,
+            "first_mismatch": 18446744073709551615,
+            "actual_sha256": "a5513b1845c98a486985ed04f38e66a1854cce33c2aba3a505866028bd4ee3e5"
+          }
+        ],
+        "bit_identical": true
+      },
+      "benchmark": {
+        "warmup": 50,
+        "samples": 300,
+        "median_us": 101.376,
+        "p95_us": 107.52,
+        "p99_us": 765.952,
+        "scope": "isolated kernel GPU time; UAV ordering outside timestamp interval"
+      },
+      "post_benchmark": {
+        "post_benchmark_bit_identical": true
+      }
+    },
+    {
+      "pair": 1,
+      "variant": "cg",
+      "exit": 0,
+      "replay": {
+        "scope": "isolated Swin replay; complete parent bytes compared",
+        "executed_image_sha256": "4fd412850cc108b5989881b4a5850907e01a6071d396d2718aa5607a0fc25bb0",
+        "parents": [
+          {
+            "bytes": 97484288,
+            "differing_bytes": 0,
+            "first_mismatch": 18446744073709551615,
+            "actual_sha256": "3e43dcfef6c9f896994d5253f7677cd3d6728dc5e7e59f59cc9f4da0c9e1f08f"
+          },
+          {
+            "bytes": 147719680,
+            "differing_bytes": 0,
+            "first_mismatch": 18446744073709551615,
+            "actual_sha256": "a5513b1845c98a486985ed04f38e66a1854cce33c2aba3a505866028bd4ee3e5"
+          }
+        ],
+        "bit_identical": true
+      },
+      "benchmark": {
+        "warmup": 50,
+        "samples": 300,
+        "median_us": 101.376,
+        "p95_us": 276.48,
+        "p99_us": 758.784,
+        "scope": "isolated kernel GPU time; UAV ordering outside timestamp interval"
+      },
+      "post_benchmark": {
+        "post_benchmark_bit_identical": true
+      }
+    },
+    {
+      "pair": 2,
+      "variant": "cg",
+      "exit": 0,
+      "replay": {
+        "scope": "isolated Swin replay; complete parent bytes compared",
+        "executed_image_sha256": "4fd412850cc108b5989881b4a5850907e01a6071d396d2718aa5607a0fc25bb0",
+        "parents": [
+          {
+            "bytes": 97484288,
+            "differing_bytes": 0,
+            "first_mismatch": 18446744073709551615,
+            "actual_sha256": "3e43dcfef6c9f896994d5253f7677cd3d6728dc5e7e59f59cc9f4da0c9e1f08f"
+          },
+          {
+            "bytes": 147719680,
+            "differing_bytes": 0,
+            "first_mismatch": 18446744073709551615,
+            "actual_sha256": "a5513b1845c98a486985ed04f38e66a1854cce33c2aba3a505866028bd4ee3e5"
+          }
+        ],
+        "bit_identical": true
+      },
+      "benchmark": {
+        "warmup": 50,
+        "samples": 300,
+        "median_us": 100.352,
+        "p95_us": 687.104,
+        "p99_us": 1599.488,
+        "scope": "isolated kernel GPU time; UAV ordering outside timestamp interval"
+      },
+      "post_benchmark": {
+        "post_benchmark_bit_identical": true
+      }
+    },
+    {
+      "pair": 2,
+      "variant": "stock",
+      "exit": 0,
+      "replay": {
+        "scope": "isolated Swin replay; complete parent bytes compared",
+        "executed_image_sha256": "d59f0e95e2be4211068886ea4e0f3e6a1e492b4b0c16c37bfa6d21c448f379f8",
+        "parents": [
+          {
+            "bytes": 97484288,
+            "differing_bytes": 0,
+            "first_mismatch": 18446744073709551615,
+            "actual_sha256": "3e43dcfef6c9f896994d5253f7677cd3d6728dc5e7e59f59cc9f4da0c9e1f08f"
+          },
+          {
+            "bytes": 147719680,
+            "differing_bytes": 0,
+            "first_mismatch": 18446744073709551615,
+            "actual_sha256": "a5513b1845c98a486985ed04f38e66a1854cce33c2aba3a505866028bd4ee3e5"
+          }
+        ],
+        "bit_identical": true
+      },
+      "benchmark": {
+        "warmup": 50,
+        "samples": 300,
+        "median_us": 101.376,
+        "p95_us": 275.456,
+        "p99_us": 278.528,
+        "scope": "isolated kernel GPU time; UAV ordering outside timestamp interval"
+      },
+      "post_benchmark": {
+        "post_benchmark_bit_identical": true
+      }
+    },
+    {
+      "pair": 3,
+      "variant": "stock",
+      "exit": 0,
+      "replay": {
+        "scope": "isolated Swin replay; complete parent bytes compared",
+        "executed_image_sha256": "d59f0e95e2be4211068886ea4e0f3e6a1e492b4b0c16c37bfa6d21c448f379f8",
+        "parents": [
+          {
+            "bytes": 97484288,
+            "differing_bytes": 0,
+            "first_mismatch": 18446744073709551615,
+            "actual_sha256": "3e43dcfef6c9f896994d5253f7677cd3d6728dc5e7e59f59cc9f4da0c9e1f08f"
+          },
+          {
+            "bytes": 147719680,
+            "differing_bytes": 0,
+            "first_mismatch": 18446744073709551615,
+            "actual_sha256": "a5513b1845c98a486985ed04f38e66a1854cce33c2aba3a505866028bd4ee3e5"
+          }
+        ],
+        "bit_identical": true
+      },
+      "benchmark": {
+        "warmup": 50,
+        "samples": 300,
+        "median_us": 101.376,
+        "p95_us": 265.216,
+        "p99_us": 869.376,
+        "scope": "isolated kernel GPU time; UAV ordering outside timestamp interval"
+      },
+      "post_benchmark": {
+        "post_benchmark_bit_identical": true
+      }
+    },
+    {
+      "pair": 3,
+      "variant": "cg",
+      "exit": 0,
+      "replay": {
+        "scope": "isolated Swin replay; complete parent bytes compared",
+        "executed_image_sha256": "4fd412850cc108b5989881b4a5850907e01a6071d396d2718aa5607a0fc25bb0",
+        "parents": [
+          {
+            "bytes": 97484288,
+            "differing_bytes": 0,
+            "first_mismatch": 18446744073709551615,
+            "actual_sha256": "3e43dcfef6c9f896994d5253f7677cd3d6728dc5e7e59f59cc9f4da0c9e1f08f"
+          },
+          {
+            "bytes": 147719680,
+            "differing_bytes": 0,
+            "first_mismatch": 18446744073709551615,
+            "actual_sha256": "a5513b1845c98a486985ed04f38e66a1854cce33c2aba3a505866028bd4ee3e5"
+          }
+        ],
+        "bit_identical": true
+      },
+      "benchmark": {
+        "warmup": 50,
+        "samples": 300,
+        "median_us": 101.376,
+        "p95_us": 273.408,
+        "p99_us": 299.008,
+        "scope": "isolated kernel GPU time; UAV ordering outside timestamp interval"
+      },
+      "post_benchmark": {
+        "post_benchmark_bit_identical": true
+      }
+    },
+    {
+      "pair": 4,
+      "variant": "cg",
+      "exit": 0,
+      "replay": {
+        "scope": "isolated Swin replay; complete parent bytes compared",
+        "executed_image_sha256": "4fd412850cc108b5989881b4a5850907e01a6071d396d2718aa5607a0fc25bb0",
+        "parents": [
+          {
+            "bytes": 97484288,
+            "differing_bytes": 0,
+            "first_mismatch": 18446744073709551615,
+            "actual_sha256": "3e43dcfef6c9f896994d5253f7677cd3d6728dc5e7e59f59cc9f4da0c9e1f08f"
+          },
+          {
+            "bytes": 147719680,
+            "differing_bytes": 0,
+            "first_mismatch": 18446744073709551615,
+            "actual_sha256": "a5513b1845c98a486985ed04f38e66a1854cce33c2aba3a505866028bd4ee3e5"
+          }
+        ],
+        "bit_identical": true
+      },
+      "benchmark": {
+        "warmup": 50,
+        "samples": 300,
+        "median_us": 101.376,
+        "p95_us": 276.48,
+        "p99_us": 872.448,
+        "scope": "isolated kernel GPU time; UAV ordering outside timestamp interval"
+      },
+      "post_benchmark": {
+        "post_benchmark_bit_identical": true
+      }
+    },
+    {
+      "pair": 4,
+      "variant": "stock",
+      "exit": 0,
+      "replay": {
+        "scope": "isolated Swin replay; complete parent bytes compared",
+        "executed_image_sha256": "d59f0e95e2be4211068886ea4e0f3e6a1e492b4b0c16c37bfa6d21c448f379f8",
+        "parents": [
+          {
+            "bytes": 97484288,
+            "differing_bytes": 0,
+            "first_mismatch": 18446744073709551615,
+            "actual_sha256": "3e43dcfef6c9f896994d5253f7677cd3d6728dc5e7e59f59cc9f4da0c9e1f08f"
+          },
+          {
+            "bytes": 147719680,
+            "differing_bytes": 0,
+            "first_mismatch": 18446744073709551615,
+            "actual_sha256": "a5513b1845c98a486985ed04f38e66a1854cce33c2aba3a505866028bd4ee3e5"
+          }
+        ],
+        "bit_identical": true
+      },
+      "benchmark": {
+        "warmup": 50,
+        "samples": 300,
+        "median_us": 91.136,
+        "p95_us": 92.16,
+        "p99_us": 306.176,
+        "scope": "isolated kernel GPU time; UAV ordering outside timestamp interval"
+      },
+      "post_benchmark": {
+        "post_benchmark_bit_identical": true
+      }
+    }
+  ],
+  "isolated_candidates": [
+    {
+      "candidate": "sm89-cg",
+      "capture": 0,
+      "exit": 0,
+      "replay": {
+        "scope": "isolated Swin replay; complete parent bytes compared",
+        "executed_image_sha256": "4fd412850cc108b5989881b4a5850907e01a6071d396d2718aa5607a0fc25bb0",
+        "parents": [
+          {
+            "bytes": 97484288,
+            "differing_bytes": 0,
+            "first_mismatch": 18446744073709551615,
+            "actual_sha256": "3e43dcfef6c9f896994d5253f7677cd3d6728dc5e7e59f59cc9f4da0c9e1f08f"
+          },
+          {
+            "bytes": 147719680,
+            "differing_bytes": 0,
+            "first_mismatch": 18446744073709551615,
+            "actual_sha256": "a5513b1845c98a486985ed04f38e66a1854cce33c2aba3a505866028bd4ee3e5"
+          }
+        ],
+        "bit_identical": true
+      },
+      "benchmark": {
+        "warmup": 50,
+        "samples": 300,
+        "median_us": 92.16,
+        "p95_us": 1049.6,
+        "p99_us": 1825.792,
+        "scope": "isolated kernel GPU time; UAV ordering outside timestamp interval"
+      },
+      "post_benchmark": {
+        "post_benchmark_bit_identical": true
+      }
+    },
+    {
+      "candidate": "sm89-cg",
+      "capture": 1,
+      "exit": 0,
+      "replay": {
+        "scope": "isolated Swin replay; complete parent bytes compared",
+        "executed_image_sha256": "4fd412850cc108b5989881b4a5850907e01a6071d396d2718aa5607a0fc25bb0",
+        "parents": [
+          {
+            "bytes": 97484288,
+            "differing_bytes": 0,
+            "first_mismatch": 18446744073709551615,
+            "actual_sha256": "256487b8ad4cb2dbfe8aff2b5d34ad8b5b56b9f988d377282ede7975f004532b"
+          },
+          {
+            "bytes": 147719680,
+            "differing_bytes": 0,
+            "first_mismatch": 18446744073709551615,
+            "actual_sha256": "a5513b1845c98a486985ed04f38e66a1854cce33c2aba3a505866028bd4ee3e5"
+          }
+        ],
+        "bit_identical": true
+      },
+      "benchmark": {
+        "warmup": 50,
+        "samples": 300,
+        "median_us": 92.16,
+        "p95_us": 705.536,
+        "p99_us": 2412.544,
+        "scope": "isolated kernel GPU time; UAV ordering outside timestamp interval"
+      },
+      "post_benchmark": {
+        "post_benchmark_bit_identical": true
+      }
+    },
+    {
+      "candidate": "sm89-cg",
+      "capture": 2,
+      "exit": 0,
+      "replay": {
+        "scope": "isolated Swin replay; complete parent bytes compared",
+        "executed_image_sha256": "4fd412850cc108b5989881b4a5850907e01a6071d396d2718aa5607a0fc25bb0",
+        "parents": [
+          {
+            "bytes": 97484288,
+            "differing_bytes": 0,
+            "first_mismatch": 18446744073709551615,
+            "actual_sha256": "32eea9c38d3446620943f50f9cf1145a0bc79fea8b0b639af75b4593a1bd7b99"
+          },
+          {
+            "bytes": 147719680,
+            "differing_bytes": 0,
+            "first_mismatch": 18446744073709551615,
+            "actual_sha256": "a5513b1845c98a486985ed04f38e66a1854cce33c2aba3a505866028bd4ee3e5"
+          }
+        ],
+        "bit_identical": true
+      },
+      "benchmark": {
+        "warmup": 50,
+        "samples": 300,
+        "median_us": 92.16,
+        "p95_us": 661.504,
+        "p99_us": 1744.896,
+        "scope": "isolated kernel GPU time; UAV ordering outside timestamp interval"
+      },
+      "post_benchmark": {
+        "post_benchmark_bit_identical": true
+      }
+    },
+    {
+      "candidate": "sm86-experimental",
+      "exit": 1,
+      "replay": {
+        "scope": "isolated Swin replay; complete parent bytes compared",
+        "executed_image_sha256": "aaa1eb58ccadcc2e8d585544068d2800a34eed7fb08fe2b37b94889c4eda1209",
+        "parents": [
+          {
+            "bytes": 97484288,
+            "differing_bytes": 349680,
+            "first_mismatch": 34274818,
+            "actual_sha256": "69440e79e6fa5bb161a9e2d2335e070a72ecb27d8130eb14a85e8bc4563aca1c"
+          },
+          {
+            "bytes": 147719680,
+            "differing_bytes": 0,
+            "first_mismatch": 18446744073709551615,
+            "actual_sha256": "a5513b1845c98a486985ed04f38e66a1854cce33c2aba3a505866028bd4ee3e5"
+          }
+        ],
+        "bit_identical": false
+      },
+      "benchmark": {
+        "warmup": 50,
+        "samples": 300,
+        "median_us": 234.496,
+        "p95_us": 1945.6,
+        "p99_us": 2968.576,
+        "scope": "isolated kernel GPU time; UAV ordering outside timestamp interval"
+      },
+      "post_benchmark": {
+        "post_benchmark_bit_identical": false
+      }
+    }
+  ],
+  "scope": "EXPERIMENTO ISOLADO - NAO VALIDA O PRODUTO FINAL",
+  "next_action": "measure next independent memory-traffic opportunity; retain accepted no-keep preparation optimization"
+}

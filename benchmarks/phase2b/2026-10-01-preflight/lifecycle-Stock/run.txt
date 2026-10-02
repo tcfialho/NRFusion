@@ -1,0 +1,26 @@
+==========================================================
+ NRFusion - Resident Evil Requiem (D3D12 Testbed Game)    
+==========================================================
+[DPI] SetProcessDpiAwarenessContext: OK (err=0)
+[DESK] SetThreadDesktop: OK (err=0)
+[MFG] desktop bounds: (0,0)-(2560,1440) size 2560x1440 -> window pos: (320,180)
+[MFG] output: \\.\DISPLAY5
+[MFG] window focus: YES
+[IMG] referencia desligada: carregada (3840x2160)
+[IMG] referencia ligada:    carregada
+[NGX] feature criada; avaliacao ainda nao executada  (D:\Users\tcfialho\Documents\NRFusion\dist\RequiemGame\version.dll)
+[OK] Direct3D 12 Testbed inicializado com sucesso!
+[OK] Pressione [INSERT] a qualquer momento para abrir o menu do NRFusion.
+[OK] Pressione [TAB] para alternar: entrada, resultado calculado, referencia NVIDIA.
+[OK] Pressione [ESC] para fechar.
+[TEST] Deterministic-motion mode: animation follows rendered-frame number.
+[TEST] input=1280x720 output=1920x1080 warmup=40
+[IMG] Resultado calculado (NGX)
+[LIFECYCLE] frame=60 input=1280x720 quality=1
+[LIFECYCLE] frame=80 input=1280x720 quality=2
+[LIFECYCLE] frame=100 input=640x360 quality=1
+[LIFECYCLE] frame=120 input=1280x720 quality=1
+[LIFECYCLE] frame=140 NR=0
+[LIFECYCLE] frame=150 NR=1
+[NGX] evaluations=180; NR execution requires host evidence
+[OK] 180 quadros renderizados.

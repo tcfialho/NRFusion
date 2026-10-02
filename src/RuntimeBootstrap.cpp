@@ -47,6 +47,26 @@ RuntimeBootstrapResult RuntimeBootstrap::Start(
     return {};
 }
 
+RuntimeBootstrapResult RuntimeBootstrap::ActivateComponent(
+    RuntimeShell& shell, RuntimeComponent component) noexcept {
+    const auto state = shell.Status().state;
+    if (state != RuntimeState::Running && state != RuntimeState::Disabled)
+        return {RuntimeBootstrapFailure::NotStarted};
+    if (!shell.registry_.Register(component))
+        return {RuntimeBootstrapFailure::InvalidComponent};
+    return {};
+}
+
+RuntimeBootstrapResult RuntimeBootstrap::DeactivateComponent(
+    RuntimeShell& shell, RuntimeComponent component) noexcept {
+    const auto state = shell.Status().state;
+    if (state != RuntimeState::Running && state != RuntimeState::Disabled)
+        return {RuntimeBootstrapFailure::NotStarted};
+    if (!shell.registry_.Remove(component))
+        return {RuntimeBootstrapFailure::InvalidComponent};
+    return {};
+}
+
 void RuntimeBootstrap::Stop(RuntimeShell& shell) noexcept {
     shell.Shutdown();
 }

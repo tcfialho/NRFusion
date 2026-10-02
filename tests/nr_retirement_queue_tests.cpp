@@ -49,6 +49,11 @@ int main() {
     NrDeferredRetirementQueue queue;
     ReleaseLog log;
 
+    void* invalidObject = reinterpret_cast<void*>(0x44);
+    assert(!queue.Park(invalidObject, static_cast<NrRetiredObjectKind>(0xff)));
+    assert(invalidObject == reinterpret_cast<void*>(0x44));
+    assert(queue.Size() == 0);
+
     int feature = 1;
     void* featurePtr = &feature;
     assert(queue.Park(featurePtr, NrRetiredObjectKind::Feature));
@@ -67,11 +72,18 @@ int main() {
 
     int resource = 2;
     void* resourcePtr = &resource;
-    assert(queue.Park(resourcePtr, NrRetiredObjectKind::Resource, 2));
+    assert(queue.Park(resourcePtr, NrRetiredObjectKind::Resource, 2, 4096));
+    auto accounting = queue.ResourceAccounting();
+    assert(accounting.resourceCount == 1);
+    assert(accounting.logicalBytes == 4096);
+    assert(accounting.logicalBytesExact);
     queue.Tick(&log, Release);
     assert(log.resources == 0);
     queue.Tick(&log, Release);
     assert(log.resources == 1);
+    accounting = queue.ResourceAccounting();
+    assert(accounting.resourceCount == 0);
+    assert(accounting.logicalBytes == 0);
 
     int held = 3;
     void* heldPtr = &held;

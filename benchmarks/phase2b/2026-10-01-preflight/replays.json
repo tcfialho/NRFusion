@@ -1,0 +1,167 @@
+[
+  {
+    "capture": 0,
+    "variant": "stock",
+    "exit": 0,
+    "command": [
+      "D:\\Users\\tcfialho\\Documents\\NRFusion\\build-windows-validation\\Release\\NRFusionKernelReplay.exe",
+      "D:\\Users\\tcfialho\\Documents\\NRFusion\\.temp\\phase2a\\ffn-validation-captures\\capture-0",
+      "D:\\Users\\tcfialho\\Documents\\NRFusion\\.temp\\phase2b\\preflight-20261001\\replay-0-stock"
+    ],
+    "stdout": "bit_identical=1\n",
+    "stderr": "",
+    "report": {
+      "schema_version": 1,
+      "diagnostic_input_probe": false,
+      "variant": "stock",
+      "module_function_initialization_cpu_ms": 27.6815,
+      "driver_jit_cache_state": "unknown",
+      "bit_identical": true,
+      "differing_output_bytes": 0,
+      "done_bit_identical": true,
+      "max_abs_error": 0,
+      "mean_abs_error": 0,
+      "rms_error": 0,
+      "expected_sha256": "15caef635cd2f599c32c431ecc66fefc1ab53c76d11ac56a7b36b9e911b113e8",
+      "actual_sha256": "15caef635cd2f599c32c431ecc66fefc1ab53c76d11ac56a7b36b9e911b113e8"
+    }
+  },
+  {
+    "capture": 0,
+    "variant": "custom",
+    "exit": 0,
+    "command": [
+      "D:\\Users\\tcfialho\\Documents\\NRFusion\\build-windows-validation\\Release\\NRFusionKernelReplay.exe",
+      "D:\\Users\\tcfialho\\Documents\\NRFusion\\.temp\\phase2a\\ffn-validation-captures\\capture-0",
+      "D:\\Users\\tcfialho\\Documents\\NRFusion\\.temp\\phase2b\\preflight-20261001\\replay-0-custom",
+      "D:\\Users\\tcfialho\\Documents\\NRFusion\\build-windows-validation\\generated\\nrfusion_ffn_reference_sm89.cubin"
+    ],
+    "stdout": "bit_identical=1\n",
+    "stderr": "",
+    "report": {
+      "schema_version": 1,
+      "diagnostic_input_probe": false,
+      "variant": "custom",
+      "module_function_initialization_cpu_ms": 21.6661,
+      "driver_jit_cache_state": "unknown",
+      "bit_identical": true,
+      "differing_output_bytes": 0,
+      "done_bit_identical": true,
+      "max_abs_error": 0,
+      "mean_abs_error": 0,
+      "rms_error": 0,
+      "expected_sha256": "15caef635cd2f599c32c431ecc66fefc1ab53c76d11ac56a7b36b9e911b113e8",
+      "actual_sha256": "15caef635cd2f599c32c431ecc66fefc1ab53c76d11ac56a7b36b9e911b113e8"
+    }
+  },
+  {
+    "capture": 1,
+    "variant": "stock",
+    "exit": 0,
+    "command": [
+      "D:\\Users\\tcfialho\\Documents\\NRFusion\\build-windows-validation\\Release\\NRFusionKernelReplay.exe",
+      "D:\\Users\\tcfialho\\Documents\\NRFusion\\.temp\\phase2a\\ffn-validation-captures\\capture-1",
+      "D:\\Users\\tcfialho\\Documents\\NRFusion\\.temp\\phase2b\\preflight-20261001\\replay-1-stock"
+    ],
+    "stdout": "bit_identical=1\n",
+    "stderr": "",
+    "report": {
+      "schema_version": 1,
+      "diagnostic_input_probe": false,
+      "variant": "stock",
+      "module_function_initialization_cpu_ms": 28.0985,
+      "driver_jit_cache_state": "unknown",
+      "bit_identical": true,
+      "differing_output_bytes": 0,
+      "done_bit_identical": true,
+      "max_abs_error": 0,
+      "mean_abs_error": 0,
+      "rms_error": 0,
+      "expected_sha256": "ec0a2dd0175b83d46dc76e4a34a5d9b62c5105f5c18e4d21522a2e5c9e2c64db",
+      "actual_sha256": "ec0a2dd0175b83d46dc76e4a34a5d9b62c5105f5c18e4d21522a2e5c9e2c64db"
+    }
+  },
+  {
+    "capture": 1,
+    "variant": "custom",
+    "exit": 0,
+    "command": [
+      "D:\\Users\\tcfialho\\Documents\\NRFusion\\build-windows-validation\\Release\\NRFusionKernelReplay.exe",
+      "D:\\Users\\tcfialho\\Documents\\NRFusion\\.temp\\phase2a\\ffn-validation-captures\\capture-1",
+      "D:\\Users\\tcfialho\\Documents\\NRFusion\\.temp\\phase2b\\preflight-20261001\\replay-1-custom",
+      "D:\\Users\\tcfialho\\Documents\\NRFusion\\build-windows-validation\\generated\\nrfusion_ffn_reference_sm89.cubin"
+    ],
+    "stdout": "bit_identical=1\n",
+    "stderr": "",
+    "report": {
+      "schema_version": 1,
+      "diagnostic_input_probe": false,
+      "variant": "custom",
+      "module_function_initialization_cpu_ms": 21.1009,
+      "driver_jit_cache_state": "unknown",
+      "bit_identical": true,
+      "differing_output_bytes": 0,
+      "done_bit_identical": true,
+      "max_abs_error": 0,
+      "mean_abs_error": 0,
+      "rms_error": 0,
+      "expected_sha256": "ec0a2dd0175b83d46dc76e4a34a5d9b62c5105f5c18e4d21522a2e5c9e2c64db",
+      "actual_sha256": "ec0a2dd0175b83d46dc76e4a34a5d9b62c5105f5c18e4d21522a2e5c9e2c64db"
+    }
+  },
+  {
+    "capture": 2,
+    "variant": "stock",
+    "exit": 0,
+    "command": [
+      "D:\\Users\\tcfialho\\Documents\\NRFusion\\build-windows-validation\\Release\\NRFusionKernelReplay.exe",
+      "D:\\Users\\tcfialho\\Documents\\NRFusion\\.temp\\phase2a\\ffn-validation-captures\\capture-2",
+      "D:\\Users\\tcfialho\\Documents\\NRFusion\\.temp\\phase2b\\preflight-20261001\\replay-2-stock"
+    ],
+    "stdout": "bit_identical=1\n",
+    "stderr": "",
+    "report": {
+      "schema_version": 1,
+      "diagnostic_input_probe": false,
+      "variant": "stock",
+      "module_function_initialization_cpu_ms": 28.0993,
+      "driver_jit_cache_state": "unknown",
+      "bit_identical": true,
+      "differing_output_bytes": 0,
+      "done_bit_identical": true,
+      "max_abs_error": 0,
+      "mean_abs_error": 0,
+      "rms_error": 0,
+      "expected_sha256": "905a067fd1d49ed121a85386b958e83bc623e8f6d66a4582c2be96339b7417ca",
+      "actual_sha256": "905a067fd1d49ed121a85386b958e83bc623e8f6d66a4582c2be96339b7417ca"
+    }
+  },
+  {
+    "capture": 2,
+    "variant": "custom",
+    "exit": 0,
+    "command": [
+      "D:\\Users\\tcfialho\\Documents\\NRFusion\\build-windows-validation\\Release\\NRFusionKernelReplay.exe",
+      "D:\\Users\\tcfialho\\Documents\\NRFusion\\.temp\\phase2a\\ffn-validation-captures\\capture-2",
+      "D:\\Users\\tcfialho\\Documents\\NRFusion\\.temp\\phase2b\\preflight-20261001\\replay-2-custom",
+      "D:\\Users\\tcfialho\\Documents\\NRFusion\\build-windows-validation\\generated\\nrfusion_ffn_reference_sm89.cubin"
+    ],
+    "stdout": "bit_identical=1\n",
+    "stderr": "",
+    "report": {
+      "schema_version": 1,
+      "diagnostic_input_probe": false,
+      "variant": "custom",
+      "module_function_initialization_cpu_ms": 21.2234,
+      "driver_jit_cache_state": "unknown",
+      "bit_identical": true,
+      "differing_output_bytes": 0,
+      "done_bit_identical": true,
+      "max_abs_error": 0,
+      "mean_abs_error": 0,
+      "rms_error": 0,
+      "expected_sha256": "905a067fd1d49ed121a85386b958e83bc623e8f6d66a4582c2be96339b7417ca",
+      "actual_sha256": "905a067fd1d49ed121a85386b958e83bc623e8f6d66a4582c2be96339b7417ca"
+    }
+  }
+]

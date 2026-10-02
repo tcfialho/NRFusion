@@ -59,6 +59,8 @@ struct PerformanceConfig {
     std::vector<float> scaleSteps {1.0f, 0.85f, 0.75f, 0.67f, 0.58f, 0.50f};
     float minScale = 0.50f;
     float maxScale = 1.00f;
+
+    bool operator==(const PerformanceConfig&) const = default;
 };
 
 struct PerformanceDecision {
@@ -137,7 +139,7 @@ private:
     double emaAsyncOverlap_ = 0.0;
     double governorCapFps_ = 0.0;
     std::vector<bool> failedScaleSteps_;
-    NrCostModel costModel_;
+    NrCostModel costModel_{config_.scaleSteps.size()};
 };
 
 } // namespace nrfusion

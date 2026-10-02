@@ -1,6 +1,7 @@
 #include "ngx_dlss.hpp"
 
 #include <array>
+#include <filesystem>
 
 namespace requiem {
 namespace {
@@ -12,7 +13,6 @@ constexpr std::array<const wchar_t*, 6> kCandidates = {
     L"dxgi.dll", L"winmm.dll", L"version.dll", L"nvngx.dll", L"_nvngx.dll", L"nvngx_dlss.dll"};
 
 constexpr int kFeatureSuperSampling = 1;   // NVSDK_NGX_Feature_SuperSampling
-constexpr int kQualityBalanced = 1;        // NVSDK_NGX_PerfQuality_Value_Balanced
 constexpr int kSuccess = 1;                // NVSDK_NGX_Result_Success
 
 template <typename T>
@@ -20,24 +20,39 @@ T Symbol(HMODULE module, const char* name) {
     return reinterpret_cast<T>(reinterpret_cast<void*>(GetProcAddress(module, name)));
 }
 
+HMODULE LoadCandidate(const wchar_t* name) {
+    wchar_t exe[MAX_PATH]{};
+    if (GetModuleFileNameW(nullptr, exe, MAX_PATH) != 0) {
+        const auto local = std::filesystem::path(exe).parent_path() / name;
+        if (std::filesystem::is_regular_file(local)) {
+            if (HMODULE module = LoadLibraryW(local.c_str())) return module;
+        }
+    }
+    if (HMODULE module = GetModuleHandleW(name)) return module;
+    return LoadLibraryW(name);
+}
+
 } // namespace
 
 bool Dlss::Load() {
     for (const wchar_t* candidate : kCandidates) {
-        HMODULE module = GetModuleHandleW(candidate);
-        if (!module) module = LoadLibraryW(candidate);
+        HMODULE module = LoadCandidate(candidate);
         if (!module) continue;
-        // A module only counts if it actually answers for D3D12; several of the candidates
-        // exist for other reasons and would otherwise be accepted and then fail later.
+        const bool isNRFusion =
+            GetProcAddress(module, "NRFusion_Capture32_Connect") != nullptr;
+        nrfusionProxySeen_ = nrfusionProxySeen_ || isNRFusion;
         if (!Symbol<CreateFn>(module, "NVSDK_NGX_D3D12_CreateFeature")) continue;
         module_ = module;
+        nrfusionProxy_ = isNRFusion;
         char path[MAX_PATH]{};
         GetModuleFileNameA(module_, path, MAX_PATH);
         library_ = path;
         break;
     }
     if (!module_) {
-        status_ = "nenhuma biblioteca com os pontos de entrada NGX D3D12";
+        status_ = nrfusionProxySeen_
+            ? "proxy NRFusion carregado sem exports NGX D3D12"
+            : "nenhuma biblioteca com os pontos de entrada NGX D3D12";
         return false;
     }
 
@@ -60,9 +75,9 @@ bool Dlss::Load() {
 
 bool Dlss::Init(ID3D12Device* device, const wchar_t* applicationPath) {
     if (!module_) return false;
-    // A published application identifier is not required for a local test, and borrowing one
-    // that belongs to a real game would be worse than using a plain local value.
-    if (init_(0x4E524653ull, applicationPath, device, nullptr, 0x15u) != kSuccess) {
+    // Use NVIDIA's public Streamline Sample id so NGX and Streamline share a valid
+    // test application identity without borrowing an id from a shipping title.
+    if (init_(231313132ull, applicationPath, device, nullptr, 0x15u) != kSuccess) {
         status_ = "NVSDK_NGX_D3D12_Init recusou";
         return false;
     }
@@ -78,7 +93,7 @@ bool Dlss::Init(ID3D12Device* device, const wchar_t* applicationPath) {
 
 bool Dlss::Create(ID3D12GraphicsCommandList* commands, std::uint32_t renderWidth,
                   std::uint32_t renderHeight, std::uint32_t outputWidth,
-                  std::uint32_t outputHeight) {
+                  std::uint32_t outputHeight, int quality) {
     if (!parameters_) return false;
     renderWidth_ = renderWidth;
     renderHeight_ = renderHeight;
@@ -86,7 +101,7 @@ bool Dlss::Create(ID3D12GraphicsCommandList* commands, std::uint32_t renderWidth
     parameters_->Set(kParamHeight, renderHeight);
     parameters_->Set(kParamOutWidth, outputWidth);
     parameters_->Set(kParamOutHeight, outputHeight);
-    parameters_->Set(kParamPerfQuality, kQualityBalanced);
+    parameters_->Set(kParamPerfQuality, quality);
     parameters_->Set(kParamCreationNodeMask, 1u);
     parameters_->Set(kParamVisibilityNodeMask, 1u);
     // Motion vectors are produced at render resolution and the depth is the usual inverted
@@ -126,9 +141,13 @@ bool Dlss::Evaluate(ID3D12GraphicsCommandList* commands, ID3D12Resource* colour,
     return result == kSuccess;
 }
 
-void Dlss::Shutdown() {
+void Dlss::ReleaseFeature() {
     if (handle_ && release_) release_(handle_);
     handle_ = nullptr;
+}
+
+void Dlss::Shutdown() {
+    ReleaseFeature();
     if (shutdown_) shutdown_();
 }
 

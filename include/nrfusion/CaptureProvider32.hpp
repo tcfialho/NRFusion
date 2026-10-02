@@ -68,6 +68,7 @@ public:
                                 PipelinedFrameResult& outResult);
 
     uint64_t ActiveSessionId() const noexcept { return sessionId_; }
+    uint64_t ActiveConnectionGeneration() const noexcept { return connectionGeneration_; }
 
 private:
     bool DuplicateBuildHandlesForHost(const CaptureClientConfig& source, IpcBuildMessage& build) const;
@@ -77,6 +78,8 @@ private:
     void ConsumeCompletedFrameAck();
     bool PollPendingWrites();
     void MarkTransportFailure();
+    bool DrainCanceledIo(uint32_t timeoutMs);
+    void ResetOverlappedState();
 
     HANDLE pipeHandle_ = INVALID_HANDLE_VALUE;
     HANDLE hostProcess_ = nullptr;
@@ -89,7 +92,11 @@ private:
     bool connected_ = false;
     bool frameAckReadPending_ = false;
     bool frameWritePending_ = false;
+    bool readIoPending_ = false;
+    bool writeIoPending_ = false;
+    bool ioRetiring_ = false;
     uint64_t sessionId_ = 1;
+    uint64_t connectionGeneration_ = 0;
     uint64_t lastSubmittedWorkId_ = 0;
     uint64_t lastCompletedWorkId_ = 0;
     uint64_t lastCompletedFenceValue_ = 0;

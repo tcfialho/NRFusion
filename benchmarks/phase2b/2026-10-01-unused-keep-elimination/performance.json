@@ -1,0 +1,1449 @@
+{
+  "reference_commit": "08c923db1a2907767c7560ecbfb3f88e44cb294a",
+  "candidate_commit": "08c923db + retained exact no-keep; source qualification pending commit",
+  "frames": 900,
+  "warmup": 300,
+  "repeats": 2,
+  "gpu": "NVIDIA GeForce RTX 4050 Laptop GPU, GPU-42d9ac41-51ff-a670-4539-8abbccbda9dc, 617.14",
+  "settings": {
+    "scene": "deterministic pan over NVIDIA OFF JPEG; synthetic depth/motion",
+    "route": "Requiem -> version.dll NGX exports -> D3D12NrExecutor -> driver SR",
+    "precision": "fp8",
+    "nr_scale": 1.0,
+    "nr_passes": 1,
+    "nr_placement": "before_sr",
+    "style": "default",
+    "mfg": "off",
+    "overlay": "closed",
+    "timing_scope": "nr_gpu_ms includes NR preparation, model and composition",
+    "frame_wall_scope": "serialized testbed loop, Present and per-frame GPU fence; not gameplay FPS"
+  },
+  "typeless": false,
+  "proxy_sha256": {
+    "reference": "fb8deeb246484e347e8f3145a9524a14ce058640c5060ab5ba8a3311bd5e1779",
+    "candidate": "766ff4b4231b97e7b53eb0f641a178928973847ed63de2867bfee01fe98480d8"
+  },
+  "payload_hashes": {
+    "RequiemGame.exe": "b8722ccd49690251075438747a02126b89184671574e4a855ba46f3cbfc4c4a8",
+    "nvngx_dlss.dll": "c85f971ce023c9f3492fc7455f0b01a24ba18ea39636407a846902c4360b0b7e",
+    "nvngx_dlssg.dll": "5d5cbf14d2727d47f93fd10bf77bd91708ae122482a6f86fd564971641ebd47b",
+    "NRFusion/internal/nvngx_dlssnr.dll": "e67dee209320cdafe0e93e45675d7aa34323a53acc57a72b2e40a181581c989a",
+    "NRFusion/internal/nvngx.dll_dlssnr.dll": "25ffade884f50cad0174030335fd6216bbd569cb415bc35c958224a8c96f3c4e",
+    "assets/nvidia-dlss5-requiem-off.jpeg": "8d94795df55102affadf67fa779003c466405f4f9c42c46b933a5418f530cc81",
+    "assets/nvidia-dlss5-requiem-on.jpeg": "65018732def9352c1104a871b59db005255133c36320ad0970469636492437a8"
+  },
+  "runs": [
+    {
+      "height": 1080,
+      "repeat": 1,
+      "variant": "reference",
+      "command": [
+        "D:\\Users\\tcfialho\\Documents\\NRFusion\\dist\\RequiemGame\\RequiemGame.exe",
+        "--require-nrfusion-proxy",
+        "--require-nr",
+        "--deterministic-motion",
+        "--width",
+        "1920",
+        "--height",
+        "1080",
+        "--frames",
+        "900",
+        "--warmup",
+        "300",
+        "--csv",
+        "D:\\Users\\tcfialho\\Documents\\NRFusion\\.temp\\phase2b\\no-keep-final-performance\\1080-1-reference\\frames.csv",
+        "--capture",
+        "D:\\Users\\tcfialho\\Documents\\NRFusion\\.temp\\phase2b\\no-keep-final-performance\\1080-1-reference\\capture.ppm"
+      ],
+      "metrics": {
+        "nr_gpu_ms": {
+          "p50": 9.72339,
+          "p95": 10.413355,
+          "p99": 11.543619999999999
+        },
+        "ngx_evaluation_gpu_ms": {
+          "p50": 11.1288,
+          "p95": 11.81441,
+          "p99": 13.088059
+        },
+        "frame_wall_ms": {
+          "p50": 12.1356,
+          "p95": 13.118165,
+          "p99": 14.196446
+        },
+        "frame_gpu_ms": {
+          "p50": 11.3224,
+          "p95": 11.99587,
+          "p99": 13.277681
+        },
+        "nr_prepare_gpu_ms": {
+          "p50": 0.024576,
+          "p95": 0.026624,
+          "p99": 0.028672
+        },
+        "nr_model_gpu_ms": {
+          "p50": 9.57491,
+          "p95": 10.224084999999999,
+          "p99": 11.3992
+        },
+        "nr_compose_gpu_ms": {
+          "p50": 0.118784,
+          "p95": 0.120832,
+          "p99": 0.29083648
+        }
+      },
+      "copies": [
+        0
+      ],
+      "copy_bytes": [
+        0
+      ]
+    },
+    {
+      "height": 1080,
+      "repeat": 1,
+      "variant": "candidate",
+      "command": [
+        "D:\\Users\\tcfialho\\Documents\\NRFusion\\dist\\RequiemGame\\RequiemGame.exe",
+        "--require-nrfusion-proxy",
+        "--require-nr",
+        "--deterministic-motion",
+        "--width",
+        "1920",
+        "--height",
+        "1080",
+        "--frames",
+        "900",
+        "--warmup",
+        "300",
+        "--csv",
+        "D:\\Users\\tcfialho\\Documents\\NRFusion\\.temp\\phase2b\\no-keep-final-performance\\1080-1-candidate\\frames.csv",
+        "--capture",
+        "D:\\Users\\tcfialho\\Documents\\NRFusion\\.temp\\phase2b\\no-keep-final-performance\\1080-1-candidate\\capture.ppm"
+      ],
+      "metrics": {
+        "nr_gpu_ms": {
+          "p50": 9.74592,
+          "p95": 10.36972,
+          "p99": 11.396591
+        },
+        "ngx_evaluation_gpu_ms": {
+          "p50": 11.16825,
+          "p95": 11.84775,
+          "p99": 12.826744
+        },
+        "frame_wall_ms": {
+          "p50": 12.18765,
+          "p95": 12.966384999999999,
+          "p99": 13.952432
+        },
+        "frame_gpu_ms": {
+          "p50": 11.361799999999999,
+          "p95": 12.034155,
+          "p99": 13.012143
+        },
+        "nr_prepare_gpu_ms": {
+          "p50": 0.023552,
+          "p95": 0.024576,
+          "p99": 0.024576
+        },
+        "nr_model_gpu_ms": {
+          "p50": 9.601535,
+          "p95": 10.187644999999998,
+          "p99": 11.250212
+        },
+        "nr_compose_gpu_ms": {
+          "p50": 0.118784,
+          "p95": 0.120832,
+          "p99": 0.36558848
+        }
+      },
+      "copies": [
+        0
+      ],
+      "copy_bytes": [
+        0
+      ]
+    },
+    {
+      "height": 1440,
+      "repeat": 1,
+      "variant": "reference",
+      "command": [
+        "D:\\Users\\tcfialho\\Documents\\NRFusion\\dist\\RequiemGame\\RequiemGame.exe",
+        "--require-nrfusion-proxy",
+        "--require-nr",
+        "--deterministic-motion",
+        "--width",
+        "2560",
+        "--height",
+        "1440",
+        "--frames",
+        "900",
+        "--warmup",
+        "300",
+        "--csv",
+        "D:\\Users\\tcfialho\\Documents\\NRFusion\\.temp\\phase2b\\no-keep-final-performance\\1440-1-reference\\frames.csv",
+        "--capture",
+        "D:\\Users\\tcfialho\\Documents\\NRFusion\\.temp\\phase2b\\no-keep-final-performance\\1440-1-reference\\capture.ppm"
+      ],
+      "metrics": {
+        "nr_gpu_ms": {
+          "p50": 14.274550000000001,
+          "p95": 17.13401,
+          "p99": 17.584694
+        },
+        "ngx_evaluation_gpu_ms": {
+          "p50": 16.788,
+          "p95": 19.627205,
+          "p99": 20.266218
+        },
+        "frame_wall_ms": {
+          "p50": 18.1705,
+          "p95": 20.77811,
+          "p99": 21.526923999999998
+        },
+        "frame_gpu_ms": {
+          "p50": 17.11255,
+          "p95": 19.928305,
+          "p99": 20.563129
+        },
+        "nr_prepare_gpu_ms": {
+          "p50": 0.043008,
+          "p95": 0.04608,
+          "p99": 0.047104
+        },
+        "nr_model_gpu_ms": {
+          "p50": 14.0145,
+          "p95": 16.858175,
+          "p99": 17.325733999999997
+        },
+        "nr_compose_gpu_ms": {
+          "p50": 0.211968,
+          "p95": 0.217088,
+          "p99": 0.4004761599999999
+        }
+      },
+      "copies": [
+        0
+      ],
+      "copy_bytes": [
+        0
+      ]
+    },
+    {
+      "height": 1440,
+      "repeat": 1,
+      "variant": "candidate",
+      "command": [
+        "D:\\Users\\tcfialho\\Documents\\NRFusion\\dist\\RequiemGame\\RequiemGame.exe",
+        "--require-nrfusion-proxy",
+        "--require-nr",
+        "--deterministic-motion",
+        "--width",
+        "2560",
+        "--height",
+        "1440",
+        "--frames",
+        "900",
+        "--warmup",
+        "300",
+        "--csv",
+        "D:\\Users\\tcfialho\\Documents\\NRFusion\\.temp\\phase2b\\no-keep-final-performance\\1440-1-candidate\\frames.csv",
+        "--capture",
+        "D:\\Users\\tcfialho\\Documents\\NRFusion\\.temp\\phase2b\\no-keep-final-performance\\1440-1-candidate\\capture.ppm"
+      ],
+      "metrics": {
+        "nr_gpu_ms": {
+          "p50": 14.311900000000001,
+          "p95": 16.795655,
+          "p99": 17.298403999999998
+        },
+        "ngx_evaluation_gpu_ms": {
+          "p50": 16.78235,
+          "p95": 19.405825,
+          "p99": 19.861492999999996
+        },
+        "frame_wall_ms": {
+          "p50": 18.068849999999998,
+          "p95": 20.493395,
+          "p99": 20.999792
+        },
+        "frame_gpu_ms": {
+          "p50": 17.0962,
+          "p95": 19.704079999999998,
+          "p99": 20.159482999999998
+        },
+        "nr_prepare_gpu_ms": {
+          "p50": 0.038912,
+          "p95": 0.039936,
+          "p99": 0.041984
+        },
+        "nr_model_gpu_ms": {
+          "p50": 14.0564,
+          "p95": 16.5449,
+          "p99": 17.047463
+        },
+        "nr_compose_gpu_ms": {
+          "p50": 0.211968,
+          "p95": 0.217088,
+          "p99": 0.47735807999999613
+        }
+      },
+      "copies": [
+        0
+      ],
+      "copy_bytes": [
+        0
+      ]
+    },
+    {
+      "height": 2160,
+      "repeat": 1,
+      "variant": "reference",
+      "command": [
+        "D:\\Users\\tcfialho\\Documents\\NRFusion\\dist\\RequiemGame\\RequiemGame.exe",
+        "--require-nrfusion-proxy",
+        "--require-nr",
+        "--deterministic-motion",
+        "--width",
+        "3840",
+        "--height",
+        "2160",
+        "--frames",
+        "900",
+        "--warmup",
+        "300",
+        "--csv",
+        "D:\\Users\\tcfialho\\Documents\\NRFusion\\.temp\\phase2b\\no-keep-final-performance\\2160-1-reference\\frames.csv",
+        "--capture",
+        "D:\\Users\\tcfialho\\Documents\\NRFusion\\.temp\\phase2b\\no-keep-final-performance\\2160-1-reference\\capture.ppm"
+      ],
+      "metrics": {
+        "nr_gpu_ms": {
+          "p50": 30.7835,
+          "p95": 32.813505,
+          "p99": 33.38552
+        },
+        "ngx_evaluation_gpu_ms": {
+          "p50": 36.629,
+          "p95": 38.151405000000004,
+          "p99": 38.786584
+        },
+        "frame_wall_ms": {
+          "p50": 38.1609,
+          "p95": 39.71939,
+          "p99": 40.444541
+        },
+        "frame_gpu_ms": {
+          "p50": 37.23825,
+          "p95": 38.85396,
+          "p99": 39.435852999999994
+        },
+        "nr_prepare_gpu_ms": {
+          "p50": 0.1024,
+          "p95": 0.104448,
+          "p99": 0.13210623999999999
+        },
+        "nr_model_gpu_ms": {
+          "p50": 30.09485,
+          "p95": 32.2099,
+          "p99": 32.775241
+        },
+        "nr_compose_gpu_ms": {
+          "p50": 0.50688,
+          "p95": 0.6843391999999997,
+          "p99": 1.8005176999999997
+        }
+      },
+      "copies": [
+        0
+      ],
+      "copy_bytes": [
+        0
+      ]
+    },
+    {
+      "height": 2160,
+      "repeat": 1,
+      "variant": "candidate",
+      "command": [
+        "D:\\Users\\tcfialho\\Documents\\NRFusion\\dist\\RequiemGame\\RequiemGame.exe",
+        "--require-nrfusion-proxy",
+        "--require-nr",
+        "--deterministic-motion",
+        "--width",
+        "3840",
+        "--height",
+        "2160",
+        "--frames",
+        "900",
+        "--warmup",
+        "300",
+        "--csv",
+        "D:\\Users\\tcfialho\\Documents\\NRFusion\\.temp\\phase2b\\no-keep-final-performance\\2160-1-candidate\\frames.csv",
+        "--capture",
+        "D:\\Users\\tcfialho\\Documents\\NRFusion\\.temp\\phase2b\\no-keep-final-performance\\2160-1-candidate\\capture.ppm"
+      ],
+      "metrics": {
+        "nr_gpu_ms": {
+          "p50": 30.9207,
+          "p95": 32.945605,
+          "p99": 33.526137999999996
+        },
+        "ngx_evaluation_gpu_ms": {
+          "p50": 36.66275,
+          "p95": 38.166065,
+          "p99": 38.736002
+        },
+        "frame_wall_ms": {
+          "p50": 38.19385,
+          "p95": 39.76963,
+          "p99": 40.370318999999995
+        },
+        "frame_gpu_ms": {
+          "p50": 37.26795,
+          "p95": 38.794325,
+          "p99": 39.34694
+        },
+        "nr_prepare_gpu_ms": {
+          "p50": 0.083968,
+          "p95": 0.086016,
+          "p99": 0.08809471999999997
+        },
+        "nr_model_gpu_ms": {
+          "p50": 30.14195,
+          "p95": 32.3493,
+          "p99": 32.92401
+        },
+        "nr_compose_gpu_ms": {
+          "p50": 0.50688,
+          "p95": 0.7086591999999999,
+          "p99": 1.8516806999999988
+        }
+      },
+      "copies": [
+        0
+      ],
+      "copy_bytes": [
+        0
+      ]
+    },
+    {
+      "height": 2160,
+      "repeat": 2,
+      "variant": "candidate",
+      "command": [
+        "D:\\Users\\tcfialho\\Documents\\NRFusion\\dist\\RequiemGame\\RequiemGame.exe",
+        "--require-nrfusion-proxy",
+        "--require-nr",
+        "--deterministic-motion",
+        "--width",
+        "3840",
+        "--height",
+        "2160",
+        "--frames",
+        "900",
+        "--warmup",
+        "300",
+        "--csv",
+        "D:\\Users\\tcfialho\\Documents\\NRFusion\\.temp\\phase2b\\no-keep-final-performance\\2160-2-candidate\\frames.csv"
+      ],
+      "metrics": {
+        "nr_gpu_ms": {
+          "p50": 31.0533,
+          "p95": 33.102795,
+          "p99": 33.677730000000004
+        },
+        "ngx_evaluation_gpu_ms": {
+          "p50": 36.64845,
+          "p95": 38.337545,
+          "p99": 39.137658
+        },
+        "frame_wall_ms": {
+          "p50": 38.186800000000005,
+          "p95": 39.969105,
+          "p99": 40.749013
+        },
+        "frame_gpu_ms": {
+          "p50": 37.2675,
+          "p95": 38.98421,
+          "p99": 39.75963
+        },
+        "nr_prepare_gpu_ms": {
+          "p50": 0.083968,
+          "p95": 0.086016,
+          "p99": 0.10242047999999998
+        },
+        "nr_model_gpu_ms": {
+          "p50": 30.3068,
+          "p95": 32.517995,
+          "p99": 33.092928
+        },
+        "nr_compose_gpu_ms": {
+          "p50": 0.507904,
+          "p95": 0.6984191999999999,
+          "p99": 1.8360607
+        }
+      },
+      "copies": [
+        0
+      ],
+      "copy_bytes": [
+        0
+      ]
+    },
+    {
+      "height": 2160,
+      "repeat": 2,
+      "variant": "reference",
+      "command": [
+        "D:\\Users\\tcfialho\\Documents\\NRFusion\\dist\\RequiemGame\\RequiemGame.exe",
+        "--require-nrfusion-proxy",
+        "--require-nr",
+        "--deterministic-motion",
+        "--width",
+        "3840",
+        "--height",
+        "2160",
+        "--frames",
+        "900",
+        "--warmup",
+        "300",
+        "--csv",
+        "D:\\Users\\tcfialho\\Documents\\NRFusion\\.temp\\phase2b\\no-keep-final-performance\\2160-2-reference\\frames.csv"
+      ],
+      "metrics": {
+        "nr_gpu_ms": {
+          "p50": 31.03385,
+          "p95": 32.77594499999999,
+          "p99": 33.744125
+        },
+        "ngx_evaluation_gpu_ms": {
+          "p50": 36.7626,
+          "p95": 37.98576,
+          "p99": 38.928687000000004
+        },
+        "frame_wall_ms": {
+          "p50": 38.3099,
+          "p95": 39.573665,
+          "p99": 40.39440999999999
+        },
+        "frame_gpu_ms": {
+          "p50": 37.392399999999995,
+          "p95": 38.589455,
+          "p99": 39.528594999999996
+        },
+        "nr_prepare_gpu_ms": {
+          "p50": 0.1024,
+          "p95": 0.104448,
+          "p99": 0.160768
+        },
+        "nr_model_gpu_ms": {
+          "p50": 30.2295,
+          "p95": 32.16221,
+          "p99": 33.049532
+        },
+        "nr_compose_gpu_ms": {
+          "p50": 0.508928,
+          "p95": 0.7066111999999999,
+          "p99": 1.8514617
+        }
+      },
+      "copies": [
+        0
+      ],
+      "copy_bytes": [
+        0
+      ]
+    },
+    {
+      "height": 1440,
+      "repeat": 2,
+      "variant": "candidate",
+      "command": [
+        "D:\\Users\\tcfialho\\Documents\\NRFusion\\dist\\RequiemGame\\RequiemGame.exe",
+        "--require-nrfusion-proxy",
+        "--require-nr",
+        "--deterministic-motion",
+        "--width",
+        "2560",
+        "--height",
+        "1440",
+        "--frames",
+        "900",
+        "--warmup",
+        "300",
+        "--csv",
+        "D:\\Users\\tcfialho\\Documents\\NRFusion\\.temp\\phase2b\\no-keep-final-performance\\1440-2-candidate\\frames.csv"
+      ],
+      "metrics": {
+        "nr_gpu_ms": {
+          "p50": 14.44815,
+          "p95": 17.15935,
+          "p99": 17.611137
+        },
+        "ngx_evaluation_gpu_ms": {
+          "p50": 16.9426,
+          "p95": 19.768915,
+          "p99": 20.130831
+        },
+        "frame_wall_ms": {
+          "p50": 18.4169,
+          "p95": 21.004805,
+          "p99": 21.417716
+        },
+        "frame_gpu_ms": {
+          "p50": 17.248800000000003,
+          "p95": 20.086850000000002,
+          "p99": 20.430681
+        },
+        "nr_prepare_gpu_ms": {
+          "p50": 0.038912,
+          "p95": 0.039936,
+          "p99": 0.04105215999999992
+        },
+        "nr_model_gpu_ms": {
+          "p50": 14.19365,
+          "p95": 16.84885,
+          "p99": 17.358056
+        },
+        "nr_compose_gpu_ms": {
+          "p50": 0.212992,
+          "p95": 0.219136,
+          "p99": 0.5633535999999999
+        }
+      },
+      "copies": [
+        0
+      ],
+      "copy_bytes": [
+        0
+      ]
+    },
+    {
+      "height": 1440,
+      "repeat": 2,
+      "variant": "reference",
+      "command": [
+        "D:\\Users\\tcfialho\\Documents\\NRFusion\\dist\\RequiemGame\\RequiemGame.exe",
+        "--require-nrfusion-proxy",
+        "--require-nr",
+        "--deterministic-motion",
+        "--width",
+        "2560",
+        "--height",
+        "1440",
+        "--frames",
+        "900",
+        "--warmup",
+        "300",
+        "--csv",
+        "D:\\Users\\tcfialho\\Documents\\NRFusion\\.temp\\phase2b\\no-keep-final-performance\\1440-2-reference\\frames.csv"
+      ],
+      "metrics": {
+        "nr_gpu_ms": {
+          "p50": 14.36675,
+          "p95": 16.949685,
+          "p99": 17.544598999999998
+        },
+        "ngx_evaluation_gpu_ms": {
+          "p50": 16.834049999999998,
+          "p95": 19.594839999999998,
+          "p99": 20.056191999999996
+        },
+        "frame_wall_ms": {
+          "p50": 18.23085,
+          "p95": 20.779005,
+          "p99": 21.221830999999998
+        },
+        "frame_gpu_ms": {
+          "p50": 17.13715,
+          "p95": 19.925205000000002,
+          "p99": 20.355180999999998
+        },
+        "nr_prepare_gpu_ms": {
+          "p50": 0.043008,
+          "p95": 0.04608,
+          "p99": 0.048128
+        },
+        "nr_model_gpu_ms": {
+          "p50": 14.1097,
+          "p95": 16.689739999999997,
+          "p99": 17.288497
+        },
+        "nr_compose_gpu_ms": {
+          "p50": 0.212992,
+          "p95": 0.218112,
+          "p99": 0.48395263999999755
+        }
+      },
+      "copies": [
+        0
+      ],
+      "copy_bytes": [
+        0
+      ]
+    },
+    {
+      "height": 1080,
+      "repeat": 2,
+      "variant": "candidate",
+      "command": [
+        "D:\\Users\\tcfialho\\Documents\\NRFusion\\dist\\RequiemGame\\RequiemGame.exe",
+        "--require-nrfusion-proxy",
+        "--require-nr",
+        "--deterministic-motion",
+        "--width",
+        "1920",
+        "--height",
+        "1080",
+        "--frames",
+        "900",
+        "--warmup",
+        "300",
+        "--csv",
+        "D:\\Users\\tcfialho\\Documents\\NRFusion\\.temp\\phase2b\\no-keep-final-performance\\1080-2-candidate\\frames.csv"
+      ],
+      "metrics": {
+        "nr_gpu_ms": {
+          "p50": 9.803265,
+          "p95": 10.048605,
+          "p99": 10.983607999999998
+        },
+        "ngx_evaluation_gpu_ms": {
+          "p50": 11.222,
+          "p95": 11.511054999999999,
+          "p99": 12.563991
+        },
+        "frame_wall_ms": {
+          "p50": 12.25705,
+          "p95": 12.645,
+          "p99": 13.660495999999998
+        },
+        "frame_gpu_ms": {
+          "p50": 11.4166,
+          "p95": 11.701459999999999,
+          "p99": 12.757572999999999
+        },
+        "nr_prepare_gpu_ms": {
+          "p50": 0.023552,
+          "p95": 0.024576,
+          "p99": 0.024576
+        },
+        "nr_model_gpu_ms": {
+          "p50": 9.657855,
+          "p95": 9.9042325,
+          "p99": 10.839207999999998
+        },
+        "nr_compose_gpu_ms": {
+          "p50": 0.119808,
+          "p95": 0.120832,
+          "p99": 0.124928
+        }
+      },
+      "copies": [
+        0
+      ],
+      "copy_bytes": [
+        0
+      ]
+    },
+    {
+      "height": 1080,
+      "repeat": 2,
+      "variant": "reference",
+      "command": [
+        "D:\\Users\\tcfialho\\Documents\\NRFusion\\dist\\RequiemGame\\RequiemGame.exe",
+        "--require-nrfusion-proxy",
+        "--require-nr",
+        "--deterministic-motion",
+        "--width",
+        "1920",
+        "--height",
+        "1080",
+        "--frames",
+        "900",
+        "--warmup",
+        "300",
+        "--csv",
+        "D:\\Users\\tcfialho\\Documents\\NRFusion\\.temp\\phase2b\\no-keep-final-performance\\1080-2-reference\\frames.csv"
+      ],
+      "metrics": {
+        "nr_gpu_ms": {
+          "p50": 9.789439999999999,
+          "p95": 10.090574999999998,
+          "p99": 10.900431
+        },
+        "ngx_evaluation_gpu_ms": {
+          "p50": 11.206150000000001,
+          "p95": 11.532915,
+          "p99": 12.77753
+        },
+        "frame_wall_ms": {
+          "p50": 12.25375,
+          "p95": 12.66528,
+          "p99": 13.828434
+        },
+        "frame_gpu_ms": {
+          "p50": 11.4012,
+          "p95": 11.759774999999998,
+          "p99": 12.973202
+        },
+        "nr_prepare_gpu_ms": {
+          "p50": 0.0256,
+          "p95": 0.0256,
+          "p99": 0.026624
+        },
+        "nr_model_gpu_ms": {
+          "p50": 9.64301,
+          "p95": 9.941246,
+          "p99": 10.676967999999999
+        },
+        "nr_compose_gpu_ms": {
+          "p50": 0.119808,
+          "p95": 0.120832,
+          "p99": 0.3472486399999999
+        }
+      },
+      "copies": [
+        0
+      ],
+      "copy_bytes": [
+        0
+      ]
+    }
+  ],
+  "summary": {
+    "1080": {
+      "nr_gpu_ms": {
+        "p50": {
+          "before_ms": 9.756415,
+          "after_ms": 9.7745925,
+          "paired_delta_percent": [
+            0.23170931125873206,
+            0.14122360421024993
+          ],
+          "median_delta_percent": 0.186466457734491
+        },
+        "p95": {
+          "before_ms": 10.251964999999998,
+          "after_ms": 10.2091625,
+          "paired_delta_percent": [
+            -0.4190292177689181,
+            -0.4159326896633453
+          ],
+          "median_delta_percent": -0.4174809537161317
+        },
+        "p99": {
+          "before_ms": 11.222025499999999,
+          "after_ms": 11.190099499999999,
+          "paired_delta_percent": [
+            -1.2736819126062504,
+            0.7630615706846644
+          ],
+          "median_delta_percent": -0.255310170960793
+        }
+      },
+      "ngx_evaluation_gpu_ms": {
+        "p50": {
+          "before_ms": 11.167475,
+          "after_ms": 11.195125,
+          "paired_delta_percent": [
+            0.3544856588311385,
+            0.14144019132349417
+          ],
+          "median_delta_percent": 0.24796292507731632
+        },
+        "p95": {
+          "before_ms": 11.673662499999999,
+          "after_ms": 11.679402499999998,
+          "paired_delta_percent": [
+            0.2821977568071343,
+            -0.18954444734917697
+          ],
+          "median_delta_percent": 0.04632665472897868
+        },
+        "p99": {
+          "before_ms": 12.9327945,
+          "after_ms": 12.6953675,
+          "paired_delta_percent": [
+            -1.9965909383507507,
+            -1.671207189495938
+          ],
+          "median_delta_percent": -1.8338990639233443
+        }
+      },
+      "frame_wall_ms": {
+        "p50": {
+          "before_ms": 12.194675,
+          "after_ms": 12.222349999999999,
+          "paired_delta_percent": [
+            0.42890339167407365,
+            0.026930531469959718
+          ],
+          "median_delta_percent": 0.22791696157201669
+        },
+        "p95": {
+          "before_ms": 12.8917225,
+          "after_ms": 12.8056925,
+          "paired_delta_percent": [
+            -1.1570215803811013,
+            -0.16012279238990512
+          ],
+          "median_delta_percent": -0.6585721863855032
+        },
+        "p99": {
+          "before_ms": 14.01244,
+          "after_ms": 13.806463999999998,
+          "paired_delta_percent": [
+            -1.718838644545262,
+            -1.2144397550727826
+          ],
+          "median_delta_percent": -1.4666391998090222
+        }
+      },
+      "frame_gpu_ms": {
+        "p50": {
+          "before_ms": 11.361799999999999,
+          "after_ms": 11.389199999999999,
+          "paired_delta_percent": [
+            0.34798275983889404,
+            0.13507350103498794
+          ],
+          "median_delta_percent": 0.241528130436941
+        },
+        "p95": {
+          "before_ms": 11.877822499999999,
+          "after_ms": 11.8678075,
+          "paired_delta_percent": [
+            0.31915150797732217,
+            -0.4958853379422479
+          ],
+          "median_delta_percent": -0.08836691498246285
+        },
+        "p99": {
+          "before_ms": 13.1254415,
+          "after_ms": 12.884858,
+          "paired_delta_percent": [
+            -1.9998823589751802,
+            -1.6621108651511118
+          ],
+          "median_delta_percent": -1.830996612063146
+        }
+      },
+      "nr_prepare_gpu_ms": {
+        "p50": {
+          "before_ms": 0.025088,
+          "after_ms": 0.023552,
+          "paired_delta_percent": [
+            -4.166666666666674,
+            -8.000000000000007
+          ],
+          "median_delta_percent": -6.083333333333341
+        },
+        "p95": {
+          "before_ms": 0.026112,
+          "after_ms": 0.024576,
+          "paired_delta_percent": [
+            -7.692307692307687,
+            -4.0000000000000036
+          ],
+          "median_delta_percent": -5.846153846153845
+        },
+        "p99": {
+          "before_ms": 0.027648,
+          "after_ms": 0.024576,
+          "paired_delta_percent": [
+            -14.28571428571428,
+            -7.692307692307687
+          ],
+          "median_delta_percent": -10.989010989010984
+        }
+      },
+      "nr_model_gpu_ms": {
+        "p50": {
+          "before_ms": 9.60896,
+          "after_ms": 9.629695,
+          "paired_delta_percent": [
+            0.27807049883499246,
+            0.1539457078235884
+          ],
+          "median_delta_percent": 0.21600810332929044
+        },
+        "p95": {
+          "before_ms": 10.0826655,
+          "after_ms": 10.04593875,
+          "paired_delta_percent": [
+            -0.35641331229152584,
+            -0.37232254387427055
+          ],
+          "median_delta_percent": -0.3643679280828982
+        },
+        "p99": {
+          "before_ms": 11.038084,
+          "after_ms": 11.044709999999998,
+          "paired_delta_percent": [
+            -1.3070040002807315,
+            1.5195325114770286
+          ],
+          "median_delta_percent": 0.10626425559814856
+        }
+      },
+      "nr_compose_gpu_ms": {
+        "p50": {
+          "before_ms": 0.119296,
+          "after_ms": 0.119296,
+          "paired_delta_percent": [
+            0.0,
+            0.0
+          ],
+          "median_delta_percent": 0.0
+        },
+        "p95": {
+          "before_ms": 0.120832,
+          "after_ms": 0.120832,
+          "paired_delta_percent": [
+            0.0,
+            0.0
+          ],
+          "median_delta_percent": 0.0
+        },
+        "p99": {
+          "before_ms": 0.31904256,
+          "after_ms": 0.24525824,
+          "paired_delta_percent": [
+            25.702415322864592,
+            -64.02347320928311
+          ],
+          "median_delta_percent": -19.160528943209258
+        }
+      },
+      "captured_rgb_exact": true,
+      "capture_sha256": [
+        "d9b24272f640110749d9444fb4fee3539c51507ff037ce30cb18263c0b7cca06",
+        "d9b24272f640110749d9444fb4fee3539c51507ff037ce30cb18263c0b7cca06"
+      ]
+    },
+    "1440": {
+      "nr_gpu_ms": {
+        "p50": {
+          "before_ms": 14.32065,
+          "after_ms": 14.380025,
+          "paired_delta_percent": [
+            0.2616544829784573,
+            0.5665860406842249
+          ],
+          "median_delta_percent": 0.4141202618313411
+        },
+        "p95": {
+          "before_ms": 17.0418475,
+          "after_ms": 16.9775025,
+          "paired_delta_percent": [
+            -1.9747566389887727,
+            1.2369846401275364
+          ],
+          "median_delta_percent": -0.36888599943061817
+        },
+        "p99": {
+          "before_ms": 17.5646465,
+          "after_ms": 17.4547705,
+          "paired_delta_percent": [
+            -1.6280635875722482,
+            0.37925061724124465
+          ],
+          "median_delta_percent": -0.6244064851655018
+        }
+      },
+      "ngx_evaluation_gpu_ms": {
+        "p50": {
+          "before_ms": 16.811025,
+          "after_ms": 16.862475,
+          "paired_delta_percent": [
+            -0.03365499166070318,
+            0.6448240322441734
+          ],
+          "median_delta_percent": 0.3055845202917351
+        },
+        "p95": {
+          "before_ms": 19.611022499999997,
+          "after_ms": 19.58737,
+          "paired_delta_percent": [
+            -1.1279242255838207,
+            0.8883716325318369
+          ],
+          "median_delta_percent": -0.11977629652599187
+        },
+        "p99": {
+          "before_ms": 20.161204999999995,
+          "after_ms": 19.996161999999998,
+          "paired_delta_percent": [
+            -1.9970425661068214,
+            0.37214940902043914
+          ],
+          "median_delta_percent": -0.8124465785431911
+        }
+      },
+      "frame_wall_ms": {
+        "p50": {
+          "before_ms": 18.200675,
+          "after_ms": 18.242874999999998,
+          "paired_delta_percent": [
+            -0.559423240967516,
+            1.0205229048563247
+          ],
+          "median_delta_percent": 0.23054983194440437
+        },
+        "p95": {
+          "before_ms": 20.7785575,
+          "after_ms": 20.7491,
+          "paired_delta_percent": [
+            -1.370264186684944,
+            1.0866737844280827
+          ],
+          "median_delta_percent": -0.1417952011284307
+        },
+        "p99": {
+          "before_ms": 21.374377499999998,
+          "after_ms": 21.208754,
+          "paired_delta_percent": [
+            -2.4487102755600287,
+            0.9230353403530511
+          ],
+          "median_delta_percent": -0.7628374676034888
+        }
+      },
+      "frame_gpu_ms": {
+        "p50": {
+          "before_ms": 17.12485,
+          "after_ms": 17.1725,
+          "paired_delta_percent": [
+            -0.09554391367738724,
+            0.6515085647263552
+          ],
+          "median_delta_percent": 0.277982325524484
+        },
+        "p95": {
+          "before_ms": 19.926755,
+          "after_ms": 19.895465,
+          "paired_delta_percent": [
+            -1.1251584116160562,
+            0.8112589054918073
+          ],
+          "median_delta_percent": -0.15694975306212444
+        },
+        "p99": {
+          "before_ms": 20.459155,
+          "after_ms": 20.295082,
+          "paired_delta_percent": [
+            -1.9629600144997483,
+            0.37091293857816066
+          ],
+          "median_delta_percent": -0.7960235379607938
+        }
+      },
+      "nr_prepare_gpu_ms": {
+        "p50": {
+          "before_ms": 0.043008,
+          "after_ms": 0.038912,
+          "paired_delta_percent": [
+            -9.523809523809511,
+            -9.523809523809511
+          ],
+          "median_delta_percent": -9.523809523809511
+        },
+        "p95": {
+          "before_ms": 0.04608,
+          "after_ms": 0.039936,
+          "paired_delta_percent": [
+            -13.333333333333341,
+            -13.333333333333341
+          ],
+          "median_delta_percent": -13.333333333333341
+        },
+        "p99": {
+          "before_ms": 0.047616,
+          "after_ms": 0.04151807999999996,
+          "paired_delta_percent": [
+            -10.869565217391308,
+            -14.702127659574627
+          ],
+          "median_delta_percent": -12.785846438482967
+        }
+      },
+      "nr_model_gpu_ms": {
+        "p50": {
+          "before_ms": 14.062100000000001,
+          "after_ms": 14.125025,
+          "paired_delta_percent": [
+            0.2989760605087488,
+            0.5949807579183064
+          ],
+          "median_delta_percent": 0.4469784092135276
+        },
+        "p95": {
+          "before_ms": 16.773957499999998,
+          "after_ms": 16.696875,
+          "paired_delta_percent": [
+            -1.8582972356141814,
+            0.953340195832908
+          ],
+          "median_delta_percent": -0.4524785198906367
+        },
+        "p99": {
+          "before_ms": 17.3071155,
+          "after_ms": 17.2027595,
+          "paired_delta_percent": [
+            -1.606113772726725,
+            0.40234266749736847
+          ],
+          "median_delta_percent": -0.6018855526146782
+        }
+      },
+      "nr_compose_gpu_ms": {
+        "p50": {
+          "before_ms": 0.21248,
+          "after_ms": 0.21248,
+          "paired_delta_percent": [
+            0.0,
+            0.0
+          ],
+          "median_delta_percent": 0.0
+        },
+        "p95": {
+          "before_ms": 0.21760000000000002,
+          "after_ms": 0.218112,
+          "paired_delta_percent": [
+            0.0,
+            0.46948356807512415
+          ],
+          "median_delta_percent": 0.23474178403756207
+        },
+        "p99": {
+          "before_ms": 0.44221439999999873,
+          "after_ms": 0.520355839999998,
+          "paired_delta_percent": [
+            19.197627144646077,
+            16.406762446838343
+          ],
+          "median_delta_percent": 17.80219479574221
+        }
+      },
+      "captured_rgb_exact": true,
+      "capture_sha256": [
+        "3b6da6a4bfbba710d413f81c5391bf166e141d7118ad9c0b86af5c1c9c41f2b3",
+        "3b6da6a4bfbba710d413f81c5391bf166e141d7118ad9c0b86af5c1c9c41f2b3"
+      ]
+    },
+    "2160": {
+      "nr_gpu_ms": {
+        "p50": {
+          "before_ms": 30.908675000000002,
+          "after_ms": 30.987000000000002,
+          "paired_delta_percent": [
+            0.4456933097276128,
+            0.06267350006525785
+          ],
+          "median_delta_percent": 0.2541834048964353
+        },
+        "p95": {
+          "before_ms": 32.794725,
+          "after_ms": 33.0242,
+          "paired_delta_percent": [
+            0.4025781457969835,
+            0.9972252516289304
+          ],
+          "median_delta_percent": 0.6999016987129569
+        },
+        "p99": {
+          "before_ms": 33.5648225,
+          "after_ms": 33.601934,
+          "paired_delta_percent": [
+            0.42119457776903513,
+            -0.19676017677149327
+          ],
+          "median_delta_percent": 0.11221720049877093
+        }
+      },
+      "ngx_evaluation_gpu_ms": {
+        "p50": {
+          "before_ms": 36.6958,
+          "after_ms": 36.6556,
+          "paired_delta_percent": [
+            0.09214010756506408,
+            -0.31050578577141996
+          ],
+          "median_delta_percent": -0.10918283910317794
+        },
+        "p95": {
+          "before_ms": 38.068582500000005,
+          "after_ms": 38.251805000000004,
+          "paired_delta_percent": [
+            0.0384258456536557,
+            0.9260970426812509
+          ],
+          "median_delta_percent": 0.4822614441674533
+        },
+        "p99": {
+          "before_ms": 38.8576355,
+          "after_ms": 38.93683,
+          "paired_delta_percent": [
+            -0.13041107203459745,
+            0.536804644862543
+          ],
+          "median_delta_percent": 0.20319678641397276
+        }
+      },
+      "frame_wall_ms": {
+        "p50": {
+          "before_ms": 38.2354,
+          "after_ms": 38.190325,
+          "paired_delta_percent": [
+            0.08634492373083003,
+            -0.32132686329119364
+          ],
+          "median_delta_percent": -0.11749096978018181
+        },
+        "p95": {
+          "before_ms": 39.6465275,
+          "after_ms": 39.869367499999996,
+          "paired_delta_percent": [
+            0.12648734031415199,
+            0.9992503853256895
+          ],
+          "median_delta_percent": 0.5628688628199208
+        },
+        "p99": {
+          "before_ms": 40.4194755,
+          "after_ms": 40.55966599999999,
+          "paired_delta_percent": [
+            -0.18351549594790573,
+            0.8778516631385402
+          ],
+          "median_delta_percent": 0.34716808359531726
+        }
+      },
+      "frame_gpu_ms": {
+        "p50": {
+          "before_ms": 37.315325,
+          "after_ms": 37.267725,
+          "paired_delta_percent": [
+            0.07975670177839955,
+            -0.33402509600880537
+          ],
+          "median_delta_percent": -0.1271341971152029
+        },
+        "p95": {
+          "before_ms": 38.7217075,
+          "after_ms": 38.8892675,
+          "paired_delta_percent": [
+            -0.15348499869768384,
+            1.0229608062616968
+          ],
+          "median_delta_percent": 0.4347379037820065
+        },
+        "p99": {
+          "before_ms": 39.482223999999995,
+          "after_ms": 39.553285,
+          "paired_delta_percent": [
+            -0.22546234767636397,
+            0.5844756182201927
+          ],
+          "median_delta_percent": 0.17950663527191435
+        }
+      },
+      "nr_prepare_gpu_ms": {
+        "p50": {
+          "before_ms": 0.1024,
+          "after_ms": 0.083968,
+          "paired_delta_percent": [
+            -18.000000000000004,
+            -18.000000000000004
+          ],
+          "median_delta_percent": -18.000000000000004
+        },
+        "p95": {
+          "before_ms": 0.104448,
+          "after_ms": 0.086016,
+          "paired_delta_percent": [
+            -17.647058823529417,
+            -17.647058823529417
+          ],
+          "median_delta_percent": -17.647058823529417
+        },
+        "p99": {
+          "before_ms": 0.14643711999999998,
+          "after_ms": 0.09525759999999997,
+          "paired_delta_percent": [
+            -33.315246880086825,
+            -36.29299363057326
+          ],
+          "median_delta_percent": -34.80412025533004
+        }
+      },
+      "nr_model_gpu_ms": {
+        "p50": {
+          "before_ms": 30.162175,
+          "after_ms": 30.224375000000002,
+          "paired_delta_percent": [
+            0.1565051827804531,
+            0.25571048148331776
+          ],
+          "median_delta_percent": 0.20610783213188544
+        },
+        "p95": {
+          "before_ms": 32.186054999999996,
+          "after_ms": 32.4336475,
+          "paired_delta_percent": [
+            0.4327861930648602,
+            1.1062206235205707
+          ],
+          "median_delta_percent": 0.7695034082927155
+        },
+        "p99": {
+          "before_ms": 32.9123865,
+          "after_ms": 33.008469000000005,
+          "paired_delta_percent": [
+            0.45390665472146985,
+            0.13130594405996732
+          ],
+          "median_delta_percent": 0.2926062993907186
+        }
+      },
+      "nr_compose_gpu_ms": {
+        "p50": {
+          "before_ms": 0.507904,
+          "after_ms": 0.5073920000000001,
+          "paired_delta_percent": [
+            0.0,
+            -0.2012072434607659
+          ],
+          "median_delta_percent": -0.10060362173038295
+        },
+        "p95": {
+          "before_ms": 0.6954751999999997,
+          "after_ms": 0.7035391999999999,
+          "paired_delta_percent": [
+            3.5537932066437516,
+            -1.1593362799797058
+          ],
+          "median_delta_percent": 1.197228463332023
+        },
+        "p99": {
+          "before_ms": 1.8259896999999998,
+          "after_ms": 1.8438706999999994,
+          "paired_delta_percent": [
+            2.841571621317529,
+            -0.8318292514503556
+          ],
+          "median_delta_percent": 1.0048711849335867
+        }
+      },
+      "captured_rgb_exact": true,
+      "capture_sha256": [
+        "b002cca75aaf70e1d354e4a25a244a2e029a3bc7ba9e49875972d3f008f040fc",
+        "b002cca75aaf70e1d354e4a25a244a2e029a3bc7ba9e49875972d3f008f040fc"
+      ]
+    }
+  }
+}

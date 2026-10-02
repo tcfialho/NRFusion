@@ -70,7 +70,8 @@ public:
     bool Load();                       // resolve the entry points; false when nothing answers
     bool Init(ID3D12Device* device, const wchar_t* applicationPath);
     bool Create(ID3D12GraphicsCommandList* commands, std::uint32_t renderWidth,
-                std::uint32_t renderHeight, std::uint32_t outputWidth, std::uint32_t outputHeight);
+                std::uint32_t renderHeight, std::uint32_t outputWidth, std::uint32_t outputHeight, int quality = 1);
+    void ReleaseFeature();
     bool Evaluate(ID3D12GraphicsCommandList* commands, ID3D12Resource* colour,
                   ID3D12Resource* output, ID3D12Resource* depth, ID3D12Resource* motion,
                   float jitterX, float jitterY, bool reset);
@@ -79,6 +80,7 @@ public:
     bool Ready() const noexcept { return handle_ != nullptr; }
     const std::string& Status() const noexcept { return status_; }
     const std::string& Library() const noexcept { return library_; }
+    bool IsNRFusionProxy() const noexcept { return nrfusionProxy_; }
 
 private:
     using InitFn = int(__cdecl*)(unsigned long long, const wchar_t*, ID3D12Device*, const void*, unsigned int);
@@ -103,6 +105,8 @@ private:
     std::uint32_t renderWidth_ = 0, renderHeight_ = 0;
     std::string status_ = "nao carregado";
     std::string library_;
+    bool nrfusionProxy_ = false;
+    bool nrfusionProxySeen_ = false;
 };
 
 } // namespace requiem

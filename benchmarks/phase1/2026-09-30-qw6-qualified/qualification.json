@@ -1,0 +1,63 @@
+{
+  "code_commit": "16e2ee4363897f812386864c91b22749e622c5f4",
+  "branch": "standalone/integration",
+  "gpu": "NVIDIA GeForce RTX 4050 Laptop GPU, GPU-42d9ac41-51ff-a670-4539-8abbccbda9dc, 617.14",
+  "driver_graphics": "32.0.16.1714 / 617.14",
+  "loaded_ngx": "31.0.15.4619 / 546.19",
+  "loaded_ngx_path": "C:/Windows/System32/DriverStore/FileRepository/nvtf.inf_amd64_10f54ba3a80b8c4b/_nvngx.dll",
+  "ngx_facade": "30.0.14.9516",
+  "dlss_nr_sr_fg_version": "310.8.0.0",
+  "runtime_key": "GPU vendor/device; graphics driver version; loaded NGX/facade versions; NR version/size; bridge SHA256",
+  "guide_key": "role/format; full subrect; tested dimensions; inverted depth; Texture2D single-mip/single-sample/one-slice; ALLOW_RENDER_TARGET; default tuning; Pre-SR/scale1/1pass/no RR",
+  "model_key_bytes": 165840496,
+  "qualified_guide_inputs": [
+    [
+      1280,
+      720
+    ],
+    [
+      1706,
+      960
+    ],
+    [
+      2560,
+      1440
+    ]
+  ],
+  "qualification": "Controlled official Requiem with synthetic guides; not broad gameplay qualification",
+  "debug_layer": "Unavailable, 0x887a002d; attempt failed before rendering with reference DLL",
+  "unmeasured": [
+    "copy GPU time separately",
+    "complete frame GPU time outside NR+DLSS",
+    "CPU hook percentiles",
+    "gameplay FPS"
+  ],
+  "runtime_hashes": {
+    "RequiemGame.exe": "ac53944cd9fe40f9f32cd6b1770993aaf5a093a9de58665119a4777bc93d9171",
+    "nvngx_dlss.dll": "c85f971ce023c9f3492fc7455f0b01a24ba18ea39636407a846902c4360b0b7e",
+    "nvngx_dlssg.dll": "5d5cbf14d2727d47f93fd10bf77bd91708ae122482a6f86fd564971641ebd47b",
+    "NRFusion/internal/nvngx_dlssnr.dll": "e67dee209320cdafe0e93e45675d7aa34323a53acc57a72b2e40a181581c989a",
+    "NRFusion/internal/nvngx.dll_dlssnr.dll": "25ffade884f50cad0174030335fd6216bbd569cb415bc35c958224a8c96f3c4e",
+    "assets/nvidia-dlss5-requiem-off.jpeg": "8d94795df55102affadf67fa779003c466405f4f9c42c46b933a5418f530cc81",
+    "assets/nvidia-dlss5-requiem-on.jpeg": "65018732def9352c1104a871b59db005255133c36320ad0970469636492437a8"
+  },
+  "proxy_hashes": {
+    "reference": "e76b8acbf910f1fc767edd2f32339498a6534fd743b615e7100a3c9bbf8738cb",
+    "candidate": "0815140865555fd009285d51c633592dc3fe0164c9261ec0458ba742363c8898"
+  },
+  "cumulative_reference_provenance": "Same SHA256 as original QW1 BEFORE artifact, saved at HEAD dac55cf with preexisting Death Stranding changes; not a pristine dac55cf binary",
+  "new_zip_archives": 0,
+  "tests": {
+    "official_release_full_build": "PASS",
+    "ctest_passed": 77,
+    "ctest_failed": 0,
+    "d3d12_hardware_gates_enabled": true,
+    "source_size_phase_base_0ab4bc9_violations": 0,
+    "logs_local_ignored_by_git": true,
+    "log_sha256": {
+      "official-final-build.log": "af716b56609adaafbe21e85acf6c1e9c72637bc33de8e27ab3d81aa61b281dd7",
+      "official-final-tests.log": "1b98723d596830c92f6c4a083574d6f26ccb4113f432fd537655cd0359c9aa88",
+      "package-final.log": "58731925f6aa87ce2e40c9547aaabd375033d47cce3ebbaf0e7cfd3997d35fa9"
+    }
+  }
+}

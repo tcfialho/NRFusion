@@ -10,6 +10,8 @@
 #include <dxgi1_6.h>
 #include <wrl/client.h>
 
+#include "nrfusion/D3D11CarrierNativeAcquire.hpp"
+#include "nrfusion/D3D11CarrierWork.hpp"
 #include "nrfusion/MotionVectorResolver.hpp"
 #include "nrfusion/NvofMotionProvider.hpp"
 #include "nrfusion/SyntheticDx11BridgeProvider.hpp"
@@ -24,6 +26,41 @@
 using Microsoft::WRL::ComPtr;
 using namespace nrfusion;
 
+namespace {
+
+ComPtr<ID3D11Texture2D> MakeTexture(
+    ID3D11Device* device, UINT width, UINT height,
+    DXGI_FORMAT format = DXGI_FORMAT_R16G16B16A16_FLOAT) {
+    D3D11_TEXTURE2D_DESC desc{};
+    desc.Width = width;
+    desc.Height = height;
+    desc.MipLevels = 1;
+    desc.ArraySize = 1;
+    desc.Format = format;
+    desc.SampleDesc.Count = 1;
+    desc.Usage = D3D11_USAGE_DEFAULT;
+    desc.BindFlags = D3D11_BIND_SHADER_RESOURCE | D3D11_BIND_RENDER_TARGET;
+    ComPtr<ID3D11Texture2D> texture;
+    assert(SUCCEEDED(device->CreateTexture2D(&desc, nullptr, &texture)));
+    return texture;
+}
+
+bool WaitForD3D11(ID3D11Device* device, ID3D11DeviceContext* context) {
+    D3D11_QUERY_DESC desc{};
+    desc.Query = D3D11_QUERY_EVENT;
+    ComPtr<ID3D11Query> query;
+    if (FAILED(device->CreateQuery(&desc, &query))) return false;
+    context->End(query.Get());
+    context->Flush();
+    for (int i = 0; i < 5000; ++i) {
+        if (context->GetData(query.Get(), nullptr, 0, 0) == S_OK) return true;
+        Sleep(1);
+    }
+    return false;
+}
+
+}
+
 int main() {
     std::cout << "[Synthetic Dx11 Bridge Test] Starting Stage 2 validation..." << std::endl;
 
@@ -37,7 +74,14 @@ int main() {
         c.nativeEngineMv.resolution = { 1920, 1080 };
         c.nativeEngineMv.format = ResourceFormat::Rg16Float;
         c.nativeReliable = true;
-        c.nvofHardwareAvailable = true;
+        c.frameId = 1;
+        c.nvofMv = {4, {320, 180}, ResourceFormat::Rg16Float};
+        c.nvofMv.provenance = ResourceProvenance::OpticalFlow;
+        c.nvofMv.reliability = ResourceReliability::Reliable;
+        c.nvofMv.ownership = ResourceOwnership::ProviderOwned;
+        c.nvofMv.lifetime = ResourceLifetime::Frame;
+        c.nvofMv.sourceFrameId = 1;
+        c.nvofReliable = true;
 
         auto r1 = MotionVectorResolver::Resolve(c, fullRes);
         assert(r1.category == ResolvedMotionCategory::NativeEngine);
@@ -55,7 +99,7 @@ int main() {
         assert(r2.category == ResolvedMotionCategory::DlssContract);
         assert(!r2.requiresNvofCompute);
 
-        // Case 3: Contract missing, Shader estimated present
+        // Case 3: NVOF outranks shader fallback.
         c.contractReliable = false;
         c.shaderEstimatedMv.opaqueId = 3;
         c.shaderEstimatedMv.resolution = { 960, 540 };
@@ -63,17 +107,19 @@ int main() {
         c.shaderReliable = true;
 
         auto r3 = MotionVectorResolver::Resolve(c, fullRes);
-        assert(r3.category == ResolvedMotionCategory::ShaderEstimated);
-        assert(r3.scaleX == 2.0f);
+        assert(r3.category ==
+               ResolvedMotionCategory::NvidiaOpticalFlow);
         assert(!r3.requiresNvofCompute);
 
-        // Case 4: No engine vectors, NVOF available
-        c.shaderReliable = false;
+        // Case 4: Shader is selected only when NVOF is unavailable.
+        c.nvofReliable = false;
         auto r4 = MotionVectorResolver::Resolve(c, fullRes);
-        assert(r4.category == ResolvedMotionCategory::NvidiaOpticalFlow);
-        assert(r4.requiresNvofCompute);
+        assert(r4.category ==
+               ResolvedMotionCategory::ShaderEstimated);
+        assert(r4.scaleX == 2.0f);
+        assert(!r4.requiresNvofCompute);
 
-        // Case 5: Camera cut
+        // Case 5: Camera cut forces explicit zero.
         c.cameraCut = true;
         auto r5 = MotionVectorResolver::Resolve(c, fullRes);
         assert(r5.category == ResolvedMotionCategory::ZeroFallback);
@@ -90,14 +136,30 @@ int main() {
                                    D3D11_CREATE_DEVICE_BGRA_SUPPORT, nullptr, 0,
                                    D3D11_SDK_VERSION, &d3d11Device, &fl, &d3d11Context);
     if (FAILED(hr)) {
-        // Fallback to WARP for test coverage if hardware device not granted
-        hr = D3D11CreateDevice(nullptr, D3D_DRIVER_TYPE_WARP, nullptr,
-                               D3D11_CREATE_DEVICE_BGRA_SUPPORT, nullptr, 0,
-                               D3D11_SDK_VERSION, &d3d11Device, &fl, &d3d11Context);
+        char requireHardware[2]{};
+        const bool hardwareRequired = GetEnvironmentVariableA(
+            "NRFUSION_TEST_D3D11_HARDWARE", requireHardware,
+            static_cast<DWORD>(sizeof(requireHardware))) != 0;
+        if (!hardwareRequired) {
+            hr = D3D11CreateDevice(nullptr, D3D_DRIVER_TYPE_WARP, nullptr,
+                                   D3D11_CREATE_DEVICE_BGRA_SUPPORT, nullptr, 0,
+                                   D3D11_SDK_VERSION, &d3d11Device, &fl, &d3d11Context);
+        }
     }
     if (FAILED(hr) || !d3d11Device) {
         std::cerr << "Failed to create D3D11 device" << std::endl;
         return 1;
+    }
+
+    {
+        SyntheticDx11BridgeProvider rejected;
+        ProviderContext bad{};
+        bad.api = GraphicsApi::D3D12;
+        bad.device = d3d11Device.Get();
+        assert(!rejected.Initialize(bad));
+        bad.api = GraphicsApi::D3D11;
+        bad.is32Bit = true;
+        assert(!rejected.Initialize(bad));
     }
 
     // 3. SyntheticDx11BridgeProvider Initialization
@@ -113,62 +175,102 @@ int main() {
     assert(bridge.PrivateD3D12Device() != nullptr);
     std::cout << "  [PASS] SyntheticDx11BridgeProvider private D3D12 bridge initialized." << std::endl;
 
-    // 4. Low-Res Asynchronous NVOF Validation (180p Height)
+    // 4. NVOF stays fail-closed until a real dispatch/completion backend exists.
     {
         NvofMotionProvider& nvof = bridge.OpticalFlow();
-        assert(nvof.IsReady());
-        Resolution fRes = nvof.FlowResolution();
+        assert(!nvof.IsReady());
+        const Resolution fRes = nvof.FlowResolution();
         assert(fRes.height == 180);
-        assert(fRes.width == 320); // 1920 * 180 / 1080 = 320
-        std::cout << "  [PASS] NvofMotionProvider 180p low-res geometry validated: " << fRes.width << "x" << fRes.height << std::endl;
+        assert(fRes.width == 320);
+        NvofMotionProvider::Submission submission{};
+        assert(!nvof.Submit(nullptr, 1, false, nullptr, submission));
+        assert(!submission.valid);
+        assert(!nvof.IsComplete(submission));
+        std::cout << "  [PASS] NVOF unavailable path is fail-closed." << std::endl;
     }
 
-    // 5. Zero-CPU Copy D3D11 Input / Output Interop Verification
     {
-        D3D11_TEXTURE2D_DESC texDesc{};
-        texDesc.Width = 1920;
-        texDesc.Height = 1080;
-        texDesc.MipLevels = 1;
-        texDesc.ArraySize = 1;
-        texDesc.Format = DXGI_FORMAT_R16G16B16A16_FLOAT;
-        texDesc.SampleDesc.Count = 1;
-        texDesc.Usage = D3D11_USAGE_DEFAULT;
-        texDesc.BindFlags = D3D11_BIND_SHADER_RESOURCE | D3D11_BIND_RENDER_TARGET;
-
-        ComPtr<ID3D11Texture2D> gameColor;
-        ComPtr<ID3D11Texture2D> gameDest;
-        hr = d3d11Device->CreateTexture2D(&texDesc, nullptr, &gameColor);
-        assert(SUCCEEDED(hr));
-        hr = d3d11Device->CreateTexture2D(&texDesc, nullptr, &gameDest);
-        assert(SUCCEEDED(hr));
-
-        // Submit work ticket
-        SyntheticFrameInputs inputs{};
-        inputs.ticket.id = 2001;
-        inputs.ticket.session = 1;
-        inputs.frameId = 1;
-        inputs.renderResolution = { 1920, 1080 };
-        inputs.targetResolution = { 1920, 1080 };
-        inputs.workingScale = 0.75f;
-        inputs.color.opaqueId = reinterpret_cast<uint64_t>(gameColor.Get());
-        inputs.color.resolution = { 1920, 1080 };
-        inputs.color.format = ResourceFormat::Rgba16Float;
-
-        SyntheticWorkHandle handle = bridge.Submit(inputs, nullptr);
-        assert(handle.valid);
-        assert(handle.workId == 2001);
-
-        // Record GPU copy of inputs without CPU readback
-        bool copyInOk = bridge.RecordD3D11InputCopy(d3d11Context.Get(), gameColor.Get(), nullptr, nullptr);
-        assert(copyInOk);
-
-        // Record GPU copy of output back to game presentation
-        bool copyOutOk = bridge.RecordD3D11OutputConsume(d3d11Context.Get(), gameDest.Get());
-        assert(copyOutOk);
-
-        std::cout << "  [PASS] Zero-CPU D3D11 <-> private D3D12 shared handle transfer confirmed." << std::endl;
+        auto incompatible = MakeTexture(d3d11Device.Get(), 320, 180);
+        SyntheticFrameInputs bad{};
+        bad.ticket.id = 1900;
+        bad.ticket.session = 1;
+        bad.frameId = 1900;
+        bad.renderResolution = {320, 180};
+        bad.targetResolution = {320, 180};
+        bad.color.opaqueId = reinterpret_cast<std::uint64_t>(incompatible.Get());
+        bad.color.resolution = {320, 180};
+        bad.color.format = ResourceFormat::Rgba8Unorm;
+        assert(!bridge.Submit(bad, nullptr).valid);
     }
 
+    {
+        ComPtr<ID3D11Device> otherDevice;
+        ComPtr<ID3D11DeviceContext> otherContext;
+        D3D_FEATURE_LEVEL otherFeature{};
+        assert(SUCCEEDED(D3D11CreateDevice(
+            nullptr, D3D_DRIVER_TYPE_WARP, nullptr, 0, nullptr, 0,
+            D3D11_SDK_VERSION, &otherDevice, &otherFeature, &otherContext)));
+        auto foreignColor = MakeTexture(otherDevice.Get(), 320, 180);
+        SyntheticFrameInputs foreign{};
+        foreign.ticket.id = 1950;
+        foreign.ticket.session = 1;
+        foreign.frameId = 1950;
+        foreign.renderResolution = {320, 180};
+        foreign.targetResolution = {320, 180};
+        foreign.color.opaqueId =
+            reinterpret_cast<std::uint64_t>(foreignColor.Get());
+        foreign.color.resolution = {320, 180};
+        foreign.color.format = ResourceFormat::Rgba16Float;
+        assert(!bridge.Submit(foreign, nullptr).valid);
+    }
+
+    // 5. GPU-only bridge handoff, retirement and resize/reset stress.
+    {
+        for (std::uint64_t frame = 1; frame <= 12; ++frame) {
+            const UINT width = (frame & 1u) ? 640u : 800u;
+            const UINT height = (frame & 1u) ? 360u : 600u;
+            auto gameColor = MakeTexture(d3d11Device.Get(), width, height);
+            auto gameDest = MakeTexture(d3d11Device.Get(), width, height);
+            D3D11NativeAcquireInput acquire{};
+            acquire.identity.frameId = 2000 + frame;
+            acquire.identity.configurationGeneration = 1;
+            acquire.context = d3d11Context.Get();
+            acquire.color = gameColor.Get();
+            const auto acquired = AcquireD3D11NativeFrame(acquire);
+            assert(acquired);
+
+            WorkTicket ticket{};
+            ticket.id = 2000 + frame;
+            ticket.session = 1;
+            ticket.sourceFrame = acquired.frame.frameId;
+            ticket.configurationGeneration = 1;
+            ticket.workingScale = 0.75f;
+            const auto work = BuildD3D11CarrierWork(acquired.frame, ticket);
+            assert(work);
+
+            const SyntheticWorkHandle handle = bridge.Submit(*work, nullptr);
+            assert(handle.valid);
+            assert(handle.workId == work->ticket.id);
+            const Resolution flow = bridge.OpticalFlow().FlowResolution();
+            assert(flow.height == 180);
+            assert(flow.width == ((frame & 1u) ? 320u : 240u));
+            auto badDest = MakeTexture(
+                d3d11Device.Get(), width, height, DXGI_FORMAT_R8G8B8A8_UNORM);
+            assert(!bridge.RecordD3D11OutputConsume(
+                handle, d3d11Context.Get(), badDest.Get()));
+            assert(bridge.RecordD3D11OutputConsume(
+                handle, d3d11Context.Get(), gameDest.Get()));
+            assert(WaitForD3D11(d3d11Device.Get(), d3d11Context.Get()));
+            assert(bridge.Poll(handle));
+        }
+        std::cout << "  [PASS] GPU-fenced handoff, slot retirement and resize stress confirmed."
+                  << std::endl;
+    }
+
+    bridge.Shutdown();
+    assert(!bridge.IsReady());
+    assert(bridge.Initialize(ctx));
+    assert(bridge.IsReady());
     bridge.Shutdown();
     assert(!bridge.IsReady());
 

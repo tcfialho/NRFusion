@@ -14,15 +14,15 @@ const char* GameProbe::ApiName(GraphicsApi api) noexcept {
     }
 }
 
-RuntimeCapabilities GameProbe::IntegratedCapabilities() noexcept {
+RuntimeCapabilities GameProbe::IntegratedCapabilities(GraphicsApi api) noexcept {
     // Installer support must reflect shipped hooks; aspirational flags would produce false supported results.
     RuntimeCapabilities integrated;
-    integrated.nativeProvider = true;
+    integrated.nativeProvider = api == GraphicsApi::D3D12;
     integrated.bridgeProvider = true;
-    integrated.syntheticD3D12 = true;
+    integrated.syntheticD3D12 = false;
     integrated.syntheticD3D11Bridge = true;
-    integrated.syntheticVulkan = true;
-    integrated.x86Carrier = true;
+    integrated.syntheticVulkan = false;
+    integrated.x86Carrier = false;
     integrated.openGlCarrier = false;
     return integrated;
 }
@@ -68,6 +68,10 @@ GameInstallSupport GameProbe::InstallSupport(const GameProbeResult& result,
     if (result.api != GraphicsApi::D3D11 && result.api != GraphicsApi::D3D12 &&
         result.api != GraphicsApi::Vulkan)
         return GameInstallSupport::Unknown;
+
+    if (result.api == GraphicsApi::D3D11 && !result.importsVersionDll)
+        return GameInstallSupport::ProviderUnavailable;
+
 
     if (result.bitness == 32) {
         // The x86 carrier supports D3D11 synthetic capture, not native NGX or D3D12/Vulkan x86.

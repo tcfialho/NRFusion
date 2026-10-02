@@ -1,0 +1,298 @@
+#include "nrfusion/D3D12NrExecutor.hpp"
+#include "nrfusion/D3D12GuideFormat.hpp"
+
+#include <algorithm>
+
+namespace nrfusion {
+namespace {
+
+bool TransitionExternal(ID3D12GraphicsCommandList* cmd, ID3D12Resource* resource,
+                        D3D12_RESOURCE_STATES& state,
+                        D3D12_RESOURCE_STATES next) noexcept {
+    if (cmd == nullptr || resource == nullptr) return false;
+    if (state == next) return true;
+    D3D12_RESOURCE_BARRIER barrier{};
+    barrier.Type = D3D12_RESOURCE_BARRIER_TYPE_TRANSITION;
+    barrier.Transition.pResource = resource;
+    barrier.Transition.Subresource = D3D12_RESOURCE_BARRIER_ALL_SUBRESOURCES;
+    barrier.Transition.StateBefore = state;
+    barrier.Transition.StateAfter = next;
+    cmd->ResourceBarrier(1, &barrier);
+    state = next;
+    return true;
+}
+
+DXGI_FORMAT TypedGuideFormat(DXGI_FORMAT format) noexcept {
+    switch (format) {
+    case DXGI_FORMAT_R32_TYPELESS: return DXGI_FORMAT_R32_FLOAT;
+    case DXGI_FORMAT_R16_TYPELESS: return DXGI_FORMAT_R16_UNORM;
+    case DXGI_FORMAT_R24G8_TYPELESS: return DXGI_FORMAT_R24_UNORM_X8_TYPELESS;
+    case DXGI_FORMAT_R32G8X24_TYPELESS: return DXGI_FORMAT_R32_FLOAT_X8X24_TYPELESS;
+    case DXGI_FORMAT_R32G32_TYPELESS: return DXGI_FORMAT_R32G32_FLOAT;
+    case DXGI_FORMAT_R16G16_TYPELESS: return DXGI_FORMAT_R16G16_FLOAT;
+    case DXGI_FORMAT_R8G8B8A8_TYPELESS: return DXGI_FORMAT_R8G8B8A8_UNORM;
+    case DXGI_FORMAT_R16G16B16A16_TYPELESS: return DXGI_FORMAT_R16G16B16A16_FLOAT;
+    default: return format;
+    }
+}
+
+void CopyFromSubrect(ID3D12GraphicsCommandList* cmd, ID3D12Resource* dst,
+                     ID3D12Resource* src, const D3D12NrSubrect& rect) noexcept {
+    D3D12_TEXTURE_COPY_LOCATION source{};
+    source.pResource = src;
+    source.Type = D3D12_TEXTURE_COPY_TYPE_SUBRESOURCE_INDEX;
+    D3D12_TEXTURE_COPY_LOCATION target = source;
+    target.pResource = dst;
+    D3D12_BOX box{rect.x, rect.y, 0, rect.x + rect.width, rect.y + rect.height, 1};
+    cmd->CopyTextureRegion(&target, 0, 0, 0, &source, &box);
+}
+
+D3D12NrCodecConstants EncodeConstants(
+    const D3D12NrFrameRequest& request, std::uint32_t width,
+    std::uint32_t height) noexcept {
+    D3D12NrCodecConstants c{};
+    c.mode = static_cast<std::uint32_t>(D3D12NrCodecMode::Encode);
+    c.whitePoint = std::max(request.composition.whitePoint, 0.01f);
+    c.width = width;
+    c.height = height;
+    c.passthrough = request.composition.colourIsLinearHdr ? 0u : 1u;
+    c.reversibleMode = request.composition.reversibleMode;
+    c.useGameExposure = request.composition.useGameExposure ? 1u : 0u;
+    c.exposurePreMul = request.composition.exposurePreMul;
+    return c;
+}
+
+} // namespace
+
+bool D3D12NrExecutor::PrepareFrameResources(
+    ID3D12GraphicsCommandList* cmd, const D3D12NrFrameResources& resources,
+    const D3D12NrFrameRequest& request, FrameContext& context) noexcept {
+    context.activeTarget = context.target;
+    if (context.cropColor) {
+        ID3D12Resource* const activeColor =
+            scratch_.Get(D3D12NrScratchKind::ActiveColor);
+        if (!TransitionExternal(cmd, context.target, context.targetState,
+                                D3D12_RESOURCE_STATE_COPY_SOURCE) ||
+            !scratch_.Transition(cmd, D3D12NrScratchKind::ActiveColor,
+                                 D3D12_RESOURCE_STATE_UNORDERED_ACCESS,
+                                 D3D12_RESOURCE_STATE_COPY_DEST))
+            return false;
+        CopyFromSubrect(
+            cmd, activeColor, context.target, context.plan.activeColor);
+        if (!TransitionExternal(cmd, context.target, context.targetState,
+                                context.targetArrival) ||
+            !scratch_.Transition(cmd, D3D12NrScratchKind::ActiveColor,
+                                 D3D12_RESOURCE_STATE_COPY_DEST,
+                                 D3D12_RESOURCE_STATE_NON_PIXEL_SHADER_RESOURCE))
+            return false;
+        context.activeTarget = activeColor;
+    } else if (!TransitionExternal(
+                   cmd, context.target, context.targetState,
+                   D3D12_RESOURCE_STATE_NON_PIXEL_SHADER_RESOURCE)) {
+        return false;
+    }
+
+    if (request.composition.useGameExposure) {
+        if (resources.exposure == nullptr ||
+            !TransitionExternal(cmd, resources.exposure, context.exposureState,
+                                D3D12_RESOURCE_STATE_NON_PIXEL_SHADER_RESOURCE))
+            return false;
+    }
+
+    ID3D12Resource* const colorCopy =
+        scratch_.Get(D3D12NrScratchKind::ColorCopy);
+    ID3D12Resource* const hdrCopy =
+        scratch_.Get(D3D12NrScratchKind::HdrCopy);
+    const bool preserveOriginal = context.acrossRr || context.targetSupportsUav || !codec_.CanSkipKeep();
+    D3D12NrCodecResources encodeResources{};
+    encodeResources.source = context.activeTarget;
+    encodeResources.previousEdit =
+        request.composition.useGameExposure ? resources.exposure : nullptr;
+    encodeResources.target = colorCopy;
+    encodeResources.keep = preserveOriginal ? hdrCopy : nullptr;
+    if (!codec_.Dispatch(
+            cmd, EncodeConstants(request, context.plan.activeColor.width,
+                                 context.plan.activeColor.height),
+            encodeResources))
+        return false;
+    context.modelInput = colorCopy;
+
+    const bool baseQualified = directGuidesQualified_ && request.plan.beforeUpscale &&
+        context.plan.requestedPasses == 1 && !context.plan.reduced && !context.plan.cropColor &&
+        !context.acrossRr && !request.composition.rayReconstruction &&
+        request.tuning[0] == DlssNrTuning{} && request.depthInverted;
+
+    auto prepareGuide = [&](D3D12NrGuideKind kind, ID3D12Resource* source,
+                            D3D12_RESOURCE_STATES& state,
+                            D3D12_RESOURCE_STATES arrival,
+                            bool& cloned) -> ID3D12Resource* {
+        const std::size_t slot = (kind == D3D12NrGuideKind::Depth) ? 0 : 1;
+        if (cachedGuideResources_[slot] != source) {
+            cachedGuideResources_[slot] = source;
+            cachedGuideDescs_[slot] = source->GetDesc();
+        }
+        const D3D12_RESOURCE_DESC& sourceDesc = cachedGuideDescs_[slot];
+        const DXGI_FORMAT typed = TypedGuideFormat(sourceDesc.Format);
+        bool useDirect = (typed == sourceDesc.Format);
+        if (!useDirect && baseQualified) {
+            const bool directDepth = (kind == D3D12NrGuideKind::Depth) &&
+                (sourceDesc.Format == DXGI_FORMAT_R32_TYPELESS);
+            const bool directMotion = (kind == D3D12NrGuideKind::Motion) &&
+                (sourceDesc.Format == DXGI_FORMAT_R32G32_TYPELESS);
+            if (directDepth || directMotion) {
+                const auto& guideRect = (kind == D3D12NrGuideKind::Depth)
+                    ? context.plan.depth : context.plan.motion;
+                const bool qualifiedRequest = guideRect.x == 0 && guideRect.y == 0 &&
+                    guideRect.width == sourceDesc.Width && guideRect.height == sourceDesc.Height;
+                const bool qualifiedDesc = sourceDesc.Dimension == D3D12_RESOURCE_DIMENSION_TEXTURE2D &&
+                    sourceDesc.DepthOrArraySize == 1 && sourceDesc.MipLevels == 1 &&
+                    sourceDesc.SampleDesc.Count == 1 && sourceDesc.SampleDesc.Quality == 0 &&
+                    sourceDesc.Layout == D3D12_TEXTURE_LAYOUT_UNKNOWN &&
+                    sourceDesc.Flags == D3D12_RESOURCE_FLAG_ALLOW_RENDER_TARGET;
+                useDirect = CanUseDirectD3D12Guide(
+                    qualifiedRequest && qualifiedDesc,
+                    directDepth ? D3D12GuideRole::Depth : D3D12GuideRole::Motion,
+                    directDepth ? D3D12TypelessGuideFamily::R32 : D3D12TypelessGuideFamily::R32G32,
+                    {static_cast<std::uint32_t>(sourceDesc.Width), sourceDesc.Height});
+            }
+        }
+        if (useDirect) {
+            if (guideClones_.Get(kind) != nullptr &&
+                !guideClones_.Retire(kind, retirement_))
+                return nullptr;
+            cloned = false;
+            return source;
+        }
+
+        if (!guideClones_.Ensure(context.device, kind, source, typed, retirement_))
+            return nullptr;
+        if (!TransitionExternal(
+                cmd, source, state, D3D12_RESOURCE_STATE_COPY_SOURCE))
+            return nullptr;
+        cmd->CopyResource(guideClones_.Get(kind), source);
+        if (!TransitionExternal(cmd, source, state, arrival) ||
+            !guideClones_.Transition(
+                cmd, kind, D3D12_RESOURCE_STATE_COPY_DEST,
+                D3D12_RESOURCE_STATE_NON_PIXEL_SHADER_RESOURCE))
+            return nullptr;
+        cloned = true;
+        return guideClones_.Get(kind);
+    };
+
+    context.depthIn = prepareGuide(
+        D3D12NrGuideKind::Depth, resources.depth, context.depthState,
+        request.depthState, context.depthCloned);
+    context.motionIn = prepareGuide(
+        D3D12NrGuideKind::Motion, resources.motion, context.motionState,
+        request.motionState, context.motionCloned);
+    if (context.depthIn == nullptr || context.motionIn == nullptr)
+        return false;
+
+    D3D12_RESOURCE_BARRIER barriers[4]{};
+    UINT barrierCount = 0;
+    if (!scratch_.QueueTransition(
+            D3D12NrScratchKind::ColorCopy,
+            D3D12_RESOURCE_STATE_UNORDERED_ACCESS,
+            D3D12_RESOURCE_STATE_NON_PIXEL_SHADER_RESOURCE,
+            barriers[barrierCount++]))
+        return false;
+    if (preserveOriginal && !scratch_.QueueTransition(
+            D3D12NrScratchKind::HdrCopy,
+            D3D12_RESOURCE_STATE_UNORDERED_ACCESS,
+            D3D12_RESOURCE_STATE_NON_PIXEL_SHADER_RESOURCE,
+            barriers[barrierCount++]))
+        return false;
+    auto queueExt = [&](ID3D12Resource* res, D3D12_RESOURCE_STATES& st) {
+        if (res == nullptr || st == D3D12_RESOURCE_STATE_NON_PIXEL_SHADER_RESOURCE) return;
+        barriers[barrierCount].Type = D3D12_RESOURCE_BARRIER_TYPE_TRANSITION;
+        barriers[barrierCount].Transition.pResource = res;
+        barriers[barrierCount].Transition.Subresource = D3D12_RESOURCE_BARRIER_ALL_SUBRESOURCES;
+        barriers[barrierCount].Transition.StateBefore = st;
+        barriers[barrierCount].Transition.StateAfter = D3D12_RESOURCE_STATE_NON_PIXEL_SHADER_RESOURCE;
+        st = D3D12_RESOURCE_STATE_NON_PIXEL_SHADER_RESOURCE;
+        ++barrierCount;
+    };
+    if (!context.depthCloned) queueExt(resources.depth, context.depthState);
+    if (!context.motionCloned) queueExt(resources.motion, context.motionState);
+    if (barrierCount > 0)
+        cmd->ResourceBarrier(barrierCount, barriers);
+
+    if (context.plan.reduced) {
+        D3D12NrCodecConstants scale{};
+        scale.mode = static_cast<std::uint32_t>(D3D12NrCodecMode::Downsample);
+        scale.width = context.plan.work.width;
+        scale.height = context.plan.work.height;
+        ID3D12Resource* const colorSmall =
+            scratch_.Get(D3D12NrScratchKind::ColorSmall);
+        D3D12NrCodecResources scaleResources{};
+        scaleResources.source = context.modelInput;
+        scaleResources.target = colorSmall;
+        if (!codec_.Dispatch(cmd, scale, scaleResources) ||
+            !scratch_.Transition(
+                cmd, D3D12NrScratchKind::ColorSmall,
+                D3D12_RESOURCE_STATE_UNORDERED_ACCESS,
+                D3D12_RESOURCE_STATE_NON_PIXEL_SHADER_RESOURCE))
+            return false;
+        context.modelInput = colorSmall;
+    }
+    return true;
+}
+
+void D3D12NrExecutor::RestoreFrameResources(
+    ID3D12GraphicsCommandList* cmd, const D3D12NrFrameResources& resources,
+    const D3D12NrFrameRequest& request, FrameContext& context) noexcept {
+    if (cmd == nullptr) return;
+
+    scratch_.RestoreAllToUav(cmd);
+
+    D3D12_RESOURCE_BARRIER barriers[4]{};
+    D3D12_RESOURCE_STATES* states[4]{};
+    D3D12_RESOURCE_STATES nextStates[4]{};
+    UINT extCount = 0;
+
+    auto addExt = [&](ID3D12Resource* res, D3D12_RESOURCE_STATES& cur, D3D12_RESOURCE_STATES target) {
+        if (res == nullptr || cur == target) return;
+        barriers[extCount].Type = D3D12_RESOURCE_BARRIER_TYPE_TRANSITION;
+        barriers[extCount].Transition.pResource = res;
+        barriers[extCount].Transition.Subresource = D3D12_RESOURCE_BARRIER_ALL_SUBRESOURCES;
+        barriers[extCount].Transition.StateBefore = cur;
+        barriers[extCount].Transition.StateAfter = target;
+        states[extCount] = &cur;
+        nextStates[extCount] = target;
+        ++extCount;
+    };
+
+    if (context.depthCloned) {
+        if (guideClones_.State(D3D12NrGuideKind::Depth) ==
+            D3D12_RESOURCE_STATE_NON_PIXEL_SHADER_RESOURCE)
+            guideClones_.Transition(
+                cmd, D3D12NrGuideKind::Depth,
+                D3D12_RESOURCE_STATE_NON_PIXEL_SHADER_RESOURCE,
+                D3D12_RESOURCE_STATE_COPY_DEST);
+    } else {
+        addExt(resources.depth, context.depthState, request.depthState);
+    }
+
+    if (context.motionCloned) {
+        if (guideClones_.State(D3D12NrGuideKind::Motion) ==
+            D3D12_RESOURCE_STATE_NON_PIXEL_SHADER_RESOURCE)
+            guideClones_.Transition(
+                cmd, D3D12NrGuideKind::Motion,
+                D3D12_RESOURCE_STATE_NON_PIXEL_SHADER_RESOURCE,
+                D3D12_RESOURCE_STATE_COPY_DEST);
+    } else {
+        addExt(resources.motion, context.motionState, request.motionState);
+    }
+
+    if (request.composition.useGameExposure && resources.exposure != nullptr)
+        addExt(resources.exposure, context.exposureState, request.exposureState);
+    addExt(context.target, context.targetState, context.targetArrival);
+
+    if (extCount > 0) {
+        cmd->ResourceBarrier(extCount, barriers);
+        for (UINT i = 0; i < extCount; ++i)
+            *states[i] = nextStates[i];
+    }
+}
+
+} // namespace nrfusion

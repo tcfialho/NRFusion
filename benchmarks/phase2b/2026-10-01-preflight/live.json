@@ -1,0 +1,328 @@
+[
+  {
+    "case": "lifecycle-Stock",
+    "mode": "Stock",
+    "exit": 0,
+    "command": [
+      "D:\\Users\\tcfialho\\Documents\\NRFusion\\dist\\RequiemGame\\RequiemGame.exe",
+      "--require-nrfusion-proxy",
+      "--require-nr",
+      "--deterministic-motion",
+      "--width",
+      "1920",
+      "--height",
+      "1080",
+      "--frames",
+      "180",
+      "--warmup",
+      "40",
+      "--csv",
+      "D:\\Users\\tcfialho\\Documents\\NRFusion\\.temp\\phase2b\\preflight-20261001\\lifecycle-Stock\\frames.csv",
+      "--capture",
+      "D:\\Users\\tcfialho\\Documents\\NRFusion\\.temp\\phase2b\\preflight-20261001\\lifecycle-Stock\\output.ppm",
+      "--nr-lifecycle",
+      "--nr-kernels",
+      "D:\\Users\\tcfialho\\Documents\\NRFusion\\.temp\\phase2b\\preflight-20261001\\lifecycle-Stock\\kernels.csv"
+    ],
+    "profile": true,
+    "lifecycle": true,
+    "frames": 180,
+    "warmup": 40,
+    "image_sha256": "8fb4f4941a9c74196fd6dad3946ab86d513e5b71b47ac80788987a12c2cebbc9",
+    "metrics": {
+      "nr_gpu_ms": {
+        "p50": 9.15149,
+        "p95": 9.7006575,
+        "p99": 12.243364999999999,
+        "samples": 140
+      },
+      "ngx_evaluation_gpu_ms": {
+        "p50": 10.5267,
+        "p95": 11.080805,
+        "p99": 13.663445,
+        "samples": 140
+      },
+      "frame_wall_ms": {
+        "p50": 12.8458,
+        "p95": 21.817484999999976,
+        "p99": 190.34707999999992,
+        "samples": 140
+      }
+    },
+    "records": 19656,
+    "custom": 0,
+    "dropped_samples": 0,
+    "smaller_shape": {
+      "stock_launches": 133,
+      "custom_launches": 0
+    }
+  },
+  {
+    "case": "lifecycle-Custom",
+    "mode": "Custom",
+    "exit": 0,
+    "command": [
+      "D:\\Users\\tcfialho\\Documents\\NRFusion\\dist\\RequiemGame\\RequiemGame.exe",
+      "--require-nrfusion-proxy",
+      "--require-nr",
+      "--deterministic-motion",
+      "--width",
+      "1920",
+      "--height",
+      "1080",
+      "--frames",
+      "180",
+      "--warmup",
+      "40",
+      "--csv",
+      "D:\\Users\\tcfialho\\Documents\\NRFusion\\.temp\\phase2b\\preflight-20261001\\lifecycle-Custom\\frames.csv",
+      "--capture",
+      "D:\\Users\\tcfialho\\Documents\\NRFusion\\.temp\\phase2b\\preflight-20261001\\lifecycle-Custom\\output.ppm",
+      "--nr-lifecycle",
+      "--nr-kernels",
+      "D:\\Users\\tcfialho\\Documents\\NRFusion\\.temp\\phase2b\\preflight-20261001\\lifecycle-Custom\\kernels.csv"
+    ],
+    "profile": true,
+    "lifecycle": true,
+    "frames": 180,
+    "warmup": 40,
+    "image_sha256": "8fb4f4941a9c74196fd6dad3946ab86d513e5b71b47ac80788987a12c2cebbc9",
+    "metrics": {
+      "nr_gpu_ms": {
+        "p50": 13.771799999999999,
+        "p95": 14.302249999999999,
+        "p99": 14.313291000000001,
+        "samples": 140
+      },
+      "ngx_evaluation_gpu_ms": {
+        "p50": 15.1491,
+        "p95": 15.67955,
+        "p99": 15.690421,
+        "samples": 140
+      },
+      "frame_wall_ms": {
+        "p50": 17.528100000000002,
+        "p95": 27.413574999999994,
+        "p99": 187.7291899999999,
+        "samples": 140
+      }
+    },
+    "records": 19656,
+    "custom": 749,
+    "dropped_samples": 0,
+    "smaller_shape": {
+      "stock_launches": 133,
+      "custom_launches": 0
+    }
+  },
+  {
+    "case": "baseline-1-profile-0",
+    "mode": "Stock",
+    "exit": 0,
+    "command": [
+      "D:\\Users\\tcfialho\\Documents\\NRFusion\\dist\\RequiemGame\\RequiemGame.exe",
+      "--require-nrfusion-proxy",
+      "--require-nr",
+      "--deterministic-motion",
+      "--width",
+      "1920",
+      "--height",
+      "1080",
+      "--frames",
+      "360",
+      "--warmup",
+      "120",
+      "--csv",
+      "D:\\Users\\tcfialho\\Documents\\NRFusion\\.temp\\phase2b\\preflight-20261001\\baseline-1-profile-0\\frames.csv",
+      "--capture",
+      "D:\\Users\\tcfialho\\Documents\\NRFusion\\.temp\\phase2b\\preflight-20261001\\baseline-1-profile-0\\output.ppm"
+    ],
+    "profile": false,
+    "lifecycle": false,
+    "frames": 360,
+    "warmup": 120,
+    "image_sha256": "bc09a69ecab3addb8666dda52d332858fa36c170a7a463c701577b89d03b8431",
+    "metrics": {
+      "nr_gpu_ms": {
+        "p50": 8.02918,
+        "p95": 8.5720025,
+        "p99": 8.6774764,
+        "samples": 240
+      },
+      "ngx_evaluation_gpu_ms": {
+        "p50": 9.40749,
+        "p95": 9.985276,
+        "p99": 10.052282,
+        "samples": 240
+      },
+      "frame_wall_ms": {
+        "p50": 10.343599999999999,
+        "p95": 10.91805,
+        "p99": 11.055347,
+        "samples": 240
+      }
+    }
+  },
+  {
+    "case": "baseline-1-profile-1",
+    "mode": "Stock",
+    "exit": 0,
+    "command": [
+      "D:\\Users\\tcfialho\\Documents\\NRFusion\\dist\\RequiemGame\\RequiemGame.exe",
+      "--require-nrfusion-proxy",
+      "--require-nr",
+      "--deterministic-motion",
+      "--width",
+      "1920",
+      "--height",
+      "1080",
+      "--frames",
+      "360",
+      "--warmup",
+      "120",
+      "--csv",
+      "D:\\Users\\tcfialho\\Documents\\NRFusion\\.temp\\phase2b\\preflight-20261001\\baseline-1-profile-1\\frames.csv",
+      "--capture",
+      "D:\\Users\\tcfialho\\Documents\\NRFusion\\.temp\\phase2b\\preflight-20261001\\baseline-1-profile-1\\output.ppm",
+      "--nr-kernels",
+      "D:\\Users\\tcfialho\\Documents\\NRFusion\\.temp\\phase2b\\preflight-20261001\\baseline-1-profile-1\\kernels.csv"
+    ],
+    "profile": true,
+    "lifecycle": false,
+    "frames": 360,
+    "warmup": 120,
+    "image_sha256": "bc09a69ecab3addb8666dda52d332858fa36c170a7a463c701577b89d03b8431",
+    "metrics": {
+      "nr_gpu_ms": {
+        "p50": 9.17504,
+        "p95": 9.701431,
+        "p99": 9.7256547,
+        "samples": 240
+      },
+      "ngx_evaluation_gpu_ms": {
+        "p50": 10.54465,
+        "p95": 11.0766,
+        "p99": 11.096573,
+        "samples": 240
+      },
+      "frame_wall_ms": {
+        "p50": 12.8925,
+        "p95": 13.487285,
+        "p99": 13.682348999999999,
+        "samples": 240
+      }
+    },
+    "records": 37440,
+    "custom": 0,
+    "dropped_samples": 0,
+    "smaller_shape": {
+      "stock_launches": 0,
+      "custom_launches": 0
+    }
+  },
+  {
+    "case": "baseline-2-profile-1",
+    "mode": "Stock",
+    "exit": 0,
+    "command": [
+      "D:\\Users\\tcfialho\\Documents\\NRFusion\\dist\\RequiemGame\\RequiemGame.exe",
+      "--require-nrfusion-proxy",
+      "--require-nr",
+      "--deterministic-motion",
+      "--width",
+      "1920",
+      "--height",
+      "1080",
+      "--frames",
+      "360",
+      "--warmup",
+      "120",
+      "--csv",
+      "D:\\Users\\tcfialho\\Documents\\NRFusion\\.temp\\phase2b\\preflight-20261001\\baseline-2-profile-1\\frames.csv",
+      "--capture",
+      "D:\\Users\\tcfialho\\Documents\\NRFusion\\.temp\\phase2b\\preflight-20261001\\baseline-2-profile-1\\output.ppm",
+      "--nr-kernels",
+      "D:\\Users\\tcfialho\\Documents\\NRFusion\\.temp\\phase2b\\preflight-20261001\\baseline-2-profile-1\\kernels.csv"
+    ],
+    "profile": true,
+    "lifecycle": false,
+    "frames": 360,
+    "warmup": 120,
+    "image_sha256": "bc09a69ecab3addb8666dda52d332858fa36c170a7a463c701577b89d03b8431",
+    "metrics": {
+      "nr_gpu_ms": {
+        "p50": 9.17504,
+        "p95": 9.703574,
+        "p99": 9.7333937,
+        "samples": 240
+      },
+      "ngx_evaluation_gpu_ms": {
+        "p50": 10.5452,
+        "p95": 11.0757,
+        "p99": 11.103492,
+        "samples": 240
+      },
+      "frame_wall_ms": {
+        "p50": 12.8891,
+        "p95": 13.547925000000001,
+        "p99": 13.694458,
+        "samples": 240
+      }
+    },
+    "records": 37440,
+    "custom": 0,
+    "dropped_samples": 0,
+    "smaller_shape": {
+      "stock_launches": 0,
+      "custom_launches": 0
+    }
+  },
+  {
+    "case": "baseline-2-profile-0",
+    "mode": "Stock",
+    "exit": 0,
+    "command": [
+      "D:\\Users\\tcfialho\\Documents\\NRFusion\\dist\\RequiemGame\\RequiemGame.exe",
+      "--require-nrfusion-proxy",
+      "--require-nr",
+      "--deterministic-motion",
+      "--width",
+      "1920",
+      "--height",
+      "1080",
+      "--frames",
+      "360",
+      "--warmup",
+      "120",
+      "--csv",
+      "D:\\Users\\tcfialho\\Documents\\NRFusion\\.temp\\phase2b\\preflight-20261001\\baseline-2-profile-0\\frames.csv",
+      "--capture",
+      "D:\\Users\\tcfialho\\Documents\\NRFusion\\.temp\\phase2b\\preflight-20261001\\baseline-2-profile-0\\output.ppm"
+    ],
+    "profile": false,
+    "lifecycle": false,
+    "frames": 360,
+    "warmup": 120,
+    "image_sha256": "bc09a69ecab3addb8666dda52d332858fa36c170a7a463c701577b89d03b8431",
+    "metrics": {
+      "nr_gpu_ms": {
+        "p50": 8.06605,
+        "p95": 8.601245500000001,
+        "p99": 8.7426679,
+        "samples": 240
+      },
+      "ngx_evaluation_gpu_ms": {
+        "p50": 9.444865,
+        "p95": 10.02282,
+        "p99": 10.120014999999999,
+        "samples": 240
+      },
+      "frame_wall_ms": {
+        "p50": 10.378499999999999,
+        "p95": 11.011935,
+        "p99": 11.258887999999999,
+        "samples": 240
+      }
+    }
+  }
+]

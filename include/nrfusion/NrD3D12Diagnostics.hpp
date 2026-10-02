@@ -2,9 +2,20 @@
 #include <dxgi1_6.h>
 #include <d3d12.h>
 #include <nvapi.h>
+#include <cstddef>
+#include <cstdint>
 #include <string>
 
 namespace nrfusion {
+
+struct NrD3D12DiagnosticAccounting {
+    std::size_t gpuObjectCount = 0;
+    std::uint64_t readbackBytes = 0;
+    std::uint32_t queryCapacity = 0;
+};
+
+NrD3D12DiagnosticAccounting NrD3D12DiagnosticAccountingSnapshot() noexcept;
+
 void NoteNrFunction(NVDX_ObjectHandle function, const char* name);
 // Which kernels the installed neural runtime actually registers. Any path that targets a specific
 // kernel is a guess until this is read on the machine that will run it.

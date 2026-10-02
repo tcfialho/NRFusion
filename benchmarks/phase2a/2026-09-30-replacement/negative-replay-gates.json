@@ -1,0 +1,14 @@
+[
+  {
+    "case": "runtime_sha256",
+    "exit": 1,
+    "message": "Stock replay failed: Unqualified capture runtime or architecture",
+    "produced_output": false
+  },
+  {
+    "case": "gpu_architecture",
+    "exit": 1,
+    "message": "Stock replay failed: Unqualified capture runtime or architecture",
+    "produced_output": false
+  }
+]

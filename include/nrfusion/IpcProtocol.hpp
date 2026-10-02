@@ -14,10 +14,10 @@
 namespace nrfusion {
 
 #define NRFUSION_IPC_MAGIC   0x4E524655u  // 'NRFU'
-#define NRFUSION_IPC_VERSION 2u
+#define NRFUSION_IPC_VERSION 3u
 
-// The build payload gained target-process handles and an explicit processing mode in v2.
-// A client and host must agree on this version before interpreting any handle value.
+// v3 adds an explicit connection generation so stale traffic cannot cross reconnect boundaries.
+// Client and host must agree on the version before interpreting any handle value.
 enum class IpcProcessingMode : uint32_t {
     DummyCopy = 0,
     Neural = 1,
@@ -52,12 +52,14 @@ struct IpcHelloAckMessage {
     uint32_t version = NRFUSION_IPC_VERSION;
     uint32_t hostPid = 0;
     uint32_t status = 0; // 0 = OK
+    uint64_t connectionGeneration = 0;
 };
 
 struct IpcBuildMessage {
     uint32_t magic = NRFUSION_IPC_MAGIC;
     uint32_t version = NRFUSION_IPC_VERSION;
     uint64_t sessionId = 0;
+    uint64_t connectionGeneration = 0;
 
     uint32_t width = 0;
     uint32_t height = 0;
@@ -82,6 +84,7 @@ struct IpcBuildAckMessage {
     uint32_t magic = NRFUSION_IPC_MAGIC;
     uint32_t version = NRFUSION_IPC_VERSION;
     uint64_t sessionId = 0;
+    uint64_t connectionGeneration = 0;
     uint32_t status = 0; // 0 = Success
     uint32_t workWidth = 0;
     uint32_t workHeight = 0;
@@ -91,6 +94,7 @@ struct IpcFrameMessage {
     uint32_t magic = NRFUSION_IPC_MAGIC;
     uint32_t version = NRFUSION_IPC_VERSION;
     uint64_t sessionId = 0;
+    uint64_t connectionGeneration = 0;
 
     uint64_t workId = 0;
     uint64_t featureId = 0;
@@ -111,12 +115,25 @@ struct IpcFrameAckMessage {
     uint32_t magic = NRFUSION_IPC_MAGIC;
     uint32_t version = NRFUSION_IPC_VERSION;
     uint64_t sessionId = 0;
+    uint64_t connectionGeneration = 0;
     uint64_t workId = 0;
     uint64_t completedFenceValue = 0;
     uint32_t status = static_cast<uint32_t>(IpcFrameStatus::Complete);
 };
 
 #pragma pack(pop)
+
+constexpr bool IpcConnectionMatches(
+    uint64_t expectedGeneration, uint64_t actualGeneration) noexcept {
+    return expectedGeneration != 0 && expectedGeneration == actualGeneration;
+}
+
+constexpr bool IpcSessionMatches(
+    uint64_t expectedGeneration, uint64_t expectedSession,
+    uint64_t actualGeneration, uint64_t actualSession) noexcept {
+    return IpcConnectionMatches(expectedGeneration, actualGeneration) &&
+           expectedSession != 0 && expectedSession == actualSession;
+}
 
 // Maximum in-flight frames allowed over IPC
 constexpr uint32_t kIpcMaxInFlight = 3;

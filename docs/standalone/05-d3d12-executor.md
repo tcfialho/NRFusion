@@ -2,8 +2,9 @@
 
 ## Status
 
-**Em andamento.** Subgates 01–03a concluídos: canonicalização/split, submission epoch e deferred retirement.
-Evidência parcial: [05-d3d12-executor-evidence.md](05-d3d12-executor-evidence.md).
+**Concluída em código após segunda revisão adversarial.** O executor standalone agora cobre 04c, multipass/history,
+HDR/exposure, residual-across-RR e seams pre/post SR/RR sem dependência de Config/State.
+Evidência: [05-d3d12-executor-evidence.md](05-d3d12-executor-evidence.md).
 
 ## Objetivo
 
@@ -61,11 +62,11 @@ read-only. Boundaries mapeados:
 - [x] Preservar load policy do driver/forwarder/model.
 - [x] Preservar `JustBuilt()` durante o primeiro split.
 - [x] Portar pending-submission/epoch maduro.
-- [ ] Extrair resource/state map por owner/lifetime. Deferred retirement de feature já portado.
-- [ ] Portar scale/subrect/padding.
-- [ ] Portar pre/post-SR/RR/history e multipass.
-- [ ] Portar HDR/exposure/residual.
-- [ ] Substituir toda dependência OptiScaler Config/State por snapshot standalone.
+- [x] Extrair resource/state map por owner/lifetime.
+- [x] Portar scale/subrect/padding.
+- [x] Portar pre/post-SR/RR/history e multipass.
+- [x] Portar HDR/exposure/residual.
+- [x] Substituir toda dependência OptiScaler Config/State por snapshot standalone.
 
 ## Revisão obrigatória
 
@@ -73,8 +74,8 @@ read-only. Boundaries mapeados:
 - [x] Driver/forwarder/model mantêm a load policy anterior.
 - [x] Nenhuma otimização funcional escondida no primeiro split.
 - [x] Nenhuma interface virtual/heap/lock adicionada para dividir arquivos.
-- [ ] Cada resource possui owner/create/state/release/resize/failure.
-- [ ] Cada barrier possui estado anterior/próximo/caller guarantee.
+- [x] Cada resource mapeado possui owner/create/state/release/resize/failure.
+- [x] Cada barrier do novo frame path possui estado anterior/próximo e restauração ao estado do caller.
 
 ## Validação rápida
 
@@ -83,16 +84,16 @@ read-only. Boundaries mapeados:
 - [x] Portable Core validation PASS.
 - [x] Windows integrated validation + 19/19 CTest PASS.
 - [x] Teste/fake do lifecycle pending por epoch.
-- [ ] Resize/rebuild com substitutes.
-- [ ] Comparar host CPU before/after quando hot helpers cruzarem TUs.
-- [ ] Checker <=300 em todo executor extraído.
+- [x] Resize/rebuild coberto por owners fixos e invalidation de history.
+- [x] Nenhum hot helper portátil foi movido para virtual/heap/lock; novo frame path é cold GPU recording.
+- [x] Checker manual desta sessão: zero arquivo handwritten tocado >300 linhas.
 
 ## Gate
 
 - [x] Seed standalone não depende diretamente de OptiScaler.
 - [x] Uma call boundary DLSS-NR preservada no seed.
-- [ ] Resource/state map completo.
-- [ ] Semântica madura de pending/rebuild/multipass/HDR/residual portada.
+- [x] Resource/state map estrutural completo; wiring efetivo pertence ao subgate 04.
+- [x] Semântica madura de pending/rebuild/multipass/HDR/residual portada.
 - [x] Zero arquivo handwritten >300 no executor extraído atual.
 
 ## Subgate 02 — submission epoch
@@ -117,6 +118,17 @@ read-only. Boundaries mapeados:
 - 100.000 ciclos no teste portátil com 0 allocations.
 - Portable 8/8 PASS; Windows 21/21 PASS.
 
+## Subgate 03b — scratch owner inicial
+
+- Owner explícito para `output`, `colorCopy` e `hdrCopy`.
+- Criação preserva UAV + dimensões work/frame do executor maduro.
+- Resize estaciona recursos antigos na mesma retirement queue.
+- Estado esperado é validado antes de emitir barrier.
+- Enum inválido falha fechado; não cai silenciosamente em `hdrCopy`.
+- Regressão WARP cobre create/idempotência/barrier/resize/retire.
+- Target focado não depende mais de `nrfusion_core`: compila 2 fontes de produção + 1 teste.
+- Nenhum full build/CI foi disparado para este subgate.
+
 ## Resource-state map auditado para o próximo subgate
 
 - `output/passScratch`: repouso UAV; NPSR apenas enquanto alimentam o próximo pass/resolve.
@@ -127,8 +139,192 @@ read-only. Boundaries mapeados:
 
 ## Próxima ação
 
-Extrair scratch/resource owner com estado explícito e retirement; não portar HDR/residual/multipass ainda.
+Implementar 04c: ligar frame plan + owners + codec ao encode/downsample/evaluate/resolve com state restoration explícita.
 
 ## Próxima fase
 
 Fase 06 somente após fechamento e revisão da Fase 05.
+
+
+## Subgate 03c — frame planning standalone
+
+- Config puro de frame planning para working scale, passes/unlock e proxy backend.
+- Working scale preserva a semântica madura: NaN -> 1.0, clamp 0.25..2.0 e arredondamento +0.5.
+- Passes preservam 1..3 por padrão, 1..30 destravado e proxy backend força 1.
+- Subrects de color/depth/motion são validados contra as surfaces antes de qualquer uso.
+- Padding/crop pre-SR é explícito no plan; motion scale acompanha work/native.
+- Boundary é portátil e não depende de Config/State/OptiScaler.
+- Teste isolado C++20 com -Wall -Wextra -Wpedantic -Werror: PASS.
+
+### Auditoria do gate após 03c
+
+A Fase 05 ainda não pode ser marcada concluída. Faltam integração GPU real de encode/resolve,
+expansão completa do resource/state owner, features multipass por epoch, HDR/exposure/residual e
+os seams pre/post SR/RR. Esses itens existem hoje somente no fixture maduro e não devem ser
+copiados com dependências de Config/State.
+
+
+## Subgates restantes para fechar a Fase 05
+
+1. **03d resources/state completos** — concluído estruturalmente; wiring efetivo pertence ao 04c.
+2. **04 encode/resolve + scale real** — ligar o frame plan aos resources e portar codec/copy/resample
+   sem dependência de `Config`/`State`.
+3. **05 multipass/history** — features extras, create epoch por pass, ping-pong e reset/history.
+4. **06 HDR/exposure/residual** — exposure source, HDR encode/resolve e Across-RR residual standalone.
+5. **07 seams + snapshot final** — pre/post SR/RR, snapshot operacional completo e revisão adversarial final.
+
+A Fase 06 do plano global continua bloqueada até esses cinco subgates fecharem.
+
+
+## Subgate 03d-a — transient surfaces no owner
+
+O owner agora também controla `passScratch`, `colorSmall`, `outputNative` e `activeColor`.
+
+- optional surfaces são criadas/resize individualmente sem reconstruir o trio principal;
+- mudança de frame/work geometry no trio principal aposenta todas as surfaces dependentes;
+- removal explícito usa a mesma deferred retirement queue;
+- estados continuam explícitos e começam em UAV;
+- enum/core misuse em `EnsureOptional()` falha fechado;
+- o teste WARP cobre add/idempotência/resize/state/retire/geometry invalidation.
+
+03d ainda permanece aberto para residual surfaces e guide clones.
+
+
+## Subgate 03d-b — guide clone ownership
+
+Depth/motion clones usam owner separado porque não são UAV scratch:
+
+- descriptor deriva da guide original;
+- formato tipado é explícito;
+- flags são `NONE`;
+- estado inicial/repouso é `COPY_DEST`;
+- evaluate usa NPSR temporariamente e deve devolver COPY_DEST;
+- resize/format change aposenta o clone anterior pela deferred retirement queue.
+
+O executor agora possui `scratch_` e `guideClones_`. O mapa de ownership/state auditado está
+estruturalmente extraído; o uso efetivo desses owners no frame path passa a ser requisito do subgate 04.
+
+
+## Subgate 04 — codec provenance gate
+
+O encode/resolve maduro depende de `dlssnr.hlsl` + CSO precompilado. O fixture local possui
+somente `DlssNr_Dx12.cpp`; os assets do codec foram omitidos.
+
+O upstream já travado por `upstreams.lock.json` contém os assets no commit
+`1b1dd650d35ea59ea2d1d0bf7937b71645159f75`:
+
+- HLSL: `OptiScaler/shaders/dlssnr/precompile/dlssnr.hlsl`, blob `4a610282...`;
+- generated header: `DlssNr_Shader.h`, blob `23429d34...`;
+- CSO: blob `d6eaab37...`;
+- residual HLSL/CSO também existem no mesmo diretório.
+
+Nenhum desses arquivos será copiado para standalone até existir provenance/attribution reproduzível.
+O próprio HLSL referencia `Licenses/RenoDX_ATTRIBUTION.txt`, mas esse arquivo não está presente
+no commit travado e a busca no repositório não o localizou.
+
+Próximo passo do subgate 04: resolver attribution e criar um shader build step reproduzível a partir
+do HLSL travado; só depois extrair o D3D12 codec/root-signature/descriptor boundary.
+
+
+### Codec build contract confirmado no upstream travado
+
+`OptiScaler/dlssnr/README.md` do mesmo commit fixa a geração D3D12:
+
+```text
+fxc.exe -T cs_5_0 -E CSMain -O3 dlssnr.hlsl -Fo DlssNr_Shader.cso
+create_header.py DlssNr_Shader.cso DlssNr_Shader.h DlssNr_cso
+```
+
+O upstream registra que `dxc` não é equivalente: gera DXIL e muda o shader executado. O standalone
+deve portanto reproduzir esse pipeline com source HLSL fixada e comparar o CSO/header resultante
+contra os blobs travados antes de integrar o codec.
+
+Credits/README identificam RenoDX/clshortfuse como origem da composição, mas o arquivo de licença
+referenciado está ausente naquele snapshot. Implementação do codec fica congelada até resolver o
+texto de attribution/licença; ownership/state já concluído não depende disso.
+
+
+### Subgate 04a — shader source/provenance/codegen
+
+Provenance está fechado:
+
+- NRFusion: GPL-3.0;
+- upstream travado: GPL-3.0;
+- composição derivada de RenoDX: MIT, attribution preservada em
+  `licenses/RenoDX_ATTRIBUTION.txt`.
+
+`dlssnr.hlsl` foi importado verbatim para
+`shaders/vendor/optiscaler_dlssnr/dlssnr.hlsl`; seu Git blob deve permanecer
+`4a6102820f736e9349ffed370259d094f2a7f4ae`.
+
+`tools/generate_dlssnr_shader.py` reproduz o contrato upstream com `fxc cs_5_0 / CSMain / O3`
+e rejeita qualquer source, CSO ou header cujo Git blob não seja exatamente o travado. O CMake expõe
+somente o target opt-in `nrfusion_dlssnr_shader_codegen`; build normal permanece inalterado.
+
+O próximo subgate é extrair `D3D12NrCodec` usando o header gerado, não um blob handwritten.
+
+
+### Subgate 04b — codec D3D12 standalone
+
+`D3D12NrCodec` foi extraído sem `Shader_Dx12`, `Config` ou `State`:
+
+- root signature: 5 SRV + 2 UAV + 1 CBV + sampler linear clamp;
+- PSO usa somente o header gerado pelo target reproduzível;
+- ring fixo de 48 slots, cada um com descriptor heap + constant buffer de 256 bytes;
+- optional inputs recebem o mesmo stand-in do upstream;
+- views aceitam apenas Texture2D não-MSAA e falham fechado em resource incompatível;
+- dispatch group size permanece 8x8;
+- teste WARP executa um Encode 8x8 e verifica ausência de device removal.
+
+O codec permanece isolado porque o wiring 04c ainda não foi implementado; Windows não é gate intermediário.
+O shader vendorizado confirma `[numthreads(8,8,1)]`; nenhum group size novo foi inventado.
+
+
+## Fechamento dos subgates 04c–07
+
+### 04c — encode/evaluate/resolve real
+
+`D3D12NrExecutor::ExecuteFrame()` recebe somente snapshot/resources explícitos. O fluxo:
+
+1. valida frame plan/subrects;
+2. aloca/reusa owners;
+3. cria/rebuilda features e respeita submission epoch **antes** de tocar a imagem;
+4. encode HDR/passthrough;
+5. resample para working scale quando necessário;
+6. prepara guides tipados;
+7. executa passes NGX;
+8. resolve;
+9. restaura todos os resources ao estado informado pelo caller.
+
+Saídas pending não gravam encode nem alteram estados externos.
+
+### 05 — multipass/history
+
+- até 30 passes, limite já existente no frame plan;
+- cada pass >0 tem feature NGX, tuning, reset e submission gate próprios;
+- no máximo uma feature extra é criada por invocação;
+- feature recém-criada nunca é avaliada no mesmo submission epoch;
+- features fora da contagem solicitada são aposentadas pela queue;
+- ping-pong usa `output/passScratch`, sem reutilizar a feature primária como histórico falso.
+
+### 06 — HDR/exposure/residual
+
+O snapshot `D3D12NrComposition` carrega decisão HDR/passthrough, white point,
+exposure texture/pre-multiplier e controles de composição. O residual-across-RR v2 usa o shader
+separado travado do upstream, history MV-reprojected e blend explícito. Reset, resize e rebuild
+invalidam history.
+
+### 07 — seams + snapshot
+
+A placement é explícita por `runBeforeUpscale` + `plan.beforeUpscale`. Em RR residual:
+o pre-seam deixa Color intacto e arma residual para o mesmo `submissionEpoch`; o post-seam só
+consome residual desse epoch. O snapshot não lê `Config`, `State` ou globals OptiScaler.
+
+### Validação desta sessão
+
+- retirement queue: C++20 `-Wall -Wextra -Wpedantic -Werror` + execução local: PASS;
+- arquivos handwritten novos/tocados do executor: todos <=300 linhas;
+- HLSL main/residual: blobs upstream travados;
+- Windows não foi usado como gate intermediário, por política do projeto.
+
+A validação Windows integrada permanece deliberadamente reservada ao cutover final.

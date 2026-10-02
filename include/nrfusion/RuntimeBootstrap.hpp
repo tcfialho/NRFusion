@@ -11,7 +11,8 @@ enum class RuntimeBootstrapFailure : std::uint8_t {
     None,
     InvalidConfig,
     InvalidComponent,
-    AlreadyStarted
+    AlreadyStarted,
+    NotStarted
 };
 
 struct RuntimeBootstrapPlan {
@@ -31,6 +32,10 @@ class RuntimeBootstrap {
 public:
     static RuntimeBootstrapResult Start(
         RuntimeShell& shell, const RuntimeBootstrapPlan& plan) noexcept;
+    static RuntimeBootstrapResult ActivateComponent(
+        RuntimeShell& shell, RuntimeComponent component) noexcept;
+    static RuntimeBootstrapResult DeactivateComponent(
+        RuntimeShell& shell, RuntimeComponent component) noexcept;
     static void Stop(RuntimeShell& shell) noexcept;
 };
 

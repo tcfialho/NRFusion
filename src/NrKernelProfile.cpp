@@ -4,6 +4,9 @@
 #include <cstdio>
 #include <mutex>
 #include <unordered_map>
+#if defined(_WIN32)
+#include "NrKernelProfileStatistics.hpp"
+#endif
 
 #if defined(_WIN32)
 // Without these two, windows.h defines min and max as macros and every std::min in this file
@@ -166,6 +169,9 @@ NrKernelProfiler& NrKernelProfiler::Instance() {
 }
 
 bool NrKernelProfiler::Running() const noexcept {
+#if defined(_WIN32)
+    if (kernelprofile::NvapiObservationEnabled()) return true;
+#endif
     State& state = Shared();
     std::lock_guard<std::mutex> guard(state.mutex);
     return state.running;
@@ -173,6 +179,7 @@ bool NrKernelProfiler::Running() const noexcept {
 
 bool NrKernelProfiler::Start() {
 #if defined(_WIN32)
+    if (StartDriverDiscovery()) return true;
     State& state = Shared();
     std::lock_guard<std::mutex> guard(state.mutex);
     if (state.running) return true;
@@ -225,6 +232,7 @@ bool NrKernelProfiler::Start() {
 }
 
 void NrKernelProfiler::Stop() {
+    StopDriverDiscovery();
     State& state = Shared();
     std::lock_guard<std::mutex> guard(state.mutex);
     if (!state.running) return;
@@ -248,6 +256,9 @@ void NrKernelProfiler::MarkFrame() {
 }
 
 void NrKernelProfiler::Reset() {
+#if defined(_WIN32)
+    kernelprofile::ResetNativeReport();
+#endif
     State& state = Shared();
     std::lock_guard<std::mutex> guard(state.mutex);
     state.stats.clear();
@@ -256,6 +267,10 @@ void NrKernelProfiler::Reset() {
 }
 
 NrKernelReport NrKernelProfiler::Report() const {
+#if defined(_WIN32)
+    const auto native = kernelprofile::NativeReport();
+    if (native.frames) return native;
+#endif
     State& state = Shared();
     std::lock_guard<std::mutex> guard(state.mutex);
     NrKernelReport report;
@@ -271,27 +286,5 @@ NrKernelReport NrKernelProfiler::Report() const {
     return report;
 }
 
-std::string NrKernelProfiler::FormatReport() const {
-    const NrKernelReport report = Report();
-    std::string text;
-    char line[512];
-    std::snprintf(line, sizeof(line),
-                  "NRFusion: %llu quadros, %.3f ms/quadro somados nos kernels CUDA capturados (nao e o tempo do passe NR), %llu amostras perdidas\n",
-                  (unsigned long long) report.frames, report.measuredMsPerFrame,
-                  (unsigned long long) report.droppedSamples);
-    text += line;
-    std::snprintf(line, sizeof(line), "%-52s %8s %10s %10s %7s\n",
-                  "kernel", "chamadas", "ms/quadro", "ms/chamada", "fatia");
-    text += line;
-    for (const auto& kernel : report.kernels) {
-        const double perFrame = report.frames ? kernel.totalMs / (double) report.frames : 0.0;
-        const double callsPerFrame = report.frames ? (double) kernel.calls / (double) report.frames : 0.0;
-        std::snprintf(line, sizeof(line), "%-52s %8.1f %10.4f %10.4f %6.1f%%\n",
-                      kernel.name.c_str(), callsPerFrame, perFrame, kernel.meanMs(),
-                      report.shareOf(kernel) * 100.0);
-        text += line;
-    }
-    return text;
-}
 
 } // namespace nrfusion

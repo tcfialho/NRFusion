@@ -1,6 +1,7 @@
 #include "nrfusion/GameProbe.hpp"
 #include "GameProbeInternal.hpp"
 
+#include <algorithm>
 #include <filesystem>
 #include <string>
 #include <system_error>
@@ -8,6 +9,18 @@
 namespace nrfusion {
 
 using namespace game_probe_detail;
+
+namespace {
+
+void DetectVersionImport(const std::filesystem::path& executable, GameProbeResult& result) {
+    const auto peInfo = InspectPe(executable);
+    result.importsVersionDll = std::find(
+        peInfo.importedDlls.begin(), peInfo.importedDlls.end(), "version.dll") != peInfo.importedDlls.end();
+    result.importsDxgiDll = std::find(
+        peInfo.importedDlls.begin(), peInfo.importedDlls.end(), "dxgi.dll") != peInfo.importedDlls.end();
+}
+
+} // namespace
 
 GameProbeResult GameProbe::Probe(const std::filesystem::path& executable) {
     GameProbeResult result;
@@ -68,10 +81,12 @@ GameProbeResult GameProbe::Probe(const std::filesystem::path& executable) {
         result.apiScore = 100;
         result.apiFromSibling = true;
         result.evidenceFile = dxvkEvidence;
+        DetectVersionImport(result.evidenceFile, result);
         return result;
     }
 
     if (result.api != GraphicsApi::Unknown) {
+        DetectVersionImport(result.evidenceFile, result);
         return result;
     }
 
@@ -83,6 +98,7 @@ GameProbeResult GameProbe::Probe(const std::filesystem::path& executable) {
         result.apiScore = ownPick.score;
         result.direct3DMajor = IsDirect3D(ownApi) ? DetectD3DMajor(ownData) : 0;
         result.evidenceFile = executable;
+        DetectVersionImport(result.evidenceFile, result);
         return result;
     }
 
@@ -129,6 +145,7 @@ GameProbeResult GameProbe::Probe(const std::filesystem::path& executable) {
         result.direct3DMajor = IsDirect3D(ownApi) ? DetectD3DMajor(ownData) : 0;
         result.evidenceFile = executable;
     }
+    DetectVersionImport(result.evidenceFile, result);
     return result;
 }
 

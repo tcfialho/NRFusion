@@ -1,7 +1,7 @@
 #include "nrfusion/HostServer64.hpp"
 #include "nrfusion/CaptureProvider32.hpp"
 #include "nrfusion/CaptureProvider32Export.h"
-#include "nrfusion/SyntheticVulkanProvider.hpp"
+#include "D3D12TestDevice.hpp"
 
 #include <cassert>
 #include <chrono>
@@ -9,6 +9,23 @@
 #include <thread>
 
 using namespace nrfusion;
+
+namespace nrfusion {
+struct HostServer64GuideTestAccess {
+    static void Bind(HostServer64& h, ID3D12Device* d, ID3D12CommandQueue* q) { h.d3d12Device_ = d; h.d3d12Queue_ = q; }
+    static bool Ensure(HostServer64& h) { return h.EnsureZeroGuides(64, 64); }
+    static bool Upload(const HostServer64& h) { return h.zeroGuideUpload_ != nullptr; }
+    static unsigned Guides(const HostServer64& h) { return unsigned(h.lowGuideDepth_ != nullptr) + unsigned(h.lowGuideMotion_ != nullptr); }
+    static void UseImported(HostServer64& h) { h.importedDepth_ = h.lowGuideDepth_; h.importedMotion_ = h.lowGuideMotion_; h.CollectInactiveZeroGuides(); }
+    static void WaitAndCollect(HostServer64& h) {
+        HANDLE e = CreateEventW(nullptr, FALSE, FALSE, nullptr); assert(e);
+        assert(h.guideFence_ && h.guideFenceValue_ != 0);
+        assert(SUCCEEDED(h.guideFence_->SetEventOnCompletion(h.guideFenceValue_, e)));
+        assert(WaitForSingleObject(e, 5000) == WAIT_OBJECT_0); CloseHandle(e);
+        h.CollectRetiredGuideUpload();
+    }
+};
+} // namespace nrfusion
 
 void TestIpcHandshakeAndBuild() {
     std::cout << "[Test 1] IPC Handshake and Configuration...\n";
@@ -207,55 +224,24 @@ void TestD3D12SharedHandlePipeline() {
     std::cout << "  -> D3D12 Shared Handle and Fence Interop PASSED.\n";
 }
 
-void TestSyntheticVulkanInterop() {
-    std::cout << "[Test 4] Synthetic Vulkan Provider Interop...\n";
-
-    SyntheticVulkanProvider vkProvider;
-    bool hasLoader = vkProvider.LoadVulkanLoader();
-    std::cout << "  -> Vulkan loader present: " << (hasLoader ? "YES" : "NO") << "\n";
-
-    ProviderContext ctx{};
-    bool initOk = vkProvider.Initialize(ctx);
-    assert(initOk);
-    assert(vkProvider.IsReady());
-
-    // Test simulated handle imports
-    HANDLE fakeHandle = reinterpret_cast<HANDLE>(0x1234);
-    ImportedVulkanResource res{};
-    bool resImport = vkProvider.ImportD3D12Resource(fakeHandle, 1920, 1080, 0, 0, res);
-    assert(resImport);
-    assert(res.d3d12Handle == fakeHandle);
-
-    ImportedVulkanSemaphore sem{};
-    bool semImport = vkProvider.ImportD3D12Fence(fakeHandle, sem);
-    assert(semImport);
-    assert(sem.d3d12FenceHandle == fakeHandle);
-
-    SyntheticFrameInputs inputs{};
-    inputs.ticket.id = 1;
-    inputs.ticket.session = 1;
-    inputs.frameId = 1;
-    inputs.color.opaqueId = 0xCAFE;
-    inputs.color.resolution = { 1920, 1080 };
-    inputs.color.format = ResourceFormat::Rgba16Float;
-    inputs.renderResolution = { 1920, 1080 };
-    inputs.targetResolution = { 1920, 1080 };
-    inputs.workingScale = 1.0f;
-
-    // Test optimized layout transition and blit/copy fallback
-    void* fakeCmd = reinterpret_cast<void*>(0x5678);
-    void* fakeImgA = reinterpret_cast<void*>(0xABCD);
-    void* fakeImgB = reinterpret_cast<void*>(0xDCBA);
-    assert(vkProvider.TransitionImageLayout(fakeCmd, fakeImgA, 0, 1));
-    assert(vkProvider.BlitOrCopy(fakeCmd, fakeImgA, 1920, 1080, fakeImgB, 1920, 1080));
-
-    SyntheticWorkHandle handle = vkProvider.Submit(inputs, nullptr);
-    assert(handle.workId > 0);
-    assert(vkProvider.Poll(handle));
-
-    vkProvider.Shutdown();
-    assert(!vkProvider.IsReady());
-    std::cout << "  -> Synthetic Vulkan Provider Interop PASSED.\n";
+void TestZeroGuideUploadRetirement() {
+    std::cout << "[Test 4] Host zero-guide upload retirement...\n";
+    ComPtr<ID3D12Device> device = testing::CreateD3D12TestDevice(); assert(device);
+    D3D12_COMMAND_QUEUE_DESC desc{}; desc.Type = D3D12_COMMAND_LIST_TYPE_DIRECT;
+    ComPtr<ID3D12CommandQueue> queue;
+    assert(SUCCEEDED(device->CreateCommandQueue(&desc, IID_PPV_ARGS(&queue))));
+    HostServer64 host;
+    HostServer64GuideTestAccess::Bind(host, device.Get(), queue.Get());
+    assert(HostServer64GuideTestAccess::Ensure(host));
+    assert(HostServer64GuideTestAccess::Upload(host));
+    assert(HostServer64GuideTestAccess::Guides(host) == 2);
+    HostServer64GuideTestAccess::WaitAndCollect(host);
+    assert(!HostServer64GuideTestAccess::Upload(host));
+    assert(HostServer64GuideTestAccess::Guides(host) == 2);
+    assert(HostServer64GuideTestAccess::Ensure(host));
+    assert(!HostServer64GuideTestAccess::Upload(host));
+    HostServer64GuideTestAccess::UseImported(host);
+    assert(HostServer64GuideTestAccess::Guides(host) == 0);
 }
 
 void TestCapture32ExportApi() {
@@ -287,12 +273,12 @@ void TestCapture32ExportApi() {
 }
 
 int main() {
-    std::cout << "=== NRFusion Stage 3: x86 IPC Pipelined Architecture & Vulkan Tests ===\n";
+    std::cout << std::unitbuf << "=== NRFusion Stage 3: x86 IPC Pipelined Architecture & Vulkan Tests ===\n";
 
     TestIpcHandshakeAndBuild();
     TestPipelinedFrameStreaming();
     TestD3D12SharedHandlePipeline();
-    TestSyntheticVulkanInterop();
+    TestZeroGuideUploadRetirement();
     TestCapture32ExportApi();
 
     std::cout << "=== All Stage 3 Tests PASSED successfully! ===\n";

@@ -14,6 +14,7 @@
 
 #include "nrfusion/SyntheticProvider.hpp"
 #include "nrfusion/SyntheticDx12Provider.hpp"
+#include "nrfusion/OpenGlCarrierSync.hpp"
 #include "nrfusion/MotionVectorResolver.hpp"
 #include "nrfusion/NvofMotionProvider.hpp"
 
@@ -21,6 +22,7 @@
 #include <cstdint>
 #include <memory>
 #include <mutex>
+#include <optional>
 #include <string>
 
 namespace nrfusion {
@@ -43,8 +45,20 @@ using Microsoft::WRL::ComPtr;
 #ifndef GL_LAYOUT_COLOR_ATTACHMENT_EXT
 #define GL_LAYOUT_COLOR_ATTACHMENT_EXT       0x958E
 #endif
+#ifndef GL_LAYOUT_GENERAL_EXT
+#define GL_LAYOUT_GENERAL_EXT                0x958D
+#endif
 #ifndef GL_LAYOUT_SHADER_READ_ONLY_EXT
 #define GL_LAYOUT_SHADER_READ_ONLY_EXT       0x9591
+#endif
+#ifndef GL_D3D12_FENCE_VALUE_EXT
+#define GL_D3D12_FENCE_VALUE_EXT             0x9595
+#endif
+#ifndef GL_DEVICE_LUID_EXT
+#define GL_DEVICE_LUID_EXT                    0x9599
+#endif
+#ifndef GL_LUID_SIZE_EXT
+#define GL_LUID_SIZE_EXT                      8
 #endif
 #ifndef GL_RGBA16F
 #define GL_RGBA16F                           0x881A
@@ -72,6 +86,7 @@ typedef void (APIENTRY *PFN_glImportMemoryWin32HandleEXT_)(GLuint, uint64_t, GLe
 typedef void (APIENTRY *PFN_glGenSemaphoresEXT_)(GLsizei, GLuint*);
 typedef void (APIENTRY *PFN_glDeleteSemaphoresEXT_)(GLsizei, const GLuint*);
 typedef void (APIENTRY *PFN_glImportSemaphoreWin32HandleEXT_)(GLuint, GLenum, void*);
+typedef void (APIENTRY *PFN_glSemaphoreParameterui64vEXT_)(GLuint, GLenum, const uint64_t*);
 typedef void (APIENTRY *PFN_glWaitSemaphoreEXT_)(GLuint, GLuint, const GLuint*, GLuint, const GLuint*, const GLenum*);
 typedef void (APIENTRY *PFN_glSignalSemaphoreEXT_)(GLuint, GLuint, const GLuint*, GLuint, const GLuint*, const GLenum*);
 
@@ -83,6 +98,28 @@ typedef void (APIENTRY *PFN_glBlitFramebuffer_)(GLint, GLint, GLint, GLint, GLin
 typedef void (APIENTRY *PFN_glCopyImageSubData_)(GLuint, GLenum, GLint, GLint, GLint, GLint,
                                                  GLuint, GLenum, GLint, GLint, GLint, GLint,
                                                  GLsizei, GLsizei, GLsizei);
+typedef const GLubyte* (APIENTRY *PFN_glGetStringi_)(GLenum, GLuint);
+typedef void (APIENTRY *PFN_glGetUnsignedBytevEXT_)(GLenum, GLubyte*);
+
+#ifndef GL_NUM_EXTENSIONS
+#define GL_NUM_EXTENSIONS 0x821D
+#endif
+
+struct OpenGlD3D12WorkView {
+    ID3D12Device* device = nullptr;
+    ID3D12CommandQueue* queue = nullptr;
+    ID3D12Resource* inputColor = nullptr;
+    ID3D12Resource* neuralOutput = nullptr;
+    Resolution workingResolution{};
+
+    constexpr bool Valid() const noexcept {
+        return device != nullptr &&
+               queue != nullptr &&
+               inputColor != nullptr &&
+               neuralOutput != nullptr &&
+               workingResolution.Valid();
+    }
+};
 
 struct OpenGlDispatchTable {
     HMODULE libGl = nullptr;
@@ -98,6 +135,7 @@ struct OpenGlDispatchTable {
     PFN_glGenSemaphoresEXT_ GenSemaphoresEXT = nullptr;
     PFN_glDeleteSemaphoresEXT_ DeleteSemaphoresEXT = nullptr;
     PFN_glImportSemaphoreWin32HandleEXT_ ImportSemaphoreWin32HandleEXT = nullptr;
+    PFN_glSemaphoreParameterui64vEXT_ SemaphoreParameterui64vEXT = nullptr;
     PFN_glWaitSemaphoreEXT_ WaitSemaphoreEXT = nullptr;
     PFN_glSignalSemaphoreEXT_ SignalSemaphoreEXT = nullptr;
 
@@ -107,6 +145,8 @@ struct OpenGlDispatchTable {
     PFN_glFramebufferTexture2D_ FramebufferTexture2D = nullptr;
     PFN_glBlitFramebuffer_ BlitFramebuffer = nullptr;
     PFN_glCopyImageSubData_ CopyImageSubData = nullptr;
+    PFN_glGetStringi_ GetStringi = nullptr;
+    PFN_glGetUnsignedBytevEXT_ GetUnsignedBytevEXT = nullptr;
 
     bool isLoaded = false;
     bool hasInterop = false;
@@ -138,57 +178,73 @@ public:
     bool LoadOpenGl();
     bool HasOpenGlInterop() const noexcept { return gl_.hasInterop; }
 
-    // OpenGL side GPU copy: game texture into D3D12-shared texture
-    bool RecordOpenGlInputCopy(GLuint gameColorTex, uint32_t width, uint32_t height);
-
-    // OpenGL side GPU consume: compose imported residual back into game buffer
-    bool RecordOpenGlOutputConsume(GLuint gameDestTex, uint32_t width, uint32_t height);
+    std::optional<OpenGlD3D12WorkView> GetD3D12Work(
+        const SyntheticWorkHandle& handle);
+    bool PublishD3D12Result(
+        const SyntheticWorkHandle& handle);
+    bool RecordOpenGlOutputConsume(
+        const SyntheticWorkHandle& handle,
+        GLuint gameDestTex,
+        uint32_t width,
+        uint32_t height);
 
     ID3D12Device* PrivateD3D12Device() const noexcept { return d3d12Device_.Get(); }
     NvofMotionProvider& OpticalFlow() noexcept { return nvof_; }
 
 private:
     struct SharedSlot {
-        uint64_t workId = 0;
-        uint64_t producerFenceValue = 0;
+        OpenGlCarrierSyncIdentity sync{};
 
         // D3D12 private side
         ComPtr<ID3D12Resource> d3d12Color;
-        ComPtr<ID3D12Resource> d3d12Residual;
+        ComPtr<ID3D12Resource> d3d12Output;
         ComPtr<ID3D12CommandAllocator> alloc;
+        ComPtr<ID3D12CommandAllocator> publishAlloc;
+        ComPtr<ID3D12Fence> fence;
         HANDLE colorSharedHandle = nullptr;
-        HANDLE residualSharedHandle = nullptr;
+        HANDLE outputSharedHandle = nullptr;
+        HANDLE fenceSharedHandle = nullptr;
+        uint64_t nextFenceValue = 1;
 
         // OpenGL import side
         GLuint glColorMem = 0;
         GLuint glColorTex = 0;
-        GLuint glResidualMem = 0;
-        GLuint glResidualTex = 0;
+        GLuint glOutputMem = 0;
+        GLuint glOutputTex = 0;
         GLuint glInputSem = 0;
         GLuint glOutputSem = 0;
 
+        uint32_t innerSlot = SyntheticDx12Provider::kRingSlots;
+        bool inputRecorded = false;
+        bool outputPublished = false;
+        bool outputConsumed = false;
         bool inUse = false;
     };
 
+    bool RecordOpenGlInputCopy(
+        SharedSlot& slot,
+        GLuint gameColorTex,
+        uint32_t width,
+        uint32_t height);
+    SharedSlot* FindSlot(
+        const SyntheticWorkHandle& handle) noexcept;
     bool CreatePrivateD3D12();
     bool CreateSharedResources(uint32_t width, uint32_t height);
+    bool CanRecreateSharedResources() const noexcept;
     void CloseSharedHandles();
+    void ResetPrivateD3D12() noexcept;
 
     OpenGlDispatchTable gl_{};
 
     ComPtr<ID3D12Device> d3d12Device_;
     ComPtr<ID3D12CommandQueue> d3d12Queue_;
     ComPtr<ID3D12GraphicsCommandList> d3d12CmdList_;
-    ComPtr<ID3D12Fence> d3d12Fence_;
-    HANDLE d3d12FenceSharedHandle_ = nullptr;
-    uint64_t nextFenceValue_ = 1;
 
     SyntheticDx12Provider syntheticD3D12_;
     NvofMotionProvider nvof_;
 
     Resolution currentRes_{};
     std::array<SharedSlot, kMaxInFlight> sharedSlots_{};
-    uint32_t currentSlot_ = 0;
     bool ready_ = false;
     mutable std::mutex mutex_;
 };

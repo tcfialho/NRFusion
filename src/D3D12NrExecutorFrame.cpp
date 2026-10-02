@@ -1,0 +1,192 @@
+#include "nrfusion/D3D12NrExecutor.hpp"
+
+namespace nrfusion {
+
+D3D12NrFrameResult D3D12NrExecutor::ExecuteFrame(
+    ID3D12GraphicsCommandList* cmdList, const D3D12NrFrameResources& resources,
+    const D3D12NrFrameRequest& request) {
+    if (cmdList == nullptr || resources.output == nullptr)
+        return D3D12NrFrameResult::Failed;
+
+    const bool before = request.plan.beforeUpscale;
+    const bool acrossRr = request.composition.residualAcrossRr &&
+                          request.composition.runBeforeUpscale &&
+                          request.composition.rayReconstruction;
+    if (acrossRr != residualModeActive_) {
+        residualStoreValid_ = false;
+        residualHistoryPrimed_ = false;
+        residualModeActive_ = acrossRr;
+    }
+    if (acrossRr && before) {
+        if (residualStoreValid_) residualHistoryPrimed_ = false;
+        residualStoreValid_ = false;
+        if (request.composition.debugView != 0 ||
+            request.composition.compareMode != 0 ||
+            request.composition.showSkinMask != 0)
+            return D3D12NrFrameResult::SkippedPlacement;
+    }
+    if (acrossRr && !before)
+        return ApplyStoredResidual(cmdList, resources, request);
+    if (request.composition.runBeforeUpscale != before)
+        return D3D12NrFrameResult::SkippedPlacement;
+    if ((before && resources.color == nullptr) ||
+        resources.depth == nullptr || resources.motion == nullptr)
+        return D3D12NrFrameResult::Failed;
+    return ExecuteMainFrame(cmdList, resources, request);
+}
+
+D3D12NrFrameResult D3D12NrExecutor::ExecuteMainFrame(
+    ID3D12GraphicsCommandList* cmdList, const D3D12NrFrameResources& resources,
+    const D3D12NrFrameRequest& request) {
+    FrameContext context{};
+    context.target = request.plan.beforeUpscale ? resources.color : resources.output;
+    context.targetState = request.plan.beforeUpscale ? request.colorState : request.outputState;
+    context.targetArrival = context.targetState;
+    context.depthState = request.depthState;
+    context.motionState = request.motionState;
+    context.exposureState = request.exposureState;
+    context.acrossRr = request.composition.residualAcrossRr &&
+                       request.composition.runBeforeUpscale &&
+                       request.composition.rayReconstruction;
+
+    if (cachedTargetResource_ != context.target) {
+        cachedTargetResource_ = context.target;
+        cachedTargetDesc_ = context.target->GetDesc();
+    }
+    const D3D12_RESOURCE_DESC& targetDesc = cachedTargetDesc_;
+
+    if (cachedGuideResources_[0] != resources.depth) {
+        cachedGuideResources_[0] = resources.depth;
+        cachedGuideDescs_[0] = resources.depth->GetDesc();
+    }
+    const D3D12_RESOURCE_DESC& depthDesc = cachedGuideDescs_[0];
+
+    if (cachedGuideResources_[1] != resources.motion) {
+        cachedGuideResources_[1] = resources.motion;
+        cachedGuideDescs_[1] = resources.motion->GetDesc();
+    }
+    const D3D12_RESOURCE_DESC& motionDesc = cachedGuideDescs_[1];
+    if (targetDesc.Dimension != D3D12_RESOURCE_DIMENSION_TEXTURE2D ||
+        targetDesc.SampleDesc.Count != 1 || targetDesc.DepthOrArraySize != 1 ||
+        targetDesc.MipLevels != 1 ||
+        depthDesc.Dimension != D3D12_RESOURCE_DIMENSION_TEXTURE2D ||
+        motionDesc.Dimension != D3D12_RESOURCE_DIMENSION_TEXTURE2D)
+        return D3D12NrFrameResult::Failed;
+
+    D3D12NrFramePlanInput planInput = request.plan;
+    planInput.colorSurface = {
+        static_cast<std::uint32_t>(targetDesc.Width), targetDesc.Height};
+    planInput.depthSurface = {
+        static_cast<std::uint32_t>(depthDesc.Width), depthDesc.Height};
+    planInput.motionSurface = {
+        static_cast<std::uint32_t>(motionDesc.Width), motionDesc.Height};
+    if (!BuildD3D12NrFramePlan(planInput, context.plan))
+        return D3D12NrFrameResult::Failed;
+
+    context.targetFormat = targetDesc.Format;
+    context.cropColor = context.plan.cropColor;
+    context.targetSupportsUav = context.cropColor ||
+        (targetDesc.Flags & D3D12_RESOURCE_FLAG_ALLOW_UNORDERED_ACCESS) != 0;
+
+    bool generationChanged = feature_ != nullptr &&
+        (!featurePlacementValid_ ||
+         featureBeforeUpscale_ != request.plan.beforeUpscale ||
+         featureRayReconstruction_ != request.composition.rayReconstruction);
+    for (std::uint32_t pass = 1;
+         !generationChanged && pass < context.plan.requestedPasses; ++pass) {
+        generationChanged = passFeatures_[pass] != nullptr &&
+            (!passTuningValid_[pass] || !(passTunings_[pass] == request.tuning[pass]));
+    }
+    if (generationChanged && !RetireFeatureGeneration())
+        return D3D12NrFrameResult::Failed;
+
+    if (!EnsureFeatureForEpoch(
+            cmdList, context.plan.work.width, context.plan.work.height,
+            request.submissionEpoch, request.tuning[0]))
+        return D3D12NrFrameResult::Failed;
+    if (justBuilt_) {
+        featureBeforeUpscale_ = request.plan.beforeUpscale;
+        featureRayReconstruction_ = request.composition.rayReconstruction;
+        featurePlacementValid_ = true;
+    }
+    if (!submissionGate_.ReadyFor(request.submissionEpoch))
+        return D3D12NrFrameResult::PendingFeature;
+
+    bool pending = false;
+    const std::uint32_t effectivePasses = PreparePassFeatures(
+        cmdList, context.plan.work.width, context.plan.work.height,
+        context.plan.requestedPasses, request.submissionEpoch, request.tuning, pending);
+    if (pending) return D3D12NrFrameResult::PendingFeature;
+    if (effectivePasses == 0) return D3D12NrFrameResult::Failed;
+
+    ID3D12Device* device = device_;
+    if (device == nullptr) {
+        if (FAILED(context.target->GetDevice(IID_PPV_ARGS(&device_))) || device_ == nullptr)
+            return D3D12NrFrameResult::Failed;
+        device = device_;
+    }
+    context.device = device;
+    D3D12NrScratchDesc scratchDesc{
+        targetDesc.Format, context.plan.activeColor.width, context.plan.activeColor.height,
+        context.plan.work.width, context.plan.work.height};
+    if (request.reset || !scratch_.Matches(scratchDesc)) {
+        residualHistoryPrimed_ = false;
+        residualStoreValid_ = false;
+        codec_.ResetSlotCache();
+    }
+    bool ok = codec_.Init(device) && scratch_.Ensure(device, scratchDesc, retirement_);
+    const D3D12NrScratchUsage scratchUsage{
+        effectivePasses > 1, context.plan.reduced, false,
+        context.cropColor, context.acrossRr};
+    ok = ok && scratch_.RetireUnused(scratchUsage, retirement_);
+    if (effectivePasses > 1)
+        ok = ok && scratch_.EnsureOptional(
+            device, D3D12NrScratchKind::PassScratch, targetDesc.Format,
+            context.plan.work.width, context.plan.work.height, retirement_);
+    if (context.plan.reduced)
+        ok = ok && scratch_.EnsureOptional(
+            device, D3D12NrScratchKind::ColorSmall, targetDesc.Format,
+            context.plan.work.width, context.plan.work.height, retirement_);
+    if (context.cropColor)
+        ok = ok && scratch_.EnsureOptional(
+            device, D3D12NrScratchKind::ActiveColor, targetDesc.Format,
+            context.plan.activeColor.width, context.plan.activeColor.height, retirement_);
+    if (context.acrossRr) {
+        const D3D12_RESOURCE_DESC outputDesc = resources.output->GetDesc();
+        ok = ok &&
+            scratch_.EnsureOptional(
+                device, D3D12NrScratchKind::ResidualEdited, targetDesc.Format,
+                context.plan.activeColor.width, context.plan.activeColor.height, retirement_) &&
+            scratch_.EnsureOptional(
+                device, D3D12NrScratchKind::ResidualHistory0,
+                DXGI_FORMAT_R16G16B16A16_FLOAT,
+                context.plan.activeColor.width, context.plan.activeColor.height, retirement_) &&
+            scratch_.EnsureOptional(
+                device, D3D12NrScratchKind::ResidualHistory1,
+                DXGI_FORMAT_R16G16B16A16_FLOAT,
+                context.plan.activeColor.width, context.plan.activeColor.height, retirement_) &&
+            scratch_.EnsureOptional(
+                device, D3D12NrScratchKind::ResidualComposed, outputDesc.Format,
+                static_cast<std::uint32_t>(outputDesc.Width), outputDesc.Height, retirement_);
+    }
+    if (!ok) return D3D12NrFrameResult::Failed;
+
+    if (!PrepareFrameResources(cmdList, resources, request, context)) {
+        RestoreFrameResources(cmdList, resources, request, context);
+        return D3D12NrFrameResult::Failed;
+    }
+
+    if (request.recordGpuStage) request.recordGpuStage(cmdList, NrGpuStage::ModelBegin);
+    const bool modelOk = RunFrameModel(
+        cmdList, resources, request, context, effectivePasses);
+    RestoreFrameResources(cmdList, resources, request, context);
+    if (!modelOk) {
+        residualStoreValid_ = false;
+        if (context.acrossRr) residualHistoryPrimed_ = false;
+        return D3D12NrFrameResult::Failed;
+    }
+    status_ = "NR applied";
+    return D3D12NrFrameResult::Applied;
+}
+
+} // namespace nrfusion

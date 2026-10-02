@@ -7,6 +7,7 @@ namespace nrfusion {
 struct MotionGuideSample {
     bool present = false;
     bool cameraCut = false;
+    bool resetHistory = false;
     double validPixelRatio = 0.0;      // finite/in-range vectors
     double temporalAgreement = 0.0;    // agreement with previous accepted field
     double depthAgreement = 0.0;       // optional depth-consistency score

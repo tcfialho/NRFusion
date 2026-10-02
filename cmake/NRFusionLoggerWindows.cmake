@@ -1,0 +1,8 @@
+add_executable(nrfusion_logger_hotpath_tests tests/logger_hotpath_tests.cpp)
+target_include_directories(nrfusion_logger_hotpath_tests PRIVATE include)
+if (MSVC)
+    target_compile_options(nrfusion_logger_hotpath_tests PRIVATE /UNDEBUG)
+else()
+    target_compile_options(nrfusion_logger_hotpath_tests PRIVATE -UNDEBUG)
+endif()
+add_test(NAME nrfusion_logger_hotpath_tests COMMAND nrfusion_logger_hotpath_tests)

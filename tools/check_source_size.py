@@ -14,6 +14,10 @@ EXTS = {
 EXEMPT_PREFIXES = ("tests/fixture/", "third_party/", "vendor/", "external/")
 GENERATED_PREFIXES = ("generated/", "src/generated/", "include/generated/", "shaders/generated/")
 GENERATED_MARKER = "NRFUSION_GENERATED_FILE"
+IGNORED_BUILD_PREFIXES = ("build/", "build-", ".build/", "cmake-build-")
+LOCKED_VENDOR_BLOBS = {
+    "shaders/vendor/optiscaler_dlssnr/dlssnr.hlsl": "4a6102820f736e9349ffed370259d094f2a7f4ae",
+}
 
 
 def git(*args, check=True):
@@ -44,6 +48,8 @@ def changed_paths(base):
 
 
 def is_source(path):
+    if path.startswith(IGNORED_BUILD_PREFIXES):
+        return False
     p = Path(path)
     return p.name == "CMakeLists.txt" or p.suffix.lower() in EXTS
 
@@ -53,6 +59,14 @@ def is_generated(path):
         return False
     head = Path(path).read_text(encoding="utf-8", errors="replace").splitlines()[:5]
     return any(GENERATED_MARKER in line for line in head)
+
+
+def is_locked_vendor(path):
+    expected = LOCKED_VENDOR_BLOBS.get(path)
+    if expected is None:
+        return False
+    actual = git("hash-object", path).stdout.decode().strip()
+    return actual == expected
 
 
 def line_count(path):
@@ -78,6 +92,8 @@ def main():
     violations = []
     for path in sorted(paths):
         if not is_source(path) or not Path(path).is_file() or is_generated(path):
+            continue
+        if is_locked_vendor(path):
             continue
         if path.startswith(EXEMPT_PREFIXES) and path not in modified:
             continue

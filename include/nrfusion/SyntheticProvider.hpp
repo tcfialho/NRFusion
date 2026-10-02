@@ -46,6 +46,11 @@ struct ProviderContext {
     bool is32Bit = false;
     bool preferSameDevice = true;
     bool enableAsyncCompute = false;
+
+    // Vulkan-only native context. Other APIs leave these null/default.
+    void* instance = nullptr;
+    void* physicalDevice = nullptr;
+    uint32_t queueFamilyIndex = UINT32_MAX;
 };
 
 struct SyntheticWorkHandle {

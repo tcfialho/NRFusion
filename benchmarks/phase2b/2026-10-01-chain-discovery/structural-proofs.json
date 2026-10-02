@@ -1,0 +1,26 @@
+[
+  {
+    "name": "cc_vit_1d_projection_chained_fp8",
+    "sequence": 62,
+    "module_sha256": "bdc0cafe89442d2fa64ab168905e5ebcfe4bb7592604d0b4b2fca2db063b7a2b",
+    "argument_count": 1,
+    "aggregate_bytes": 72,
+    "evidence": "stock ELF KPARAM_INFO"
+  },
+  {
+    "name": "cc_vit_1d_ffn_expand_chained_fp8",
+    "sequence": 63,
+    "module_sha256": "bdc0cafe89442d2fa64ab168905e5ebcfe4bb7592604d0b4b2fca2db063b7a2b",
+    "argument_count": 1,
+    "aggregate_bytes": 72,
+    "evidence": "stock ELF KPARAM_INFO"
+  },
+  {
+    "name": "cc_vit_1d_ffn_contract_chained_fp8",
+    "sequence": 64,
+    "module_sha256": "bdc0cafe89442d2fa64ab168905e5ebcfe4bb7592604d0b4b2fca2db063b7a2b",
+    "argument_count": 1,
+    "aggregate_bytes": 72,
+    "evidence": "stock ELF KPARAM_INFO"
+  }
+]

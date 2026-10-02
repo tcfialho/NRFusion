@@ -32,6 +32,8 @@ struct RuntimeCapabilities {
     bool nativeMotion = false;
     bool dlssContractMotion = false;
     bool nvof = false;
+    // Per-frame evidence: capability alone must never preempt a usable shader/native guide.
+    bool nvofGuideReady = false;
     bool shaderMotion = false;
 
     bool fp8 = false;

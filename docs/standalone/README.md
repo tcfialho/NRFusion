@@ -1,5 +1,8 @@
 # NRFusion Universal Standalone
 
+- [ ] Executar a recuperação obrigatória em [recuperacao-00-controle.md](recuperacao-00-controle.md), seguida das partes 01, 02 e 03; seus gates de produto prevalecem sobre checkboxes históricos de conclusão estrutural.
+- [ ] Não declarar substituição do OptiScaler, suporte ao Cyberpunk, NR ou MFG concluídos enquanto os gates aplicáveis dessa recuperação permanecerem abertos.
+
 ## Missão
 
 Transformar o NRFusion em um host universal de DLSS 5 sem depender do OptiScaler e sem exigir DLSS nativo no jogo.

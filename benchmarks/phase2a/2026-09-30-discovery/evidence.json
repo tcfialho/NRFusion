@@ -1,0 +1,551 @@
+{
+  "schema_version": 1,
+  "initial_head": "6a4bc15d77148df2e77de8b5601f75a60f1bc069",
+  "final_head": "6a4bc15d77148df2e77de8b5601f75a60f1bc069",
+  "branch": "standalone/integration",
+  "gpu": "NVIDIA GeForce RTX 4050 Laptop GPU, GPU-42d9ac41-51ff-a670-4539-8abbccbda9dc, 617.14",
+  "cuda_driver_api_result": 0,
+  "cuda_driver_version": 13040,
+  "runtime_file_version": "310.8.0.0",
+  "runtime_sha256": "e67dee209320cdafe0e93e45675d7aa34323a53acc57a72b2e40a181581c989a",
+  "settings": {
+    "scene": "deterministic pan over NVIDIA OFF JPEG; synthetic depth/motion",
+    "route": "Requiem -> version.dll NGX exports -> D3D12NrExecutor -> driver SR",
+    "precision": "fp8",
+    "nr_scale": 1.0,
+    "nr_passes": 1,
+    "nr_placement": "before_sr",
+    "style": "default",
+    "mfg": "off",
+    "overlay": "closed",
+    "timing_scope": "nr_gpu_ms includes NR preparation, model and composition",
+    "frame_wall_scope": "serialized testbed loop, Present and per-frame GPU fence; not gameplay FPS"
+  },
+  "baseline_protocol": {
+    "frames": 360,
+    "warmup": 120,
+    "repeats": 2,
+    "ac_power": true,
+    "power_scheme": "GUID do Esquema de Energia: 8c5e7fda-e8bf-4a96-9a85-a6e23a8c635c  (Alto desempenho)"
+  },
+  "baseline_results": {
+    "720": {
+      "nr_off": {
+        "ngx_evaluation_gpu_ms": {
+          "median_run_p50_ms": 0.902656,
+          "median_run_p95_ms": 2.17374725,
+          "run_p50_ms": [
+            1.024,
+            0.781312
+          ],
+          "run_span_percent": 26.885989790130463,
+          "run_cv_percent": 19.01126569951353
+        },
+        "frame_wall_ms": {
+          "median_run_p50_ms": 1.5554999999999999,
+          "median_run_p95_ms": 2.8754475,
+          "run_p50_ms": [
+            1.60325,
+            1.50775
+          ],
+          "run_span_percent": 6.139504982320807,
+          "run_cv_percent": 4.341285606127637
+        }
+      },
+      "nr_on": {
+        "ngx_evaluation_gpu_ms": {
+          "median_run_p50_ms": 6.8526075,
+          "median_run_p95_ms": 7.118336749999999,
+          "run_p50_ms": [
+            6.89766,
+            6.807555000000001
+          ],
+          "run_span_percent": 1.3149009336956687,
+          "run_cv_percent": 0.9297753668047303
+        },
+        "frame_wall_ms": {
+          "median_run_p50_ms": 7.905374999999999,
+          "median_run_p95_ms": 8.370000000000001,
+          "run_p50_ms": [
+            7.9596,
+            7.85115
+          ],
+          "run_span_percent": 1.3718514301978133,
+          "run_cv_percent": 0.9700454490733376
+        },
+        "nr_gpu_ms": {
+          "median_run_p50_ms": 6.02547,
+          "median_run_p95_ms": 6.27627425,
+          "run_p50_ms": [
+            6.089215,
+            5.9617249999999995
+          ],
+          "run_span_percent": 2.1158515435310568,
+          "run_cv_percent": 1.4961329744148337
+        }
+      },
+      "ngx_added_cost_ms": 5.9499515,
+      "on_off_mean_absolute_rgb_difference": [
+        7.0590614149305555,
+        6.604692925347222,
+        5.988957248263889
+      ]
+    },
+    "1080": {
+      "nr_off": {
+        "ngx_evaluation_gpu_ms": {
+          "median_run_p50_ms": 1.865215,
+          "median_run_p95_ms": 3.1672575,
+          "run_p50_ms": [
+            1.7664,
+            1.96403
+          ],
+          "run_span_percent": 10.595561369600823,
+          "run_cv_percent": 7.492193294922965
+        },
+        "frame_wall_ms": {
+          "median_run_p50_ms": 2.6948999999999996,
+          "median_run_p95_ms": 3.939615,
+          "run_p50_ms": [
+            2.51315,
+            2.8766499999999997
+          ],
+          "run_span_percent": 13.488441129540977,
+          "run_cv_percent": 9.537768190333958
+        }
+      },
+      "nr_on": {
+        "ngx_evaluation_gpu_ms": {
+          "median_run_p50_ms": 11.116025,
+          "median_run_p95_ms": 12.053075,
+          "run_p50_ms": [
+            11.13345,
+            11.098600000000001
+          ],
+          "run_span_percent": 0.3135113496056253,
+          "run_cv_percent": 0.22168600128508412
+        },
+        "frame_wall_ms": {
+          "median_run_p50_ms": 12.149075,
+          "median_run_p95_ms": 13.353655,
+          "run_p50_ms": [
+            12.166350000000001,
+            12.1318
+          ],
+          "run_span_percent": 0.2843837905355032,
+          "run_cv_percent": 0.20108970674718907
+        },
+        "nr_gpu_ms": {
+          "median_run_p50_ms": 9.706495,
+          "median_run_p95_ms": 10.4794825,
+          "run_p50_ms": [
+            9.71981,
+            9.69318
+          ],
+          "run_span_percent": 0.2743523795149621,
+          "run_cv_percent": 0.19399642798969494
+        }
+      },
+      "ngx_added_cost_ms": 9.250810000000001,
+      "on_off_mean_absolute_rgb_difference": [
+        6.890599922839506,
+        6.4173755787037035,
+        5.881386959876544
+      ]
+    }
+  },
+  "payload_hashes": {
+    "RequiemGame.exe": "1c97ee854fa8604c918ceb243f24a2949de3c524d2cc1035fbff59b44c866184",
+    "version.dll": "0815140865555fd009285d51c633592dc3fe0164c9261ec0458ba742363c8898",
+    "nvngx_dlss.dll": "c85f971ce023c9f3492fc7455f0b01a24ba18ea39636407a846902c4360b0b7e",
+    "NRFusion\\internal\\nvngx_dlssnr.dll": "e67dee209320cdafe0e93e45675d7aa34323a53acc57a72b2e40a181581c989a",
+    "NRFusion\\internal\\nvngx.dll_dlssnr.dll": "25ffade884f50cad0174030335fd6216bbd569cb415bc35c958224a8c96f3c4e",
+    "assets\\nvidia-dlss5-requiem-off.jpeg": "8d94795df55102affadf67fa779003c466405f4f9c42c46b933a5418f530cc81",
+    "assets\\nvidia-dlss5-requiem-on.jpeg": "65018732def9352c1104a871b59db005255133c36320ad0970469636492437a8"
+  },
+  "payload_unchanged": true,
+  "original_configuration_restored": true,
+  "nr_on_runs": [
+    {
+      "samples": 240,
+      "first_frame": 120,
+      "last_frame": 359,
+      "exactly_one_successful_nr_pass": 240,
+      "source": ".temp\\phase2a\\baseline\\720p-01-nr-on\\evaluation.csv",
+      "sha256": "3f63515a8daa9bc57cc2304e196aa2b0041ffad3b4a672d43df26b5e442e80e6"
+    },
+    {
+      "samples": 240,
+      "first_frame": 120,
+      "last_frame": 359,
+      "exactly_one_successful_nr_pass": 240,
+      "source": ".temp\\phase2a\\baseline\\1080p-01-nr-on\\evaluation.csv",
+      "sha256": "9d24b2f00cc9799a670e9352d6062268e4327ecd6ca57f820c453de2ea1c786e"
+    },
+    {
+      "samples": 240,
+      "first_frame": 120,
+      "last_frame": 359,
+      "exactly_one_successful_nr_pass": 240,
+      "source": ".temp\\phase2a\\baseline\\1080p-02-nr-on\\evaluation.csv",
+      "sha256": "7f5b70d0f028661b20c8a590044a887769f8214ae84ae43b2ea396b44b0e9470"
+    },
+    {
+      "samples": 240,
+      "first_frame": 120,
+      "last_frame": 359,
+      "exactly_one_successful_nr_pass": 240,
+      "source": ".temp\\phase2a\\baseline\\720p-02-nr-on\\evaluation.csv",
+      "sha256": "79150865bd4f6958fddc73ac4d643d7eec50b3c929f79b4e93c544425d355bb8"
+    }
+  ],
+  "image_captures": [
+    {
+      "case": "720p-01-nr-off",
+      "sha256": "5f00c4c83a7260628c1030f36ea6696464b6b8adc070644524169dc389841150",
+      "rgb_stddev": [
+        29.089861188524903,
+        28.136521926479595,
+        24.94681020861109
+      ]
+    },
+    {
+      "case": "720p-01-nr-on",
+      "sha256": "26159940f07d4c487c32ca568a33b1e2f44c6db0ca401d46e9213c42d3602c8c",
+      "rgb_stddev": [
+        30.672601159655397,
+        29.49386727070338,
+        26.95433869326338
+      ]
+    },
+    {
+      "case": "1080p-01-nr-off",
+      "sha256": "45a8acc8fb5e4895dd72c6c1eb6c9afd624b0ae3a62e61aa4b3ceb3ed9432073",
+      "rgb_stddev": [
+        29.39907945205042,
+        28.453685389204082,
+        25.28724026043282
+      ]
+    },
+    {
+      "case": "1080p-01-nr-on",
+      "sha256": "bc09a69ecab3addb8666dda52d332858fa36c170a7a463c701577b89d03b8431",
+      "rgb_stddev": [
+        30.67589805536087,
+        29.496443849376682,
+        26.942444628453366
+      ]
+    }
+  ],
+  "nsight_systems_version": "2026.3.2.313-263238521929v0",
+  "nsight_systems_protocol": {
+    "head": "6a4bc15d77148df2e77de8b5601f75a60f1bc069",
+    "driver_result": 0,
+    "cuda_driver_version": 13040,
+    "runtime_sha256": "e67dee209320cdafe0e93e45675d7aa34323a53acc57a72b2e40a181581c989a",
+    "runtime_version": "310.8.0.0",
+    "settings": {
+      "scene": "deterministic pan over NVIDIA OFF JPEG; synthetic depth/motion",
+      "route": "Requiem -> version.dll NGX exports -> D3D12NrExecutor -> driver SR",
+      "precision": "fp8",
+      "nr_scale": 1.0,
+      "nr_passes": 1,
+      "nr_placement": "before_sr",
+      "style": "default",
+      "mfg": "off",
+      "overlay": "closed",
+      "timing_scope": "nr_gpu_ms includes NR preparation, model and composition",
+      "frame_wall_scope": "serialized testbed loop, Present and per-frame GPU fence; not gameplay FPS"
+    },
+    "commands": [
+      [
+        "C:\\Program Files\\NVIDIA Corporation\\Nsight Systems 2026.3.2\\target-windows-x64\\nsys.exe",
+        "profile",
+        "--trace=cuda,dx12",
+        "--cuda-trace-all-apis=true",
+        "--cuda-graph-trace=node",
+        "--sample=none",
+        "--cpuctxsw=none",
+        "--output=D:\\Users\\tcfialho\\Documents\\NRFusion\\.temp\\phase2a\\discovery-1",
+        "D:\\Users\\tcfialho\\Documents\\NRFusion\\dist\\RequiemGame\\RequiemGame.exe",
+        "--require-nrfusion-proxy",
+        "--require-nr",
+        "--deterministic-motion",
+        "--width",
+        "1920",
+        "--height",
+        "1080",
+        "--frames",
+        "240",
+        "--warmup",
+        "120",
+        "--csv",
+        "D:\\Users\\tcfialho\\Documents\\NRFusion\\.temp\\phase2a\\discovery-1-frames.csv"
+      ],
+      [
+        "C:\\Program Files\\NVIDIA Corporation\\Nsight Systems 2026.3.2\\target-windows-x64\\nsys.exe",
+        "profile",
+        "--trace=cuda,dx12",
+        "--cuda-trace-all-apis=true",
+        "--cuda-graph-trace=node",
+        "--sample=none",
+        "--cpuctxsw=none",
+        "--output=D:\\Users\\tcfialho\\Documents\\NRFusion\\.temp\\phase2a\\discovery-2",
+        "D:\\Users\\tcfialho\\Documents\\NRFusion\\dist\\RequiemGame\\RequiemGame.exe",
+        "--require-nrfusion-proxy",
+        "--require-nr",
+        "--deterministic-motion",
+        "--width",
+        "1920",
+        "--height",
+        "1080",
+        "--frames",
+        "240",
+        "--warmup",
+        "120",
+        "--csv",
+        "D:\\Users\\tcfialho\\Documents\\NRFusion\\.temp\\phase2a\\discovery-2-frames.csv"
+      ]
+    ],
+    "results": [
+      0,
+      0
+    ]
+  },
+  "traces": [
+    {
+      "run": 1,
+      "exit_code": 0,
+      "cuda_kernel_table_present": false,
+      "cuda_kernel_rows": null,
+      "cuda_apis": [
+        {
+          "name": "cuCtxSynchronize",
+          "calls": 1
+        }
+      ],
+      "d3d12_api_rows": 4453,
+      "d3d12_dispatch_calls": 478,
+      "d3d12_workload_rows": 242,
+      "diagnostics": [
+        {
+          "severity": 1,
+          "source": 3,
+          "text": "Profiling has started."
+        },
+        {
+          "severity": 2,
+          "source": 3,
+          "text": "No NVTX events collected. Does the process use NVTX?"
+        },
+        {
+          "severity": 1,
+          "source": 3,
+          "text": "Number of CUDA events collected: \t1."
+        },
+        {
+          "severity": 1,
+          "source": 3,
+          "text": "Number of DX12 events collected: \t4693."
+        },
+        {
+          "severity": 1,
+          "source": 2,
+          "text": "Process 19752 was launched by the profiler"
+        },
+        {
+          "severity": 1,
+          "source": 1,
+          "text": "Common injection library initialized successfully."
+        },
+        {
+          "severity": 1,
+          "source": 1,
+          "text": "NVTX injection initialized successfully."
+        },
+        {
+          "severity": 1,
+          "source": 1,
+          "text": "Direct3D12 Device created with minimum feature level 12.0"
+        },
+        {
+          "severity": 1,
+          "source": 1,
+          "text": "Buffers holding CUDA trace data will be flushed on CudaProfilerStop() call. See --flush-on-cudaprofilerstop to control this behavior."
+        },
+        {
+          "severity": 1,
+          "source": 1,
+          "text": "Loaded CUPTI library: C:\\Program Files\\NVIDIA Corporation\\Nsight Systems 2026.3.2\\target-windows-x64\\cupti64_134.dll"
+        },
+        {
+          "severity": 1,
+          "source": 1,
+          "text": "Enabling trace for device graph launch"
+        },
+        {
+          "severity": 1,
+          "source": 1,
+          "text": "CUDA injection initialized successfully."
+        },
+        {
+          "severity": 1,
+          "source": 1,
+          "text": "Number of CUPTI events produced: \t2, CUPTI buffers: 20."
+        },
+        {
+          "severity": 1,
+          "source": 1,
+          "text": "CUDA hardware tracing is not supported on this system. A legacy (software instrumented) trace was collected instead."
+        },
+        {
+          "severity": 1,
+          "source": 1,
+          "text": "Number of CUPTI events produced: \t5, CUPTI buffers: 20."
+        },
+        {
+          "severity": 1,
+          "source": 3,
+          "text": "Profiling has stopped."
+        }
+      ],
+      "frames": {
+        "samples": 120,
+        "first_frame": 120,
+        "last_frame": 239,
+        "exactly_one_successful_nr_pass": 120,
+        "source": ".temp\\phase2a\\discovery-1-frames.csv",
+        "sha256": "56a18b588ad2247d4b832d0ec97b2ae87d8e68cdf59663ba6eb9801815a716a4"
+      },
+      "report": ".temp\\phase2a\\discovery-1.nsys-rep",
+      "report_sha256": "35146296b3ffa56d6ee5ad51b8528716822faa3bb5f8902a21ede0132a5346a8"
+    },
+    {
+      "run": 2,
+      "exit_code": 0,
+      "cuda_kernel_table_present": false,
+      "cuda_kernel_rows": null,
+      "cuda_apis": [
+        {
+          "name": "cuCtxSynchronize",
+          "calls": 1
+        }
+      ],
+      "d3d12_api_rows": 4453,
+      "d3d12_dispatch_calls": 478,
+      "d3d12_workload_rows": 242,
+      "diagnostics": [
+        {
+          "severity": 1,
+          "source": 3,
+          "text": "Profiling has started."
+        },
+        {
+          "severity": 2,
+          "source": 3,
+          "text": "No NVTX events collected. Does the process use NVTX?"
+        },
+        {
+          "severity": 1,
+          "source": 3,
+          "text": "Number of CUDA events collected: \t1."
+        },
+        {
+          "severity": 1,
+          "source": 3,
+          "text": "Number of DX12 events collected: \t4693."
+        },
+        {
+          "severity": 1,
+          "source": 2,
+          "text": "Process 14852 was launched by the profiler"
+        },
+        {
+          "severity": 1,
+          "source": 1,
+          "text": "Common injection library initialized successfully."
+        },
+        {
+          "severity": 1,
+          "source": 1,
+          "text": "NVTX injection initialized successfully."
+        },
+        {
+          "severity": 1,
+          "source": 1,
+          "text": "Direct3D12 Device created with minimum feature level 12.0"
+        },
+        {
+          "severity": 1,
+          "source": 1,
+          "text": "Buffers holding CUDA trace data will be flushed on CudaProfilerStop() call. See --flush-on-cudaprofilerstop to control this behavior."
+        },
+        {
+          "severity": 1,
+          "source": 1,
+          "text": "Loaded CUPTI library: C:\\Program Files\\NVIDIA Corporation\\Nsight Systems 2026.3.2\\target-windows-x64\\cupti64_134.dll"
+        },
+        {
+          "severity": 1,
+          "source": 1,
+          "text": "Enabling trace for device graph launch"
+        },
+        {
+          "severity": 1,
+          "source": 1,
+          "text": "CUDA injection initialized successfully."
+        },
+        {
+          "severity": 1,
+          "source": 1,
+          "text": "Number of CUPTI events produced: \t2, CUPTI buffers: 20."
+        },
+        {
+          "severity": 1,
+          "source": 1,
+          "text": "CUDA hardware tracing is not supported on this system. A legacy (software instrumented) trace was collected instead."
+        },
+        {
+          "severity": 1,
+          "source": 1,
+          "text": "Number of CUPTI events produced: \t5, CUPTI buffers: 20."
+        },
+        {
+          "severity": 1,
+          "source": 3,
+          "text": "Profiling has stopped."
+        }
+      ],
+      "frames": {
+        "samples": 120,
+        "first_frame": 120,
+        "last_frame": 239,
+        "exactly_one_successful_nr_pass": 120,
+        "source": ".temp\\phase2a\\discovery-2-frames.csv",
+        "sha256": "4e18be7fd9f2bed85a9ed6921d00b5c7fe21532a552b073b554082259d8c94ba"
+      },
+      "report": ".temp\\phase2a\\discovery-2.nsys-rep",
+      "report_sha256": "424832178855e23d24805cda4b537ce004919c4f79738957ceb6927882a56b44"
+    }
+  ],
+  "nsight_compute": {
+    "version": "2026.3.0.0",
+    "result": "timeout",
+    "timeout_seconds": 150,
+    "kernel_filter": "regex:.*",
+    "completed_frame_csv": true,
+    "qualification": "Tool attempt failed; not evidence of no CUDA kernels",
+    "log_sha256": "37c42cd02a74a1f499a5fd8f1b8bd72f000f52f0f0be8b70dff22eb68593d9a8"
+  },
+  "inventory": {
+    "identified_kernels": 0,
+    "cuda_neural_time_ms": null,
+    "explained_share_percent": null,
+    "droppedSamples": null
+  },
+  "gate_2a_0": "pass for controlled official testbed; commercial gameplay not qualified",
+  "gate_2a_1": "blocked: no real kernel launch identity observed",
+  "production_code_changed": false,
+  "replacement_written": false,
+  "w4a8_spike_executed": false
+}

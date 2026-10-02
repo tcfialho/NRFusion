@@ -24,6 +24,7 @@ bool Usable(FrameProvider provider, const GameContext& game,
         case GraphicsApi::D3D12: return capabilities.syntheticD3D12;
         case GraphicsApi::D3D11: return capabilities.syntheticD3D11Bridge;
         case GraphicsApi::Vulkan: return capabilities.syntheticVulkan;
+        case GraphicsApi::OpenGL: return capabilities.openGlCarrier;
         default: return false;
         }
     case FrameProvider::Unsupported:

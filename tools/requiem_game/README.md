@@ -8,6 +8,7 @@ diffs no log da sessão, e ela está honrada aqui:
     RequiemGame.exe --deterministic-motion   deslocamento segue o número do quadro
     RequiemGame.exe --reference-on           começa exibindo a referência com o efeito
     RequiemGame.exe --frames 600             sai depois de N quadros
+    RequiemGame.exe --require-nrfusion-proxy   falha se NGX contornar o proxy standalone
 
 TAB alterna entre a referência desligada e a ligada. INSERT abre o menu do OptiScaler.
 ESC fecha.
@@ -28,8 +29,8 @@ enfrenta. `--fixed-scene` desliga isso quando o objetivo é comparar capturas.
 
 ## Para medir
 
-O pacote sai pronto em `dist\RequiemGame\`, com o OptiScaler como `dxgi.dll` e o runtime ao
-lado.
+O pacote standalone sai em `dist\RequiemGame\` com o proxy NRFusion como `version.dll`.
+Use `--require-nrfusion-proxy` nos gates para impedir fallback acidental ao runtime NVIDIA.
 
 1. Rode `dist\RequiemGame\RequiemGame.exe`
 2. INSERT abre o menu

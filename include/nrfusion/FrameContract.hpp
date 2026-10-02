@@ -27,7 +27,12 @@ enum class ResourceFormat : std::uint8_t {
     Rg16Float,
     Rgba16Float,
     Rgba32Float,
-    D32Float
+    D32Float,
+    R16Unorm,
+    Rg32Float,
+    Rgba8Unorm,
+    R24UnormX8,
+    R32FloatX8X24
 };
 
 enum class ResourceProvenance : std::uint8_t {

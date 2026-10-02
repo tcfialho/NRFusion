@@ -15,6 +15,8 @@
 #include "nrfusion/SyntheticDlaaContract.hpp"
 
 #include <array>
+#include <cstddef>
+#include <cstdint>
 #include <memory>
 #include <mutex>
 #include <string>
@@ -24,6 +26,13 @@
 namespace nrfusion {
 
 using Microsoft::WRL::ComPtr;
+
+struct SyntheticDx12ResourceAccounting {
+    std::size_t resourceCount = 0;
+    std::size_t descriptorHeapCount = 0;
+    std::uint64_t logicalBytes = 0;
+    bool logicalBytesExact = true;
+};
 
 class SyntheticDx12Provider : public ISyntheticProvider {
 public:
@@ -60,7 +69,11 @@ public:
     // Ring slot index actively holding this handle's resources, or kRingSlots if none matches
     // (the ticket was never submitted here, or its slot has since been recycled).
     uint32_t SlotForWork(uint64_t workId) const;
+    uint32_t NextSlotForSubmit() const noexcept {
+        return currentSlot_;
+    }
     uint64_t CompletedFenceValue() const;
+    SyntheticDx12ResourceAccounting Accounting() const noexcept;
 
 private:
     struct Slot {

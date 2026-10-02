@@ -1,0 +1,52 @@
+#include "D3D9ExShareHarness.hpp"
+
+namespace nrfusion::test {
+
+bool D3D9ExShareHarness::ProveResetPersistence() {
+    if (!device9_ || !sharedInput9_ ||
+        !sharedOutput9_ || !sharedInput11_ ||
+        !sharedOutput11_ || width_ == 0 || height_ == 0) {
+        return false;
+    }
+
+    D3DSURFACE_DESC before9{};
+    if (FAILED(sharedInput9_->GetLevelDesc(
+            0, &before9))) {
+        return false;
+    }
+    D3D11_TEXTURE2D_DESC before11{};
+    sharedInput11_->GetDesc(&before11);
+
+    eventHandoff_.Reset();
+    auto params = PresentParameters();
+    if (FAILED(device9_->ResetEx(&params, nullptr))) {
+        return false;
+    }
+    const HRESULT state = device9_->CheckDeviceState(window_);
+    if ((state != S_OK && state != S_PRESENT_OCCLUDED) ||
+        !eventHandoff_.Bind(
+            device9_.Get(),
+            device11_.Get(),
+            context11_.Get())) {
+        return false;
+    }
+
+    D3DSURFACE_DESC after9{};
+    if (FAILED(sharedInput9_->GetLevelDesc(
+            0, &after9))) {
+        return false;
+    }
+    D3D11_TEXTURE2D_DESC after11{};
+    sharedInput11_->GetDesc(&after11);
+
+    return before9.Width == after9.Width &&
+           before9.Height == after9.Height &&
+           before9.Format == after9.Format &&
+           before11.Width == after11.Width &&
+           before11.Height == after11.Height &&
+           before11.Format == after11.Format &&
+           after9.Width == width_ &&
+           after9.Height == height_;
+}
+
+} // namespace nrfusion::test

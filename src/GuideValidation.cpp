@@ -28,7 +28,7 @@ void MotionGuideValidator::Reset() {
 }
 
 MotionGuideResult MotionGuideValidator::Update(const MotionGuideSample& s) {
-    if (s.cameraCut || !s.present) {
+    if (s.cameraCut || s.resetHistory || !s.present) {
         Reset();
         return {};
     }

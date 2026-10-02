@@ -1,0 +1,511 @@
+{
+  "status": "KEPT - exact independent preparation optimization",
+  "decision_rule": "User: keep any measured micro optimization that preserves quality and does not prevent larger gains",
+  "optimization": "omit the unused encode write to HdrCopy and its two state transitions when composition overwrites it; preserve original store for UAV targets, crops and across-RR history",
+  "quality_tier": "Exact",
+  "stock_fallback": "original shader when optional no-keep PSO cannot be created; original keep store whenever composition needs the original copy",
+  "before_commit": "08c923db1a2907767c7560ecbfb3f88e44cb294a",
+  "component_gain": {
+    "1080": {
+      "p50": {
+        "before_ms": 0.025088,
+        "after_ms": 0.023552,
+        "paired_delta_percent": [
+          -4.166666666666674,
+          -8.000000000000007
+        ],
+        "median_delta_percent": -6.083333333333341
+      },
+      "p95": {
+        "before_ms": 0.026112,
+        "after_ms": 0.024576,
+        "paired_delta_percent": [
+          -7.692307692307687,
+          -4.0000000000000036
+        ],
+        "median_delta_percent": -5.846153846153845
+      },
+      "p99": {
+        "before_ms": 0.027648,
+        "after_ms": 0.024576,
+        "paired_delta_percent": [
+          -14.28571428571428,
+          -7.692307692307687
+        ],
+        "median_delta_percent": -10.989010989010984
+      }
+    },
+    "1440": {
+      "p50": {
+        "before_ms": 0.043008,
+        "after_ms": 0.038912,
+        "paired_delta_percent": [
+          -9.523809523809511,
+          -9.523809523809511
+        ],
+        "median_delta_percent": -9.523809523809511
+      },
+      "p95": {
+        "before_ms": 0.04608,
+        "after_ms": 0.039936,
+        "paired_delta_percent": [
+          -13.333333333333341,
+          -13.333333333333341
+        ],
+        "median_delta_percent": -13.333333333333341
+      },
+      "p99": {
+        "before_ms": 0.047616,
+        "after_ms": 0.04151807999999996,
+        "paired_delta_percent": [
+          -10.869565217391308,
+          -14.702127659574627
+        ],
+        "median_delta_percent": -12.785846438482967
+      }
+    },
+    "2160": {
+      "p50": {
+        "before_ms": 0.1024,
+        "after_ms": 0.083968,
+        "paired_delta_percent": [
+          -18.000000000000004,
+          -18.000000000000004
+        ],
+        "median_delta_percent": -18.000000000000004
+      },
+      "p95": {
+        "before_ms": 0.104448,
+        "after_ms": 0.086016,
+        "paired_delta_percent": [
+          -17.647058823529417,
+          -17.647058823529417
+        ],
+        "median_delta_percent": -17.647058823529417
+      },
+      "p99": {
+        "before_ms": 0.14643711999999998,
+        "after_ms": 0.09525759999999997,
+        "paired_delta_percent": [
+          -33.315246880086825,
+          -36.29299363057326
+        ],
+        "median_delta_percent": -34.80412025533004
+      }
+    }
+  },
+  "end_to_end_comparison": {
+    "1080": {
+      "nr_gpu_ms": {
+        "p50": {
+          "before_ms": 9.756415,
+          "after_ms": 9.7745925,
+          "paired_delta_percent": [
+            0.23170931125873206,
+            0.14122360421024993
+          ],
+          "median_delta_percent": 0.186466457734491
+        },
+        "p95": {
+          "before_ms": 10.251964999999998,
+          "after_ms": 10.2091625,
+          "paired_delta_percent": [
+            -0.4190292177689181,
+            -0.4159326896633453
+          ],
+          "median_delta_percent": -0.4174809537161317
+        },
+        "p99": {
+          "before_ms": 11.222025499999999,
+          "after_ms": 11.190099499999999,
+          "paired_delta_percent": [
+            -1.2736819126062504,
+            0.7630615706846644
+          ],
+          "median_delta_percent": -0.255310170960793
+        }
+      },
+      "frame_gpu_ms": {
+        "p50": {
+          "before_ms": 11.361799999999999,
+          "after_ms": 11.389199999999999,
+          "paired_delta_percent": [
+            0.34798275983889404,
+            0.13507350103498794
+          ],
+          "median_delta_percent": 0.241528130436941
+        },
+        "p95": {
+          "before_ms": 11.877822499999999,
+          "after_ms": 11.8678075,
+          "paired_delta_percent": [
+            0.31915150797732217,
+            -0.4958853379422479
+          ],
+          "median_delta_percent": -0.08836691498246285
+        },
+        "p99": {
+          "before_ms": 13.1254415,
+          "after_ms": 12.884858,
+          "paired_delta_percent": [
+            -1.9998823589751802,
+            -1.6621108651511118
+          ],
+          "median_delta_percent": -1.830996612063146
+        }
+      },
+      "frame_wall_ms": {
+        "p50": {
+          "before_ms": 12.194675,
+          "after_ms": 12.222349999999999,
+          "paired_delta_percent": [
+            0.42890339167407365,
+            0.026930531469959718
+          ],
+          "median_delta_percent": 0.22791696157201669
+        },
+        "p95": {
+          "before_ms": 12.8917225,
+          "after_ms": 12.8056925,
+          "paired_delta_percent": [
+            -1.1570215803811013,
+            -0.16012279238990512
+          ],
+          "median_delta_percent": -0.6585721863855032
+        },
+        "p99": {
+          "before_ms": 14.01244,
+          "after_ms": 13.806463999999998,
+          "paired_delta_percent": [
+            -1.718838644545262,
+            -1.2144397550727826
+          ],
+          "median_delta_percent": -1.4666391998090222
+        }
+      }
+    },
+    "1440": {
+      "nr_gpu_ms": {
+        "p50": {
+          "before_ms": 14.32065,
+          "after_ms": 14.380025,
+          "paired_delta_percent": [
+            0.2616544829784573,
+            0.5665860406842249
+          ],
+          "median_delta_percent": 0.4141202618313411
+        },
+        "p95": {
+          "before_ms": 17.0418475,
+          "after_ms": 16.9775025,
+          "paired_delta_percent": [
+            -1.9747566389887727,
+            1.2369846401275364
+          ],
+          "median_delta_percent": -0.36888599943061817
+        },
+        "p99": {
+          "before_ms": 17.5646465,
+          "after_ms": 17.4547705,
+          "paired_delta_percent": [
+            -1.6280635875722482,
+            0.37925061724124465
+          ],
+          "median_delta_percent": -0.6244064851655018
+        }
+      },
+      "frame_gpu_ms": {
+        "p50": {
+          "before_ms": 17.12485,
+          "after_ms": 17.1725,
+          "paired_delta_percent": [
+            -0.09554391367738724,
+            0.6515085647263552
+          ],
+          "median_delta_percent": 0.277982325524484
+        },
+        "p95": {
+          "before_ms": 19.926755,
+          "after_ms": 19.895465,
+          "paired_delta_percent": [
+            -1.1251584116160562,
+            0.8112589054918073
+          ],
+          "median_delta_percent": -0.15694975306212444
+        },
+        "p99": {
+          "before_ms": 20.459155,
+          "after_ms": 20.295082,
+          "paired_delta_percent": [
+            -1.9629600144997483,
+            0.37091293857816066
+          ],
+          "median_delta_percent": -0.7960235379607938
+        }
+      },
+      "frame_wall_ms": {
+        "p50": {
+          "before_ms": 18.200675,
+          "after_ms": 18.242874999999998,
+          "paired_delta_percent": [
+            -0.559423240967516,
+            1.0205229048563247
+          ],
+          "median_delta_percent": 0.23054983194440437
+        },
+        "p95": {
+          "before_ms": 20.7785575,
+          "after_ms": 20.7491,
+          "paired_delta_percent": [
+            -1.370264186684944,
+            1.0866737844280827
+          ],
+          "median_delta_percent": -0.1417952011284307
+        },
+        "p99": {
+          "before_ms": 21.374377499999998,
+          "after_ms": 21.208754,
+          "paired_delta_percent": [
+            -2.4487102755600287,
+            0.9230353403530511
+          ],
+          "median_delta_percent": -0.7628374676034888
+        }
+      }
+    },
+    "2160": {
+      "nr_gpu_ms": {
+        "p50": {
+          "before_ms": 30.908675000000002,
+          "after_ms": 30.987000000000002,
+          "paired_delta_percent": [
+            0.4456933097276128,
+            0.06267350006525785
+          ],
+          "median_delta_percent": 0.2541834048964353
+        },
+        "p95": {
+          "before_ms": 32.794725,
+          "after_ms": 33.0242,
+          "paired_delta_percent": [
+            0.4025781457969835,
+            0.9972252516289304
+          ],
+          "median_delta_percent": 0.6999016987129569
+        },
+        "p99": {
+          "before_ms": 33.5648225,
+          "after_ms": 33.601934,
+          "paired_delta_percent": [
+            0.42119457776903513,
+            -0.19676017677149327
+          ],
+          "median_delta_percent": 0.11221720049877093
+        }
+      },
+      "frame_gpu_ms": {
+        "p50": {
+          "before_ms": 37.315325,
+          "after_ms": 37.267725,
+          "paired_delta_percent": [
+            0.07975670177839955,
+            -0.33402509600880537
+          ],
+          "median_delta_percent": -0.1271341971152029
+        },
+        "p95": {
+          "before_ms": 38.7217075,
+          "after_ms": 38.8892675,
+          "paired_delta_percent": [
+            -0.15348499869768384,
+            1.0229608062616968
+          ],
+          "median_delta_percent": 0.4347379037820065
+        },
+        "p99": {
+          "before_ms": 39.482223999999995,
+          "after_ms": 39.553285,
+          "paired_delta_percent": [
+            -0.22546234767636397,
+            0.5844756182201927
+          ],
+          "median_delta_percent": 0.17950663527191435
+        }
+      },
+      "frame_wall_ms": {
+        "p50": {
+          "before_ms": 38.2354,
+          "after_ms": 38.190325,
+          "paired_delta_percent": [
+            0.08634492373083003,
+            -0.32132686329119364
+          ],
+          "median_delta_percent": -0.11749096978018181
+        },
+        "p95": {
+          "before_ms": 39.6465275,
+          "after_ms": 39.869367499999996,
+          "paired_delta_percent": [
+            0.12648734031415199,
+            0.9992503853256895
+          ],
+          "median_delta_percent": 0.5628688628199208
+        },
+        "p99": {
+          "before_ms": 40.4194755,
+          "after_ms": 40.55966599999999,
+          "paired_delta_percent": [
+            -0.18351549594790573,
+            0.8778516631385402
+          ],
+          "median_delta_percent": 0.34716808359531726
+        }
+      }
+    }
+  },
+  "full_frame_gain_verified": false,
+  "initial_4k_stage_reduction_percent": 17.17171717171717,
+  "avoided_write_bytes_per_frame": {
+    "1080": 3686400,
+    "1440": 6551040,
+    "2160": 14745600
+  },
+  "additional_pso_bytecode_bytes": 29068,
+  "correctness": {
+    "scope": "official testbed RGBA8 output hashes on every frame; not commercial gameplay qualification",
+    "timing": "NOT performance data: diagnostic copies and SHA256 enabled",
+    "proxy_sha256": {
+      "stock": "fb8deeb246484e347e8f3145a9524a14ce058640c5060ab5ba8a3311bd5e1779",
+      "optimized": "766ff4b4231b97e7b53eb0f641a178928973847ed63de2867bfee01fe98480d8"
+    },
+    "testbed_sha256": "b8722ccd49690251075438747a02126b89184671574e4a855ba46f3cbfc4c4a8",
+    "cases": [
+      {
+        "case": "motion-1080",
+        "height": 1080,
+        "frames": 1000,
+        "exit": 0,
+        "every_frame_rgba_sha256_equal": true,
+        "stock_hash_csv_sha256": "a18f3da50456b15bd3174ae46363ad40f769b3ab6b681ac96e800ad7583a1a91",
+        "optimized_hash_csv_sha256": "a18f3da50456b15bd3174ae46363ad40f769b3ab6b681ac96e800ad7583a1a91"
+      },
+      {
+        "case": "motion-1440",
+        "height": 1440,
+        "frames": 1000,
+        "exit": 0,
+        "every_frame_rgba_sha256_equal": true,
+        "stock_hash_csv_sha256": "7b5a92eed3c25f15bcb4610469e9a6135fed98d35087a44ab2ea86ee7e8eda38",
+        "optimized_hash_csv_sha256": "7b5a92eed3c25f15bcb4610469e9a6135fed98d35087a44ab2ea86ee7e8eda38"
+      },
+      {
+        "case": "motion-2160",
+        "height": 2160,
+        "frames": 1000,
+        "exit": 0,
+        "every_frame_rgba_sha256_equal": true,
+        "stock_hash_csv_sha256": "a1b64b6c55111c65609c087ddc895bd8c7004f89a8b4dbeee4bcc161cde4eb51",
+        "optimized_hash_csv_sha256": "a1b64b6c55111c65609c087ddc895bd8c7004f89a8b4dbeee4bcc161cde4eb51"
+      },
+      {
+        "case": "static-1080",
+        "height": 1080,
+        "frames": 300,
+        "exit": 0,
+        "every_frame_rgba_sha256_equal": true,
+        "stock_hash_csv_sha256": "753612a336f4af1b90783a980176706e840e7dd385251ef0315b42ecc02f7806",
+        "optimized_hash_csv_sha256": "753612a336f4af1b90783a980176706e840e7dd385251ef0315b42ecc02f7806"
+      },
+      {
+        "case": "lifecycle-1080",
+        "height": 1080,
+        "frames": 180,
+        "exit": 0,
+        "every_frame_rgba_sha256_equal": true,
+        "stock_hash_csv_sha256": "3b37bb3aa74c95a0aede471a66e93e9aaa6c4e136a474cbdafc1b52585307b96",
+        "optimized_hash_csv_sha256": "3b37bb3aa74c95a0aede471a66e93e9aaa6c4e136a474cbdafc1b52585307b96"
+      }
+    ]
+  },
+  "final_smoke": {
+    "command": [
+      "D:\\Users\\tcfialho\\Documents\\NRFusion\\dist\\RequiemGame\\RequiemGame.exe",
+      "--require-nrfusion-proxy",
+      "--require-nr",
+      "--deterministic-motion",
+      "--width",
+      "1920",
+      "--height",
+      "1080",
+      "--frames",
+      "100",
+      "--warmup",
+      "60",
+      "--csv",
+      "D:\\Users\\tcfialho\\Documents\\NRFusion\\.temp\\phase2b\\retained-no-keep-final-smoke\\frames.csv",
+      "--capture",
+      "D:\\Users\\tcfialho\\Documents\\NRFusion\\.temp\\phase2b\\retained-no-keep-final-smoke\\output.ppm"
+    ],
+    "scope": "official Requiem synthetic-guide testbed; not commercial gameplay",
+    "proxy_sha256": "191952881e8790a8e29a281d0f6c9313da49fe5efb109768117c63c6eb0945a8",
+    "testbed_sha256": "79a11308e7482b36ad12633d041c0fdc0656c2791e9198ab0a2f87905b2a976c",
+    "exit": 0,
+    "metrics": {
+      "ngx_evaluation_gpu_ms": {
+        "p50": 11.117049999999999,
+        "p95": 11.335085000000001,
+        "p99": 11.425764000000001
+      },
+      "frame_wall_ms": {
+        "p50": 12.10985,
+        "p95": 12.312524999999999,
+        "p99": 12.761142
+      },
+      "nr_gpu_ms": {
+        "p50": 9.73312,
+        "p95": 9.946518000000001,
+        "p99": 10.0537808
+      },
+      "frame_gpu_ms": {
+        "p50": 11.311599999999999,
+        "p95": 11.56077,
+        "p99": 11.946902
+      },
+      "nr_prepare_gpu_ms": {
+        "p50": 0.023552,
+        "p95": 0.024576,
+        "p99": 0.024576
+      },
+      "nr_model_gpu_ms": {
+        "p50": 9.590785,
+        "p95": 9.80326,
+        "p99": 9.9112408
+      },
+      "nr_compose_gpu_ms": {
+        "p50": 0.118784,
+        "p95": 0.119808,
+        "p99": 0.119808
+      }
+    },
+    "image_sha256": "e739c922f660bc366c6a5d9220594b4a97f4106389567d8dcdcd26054e34a83d",
+    "samples": 40
+  },
+  "validation": {
+    "release_targets": [
+      "nrfusion_proxy",
+      "nrfusion_host64",
+      "nrfusion_requiem_game"
+    ],
+    "codec_byte_comparison": "60 cases on WARP and RTX 4050; all RGBA16F output bytes identical",
+    "focused_ctests": "4/4 pass",
+    "source_size": "0 violations"
+  },
+  "artifact_sha256": {
+    "build-windows-validation/Release/nrfusion_proxy.dll": "191952881e8790a8e29a281d0f6c9313da49fe5efb109768117c63c6eb0945a8",
+    "build-windows-validation/Release/NRFusionHost64.exe": "caaf98a68818bce2752c2ffc1a81f482400e68fc101e5e7acd6e53e5708d53dc",
+    "build-windows-validation/Release/RequiemGame.exe": "79a11308e7482b36ad12633d041c0fdc0656c2791e9198ab0a2f87905b2a976c",
+    "build-windows-validation/generated/dlssnr/DlssNr_NoKeep.cso": "6e91fc0ac261c818ca838aba8d9b9a5e023f969ff994446d3d920314da91faf0"
+  },
+  "scope_limit": "official controlled Requiem testbed, synthetic guides; no commercial-game or MFG performance claim",
+  "next_action": "continue model hot-chain qualification; this preparation change remains independent and cumulative"
+}

@@ -1,0 +1,19 @@
+{
+  "schema_version": 1,
+  "kind": "host argument bytes and kernel image; no device buffers",
+  "kernel": "cc_vit_1d_projection_chained_fp8",
+  "requested_sequence": 62,
+  "backend": "nvapi_d3d12",
+  "module_sha256": "bdc0cafe89442d2fa64ab168905e5ebcfe4bb7592604d0b4b2fca2db063b7a2b",
+  "image_bytes": 3202680,
+  "observations": [
+    {"frame":60,"sequence":62,"parameter_bytes":72,"file":"args-0.bin"},
+    {"frame":61,"sequence":62,"parameter_bytes":72,"file":"args-1.bin"},
+    {"frame":62,"sequence":62,"parameter_bytes":72,"file":"args-2.bin"},
+    {"frame":63,"sequence":62,"parameter_bytes":72,"file":"args-3.bin"},
+    {"frame":64,"sequence":62,"parameter_bytes":72,"file":"args-4.bin"},
+    {"frame":65,"sequence":62,"parameter_bytes":72,"file":"args-5.bin"},
+    {"frame":66,"sequence":62,"parameter_bytes":72,"file":"args-6.bin"},
+    {"frame":67,"sequence":62,"parameter_bytes":72,"file":"args-7.bin"}
+  ]
+}

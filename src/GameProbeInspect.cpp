@@ -82,11 +82,6 @@ PeInfo InspectPe(const std::filesystem::path& path) {
     const std::size_t dataDirOffset = (info.bitness == 64) ? 112 : 96;
     if (optHeaderSize < dataDirOffset + 16) return info;
 
-    std::uint32_t importRva = 0;
-    std::uint32_t importSize = 0;
-    std::memcpy(&importRva, &optHeader[dataDirOffset + 8], sizeof(importRva));
-    std::memcpy(&importSize, &optHeader[dataDirOffset + 12], sizeof(importSize));
-    if (importRva == 0 || importSize == 0) return info;
 
     struct Section {
         std::uint32_t virtualAddress = 0;
@@ -116,22 +111,33 @@ PeInfo InspectPe(const std::filesystem::path& path) {
         return 0;
     };
 
+    const auto readImports = [&](std::size_t directoryIndex, std::size_t descriptorSize,
+                                 std::size_t nameIndex) {
+    const auto directoryOffset = dataDirOffset + directoryIndex * 8;
+    if (optHeader.size() < directoryOffset + 8) return;
+    std::uint32_t importRva = 0;
+    std::uint32_t importSize = 0;
+    std::memcpy(&importRva, &optHeader[directoryOffset], 4);
+    std::memcpy(&importSize, &optHeader[directoryOffset + 4], 4);
+    if (!importRva || !importSize) return;
     const auto importOffset = rvaToOffset(importRva);
-    if (importOffset == 0 || importOffset >= fileSize) return info;
+    if (importOffset == 0 || importOffset >= fileSize) return;
 
+    in.clear();
     in.seekg(static_cast<std::streamoff>(importOffset), std::ios::beg);
 
     constexpr std::size_t kMaxImportDescriptors = 256;
-    for (std::size_t d = 0; d < kMaxImportDescriptors; ++d) {
-        std::array<unsigned char, 20> desc{};
-        in.read(reinterpret_cast<char*>(desc.data()), static_cast<std::streamsize>(desc.size()));
-        if (static_cast<std::size_t>(in.gcount()) != desc.size()) break;
+    for (std::size_t d = 0; d < std::min<std::size_t>(kMaxImportDescriptors, importSize / descriptorSize); ++d) {
+        std::array<unsigned char, 32> desc{};
+        in.read(reinterpret_cast<char*>(desc.data()), static_cast<std::streamsize>(descriptorSize));
+        if (static_cast<std::size_t>(in.gcount()) != descriptorSize) break;
         bool allZero = true;
         for (unsigned char b : desc) { if (b != 0) { allZero = false; break; } }
         if (allZero) break;
 
         std::uint32_t nameRva = 0;
-        std::memcpy(&nameRva, &desc[12], sizeof(nameRva));
+        std::memcpy(&nameRva, &desc[nameIndex], sizeof(nameRva));
+        if (directoryIndex == 13 && !(desc[0] & 1)) continue;
         if (nameRva == 0) continue;
 
         const auto nameOffset = rvaToOffset(nameRva);
@@ -150,6 +156,9 @@ PeInfo InspectPe(const std::filesystem::path& path) {
             info.importedDlls.push_back(Lower(std::move(dllName)));
         }
     }
+    };
+    readImports(1, 20, 12);
+    readImports(13, 32, 4);
 
     return info;
 }

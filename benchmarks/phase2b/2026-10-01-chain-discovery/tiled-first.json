@@ -1,0 +1,263 @@
+[
+  {
+    "capture": 0,
+    "variant": "stock",
+    "exit": 0,
+    "replay": {
+      "schema_version": 1,
+      "diagnostic_input_probe": false,
+      "variant": "stock",
+      "module_function_initialization_cpu_ms": 28.7956,
+      "driver_jit_cache_state": "unknown",
+      "bit_identical": true,
+      "differing_output_bytes": 0,
+      "done_bit_identical": true,
+      "max_abs_error": 0,
+      "mean_abs_error": 0,
+      "rms_error": 0,
+      "expected_sha256": "15caef635cd2f599c32c431ecc66fefc1ab53c76d11ac56a7b36b9e911b113e8",
+      "actual_sha256": "15caef635cd2f599c32c431ecc66fefc1ab53c76d11ac56a7b36b9e911b113e8"
+    },
+    "benchmark": {
+      "warmup": 50,
+      "samples": 300,
+      "median_us": 56.32,
+      "p95_us": 58.368,
+      "p99_us": 59.392,
+      "scope": "isolated kernel GPU time; UAV ordering outside timestamp interval"
+    },
+    "stderr": ""
+  },
+  {
+    "capture": 0,
+    "variant": "tiled",
+    "exit": 0,
+    "replay": {
+      "schema_version": 1,
+      "diagnostic_input_probe": false,
+      "variant": "custom",
+      "module_function_initialization_cpu_ms": 21.7419,
+      "driver_jit_cache_state": "unknown",
+      "bit_identical": true,
+      "differing_output_bytes": 0,
+      "done_bit_identical": true,
+      "max_abs_error": 0,
+      "mean_abs_error": 0,
+      "rms_error": 0,
+      "expected_sha256": "15caef635cd2f599c32c431ecc66fefc1ab53c76d11ac56a7b36b9e911b113e8",
+      "actual_sha256": "15caef635cd2f599c32c431ecc66fefc1ab53c76d11ac56a7b36b9e911b113e8"
+    },
+    "benchmark": {
+      "warmup": 50,
+      "samples": 300,
+      "median_us": 65.536,
+      "p95_us": 67.584,
+      "p99_us": 67.584,
+      "scope": "isolated kernel GPU time; UAV ordering outside timestamp interval"
+    },
+    "stderr": ""
+  },
+  {
+    "capture": 0,
+    "variant": "reference",
+    "exit": 0,
+    "replay": {
+      "schema_version": 1,
+      "diagnostic_input_probe": false,
+      "variant": "custom",
+      "module_function_initialization_cpu_ms": 21.6637,
+      "driver_jit_cache_state": "unknown",
+      "bit_identical": true,
+      "differing_output_bytes": 0,
+      "done_bit_identical": true,
+      "max_abs_error": 0,
+      "mean_abs_error": 0,
+      "rms_error": 0,
+      "expected_sha256": "15caef635cd2f599c32c431ecc66fefc1ab53c76d11ac56a7b36b9e911b113e8",
+      "actual_sha256": "15caef635cd2f599c32c431ecc66fefc1ab53c76d11ac56a7b36b9e911b113e8"
+    },
+    "benchmark": {
+      "warmup": 50,
+      "samples": 300,
+      "median_us": 799.744,
+      "p95_us": 977.92,
+      "p99_us": 993.28,
+      "scope": "isolated kernel GPU time; UAV ordering outside timestamp interval"
+    },
+    "stderr": ""
+  },
+  {
+    "capture": 1,
+    "variant": "stock",
+    "exit": 0,
+    "replay": {
+      "schema_version": 1,
+      "diagnostic_input_probe": false,
+      "variant": "stock",
+      "module_function_initialization_cpu_ms": 28.8492,
+      "driver_jit_cache_state": "unknown",
+      "bit_identical": true,
+      "differing_output_bytes": 0,
+      "done_bit_identical": true,
+      "max_abs_error": 0,
+      "mean_abs_error": 0,
+      "rms_error": 0,
+      "expected_sha256": "ec0a2dd0175b83d46dc76e4a34a5d9b62c5105f5c18e4d21522a2e5c9e2c64db",
+      "actual_sha256": "ec0a2dd0175b83d46dc76e4a34a5d9b62c5105f5c18e4d21522a2e5c9e2c64db"
+    },
+    "benchmark": {
+      "warmup": 50,
+      "samples": 300,
+      "median_us": 51.2,
+      "p95_us": 53.248,
+      "p99_us": 53.248,
+      "scope": "isolated kernel GPU time; UAV ordering outside timestamp interval"
+    },
+    "stderr": ""
+  },
+  {
+    "capture": 1,
+    "variant": "tiled",
+    "exit": 0,
+    "replay": {
+      "schema_version": 1,
+      "diagnostic_input_probe": false,
+      "variant": "custom",
+      "module_function_initialization_cpu_ms": 22.3335,
+      "driver_jit_cache_state": "unknown",
+      "bit_identical": true,
+      "differing_output_bytes": 0,
+      "done_bit_identical": true,
+      "max_abs_error": 0,
+      "mean_abs_error": 0,
+      "rms_error": 0,
+      "expected_sha256": "ec0a2dd0175b83d46dc76e4a34a5d9b62c5105f5c18e4d21522a2e5c9e2c64db",
+      "actual_sha256": "ec0a2dd0175b83d46dc76e4a34a5d9b62c5105f5c18e4d21522a2e5c9e2c64db"
+    },
+    "benchmark": {
+      "warmup": 50,
+      "samples": 300,
+      "median_us": 59.392,
+      "p95_us": 61.44,
+      "p99_us": 61.44,
+      "scope": "isolated kernel GPU time; UAV ordering outside timestamp interval"
+    },
+    "stderr": ""
+  },
+  {
+    "capture": 1,
+    "variant": "reference",
+    "exit": 0,
+    "replay": {
+      "schema_version": 1,
+      "diagnostic_input_probe": false,
+      "variant": "custom",
+      "module_function_initialization_cpu_ms": 21.4449,
+      "driver_jit_cache_state": "unknown",
+      "bit_identical": true,
+      "differing_output_bytes": 0,
+      "done_bit_identical": true,
+      "max_abs_error": 0,
+      "mean_abs_error": 0,
+      "rms_error": 0,
+      "expected_sha256": "ec0a2dd0175b83d46dc76e4a34a5d9b62c5105f5c18e4d21522a2e5c9e2c64db",
+      "actual_sha256": "ec0a2dd0175b83d46dc76e4a34a5d9b62c5105f5c18e4d21522a2e5c9e2c64db"
+    },
+    "benchmark": {
+      "warmup": 50,
+      "samples": 300,
+      "median_us": 719.872,
+      "p95_us": 881.664,
+      "p99_us": 893.952,
+      "scope": "isolated kernel GPU time; UAV ordering outside timestamp interval"
+    },
+    "stderr": ""
+  },
+  {
+    "capture": 2,
+    "variant": "stock",
+    "exit": 0,
+    "replay": {
+      "schema_version": 1,
+      "diagnostic_input_probe": false,
+      "variant": "stock",
+      "module_function_initialization_cpu_ms": 28.4399,
+      "driver_jit_cache_state": "unknown",
+      "bit_identical": true,
+      "differing_output_bytes": 0,
+      "done_bit_identical": true,
+      "max_abs_error": 0,
+      "mean_abs_error": 0,
+      "rms_error": 0,
+      "expected_sha256": "905a067fd1d49ed121a85386b958e83bc623e8f6d66a4582c2be96339b7417ca",
+      "actual_sha256": "905a067fd1d49ed121a85386b958e83bc623e8f6d66a4582c2be96339b7417ca"
+    },
+    "benchmark": {
+      "warmup": 50,
+      "samples": 300,
+      "median_us": 51.2,
+      "p95_us": 52.224,
+      "p99_us": 53.248,
+      "scope": "isolated kernel GPU time; UAV ordering outside timestamp interval"
+    },
+    "stderr": ""
+  },
+  {
+    "capture": 2,
+    "variant": "tiled",
+    "exit": 0,
+    "replay": {
+      "schema_version": 1,
+      "diagnostic_input_probe": false,
+      "variant": "custom",
+      "module_function_initialization_cpu_ms": 21.7798,
+      "driver_jit_cache_state": "unknown",
+      "bit_identical": true,
+      "differing_output_bytes": 0,
+      "done_bit_identical": true,
+      "max_abs_error": 0,
+      "mean_abs_error": 0,
+      "rms_error": 0,
+      "expected_sha256": "905a067fd1d49ed121a85386b958e83bc623e8f6d66a4582c2be96339b7417ca",
+      "actual_sha256": "905a067fd1d49ed121a85386b958e83bc623e8f6d66a4582c2be96339b7417ca"
+    },
+    "benchmark": {
+      "warmup": 50,
+      "samples": 300,
+      "median_us": 59.392,
+      "p95_us": 61.44,
+      "p99_us": 61.44,
+      "scope": "isolated kernel GPU time; UAV ordering outside timestamp interval"
+    },
+    "stderr": ""
+  },
+  {
+    "capture": 2,
+    "variant": "reference",
+    "exit": 0,
+    "replay": {
+      "schema_version": 1,
+      "diagnostic_input_probe": false,
+      "variant": "custom",
+      "module_function_initialization_cpu_ms": 21.1221,
+      "driver_jit_cache_state": "unknown",
+      "bit_identical": true,
+      "differing_output_bytes": 0,
+      "done_bit_identical": true,
+      "max_abs_error": 0,
+      "mean_abs_error": 0,
+      "rms_error": 0,
+      "expected_sha256": "905a067fd1d49ed121a85386b958e83bc623e8f6d66a4582c2be96339b7417ca",
+      "actual_sha256": "905a067fd1d49ed121a85386b958e83bc623e8f6d66a4582c2be96339b7417ca"
+    },
+    "benchmark": {
+      "warmup": 50,
+      "samples": 300,
+      "median_us": 719.872,
+      "p95_us": 885.76,
+      "p99_us": 921.6,
+      "scope": "isolated kernel GPU time; UAV ordering outside timestamp interval"
+    },
+    "stderr": ""
+  }
+]

@@ -1,0 +1,28 @@
+- [ ] R02.01 — Depender de G01; integrar aquisição DX12 antes de otimizar kernels ou implementar MFG; preservar a separação entre NR, upscaling e geração de quadros.
+- [ ] R02.02 — Mapear as chamadas NGX reais do Cyberpunk e suas versões; consultar headers/source correspondentes e não inventar assinaturas, parâmetros ou nomes de DLL.
+- [ ] R02.03 — Implementar interceptação standalone de Init, CreateFeature, EvaluateFeature, Release e Shutdown necessários; preservar encaminhamento e retornos da API original.
+- [ ] R02.04 — Reutilizar conhecimento e código compatível do OptiScaler com licença e revisão de dependências; não tornar sua DLL um requisito oculto do standalone.
+- [ ] R02.05 — Capturar recursos e parâmetros da avaliação real: color, depth, motion, jitter, exposure, reset, tamanhos e feature; não inferir esses dados do backbuffer final.
+- [ ] R02.06 — Validar formatos, escalas, convenções de motion/depth, HDR e estados; publicar indisponibilidade quando um guia obrigatório não tiver origem confiável.
+- [ ] R02.07 — Integrar o FrameContract e NrSession ao caller distribuído; correlacionar feature, sessão, frame e geração de configuração até a apresentação.
+- [ ] R02.08 — Definir posição NR em relação a SR/RR, tone mapping e HUD; preservar entradas originais necessárias e testar a ordem efetivamente executada.
+- [ ] R02.09 — Preferir execução no device DX12 do jogo quando compatível; justificar Host64 por requisito concreto e medir o custo adicional antes de usá-lo nessa rota.
+- [ ] R02.10 — Se houver Host64, selecionar adapter por identidade compatível com o jogo; validar handles duplicados, lifetime, formatos e protocolo de reconnect.
+- [ ] R02.11 — Garantir slots por frame em voo; produtor não sobrescreve entrada em uso e host não sobrescreve saída antes do consumo comprovado pelo jogo.
+- [ ] R02.12 — Definir fences produtor, executor e consumidor, valores monotônicos e aposentadoria; proibir reutilização de slot apenas porque um ACK chegou ao CPU.
+- [ ] R02.13 — Testar backpressure, host lento, resize, restart e device lost; descartar trabalho obsoleto sem aplicar saída de outra sessão ou configuração.
+- [ ] R02.14 — Evitar aplicar saída atrasada como frame atual sem contrato temporal; qualificar reprojeção ou limitar a rota, sem mascarar ghosting com cena estática.
+- [ ] R02.15 — Carregar o runtime/modelo aprovado e registrar versão, hash e erros de Load/Init/Create/Evaluate; não confundir criação do device com inferência disponível.
+- [ ] R02.16 — Separar no protocolo e telemetria: recebido, submetido, avaliado, fallback, composto e apresentado; Complete de transporte não pode significar NR executado.
+- [ ] R02.17 — Preservar imagem original quando a avaliação falhar e identificar fallback; não usar cópia como prova neural nem encerrar silenciosamente o jogo.
+- [ ] R02.18 — Confirmar recursos de saída, barriers e restauração do estado do jogo; validar que a saída avaliada chega à imagem apresentada pelo mesmo fluxo instalado.
+- [ ] R02.19 — Ligar controles NR suportados ao executor real e verificar efeito de cada mudança; opções sem implementação permanecem explicitamente indisponíveis.
+- [ ] R02.20 — Provar NR no Cyberpunk com cenas reproduzíveis, avaliação bem-sucedida e saída composta; comparar ligado/desligado, movimento, HUD, transparências e HDR.
+- [ ] R02.21 — Medir GPU time de aquisição, inferência e composição, além de latência; FPS configurado, ACK e pixels não pretos não contam como medidas de execução.
+- [ ] G02-NR — Fechar somente com inferência e composição identificadas no Cyberpunk, fallback distinguível e estabilidade após o antigo ponto de falha; liberar integração MFG.
+- [ ] R02.22 — Mapear a integração real Streamline/DLSSG e capacidades da GPU/driver; manter suporte MFG independente de NR e não anunciar multiplicador não comprovado.
+- [ ] R02.23 — Conectar opções e estados MFG do menu aos hooks distribuídos; preservar Game Controlled e validar mudanças de modo durante gameplay.
+- [ ] R02.24 — Integrar geração, composição de UI e apresentação com pacing; correlacionar frames renderizados e gerados sem contar reapresentação como geração.
+- [ ] R02.25 — Validar cada multiplicador anunciado em hardware compatível; se o hardware atual não permitir, manter o gate correspondente bloqueado e não substituir a prova por fake.
+- [ ] R02.26 — Testar MFG com NR ligado/desligado, menus, câmera em movimento e Alt+Tab; medir artefatos, latência e estabilidade de pacing.
+- [ ] G02-MFG — Fechar somente com frames adicionais efetivamente gerados e apresentados no jogo para os modos anunciados; seguir para recuperacao-03-qualificacao.md.

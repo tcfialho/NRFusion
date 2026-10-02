@@ -1,0 +1,9 @@
+{
+  "build-windows-validation/Release/nrfusion_proxy.dll": "35090bb7bdac19f30833aec020d57575f1978095e6400a6359cdc1a5e203b911",
+  "dist/RequiemGame/version.dll": "35090bb7bdac19f30833aec020d57575f1978095e6400a6359cdc1a5e203b911",
+  "build-windows-validation/Release/RequiemGame.exe": "227556cdb35e5e3b6de222e16b4d616efdd1e8a0668da65ce343959a02b9f753",
+  "dist/RequiemGame/RequiemGame.exe": "227556cdb35e5e3b6de222e16b4d616efdd1e8a0668da65ce343959a02b9f753",
+  "build-windows-validation/Release/NRFusionKernelReplay.exe": "8afa334313f8f27ae02bd95f962c82f8d8b43b997e6456db89d371921029e3ae",
+  "build-windows-validation/generated/nrfusion_ffn_reference_sm89.cubin": "35fdfab506841b69a49e43487471d4ba00a7a4b6a8d44cc7c95dd6ee15284c73",
+  "dist/RequiemGame/NRFusion/internal/nvngx_dlssnr.dll": "e67dee209320cdafe0e93e45675d7aa34323a53acc57a72b2e40a181581c989a"
+}

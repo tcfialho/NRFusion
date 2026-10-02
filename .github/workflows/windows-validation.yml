@@ -1,6 +1,26 @@
 name: Windows validation
 
 on:
+  push:
+    branches:
+      - standalone/integration
+    paths:
+      - 'CMakeLists.txt'
+      - 'cmake/**'
+      - 'include/**'
+      - 'src/**'
+      - 'tests/**'
+      - 'tools/validate_windows.ps1'
+      - 'tools/build_dist.ps1'
+      - 'tools/package_standalone_dist.ps1'
+      - 'installer/**'
+      - 'tools/validate_phase09_hardware.ps1'
+      - 'tools/validate_phase10_hardware.ps1'
+      - 'tools/validate_phase11_hardware.ps1'
+      - 'tools/validate_phase12_hardware.ps1'
+      - 'tools/validate_phase13_hardware.ps1'
+      - 'tools/validate_phase14_hardware.ps1'
+      - '.github/workflows/windows-validation.yml'
   workflow_dispatch:
     inputs:
       scope:
@@ -39,22 +59,68 @@ jobs:
         with:
           python-version: '3.12'
 
+      - name: Checkout official Vulkan headers
+        uses: actions/checkout@v4
+        with:
+          repository: KhronosGroup/Vulkan-Headers
+          ref: v1.3.296
+          path: .deps/Vulkan-Headers
+          fetch-depth: 1
+          persist-credentials: false
+
+      - name: Configure Vulkan headers
+        shell: powershell
+        run: |
+          "NRFUSION_VULKAN_HEADERS=$PWD\.deps\Vulkan-Headers\include" |
+            Out-File -FilePath $env:GITHUB_ENV -Encoding utf8 -Append
+
       - name: Install NSIS
-        if: inputs.scope == 'full'
+        if: github.event_name == 'workflow_dispatch' && inputs.scope == 'full'
         shell: powershell
         run: choco install nsis --no-progress -y
+
+      - name: Parse physical gate scripts
+        shell: powershell
+        run: |
+          $tokens = $null
+          $errors = $null
+          @(
+            'tools/validate_phase09_hardware.ps1',
+            'tools/validate_phase10_hardware.ps1',
+            'tools/validate_phase11_hardware.ps1',
+            'tools/validate_phase12_hardware.ps1',
+            'tools/validate_phase13_hardware.ps1',
+            'tools/validate_phase14_hardware.ps1'
+          ) | ForEach-Object {
+            $tokens = $null
+            $errors = $null
+            [void][System.Management.Automation.Language.Parser]::ParseFile(
+              (Join-Path $PWD $_),
+              [ref]$tokens,
+              [ref]$errors)
+            if ($errors.Count -ne 0) {
+              $errors | ForEach-Object { Write-Error $_.Message }
+              exit 1
+            }
+          }
 
       - name: Validate Windows
         shell: powershell
         run: |
-          if ("${{ inputs.scope }}" -eq "fast") {
-            ./tools/validate_windows.ps1 -Fast -TargetsCsv "${{ inputs.targets }}" -TestRegex "${{ inputs.test_regex }}"
+          if ("${{ github.event_name }}" -eq "push") {
+            ./tools/validate_windows.ps1 -Fast `
+              -TargetsCsv "nrfusion_d3d11_carrier_hook_tests,nrfusion_d3d11_carrier_native_acquire_tests,nrfusion_synthetic_dx11_bridge_test,nrfusion_capture32,nrfusion_ipc_host_compile,nrfusion_ipc_host_test,nrfusion_ipc_generation_contract_tests,nrfusion_capture32_transport_timeout_tests,nrfusion_proxy_runtime_tests,nrfusion_vulkan_provider_compile,nrfusion_vulkan_native_compile,nrfusion_vulkan_native_device_tests,nrfusion_vulkan_carrier_executor_tests,nrfusion_vulkan_carrier_device_tests,nrfusion_d3d12_external_share_tests,nrfusion_vulkan_external_interop_tests,nrfusion_synthetic_opengl_test,nrfusion_opengl_external_interop_tests,nrfusion_opengl_state_restore_tests,nrfusion_d3d10_external_bridge_tests,nrfusion_d3d9ex_share_tests,nrfusion_tests,nrfusion_runtime_config_store_tests,nrfusion_runtime_menu_model_tests,nrfusion_runtime_advanced_config_tests,nrfusion_runtime_advanced_config_store_tests,nrfusion_motion_guide_selection_tests,nrfusion_guide_history_tests,nrfusion_motion_guide_binding_tests,nrfusion_phase15_integration_tests,nrfusion_mfg_capability_tests,nrfusion_mfg_fake_streamline_tests,nrfusion_d3d12_command_state_restore_tests,nrfusion_nr_scratch_resources_tests,nrfusion_nr_guide_clones_tests,nrfusion_d3d12_nr_codec_tests,nrfusion_d3d12_diagnostics_resources_tests,nrfusion_synthetic_dx12_scale_gate_test,nrfusion_host64_stop_cleanup_tests,nrfusion_nvngx_bridge_tests" `
+              -TestRegex "^(nrfusion_ipc_host_test|nrfusion_d3d11_carrier_native_acquire_tests|nrfusion_synthetic_dx11_bridge_test|nrfusion_ipc_generation_contract_tests|nrfusion_capture32_transport_timeout_tests|nrfusion_proxy_runtime_tests|nrfusion_vulkan_native_device_tests|nrfusion_vulkan_carrier_executor_tests|nrfusion_vulkan_carrier_device_tests|nrfusion_d3d12_external_share_tests|nrfusion_vulkan_external_interop_tests|nrfusion_synthetic_opengl_test|nrfusion_opengl_external_interop_tests|nrfusion_opengl_state_restore_tests|nrfusion_d3d10_external_bridge_tests|nrfusion_d3d9ex_share_tests|nrfusion_tests|nrfusion_runtime_config_store_tests|nrfusion_runtime_menu_model_tests|nrfusion_runtime_advanced_config_tests|nrfusion_runtime_advanced_config_store_tests|nrfusion_motion_guide_selection_tests|nrfusion_guide_history_tests|nrfusion_motion_guide_binding_tests|nrfusion_phase15_integration_tests|nrfusion_mfg_capability_tests|nrfusion_mfg_fake_streamline_tests|nrfusion_d3d12_command_state_restore_tests|nrfusion_nr_scratch_resources_tests|nrfusion_nr_guide_clones_tests|nrfusion_d3d12_nr_codec_tests|nrfusion_d3d12_diagnostics_resources_tests|nrfusion_synthetic_dx12_scale_gate_test|nrfusion_host64_stop_cleanup_tests|nrfusion_nvngx_bridge_tests)$"
+          } elseif ("${{ inputs.scope }}" -eq "fast") {
+            ./tools/validate_windows.ps1 -Fast `
+              -TargetsCsv "${{ inputs.targets }}" `
+              -TestRegex "${{ inputs.test_regex }}"
           } else {
             ./tools/validate_windows.ps1
           }
 
       - name: Upload public developer dist
-        if: inputs.scope == 'full'
+        if: github.event_name == 'workflow_dispatch' && inputs.scope == 'full'
         uses: actions/upload-artifact@v4
         with:
           name: NRFusion-windows-developer-dist

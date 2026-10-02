@@ -1,0 +1,11 @@
+{
+"schema_version":1,"backend":"nvapi_d3d12","kernel":"cc_vit_1d_ffn_expand_chained_fp8","module_sha256":"bdc0cafe89442d2fa64ab168905e5ebcfe4bb7592604d0b4b2fca2db063b7a2b","frame":61,"sequence":63,"parameter_bytes":72,"capture_performance_is_gameplay_performance":false,
+"buffers":[
+{"name":"input-before","file":"input-before.bin","bytes":294912,"source_offset":84803072,"sha256":"06f245efb28179fee6cdb064d0b95fa5f856f2c9e524146a6cf22f07539e9c20"},
+{"name":"output-before","file":"output-before.bin","bytes":1179648,"source_offset":55066112,"sha256":"2f9c2f1ee7df1007d4460afaf7e8d4e238bc058c46ee19edb10784a02165b12c"},
+{"name":"weights-before","file":"weights-before.bin","bytes":4194304,"source_offset":35616768,"sha256":"99fdbc1e6cbba4d31f55433cdd1869a38666a213e33499474eec499473f1aa0a"},
+{"name":"ready-before","file":"ready-before.bin","bytes":512,"source_offset":93184,"sha256":"6e3cdfe48f439e1c9fc6f8e77084052227e0cb96ff0912151d2b804f5c4a32ae"},
+{"name":"done-before","file":"done-before.bin","bytes":512,"source_offset":93696,"sha256":"9f56cda75fefeab90f6fa5d5ddc9601544b121732c5ecccab32e631060453a5d"},
+{"name":"output-expected","file":"output-expected.bin","bytes":1179648,"source_offset":55066112,"sha256":"ec0a2dd0175b83d46dc76e4a34a5d9b62c5105f5c18e4d21522a2e5c9e2c64db"},
+{"name":"done-expected","file":"done-expected.bin","bytes":512,"source_offset":93696,"sha256":"70c64b118ebe895a0ef07d65f673b5ba34a5e7734e4d2425e658630d30cd31ea"}
+],"grid":[96,1,1],"block":[32,4,1],"shared_bytes":0}

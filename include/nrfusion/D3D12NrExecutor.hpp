@@ -10,11 +10,17 @@
 #include <d3d11.h>
 #include <d3d12.h>
 
+#include <array>
 #include <cstdint>
 #include <string>
 
+#include "nrfusion/D3D12NrCodec.hpp"
+#include "nrfusion/D3D12NrFramePlan.hpp"
+#include "nrfusion/D3D12NrGuideClones.hpp"
+#include "nrfusion/D3D12NrScratchResources.hpp"
 #include "nrfusion/NrDeferredRetirementQueue.hpp"
 #include "nrfusion/NrSubmissionGate.hpp"
+#include "nrfusion/NrDiagnosticsApi.hpp"
 
 namespace nrfusion {
 
@@ -47,10 +53,82 @@ struct DlssNrTuning {
     float skinStructure = -1.0f;
     bool autoMask = true;
     int uiCorrection = 1;
+
+    bool operator==(const DlssNrTuning&) const noexcept = default;
+};
+
+
+constexpr std::uint32_t kD3D12NrMaxPassCount = 30;
+
+struct D3D12NrComposition {
+    bool runBeforeUpscale = false;
+    bool rayReconstruction = false;
+    bool residualAcrossRr = false;
+    bool colourIsLinearHdr = true;
+    bool useGameExposure = false;
+    float whitePoint = 1.0f;
+    float exposurePreMul = 1.0f;
+    float transferStrength = 1.0f;
+    float colourStrength = 1.0f;
+    float maxRatio = 4.0f;
+    std::uint32_t debugView = 0;
+    std::uint32_t compareMode = 0;
+    float compareSplit = 0.5f;
+    float compareZoom = 1.0f;
+    std::uint32_t compareSwap = 0;
+    float debugScale = 1.0f;
+    std::uint32_t transfer = 0;
+    std::uint32_t reversibleMode = 0;
+    bool applyModel = true;
+    std::uint32_t skinProtection = 0;
+    std::uint32_t showSkinMask = 0;
+    float skinDetail = 1.0f;
+    float skinColour = 1.0f;
+    float environmentDetail = 1.0f;
+    float environmentColour = 1.0f;
+    float residualBlend = 1.0f;
+};
+
+struct D3D12NrFrameResources {
+    ID3D12Resource* color = nullptr;
+    ID3D12Resource* depth = nullptr;
+    ID3D12Resource* motion = nullptr;
+    ID3D12Resource* output = nullptr;
+    ID3D12Resource* exposure = nullptr;
+};
+
+struct D3D12NrFrameRequest {
+    RecordNrGpuStage recordGpuStage = nullptr;
+    D3D12NrFramePlanInput plan{};
+    std::array<DlssNrTuning, kD3D12NrMaxPassCount> tuning{};
+    D3D12NrComposition composition{};
+    std::uint64_t submissionEpoch = 0;
+    bool reset = false;
+    bool depthInverted = false;
+    float motionScaleX = 1.0f;
+    float motionScaleY = 1.0f;
+    D3D12_RESOURCE_STATES colorState = D3D12_RESOURCE_STATE_NON_PIXEL_SHADER_RESOURCE;
+    D3D12_RESOURCE_STATES outputState = D3D12_RESOURCE_STATE_UNORDERED_ACCESS;
+    D3D12_RESOURCE_STATES depthState = D3D12_RESOURCE_STATE_NON_PIXEL_SHADER_RESOURCE;
+    D3D12_RESOURCE_STATES motionState = D3D12_RESOURCE_STATE_NON_PIXEL_SHADER_RESOURCE;
+    D3D12_RESOURCE_STATES exposureState = D3D12_RESOURCE_STATE_NON_PIXEL_SHADER_RESOURCE;
+};
+
+enum class D3D12NrFrameResult : std::uint8_t {
+    Applied,
+    SkippedPlacement,
+    PendingFeature,
+    Failed
 };
 
 class D3D12NrExecutor {
 public:
+    D3D12NrExecutor() = default;
+    D3D12NrExecutor(const D3D12NrExecutor&) = delete;
+    D3D12NrExecutor& operator=(const D3D12NrExecutor&) = delete;
+    D3D12NrExecutor(D3D12NrExecutor&&) = delete;
+    D3D12NrExecutor& operator=(D3D12NrExecutor&&) = delete;
+
     bool Load();
 
     bool Init(ID3D12Device* device);
@@ -67,13 +145,20 @@ public:
                   ID3D12Resource* motion, ID3D12Resource* output, uint32_t width, uint32_t height,
                   bool depthInverted, bool reset, const DlssNrTuning& tuning = {},
                   uint32_t guideWidth = 0, uint32_t guideHeight = 0, uint32_t motionWidth = 0,
-                  uint32_t motionHeight = 0);
+                  uint32_t motionHeight = 0, float motionScaleX = 1.0f,
+                  float motionScaleY = 1.0f);
     bool EvaluateForEpoch(
         ID3D12GraphicsCommandList* cmdList, ID3D12Resource* color, ID3D12Resource* depth,
         ID3D12Resource* motion, ID3D12Resource* output, uint32_t width, uint32_t height,
         std::uint64_t submissionEpoch, bool depthInverted, bool reset,
         const DlssNrTuning& tuning = {}, uint32_t guideWidth = 0, uint32_t guideHeight = 0,
-        uint32_t motionWidth = 0, uint32_t motionHeight = 0);
+        uint32_t motionWidth = 0, uint32_t motionHeight = 0,
+        float motionScaleX = 1.0f, float motionScaleY = 1.0f);
+
+    D3D12NrFrameResult ExecuteFrame(
+        ID3D12GraphicsCommandList* cmdList,
+        const D3D12NrFrameResources& resources,
+        const D3D12NrFrameRequest& request);
 
     void Shutdown();
 
@@ -98,10 +183,68 @@ private:
     using SetFloatSlotFn = void(__cdecl*)(int);
     using ProbeFloatFn = void(__cdecl*)(void*, const char*, float, int);
 
+    struct FrameContext {
+        D3D12NrFramePlan plan{};
+        ID3D12Device* device = nullptr;
+        ID3D12Resource* target = nullptr;
+        ID3D12Resource* activeTarget = nullptr;
+        ID3D12Resource* modelInput = nullptr;
+        ID3D12Resource* depthIn = nullptr;
+        ID3D12Resource* motionIn = nullptr;
+        D3D12_RESOURCE_STATES targetState = D3D12_RESOURCE_STATE_COMMON;
+        D3D12_RESOURCE_STATES targetArrival = D3D12_RESOURCE_STATE_COMMON;
+        D3D12_RESOURCE_STATES depthState = D3D12_RESOURCE_STATE_COMMON;
+        D3D12_RESOURCE_STATES motionState = D3D12_RESOURCE_STATE_COMMON;
+        D3D12_RESOURCE_STATES exposureState = D3D12_RESOURCE_STATE_COMMON;
+        DXGI_FORMAT targetFormat = DXGI_FORMAT_UNKNOWN;
+        bool cropColor = false;
+        bool targetSupportsUav = false;
+        bool depthCloned = false;
+        bool motionCloned = false;
+        bool acrossRr = false;
+    };
+
+    D3D12NrFrameResult ExecuteMainFrame(
+        ID3D12GraphicsCommandList* cmdList, const D3D12NrFrameResources& resources,
+        const D3D12NrFrameRequest& request);
+    D3D12NrFrameResult ApplyStoredResidual(
+        ID3D12GraphicsCommandList* cmdList, const D3D12NrFrameResources& resources,
+        const D3D12NrFrameRequest& request);
+    bool PrepareFrameResources(
+        ID3D12GraphicsCommandList* cmdList, const D3D12NrFrameResources& resources,
+        const D3D12NrFrameRequest& request, FrameContext& context) noexcept;
+    bool RunFrameModel(
+        ID3D12GraphicsCommandList* cmdList, const D3D12NrFrameResources& resources,
+        const D3D12NrFrameRequest& request, FrameContext& context,
+        std::uint32_t effectivePasses) noexcept;
+    void RestoreFrameResources(
+        ID3D12GraphicsCommandList* cmdList, const D3D12NrFrameResources& resources,
+        const D3D12NrFrameRequest& request, FrameContext& context) noexcept;
+
     static void ReleaseRetired(void* context, NrRetiredObject retired) noexcept;
     void DiscoverFloatSlot();
+    bool QualifyDirectGuides(ID3D12Device* device) noexcept;
+    bool RetirePassFeatures(std::uint32_t first) noexcept;
+    bool RetireFeatureGeneration() noexcept;
+    std::uint32_t PreparePassFeatures(
+        ID3D12GraphicsCommandList* cmdList, std::uint32_t width, std::uint32_t height,
+        std::uint32_t requested, std::uint64_t epoch,
+        const std::array<DlssNrTuning, kD3D12NrMaxPassCount>& tuning,
+        bool& pending) noexcept;
+    bool EvaluateFeature(
+        void* feature, ID3D12GraphicsCommandList* cmdList,
+        ID3D12Resource* color, ID3D12Resource* depth, ID3D12Resource* motion,
+        ID3D12Resource* output, std::uint32_t width, std::uint32_t height,
+        std::uint32_t guideWidth, std::uint32_t guideHeight,
+        std::uint32_t motionWidth, std::uint32_t motionHeight,
+        std::uint32_t depthBaseX, std::uint32_t depthBaseY,
+        std::uint32_t motionBaseX, std::uint32_t motionBaseY,
+        bool depthInverted, bool reset, const DlssNrTuning& tuning,
+        float motionScaleX, float motionScaleY) noexcept;
 
     HMODULE driverModule_ = nullptr;
+    bool driverModuleOwned_ = false;
+    bool directGuidesQualified_ = false;
     HMODULE forwarderModule_ = nullptr;
     InitFn driverInit_ = nullptr;
     GetCapFn getCapabilityParams_ = nullptr;
@@ -115,11 +258,35 @@ private:
     void* feature_ = nullptr;
     uint32_t featureWidth_ = 0;
     uint32_t featureHeight_ = 0;
+    DlssNrTuning featureTuning_{};
+    bool featureTuningValid_ = false;
     bool floatSlotKnown_ = false;
     bool justBuilt_ = false;
     NrSubmissionGate submissionGate_{};
     NrDeferredRetirementQueue retirement_{};
+    D3D12NrScratchResources scratch_{};
+    D3D12NrGuideClones guideClones_{};
+    D3D12NrCodec codec_{};
+    std::array<void*, kD3D12NrMaxPassCount> passFeatures_{};
+    std::array<NrSubmissionGate, kD3D12NrMaxPassCount> passGates_{};
+    std::array<DlssNrTuning, kD3D12NrMaxPassCount> passTunings_{};
+    std::array<bool, kD3D12NrMaxPassCount> passTuningValid_{};
+    std::array<bool, kD3D12NrMaxPassCount> passNeedsReset_{};
+    std::array<bool, kD3D12NrMaxPassCount> passCreateFailed_{};
+    std::uint32_t residualHistoryIndex_ = 0;
+    bool residualHistoryPrimed_ = false;
+    bool residualStoreValid_ = false;
+    bool residualModeActive_ = false;
+    std::uint64_t residualEpoch_ = 0;
+    bool featurePlacementValid_ = false;
+    bool featureBeforeUpscale_ = false;
+    bool featureRayReconstruction_ = false;
     std::wstring snippetPath_;
+    ID3D12Device* device_ = nullptr;
+    ID3D12Resource* cachedTargetResource_ = nullptr;
+    D3D12_RESOURCE_DESC cachedTargetDesc_{};
+    ID3D12Resource* cachedGuideResources_[2]{};
+    D3D12_RESOURCE_DESC cachedGuideDescs_[2]{};
     std::string status_ = "not loaded";
 };
 

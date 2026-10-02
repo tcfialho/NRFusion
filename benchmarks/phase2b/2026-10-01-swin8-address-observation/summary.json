@@ -1,0 +1,52 @@
+{
+  "status": "candidate argument preparation; no new replacement",
+  "runtime_sha256": "e67dee209320cdafe0e93e45675d7aa34323a53acc57a72b2e40a181581c989a",
+  "module_sha256": "d59f0e95e2be4211068886ea4e0f3e6a1e492b4b0c16c37bfa6d21c448f379f8",
+  "kernel": "cc_tinlayout_fused_swin_8h_256_8_chained_fp8",
+  "sequence": 17,
+  "parameter_bytes": 88,
+  "observed_frames": 8,
+  "fields": [
+    {
+      "offset": 0,
+      "role": "tensor input; direct SM89 address-to-load evidence",
+      "allocation_id": 11,
+      "allocation_bytes": 97484288,
+      "allocation_offset": 33242624,
+      "stable_resource_and_offset": true
+    },
+    {
+      "offset": 8,
+      "role": "tensor output; direct SM89 address-to-store evidence",
+      "allocation_id": 11,
+      "allocation_bytes": 97484288,
+      "allocation_offset": 34274816,
+      "stable_resource_and_offset": true
+    },
+    {
+      "offset": 16,
+      "role": "weight/constant input; direct SM89 address-to-load evidence",
+      "allocation_id": 9,
+      "allocation_bytes": 147719680,
+      "allocation_offset": 1753600,
+      "stable_resource_and_offset": true
+    },
+    {
+      "offset": 48,
+      "role": "ready flag bank; address polled by LDG/NANOSLEEP loop",
+      "allocation_id": 11,
+      "allocation_bytes": 97484288,
+      "allocation_offset": 69632,
+      "stable_resource_and_offset": true
+    },
+    {
+      "offset": 64,
+      "role": "done flag bank; address stored behind MEMBAR/ERRBAR",
+      "allocation_id": 11,
+      "allocation_bytes": 97484288,
+      "allocation_offset": 70144,
+      "stable_resource_and_offset": true
+    }
+  ],
+  "remaining": "shape semantics, complete access ranges and Exact stock replay; raw pointers alone do not qualify a replacement"
+}

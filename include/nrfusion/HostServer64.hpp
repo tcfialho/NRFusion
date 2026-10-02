@@ -6,6 +6,7 @@
 
 #include <atomic>
 #include <cstdint>
+#include <deque>
 #include <memory>
 #include <mutex>
 #include <string>
@@ -35,7 +36,13 @@ public:
 
 private:
     void ServerLoop();
+    IpcFrameAckMessage ProcessFrame(const IpcFrameMessage& frameMsg);
     bool EnsureZeroGuides(uint32_t width, uint32_t height);
+    void CollectRetiredGuideUpload() noexcept;
+    void CollectInactiveZeroGuides() noexcept;
+    void CollectRetiredTransport();
+    void RetireImportedTransport();
+    bool WaitForGpuIdleAfterStop() noexcept;
 
     HANDLE pipeHandle_ = INVALID_HANDLE_VALUE;
     OVERLAPPED overlapped_{};
@@ -50,6 +57,7 @@ private:
 
     std::thread workerThread_;
     IpcBuildMessage currentBuild_{};
+    uint64_t nextConnectionGeneration_ = 0;
 
     ComPtr<ID3D12Device> d3d12Device_;
     ComPtr<ID3D12CommandQueue> d3d12Queue_;
@@ -67,12 +75,22 @@ private:
     ComPtr<ID3D12Resource> importedMotion_;
     ComPtr<ID3D12Fence> importedProducerFence_;
     ComPtr<ID3D12Fence> importedConsumerFence_;
+    uint64_t importedTransportFenceValue_ = 0;
+
+    struct RetiredTransport {
+        ComPtr<ID3D12Resource> color;
+        ComPtr<ID3D12Resource> residual;
+        ComPtr<ID3D12Resource> depth;
+        ComPtr<ID3D12Resource> motion;
+        ComPtr<ID3D12Fence> producerFence;
+        ComPtr<ID3D12Fence> consumerFence;
+        uint64_t fenceValue = 0;
+    };
+    std::deque<RetiredTransport> retiredTransports_;
     std::unique_ptr<SyntheticDx12Provider> syntheticProvider_;
 
-    // The 32-bit client has no depth/motion channel wired yet (CaptureClientConfig carries the
-    // handles, HostServer64 does not import them). DLSS-NR still needs something in those slots,
-    // so a zero-filled placeholder goes in -- the same fallback the D3D12 in-process route uses
-    // when a game does not supply real guides. Zero guides cost quality, not correctness.
+    // Missing depth/motion inputs use zero-filled guides. Imported guides, when present, bypass
+    // these resources; the fallback costs quality but preserves transport correctness.
     ComPtr<ID3D12Resource> zeroGuideUpload_;
     ComPtr<ID3D12Resource> lowGuideDepth_;
     ComPtr<ID3D12Resource> lowGuideMotion_;
@@ -85,7 +103,10 @@ private:
     ComPtr<ID3D12GraphicsCommandList> guideCmdList_;
     ComPtr<ID3D12Fence> guideFence_;
     uint64_t guideFenceValue_ = 0;
+    uint64_t guideUseFenceValue_ = 0;
     std::unique_ptr<HostDlssNr> dlssNr_;
+    friend struct HostServer64GuideTestAccess;
+    friend struct HostServer64StopTestAccess;
 };
 
 } // namespace nrfusion

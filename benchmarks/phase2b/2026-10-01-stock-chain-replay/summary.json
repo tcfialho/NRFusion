@@ -1,0 +1,120 @@
+{
+  "schema_version": 1,
+  "goal_status": "active; end-to-end improvement not yet verified",
+  "scope": "EXPERIMENTO ISOLADO \u2014 N\u00c3O VALIDA O PRODUTO FINAL",
+  "resolved_contract": {
+    "chain": [
+      "projection",
+      "ffn_expand",
+      "ffn_contract"
+    ],
+    "shape": {
+      "M": 288,
+      "expansion_K": 1024,
+      "expansion_N": 4096
+    },
+    "parent_allocations_preserved": true,
+    "regions": 16,
+    "written_regions_compared": 10,
+    "projection_weights_and_bias_bytes": 1050624,
+    "contraction_weights_and_bias_bytes": 4196352,
+    "scratch_bytes_each": 589824,
+    "flag_bank_bytes": 512,
+    "producer_consumer_boundaries": "byte-identical on both edges in all three captures"
+  },
+  "diagnosis": {
+    "initial_replay": "FAILED: matrix-only weights omitted FP16 bias tails",
+    "bias_evidence": "runtime PTX loads weights+1048576 and weights+4194304; channel index bounds the tail to 2048 bytes",
+    "repair": "capture and replay include both 2-KiB tails; six separate/batched stock replays pass"
+  },
+  "isolated_comparisons": [
+    {
+      "capture": 0,
+      "separate": {
+        "warmup": 50,
+        "samples": 300,
+        "variant": "separate",
+        "median_us": 217.088,
+        "p95_us": 397.5216,
+        "p99_us": 407.23584,
+        "scope": "isolated stock projection/expand/contract GPU time; reset copies outside interval"
+      },
+      "batched": {
+        "warmup": 50,
+        "samples": 300,
+        "variant": "batched",
+        "median_us": 127.024,
+        "p95_us": 203.8016,
+        "p99_us": 358.08576,
+        "scope": "isolated stock projection/expand/contract GPU time; reset copies outside interval"
+      },
+      "median_reduction_percent": 41.487323113207545
+    },
+    {
+      "capture": 1,
+      "separate": {
+        "warmup": 50,
+        "samples": 300,
+        "variant": "separate",
+        "median_us": 195.616,
+        "p95_us": 319.7504,
+        "p99_us": 394.03968,
+        "scope": "isolated stock projection/expand/contract GPU time; reset copies outside interval"
+      },
+      "batched": {
+        "warmup": 50,
+        "samples": 300,
+        "variant": "batched",
+        "median_us": 127.232,
+        "p95_us": 207.1648,
+        "p99_us": 336.85056,
+        "scope": "isolated stock projection/expand/contract GPU time; reset copies outside interval"
+      },
+      "median_reduction_percent": 34.95828562080811
+    },
+    {
+      "capture": 2,
+      "separate": {
+        "warmup": 50,
+        "samples": 300,
+        "variant": "separate",
+        "median_us": 195.824,
+        "p95_us": 333.3776,
+        "p99_us": 396.68736,
+        "scope": "isolated stock projection/expand/contract GPU time; reset copies outside interval"
+      },
+      "batched": {
+        "warmup": 50,
+        "samples": 300,
+        "variant": "batched",
+        "median_us": 127.488,
+        "p95_us": 275.76,
+        "p99_us": 351.024,
+        "scope": "isolated stock projection/expand/contract GPU time; reset copies outside interval"
+      },
+      "median_reduction_percent": 34.89664188250674
+    }
+  ],
+  "runtime_integration": "NOT DONE; stock remains the runtime path",
+  "required_next_action": "integrate qualified batching with command-order boundaries and stock fallback; measure real NR/frame before accepting",
+  "validation": {
+    "release_proxy_and_replay_builds": "PASS",
+    "focused_ctest": "3/3 PASS",
+    "legacy_single_kernel_replays": "6/6 exact",
+    "source_size": "0 violations"
+  },
+  "reproduction": {
+    "capture_tool": ".temp/phase2b/run_chain_capture.py",
+    "replay": "build-windows-validation/Release/NRFusionKernelReplay.exe <capture> <output>",
+    "batched_environment": {
+      "NRFUSION_REPLAY_CHAIN_BATCHED": "1",
+      "NRFUSION_REPLAY_BENCHMARK": "1"
+    },
+    "binary_packets": "D:\\Users\\tcfialho\\Documents\\NRFusion\\.temp\\phase2b\\chain-captures-bias"
+  },
+  "artifact_hashes": {
+    "build-windows-validation/Release/nrfusion_proxy.dll": "c0260eb23f42930232a215e97aa37efbd0d3c214145c1c0c5eda43cb3815954e",
+    "dist/RequiemGame/version.dll": "c0260eb23f42930232a215e97aa37efbd0d3c214145c1c0c5eda43cb3815954e",
+    "build-windows-validation/Release/NRFusionKernelReplay.exe": "c9b0caf7f31ad7f4495530ddd3d84a2cc483269a064d907f579338a413e63187"
+  }
+}

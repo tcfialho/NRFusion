@@ -24,7 +24,10 @@ std::uint64_t TemporalHistoryRegistry::AllocateHistoryId() {
     return id;
 }
 
-HistoryLease TemporalHistoryRegistry::Acquire(const ViewDescriptor& view, std::uint64_t frameNumber) {
+HistoryLease TemporalHistoryRegistry::Acquire(
+    const ViewDescriptor& view,
+    std::uint64_t frameNumber,
+    const GuideHistoryState& guides) {
     // featureKey==0 cannot safely share history across unknown callers: issue a fresh identity.
     if (view.featureKey == 0) return {AllocateHistoryId(), true};
 
@@ -35,6 +38,9 @@ HistoryLease TemporalHistoryRegistry::Acquire(const ViewDescriptor& view, std::u
         e.descriptor = view;
         e.historyId = AllocateHistoryId();
         e.lastSeenFrame = frameNumber;
+        e.lastResetFrame = frameNumber;
+        e.guides = guides;
+        e.guides.resetRequested = false;
         return {e.historyId, true};
     }
 
@@ -44,10 +50,58 @@ HistoryLease TemporalHistoryRegistry::Acquire(const ViewDescriptor& view, std::u
         return {AllocateHistoryId(), true};
     }
 
+    const bool shapeChanged =
+        !SameShape(e.descriptor, view);
+    // A transient cut/reset invalidates history but must not overwrite the
+    // persistent guide signature with the temporary Zero selection.
+    const bool guideChanged =
+        !guides.resetRequested &&
+        !e.guides.SamePersistentGuides(guides);
+    const bool resetRequired =
+        guides.resetRequested ||
+        shapeChanged ||
+        guideChanged;
+    if (resetRequired) {
+        e.descriptor = view;
+        if (e.lastResetFrame != frameNumber) {
+            e.historyId = AllocateHistoryId();
+            e.lastResetFrame = frameNumber;
+        }
+    }
+    if (!guides.resetRequested) {
+        e.guides = guides;
+        e.guides.resetRequested = false;
+    }
+    e.lastSeenFrame = frameNumber;
+    return {e.historyId, resetRequired};
+}
+
+HistoryLease TemporalHistoryRegistry::Acquire(
+    const ViewDescriptor& view,
+    std::uint64_t frameNumber) {
+    if (view.featureKey == 0)
+        return {AllocateHistoryId(), true};
+
+    const RegistryKey key{view.featureKey, view.viewKey};
+    auto [it, inserted] = entries_.try_emplace(key);
+    Entry& e = it->second;
+    if (inserted) {
+        e.descriptor = view;
+        e.historyId = AllocateHistoryId();
+        e.lastSeenFrame = frameNumber;
+        e.lastResetFrame = frameNumber;
+        return {e.historyId, true};
+    }
+    if (frameNumber < e.lastSeenFrame)
+        return {AllocateHistoryId(), true};
+
     const bool shapeChanged = !SameShape(e.descriptor, view);
     if (shapeChanged) {
         e.descriptor = view;
-        e.historyId = AllocateHistoryId();
+        if (e.lastResetFrame != frameNumber) {
+            e.historyId = AllocateHistoryId();
+            e.lastResetFrame = frameNumber;
+        }
     }
     e.lastSeenFrame = frameNumber;
     return {e.historyId, shapeChanged};

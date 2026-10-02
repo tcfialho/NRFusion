@@ -1,0 +1,48 @@
+Start testing: Oct 01 03:13 Hora oficial do Brasil
+----------------------------------------------------------
+73/78 Testing: nrfusion_nr_kernel_identity_tests
+73/78 Test: nrfusion_nr_kernel_identity_tests
+Command: "D:/Users/tcfialho/Documents/NRFusion/build-windows-validation/Release/nrfusion_nr_kernel_identity_tests.exe"
+Directory: D:/Users/tcfialho/Documents/NRFusion/build-windows-validation
+"nrfusion_nr_kernel_identity_tests" start time: Oct 01 03:13 Hora oficial do Brasil
+Output:
+----------------------------------------------------------
+<end of output>
+Test time =   0.01 sec
+----------------------------------------------------------
+Test Passed.
+"nrfusion_nr_kernel_identity_tests" end time: Oct 01 03:13 Hora oficial do Brasil
+"nrfusion_nr_kernel_identity_tests" time elapsed: 00:00:00
+----------------------------------------------------------
+
+74/78 Testing: nrfusion_d3d12_diagnostics_resources_tests
+74/78 Test: nrfusion_d3d12_diagnostics_resources_tests
+Command: "D:/Users/tcfialho/Documents/NRFusion/build-windows-validation/Release/nrfusion_d3d12_diagnostics_resources_tests.exe"
+Directory: D:/Users/tcfialho/Documents/NRFusion/build-windows-validation
+"nrfusion_d3d12_diagnostics_resources_tests" start time: Oct 01 03:13 Hora oficial do Brasil
+Output:
+----------------------------------------------------------
+<end of output>
+Test time =   0.04 sec
+----------------------------------------------------------
+Test Passed.
+"nrfusion_d3d12_diagnostics_resources_tests" end time: Oct 01 03:13 Hora oficial do Brasil
+"nrfusion_d3d12_diagnostics_resources_tests" time elapsed: 00:00:00
+----------------------------------------------------------
+
+76/78 Testing: nrfusion_proxy_runtime_tests
+76/78 Test: nrfusion_proxy_runtime_tests
+Command: "D:/Users/tcfialho/Documents/NRFusion/build-windows-validation/Release/nrfusion_proxy_runtime_tests.exe"
+Directory: D:/Users/tcfialho/Documents/NRFusion/build-windows-validation/Release
+"nrfusion_proxy_runtime_tests" start time: Oct 01 03:13 Hora oficial do Brasil
+Output:
+----------------------------------------------------------
+<end of output>
+Test time =   0.14 sec
+----------------------------------------------------------
+Test Passed.
+"nrfusion_proxy_runtime_tests" end time: Oct 01 03:13 Hora oficial do Brasil
+"nrfusion_proxy_runtime_tests" time elapsed: 00:00:00
+----------------------------------------------------------
+
+End testing: Oct 01 03:13 Hora oficial do Brasil

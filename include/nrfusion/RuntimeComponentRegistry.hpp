@@ -40,6 +40,25 @@ public:
         return true;
     }
 
+    bool Remove(RuntimeComponent component) noexcept {
+        if (component.capabilityMask == 0) return false;
+        for (std::size_t i = 0; i < count_; ++i) {
+            if (entries_[i].kind != component.kind ||
+                entries_[i].api != component.api)
+                continue;
+            if ((entries_[i].capabilityMask & component.capabilityMask) !=
+                component.capabilityMask)
+                return false;
+            entries_[i].capabilityMask &= ~component.capabilityMask;
+            if (entries_[i].capabilityMask != 0) return true;
+            for (std::size_t j = i + 1; j < count_; ++j)
+                entries_[j - 1] = entries_[j];
+            entries_[--count_] = {};
+            return true;
+        }
+        return false;
+    }
+
     void Clear() noexcept { count_ = 0; }
     std::size_t Size() const noexcept { return count_; }
 

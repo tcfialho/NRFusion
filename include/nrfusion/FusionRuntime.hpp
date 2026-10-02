@@ -11,7 +11,6 @@
 #include "nrfusion/MotionConfidence.hpp"
 #include "nrfusion/NvofPolicy.hpp"
 #include "nrfusion/PerformanceController.hpp"
-#include "nrfusion/PipelinedExecutorState.hpp"
 #include "nrfusion/PrecisionAutotuner.hpp"
 #include "nrfusion/RuntimeCapabilities.hpp"
 #include "nrfusion/ResidualEngine.hpp"
@@ -19,17 +18,11 @@
 #include "nrfusion/ResidualReprojection.hpp"
 #include "nrfusion/PipelinePolicy.hpp"
 #include "nrfusion/SchedulerPolicy.hpp"
-#include "nrfusion/TelemetryTracker.hpp"
 #include "nrfusion/TemporalConfidence.hpp"
 #include "nrfusion/TemporalHistoryRegistry.hpp"
-#include "nrfusion/TimingWorkMapper.hpp"
-#include "nrfusion/WorkLedger.hpp"
 
 #include <algorithm>
 #include <cmath>
-#include <limits>
-#include <stdexcept>
-#include <string>
 #include <optional>
 #include <utility>
 #include <vector>
@@ -45,7 +38,10 @@ public:
     PerformanceDecision OnTelemetry(const TelemetrySample& sample) { return performance_.Update(sample); }
     // Changes whenever the central Auto path starts measuring a different structural or execution
     // configuration. Adapters use this epoch to reject late work from the previous configuration.
-    std::uint64_t AutoConfigurationGeneration() const noexcept { return autoPrecisionGeneration_; }
+    std::uint64_t AutoConfigurationGeneration() const noexcept {
+        return autoExecutionGeneration_;
+    }
+    bool CanBeginConfigurationEpoch() const noexcept;
     PipelineDecision ResolvePipeline(const GameContext& game, const FrameContext& frame,
                                      const RuntimeCapabilities& capabilities,
                                      const CompatibilityOverride* compatibility = nullptr) const {
@@ -74,7 +70,11 @@ public:
         const bool frameContractReady = frame.ReadyForCore() && apiConsistent;
         out.supported = out.pipeline.supported && effectiveCaps.fp8 && frameContractReady;
         if (!out.supported) {
-            if (haveAutoDecision_) ResetAutoAdaptiveState(performance_.WorkingScale());
+            if (haveAutoDecision_) {
+                autoExecutionGeneration_ = NextAutoConfigurationGeneration(
+                    autoExecutionGeneration_, "Auto execution generation");
+                ResetAutoAdaptiveState(performance_.WorkingScale());
+            }
             haveAutoDecision_ = false;
             haveAutoStructure_ = false;
             out.workingScale = performance_.WorkingScale();
@@ -84,10 +84,15 @@ public:
 
         const Resolution renderSize = frame.RenderSize();
         const Resolution outputSize = frame.OutputSize();
+        MotionSource structuralMotion = out.pipeline.motion;
+        if ((frame.cameraCut || frame.resetHistory) && haveAutoStructure_)
+            structuralMotion = autoStructure_.motion;
         const AutoStructuralIdentity structure{out.pipeline.provider, out.pipeline.transport,
                                                out.pipeline.api, out.pipeline.placement,
-                                               out.pipeline.motion, renderSize, outputSize};
-        const bool structuralChanged = !haveAutoStructure_ || !(structure == autoStructure_);
+                                               structuralMotion, renderSize, outputSize};
+        const bool guideReset = UpdateAutoGuideHistory(frame, out.pipeline.motion);
+        const bool structuralChanged = !haveAutoStructure_ || !(structure == autoStructure_) ||
+            (guideReset && !frame.cameraCut && !frame.resetHistory);
         if (structuralChanged) {
             ResetAutoAdaptiveState(performance_.WorkingScale());
             autoStructure_ = structure;
@@ -116,7 +121,7 @@ public:
             perf.workingScale = performance_.WorkingScale();
         } else {
             TelemetrySample controllerSample = constrained;
-            NormalizeForScheduler(controllerSample, autoScheduler_);
+            NormalizeTelemetryForScheduler(controllerSample, autoScheduler_);
             // Offer the precision trade only while a cheaper format exists on this GPU and the run
             // is not already on it. On hardware with a single supported format there is nothing to
             // trade and the controller keeps moving resolution, exactly as before.
@@ -132,7 +137,10 @@ public:
             autoPrecisionPlacement_ != out.pipeline.placement || autoPrecisionScheduler_ != out.scheduler ||
             autoPrecisionRenderSize_ != renderSize || autoPrecisionOutputSize_ != outputSize;
         if (precisionConfigChanged) {
-            autoPrecisionGeneration_ = NextGeneration(autoPrecisionGeneration_, "Auto precision generation");
+            autoPrecisionGeneration_ = NextAutoConfigurationGeneration(
+                autoPrecisionGeneration_, "Auto precision generation");
+            autoExecutionGeneration_ = NextAutoConfigurationGeneration(
+                autoExecutionGeneration_, "Auto execution generation");
             precisionTuner_.Reset(autoPrecisionGeneration_);
             autoPrecisionScale_ = perf.workingScale;
             autoPrecisionProvider_ = out.pipeline.provider;
@@ -167,8 +175,14 @@ public:
                                                              : PresentationMode::FrameGeneration;
         }
 
+        const bool precisionChanged =
+            haveAutoDecision_ && autoPrecision_ != out.precision;
+        if (precisionChanged && !precisionConfigChanged) {
+            autoExecutionGeneration_ = NextAutoConfigurationGeneration(
+                autoExecutionGeneration_, "Auto execution generation");
+        }
         const bool executionChanged = structuralChanged || !haveAutoDecision_ ||
-                                      autoScheduler_ != out.scheduler || autoPrecision_ != out.precision;
+                                      autoScheduler_ != out.scheduler || precisionChanged;
         if (haveAutoDecision_ && executionChanged) {
             // The decision above is still valid for the next frame, but its measurements must start a
             // fresh adaptive epoch. Preserve the selected rung while discarding old EMA/cost history.
@@ -194,34 +208,16 @@ public:
     MotionConfidenceResult ResolveMotionConfidence(const MotionConfidenceInput& input) const {
         return motionConfidence_.Evaluate(input);
     }
-    HistoryLease AcquireHistory(const ViewDescriptor& view, std::uint64_t frameNumber) {
-        return histories_.Acquire(view, frameNumber);
-    }
+    HistoryLease AcquireHistory(const ViewDescriptor&, const FrameContext&, MotionSource);
+    HistoryLease AcquireHistory(const ViewDescriptor&, std::uint64_t);
     void InvalidateHistory(std::uint64_t featureKey) { histories_.InvalidateFeature(featureKey); }
 
-    TelemetryTracker& Telemetry() noexcept { return telemetry_; }
-    const TelemetryTracker& Telemetry() const noexcept { return telemetry_; }
-    PipelinedExecutorState& Pipeline() noexcept { return pipeline_; }
-    const PipelinedExecutorState& Pipeline() const noexcept { return pipeline_; }
-    WorkLedger& Works() noexcept { return works_; }
-    TimingWorkMapper& TimingMap() noexcept { return timingMap_; }
     AsyncOverlapEstimator& Overlap() noexcept { return overlap_; }
 
-    std::optional<double> ObserveCalibratedOverlap(const QueueGpuIntervalTicks& nr,
-                                                   const std::vector<QueueGpuIntervalTicks>& concurrent,
-                                                   double dtSeconds) {
-        const auto nrCommon = queueClocks_.ToCommonInterval(nr.queue, nr.startGpuTimestamp, nr.endGpuTimestamp);
-        if (!nrCommon) return std::nullopt;
-        std::vector<GpuInterval> common;
-        common.reserve(concurrent.size());
-        for (const auto& interval : concurrent) {
-            const auto mapped = queueClocks_.ToCommonInterval(interval.queue, interval.startGpuTimestamp,
-                                                               interval.endGpuTimestamp);
-            if (mapped) common.push_back(*mapped);
-        }
-        if (common.empty()) return std::nullopt;
-        return overlap_.Update(*nrCommon, common, dtSeconds);
-    }
+    std::optional<double> ObserveCalibratedOverlap(
+        const QueueGpuIntervalTicks& nr,
+        const std::vector<QueueGpuIntervalTicks>& concurrent,
+        double dtSeconds);
     CrossQueueClockCalibrator& QueueClocks() noexcept { return queueClocks_; }
     const CrossQueueClockCalibrator& QueueClocks() const noexcept { return queueClocks_; }
     AsyncQualification& AsyncTuner() noexcept { return asyncTuner_; }
@@ -240,43 +236,22 @@ public:
     void Reconfigure(const PerformanceConfig& config) { performance_ = PerformanceController(config); }
     void Reset(float initialScale) { performance_.Reset(initialScale); }
     void ObserveScaleCost(float scale, double gpuMs) { performance_.ObserveScaleCost(scale, gpuMs); }
+    void ObservePrecisionCost(
+        NrPrecision precision, std::uint64_t executionGeneration, double gpuMs) {
+        if (executionGeneration != autoExecutionGeneration_) return;
+        precisionTuner_.Observe(
+            precision, precisionTuner_.ConfigurationGeneration(), gpuMs);
+    }
     void ClearLearnedCostModel() { performance_.ClearLearnedCostModel(); }
     std::optional<float> ReportScaleBuildFailure(float failedScale) {
         return performance_.ReportScaleBuildFailure(failedScale);
     }
     void ClearScaleBuildFailures() { performance_.ClearScaleBuildFailures(); }
     const PerformanceConfig& PerformanceCfg() const noexcept { return performance_.Config(); }
+    void BeginConfigurationEpoch(float initialScale);
 
 private:
-    static std::uint64_t NextGeneration(std::uint64_t current, const char* label) {
-        if (current == (std::numeric_limits<std::uint64_t>::max)())
-            throw std::overflow_error(std::string(label) + " namespace exhausted");
-        return current + 1;
-    }
-
-    struct AutoStructuralIdentity {
-        FrameProvider provider = FrameProvider::Unsupported;
-        ProcessTransport transport = ProcessTransport::InProcess;
-        GraphicsApi api = GraphicsApi::Unknown;
-        NrPlacement placement = NrPlacement::Auto;
-        MotionSource motion = MotionSource::Zero;
-        Resolution render{};
-        Resolution output{};
-        bool operator==(const AutoStructuralIdentity&) const noexcept = default;
-    };
-
-    static void NormalizeForScheduler(TelemetrySample& sample, SchedulerMode scheduler) noexcept {
-        if (scheduler == SchedulerMode::AsyncCompute) return;
-        sample.asyncOverlap = 0.0;
-        if (scheduler != SchedulerMode::SecondaryGpu) return;
-        const double nr = std::isfinite(sample.secondaryNrGpuMs) && sample.secondaryNrGpuMs > 0.0
-                            ? sample.secondaryNrGpuMs : 0.0;
-        const double transport = std::isfinite(sample.crossAdapterMs) && sample.crossAdapterMs >= 0.0
-                                   ? sample.crossAdapterMs : 0.0;
-        const double critical = nr + transport;
-        sample.nrGpuMs = std::isfinite(critical) ? critical : 0.0;
-    }
-
+    bool UpdateAutoGuideHistory(const FrameContext&, MotionSource);
     void ResetAutoAdaptiveState(float initialScale) {
         performance_.ClearLearnedCostModel();
         performance_.Reset(initialScale);
@@ -298,16 +273,13 @@ private:
     MotionGuideValidator motionValidator_;
     MotionConfidenceEngine motionConfidence_;
     TemporalHistoryRegistry histories_;
-    TelemetryTracker telemetry_;
-    PipelinedExecutorState pipeline_{2};
-    WorkLedger works_;
-    TimingWorkMapper timingMap_{16};
     AsyncOverlapEstimator overlap_;
     CrossQueueClockCalibrator queueClocks_;
     AsyncQualification asyncTuner_;
     PrecisionAutotuner precisionTuner_;
     AutoTuneCoordinator autoTune_;
     bool haveAutoPrecisionConfig_ = false;
+    std::uint64_t autoExecutionGeneration_ = 1;
     std::uint64_t autoPrecisionGeneration_ = 1;
     float autoPrecisionScale_ = 1.0f;
     FrameProvider autoPrecisionProvider_ = FrameProvider::Unsupported;

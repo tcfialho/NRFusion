@@ -1,0 +1,74 @@
+{
+  "schema_version": 1,
+  "status": "same-process chain argument relations verified",
+  "frames": [
+    60,
+    61,
+    62,
+    63,
+    64,
+    65,
+    66,
+    67
+  ],
+  "launch_sequences": [
+    62,
+    63,
+    64
+  ],
+  "edges": [
+    {
+      "producer": "cc_vit_1d_projection_chained_fp8",
+      "producer_field_offset": 16,
+      "consumer": "cc_vit_1d_ffn_expand_chained_fp8",
+      "consumer_field_offset": 0,
+      "matching_frames": 8,
+      "role": "projection output candidate to known expansion input",
+      "evidence": "same-process address, observed D3D12 resource identity and offset",
+      "limits": "address relation proven; projection/contraction semantic access ranges and replay remain unqualified"
+    },
+    {
+      "producer": "cc_vit_1d_ffn_expand_chained_fp8",
+      "producer_field_offset": 16,
+      "consumer": "cc_vit_1d_ffn_contract_chained_fp8",
+      "consumer_field_offset": 0,
+      "matching_frames": 8,
+      "role": "known expansion output to contraction input candidate",
+      "evidence": "same-process address, observed D3D12 resource identity and offset",
+      "limits": "address relation proven; projection/contraction semantic access ranges and replay remain unqualified"
+    },
+    {
+      "producer": "cc_vit_1d_projection_chained_fp8",
+      "producer_field_offset": 16,
+      "consumer": "cc_vit_1d_ffn_contract_chained_fp8",
+      "consumer_field_offset": 8,
+      "matching_frames": 8,
+      "role": "additional contraction input candidate; projection intermediate has multiple consumers",
+      "evidence": "same-process address, observed D3D12 resource identity and offset",
+      "limits": "address relation proven; projection/contraction semantic access ranges and replay remain unqualified"
+    },
+    {
+      "producer": "cc_vit_1d_projection_chained_fp8",
+      "producer_field_offset": 56,
+      "consumer": "cc_vit_1d_ffn_expand_chained_fp8",
+      "consumer_field_offset": 48,
+      "matching_frames": 8,
+      "role": "projection completion candidate to known expansion ready flags",
+      "evidence": "same-process address, observed D3D12 resource identity and offset",
+      "limits": "address relation proven; projection/contraction semantic access ranges and replay remain unqualified"
+    },
+    {
+      "producer": "cc_vit_1d_ffn_expand_chained_fp8",
+      "producer_field_offset": 56,
+      "consumer": "cc_vit_1d_ffn_contract_chained_fp8",
+      "consumer_field_offset": 48,
+      "matching_frames": 8,
+      "role": "known expansion done flags to contraction ready candidate",
+      "evidence": "same-process address, observed D3D12 resource identity and offset",
+      "limits": "address relation proven; projection/contraction semantic access ranges and replay remain unqualified"
+    }
+  ],
+  "fusion_gate": "NOT PASSED; full semantic ABI, capture/replay and separate replacements still needed",
+  "intermediate_policy": "KEEP projection output; it is also passed to contraction at offset 8",
+  "performance_gain": null
+}

@@ -1,0 +1,15 @@
+{
+  "status": "rejected_without_product_patch",
+  "reason": "Unknown local PTX signature and unqualified arithmetic equivalence; no FG performance gain measured",
+  "dlssg_version": "310.8.0.0",
+  "dlssg_sha256": "5d5cbf14d2727d47f93fd10bf77bd91708ae122482a6f86fd564971641ebd47b",
+  "upstream": "https://github.com/TonyJoaca/DLSSG-Transfusion/blob/main/source/native/quality_fix.h",
+  "upstream_blob": "654ea75ca478394f0f85a141b6375777d0961d41",
+  "upstream_known_ptx": {"bytes": 39638, "fnv1a64": "7a6f5f41105c6d85"},
+  "local_43_division_candidate": {"entry": "main_kernel", "bytes": 39542, "fnv1a64": "1ddb45ec587d4411", "sha256": "ee78a570e68e924b8df5c29e2a12551c56a89fda66b61c492997b2769b6737c7"},
+  "local_module_gate_probe": "gates=1 kernels=31 unlocked_max=5; current Transfusion retained",
+  "arithmetic_experiment": {"scope": "EXPERIMENTO ISOLADO - NAO VALIDA O PRODUTO FINAL", "gpu": "RTX 4050 SM89", "finite_inputs": 1048576, "div_ftz_by_one_vs_mov_bit_differences": 6147, "div_ftz_by_three_vs_mul_bit_differences": 0},
+  "correctness_limit": "Counterexample is from generic float inputs, not a demonstrated visual defect of actual kernel inputs. Actual input invariants were not qualified.",
+  "product_state": "No Zero-Division patch applied. No quality/warp changes imported. Unknown signature falls back to current Transfusion.",
+  "performance": "No product A/B for Zero-Division because signature/arithmetic qualification did not pass. External speed claims not counted."
+}

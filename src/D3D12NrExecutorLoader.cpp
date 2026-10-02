@@ -56,59 +56,113 @@ HMODULE LoadDriverNgxFromDriverStore() {
 
 } // namespace
 
+static std::wstring ResolveSidecarPath(const std::wstring& exeDir, const wchar_t* filename) {
+    const std::wstring candidates[] = {
+        exeDir + filename,
+        exeDir + L"internal\\" + filename,
+        exeDir + L"NRFusion\\internal\\" + filename,
+        exeDir + L"..\\" + filename,
+        exeDir + L"..\\internal\\" + filename,
+        exeDir + L"..\\NRFusion\\internal\\" + filename
+    };
+    for (const auto& candidate : candidates) {
+        if (FileExists(candidate)) return candidate;
+    }
+    return exeDir + filename;
+}
+
 bool D3D12NrExecutor::Load() {
+    if (driverModule_ != nullptr && forwarderModule_ != nullptr &&
+        driverInit_ != nullptr && getCapabilityParams_ != nullptr &&
+        create_ != nullptr && evaluate_ != nullptr && release_ != nullptr &&
+        !snippetPath_.empty()) {
+        status_ = "loaded";
+        return true;
+    }
+    if (driverModule_ != nullptr || forwarderModule_ != nullptr) {
+        status_ = "partial NR loader state; call Shutdown before retrying Load";
+        return false;
+    }
+
     const std::wstring exeDir = ExeDirectory();
+    const std::wstring forwarderPath = ResolveSidecarPath(exeDir, L"nvngx.dll_dlssnr.dll");
+    const std::wstring snippetPath = ResolveSidecarPath(exeDir, L"nvngx_dlssnr.dll");
+    if (!FileExists(forwarderPath) || !FileExists(snippetPath)) {
+        status_ = !FileExists(forwarderPath)
+            ? "nvngx.dll_dlssnr.dll not found in NRFusion directory"
+            : "nvngx_dlssnr.dll (the model itself) not found in NRFusion directory";
+        return false;
+    }
+
+    HMODULE driver = nullptr;
+    bool driverOwned = false;
 
     for (const wchar_t* candidate : kDriverCandidates) {
         HMODULE module = GetModuleHandleW(candidate);
-        if (!module) module = LoadLibraryW(candidate);
-        if (!module) continue;
-        if (!Symbol<GetCapFn>(module, "NVSDK_NGX_D3D12_GetCapabilityParameters")) continue;
-        driverModule_ = module;
+        bool owned = false;
+        if (module == nullptr) {
+            module = LoadLibraryW(candidate);
+            owned = module != nullptr;
+        }
+        if (module == nullptr) continue;
+        if (!Symbol<GetCapFn>(module, "NVSDK_NGX_D3D12_GetCapabilityParameters")) {
+            if (owned) FreeLibrary(module);
+            continue;
+        }
+        driver = module;
+        driverOwned = owned;
         break;
     }
-    if (!driverModule_) {
-        driverModule_ = LoadDriverNgxFromDriverStore();
+    if (driver == nullptr) {
+        driver = LoadDriverNgxFromDriverStore();
+        driverOwned = driver != nullptr;
     }
-    if (!driverModule_) {
-        status_ = "no module answers NVSDK_NGX_D3D12_GetCapabilityParameters (checked beside the "
-                  "executable and the driver store)";
+    if (driver == nullptr) {
+        status_ = "no module answers NVSDK_NGX_D3D12_GetCapabilityParameters";
         return false;
     }
-    driverInit_ = Symbol<InitFn>(driverModule_, "NVSDK_NGX_D3D12_Init");
-    getCapabilityParams_ = Symbol<GetCapFn>(driverModule_, "NVSDK_NGX_D3D12_GetCapabilityParameters");
-    if (!driverInit_ || !getCapabilityParams_) {
+
+    const InitFn driverInit = Symbol<InitFn>(driver, "NVSDK_NGX_D3D12_Init");
+    const GetCapFn getCapabilityParams =
+        Symbol<GetCapFn>(driver, "NVSDK_NGX_D3D12_GetCapabilityParameters");
+    if (driverInit == nullptr || getCapabilityParams == nullptr) {
+        if (driverOwned) FreeLibrary(driver);
         status_ = "driver module missing Init or GetCapabilityParameters";
         return false;
     }
 
-    const std::wstring forwarderPath = exeDir + L"nvngx.dll_dlssnr.dll";
-    if (!FileExists(forwarderPath)) {
-        status_ = "nvngx.dll_dlssnr.dll not found beside NRFusionHost64.exe";
-        return false;
-    }
-    forwarderModule_ = LoadLibraryW(forwarderPath.c_str());
-    if (!forwarderModule_) {
+    HMODULE forwarder = LoadLibraryW(forwarderPath.c_str());
+    if (forwarder == nullptr) {
+        if (driverOwned) FreeLibrary(driver);
         status_ = "nvngx.dll_dlssnr.dll would not load";
         return false;
     }
-    create_ = Symbol<CreateFn>(forwarderModule_, "dlssnr_call_create");
-    evaluate_ = Symbol<EvaluateFn>(forwarderModule_, "dlssnr_call_evaluate_v2");
-    release_ = Symbol<ReleaseFn>(forwarderModule_, "dlssnr_call_release");
-    setFloatSlot_ = Symbol<SetFloatSlotFn>(forwarderModule_, "dlssnr_call_set_float_slot");
-    probeFloat_ = Symbol<ProbeFloatFn>(forwarderModule_, "dlssnr_call_probe_float");
-    if (!create_ || !evaluate_ || !release_) {
+
+    const CreateFn create = Symbol<CreateFn>(forwarder, "dlssnr_call_create");
+    const EvaluateFn evaluate = Symbol<EvaluateFn>(forwarder, "dlssnr_call_evaluate_v2");
+    const ReleaseFn release = Symbol<ReleaseFn>(forwarder, "dlssnr_call_release");
+    const SetFloatSlotFn setFloatSlot =
+        Symbol<SetFloatSlotFn>(forwarder, "dlssnr_call_set_float_slot");
+    const ProbeFloatFn probeFloat =
+        Symbol<ProbeFloatFn>(forwarder, "dlssnr_call_probe_float");
+    if (create == nullptr || evaluate == nullptr || release == nullptr) {
+        FreeLibrary(forwarder);
+        if (driverOwned) FreeLibrary(driver);
         status_ = "nvngx.dll_dlssnr.dll missing the NR v2 exports";
         return false;
     }
 
-    const std::wstring snippetPath = exeDir + L"nvngx_dlssnr.dll";
-    if (!FileExists(snippetPath)) {
-        status_ = "nvngx_dlssnr.dll (the model itself) not found beside NRFusionHost64.exe";
-        return false;
-    }
+    driverModule_ = driver;
+    driverModuleOwned_ = driverOwned;
+    forwarderModule_ = forwarder;
+    driverInit_ = driverInit;
+    getCapabilityParams_ = getCapabilityParams;
+    create_ = create;
+    evaluate_ = evaluate;
+    release_ = release;
+    setFloatSlot_ = setFloatSlot;
+    probeFloat_ = probeFloat;
     snippetPath_ = snippetPath;
-
     status_ = "loaded";
     return true;
 }
@@ -117,7 +171,7 @@ void D3D12NrExecutor::DiscoverFloatSlot() {
     if (floatSlotKnown_ || !capabilityParams_ || !probeFloat_ || !setFloatSlot_) return;
     floatSlotKnown_ = true;
 
-    static const char* kProbeKey = "DLSSNR.OptiScalerFloatProbe";
+    static const char* kProbeKey = "DLSSNR.NRFusionFloatProbe";
     static const int kCandidates[] = { 1, 2, 5, 6, 7, 4, 3, 0 };
     const float expected = 0.375f;
 
@@ -133,7 +187,15 @@ void D3D12NrExecutor::DiscoverFloatSlot() {
 }
 
 bool D3D12NrExecutor::Init(ID3D12Device* device) {
-    if (!driverInit_ || !getCapabilityParams_) return false;
+    if (device == nullptr || !driverInit_ || !getCapabilityParams_) {
+        status_ = "invalid NR init request";
+        return false;
+    }
+    if (device_ != device) {
+        if (device_ != nullptr) device_->Release();
+        device_ = device;
+        device_->AddRef();
+    }
     if (capabilityParams_) return true;
 
     if (driverInit_(0x24480451ull, L"", device, nullptr, 0x15u) != kNgxSuccess) {
@@ -146,6 +208,7 @@ bool D3D12NrExecutor::Init(ID3D12Device* device) {
         return false;
     }
     DiscoverFloatSlot();
+    directGuidesQualified_ = QualifyDirectGuides(device);
     status_ = "initialised";
     return true;
 }

@@ -1,0 +1,12 @@
+{
+  "schema_version": 1,
+  "backend": "nvapi_d3d12",
+  "runtime_path": "D:\\Users\\tcfialho\\Documents\\NRFusion\\dist\\RequiemGame\\NRFusion\\internal\\nvngx_dlssnr.dll",
+  "runtime_sha256": "e67dee209320cdafe0e93e45675d7aa34323a53acc57a72b2e40a181581c989a",
+  "runtime_file_version": "310.8.0.0",
+  "nvapi_sdk_commit": "70d337db9186e968eab622f7e786de7e437faf3d",
+  "stream_semantics": "D3D12 command-list and submission-queue ordering; no CUstream",
+  "timing_scope": "complete NVAPI chain; gpu_ms only for single-kernel chains",
+  "cuda_driver_version": 13040,
+  "gpu_architecture": "sm_89"
+}

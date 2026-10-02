@@ -1,5 +1,9 @@
 add_library(nrfusion_core STATIC
     src/PerformanceController.cpp
+    src/PerformanceControllerLifecycle.cpp
+    src/PerformanceControllerScale.cpp
+    src/FusionRuntimeTiming.cpp
+    src/FusionRuntimeLifecycle.cpp
     src/NrCostModel.cpp
     src/WorkLedger.cpp
     src/TimingWorkMapper.cpp
@@ -25,46 +29,119 @@ add_library(nrfusion_core STATIC
     src/NvofWrapper.cpp
     src/TelemetryTracker.cpp
     src/GuideValidation.cpp
+    src/MotionGuideBinding.cpp
     src/MotionNormalization.cpp
     src/MotionConfidence.cpp
     src/TemporalHistoryRegistry.cpp
     src/PipelinedExecutorState.cpp
     src/NrKernelProfile.cpp
+    src/NrKernelProfileReport.cpp
+    src/NrKernelDriverDiscovery.cpp
     src/GameProbe.cpp
     src/GameProbeInspect.cpp
     src/GameProbeDetection.cpp
     src/GameProbeSupport.cpp
     src/Sha256.cpp
     src/InstallerState.cpp
-    src/OptiScalerAdapter.cpp
     src/Presets.cpp
     src/QualityValidator.cpp
     src/Dlss5NeuralRendering.cpp
     src/AdaptiveExposure.cpp
     src/AdaptiveExposureController.cpp
     src/RuntimeShell.cpp
+    src/RuntimeConfigStore.cpp
+    src/RuntimeMenuModel.cpp
+    src/RuntimeAdvancedConfig.cpp
+    src/RuntimeAdvancedConfigStore.cpp
     src/RuntimeBootstrap.cpp
+    src/NrSession.cpp
+    src/NrSessionWorkState.cpp
     src/NgxFeatureRegistry.cpp
     src/NrSubmissionGate.cpp
     src/NrDeferredRetirementQueue.cpp
+    src/D3D12NrFramePlan.cpp
+    src/D3D12CarrierContract.cpp
+    src/D3D12CarrierSession.cpp
+    src/D3D12CarrierNativeFacts.cpp
+    src/D3D12CarrierCapabilities.cpp
+    src/D3D12CarrierBootstrap.cpp
+    src/D3D12CarrierExecutionPlan.cpp
+    src/D3D12GuideFormat.cpp
+    src/D3D11BridgeSlotTracker.cpp
+    src/D3D11CarrierWork.cpp
+    src/D3D10CarrierRoute.cpp
+    src/D3D9CarrierRoute.cpp
+    src/VulkanCarrierContract.cpp
+    src/VulkanCarrierAcquire.cpp
+    src/VulkanCarrierSession.cpp
+    src/VulkanCarrierExecutionPlan.cpp
+    src/OpenGlCarrierAcquire.cpp
 )
 
 if (WIN32)
     target_sources(nrfusion_core PRIVATE
-        src/AdaW4A8Interceptor.cpp
         src/DlssgTransfusion.cpp
-        src/SyntheticDx12Provider.cpp
+        src/DlssgTransfusionRuntime.cpp
+        src/DlssgTransfusionPatches.cpp
+        src/DlssgTransfusionFatbin.cpp
+        src/StreamlineDlssgHook.cpp
+        src/GameWindowFinder.cpp
+        src/Logger.cpp
+        src/SyntheticDx12ProviderLifecycle.cpp
+        src/SyntheticDx12ProviderAccounting.cpp
+        src/SyntheticDx12ProviderSubmit.cpp
+        src/SyntheticDx12ProviderResidual.cpp
         src/NvofMotionProvider.cpp
         src/SyntheticDx11BridgeProvider.cpp
+        src/SyntheticDx11BridgeResources.cpp
+        src/D3D11D3D12FenceBridge.cpp
+        src/D3D11BridgeResources.cpp
+        src/D3D11CarrierNativeAcquire.cpp
+        src/D3D9ExEventHandoff.cpp
+        src/D3D9ExCarrierAcquire.cpp
         src/CaptureProvider32.cpp
+        src/CaptureProvider32Io.cpp
+        src/CaptureProvider32Frames.cpp
         src/CaptureProvider32Export.cpp
         src/HostServer64.cpp
+        src/HostServer64Lifecycle.cpp
+        src/HostServer64Transport.cpp
+        src/HostServer64Guides.cpp
+        src/HostServer64Frame.cpp
         src/D3D12NrExecutorLoader.cpp
+        src/D3D12NrDirectGuideQualification.cpp
         src/D3D12NrExecutorLifecycle.cpp
         src/D3D12NrExecutorDispatch.cpp
+        src/D3D12NrExecutorPasses.cpp
+        src/D3D12NrExecutorFrame.cpp
+        src/D3D12NrExecutorFramePrepare.cpp
+        src/D3D12NrExecutorFrameModel.cpp
+        src/D3D12NrExecutorResidual.cpp
+        src/D3D12NrScratchResources.cpp
+        src/D3D12NrScratchEnsure.cpp
+        src/D3D12NrScratchAccounting.cpp
+        src/D3D12NrGuideClones.cpp
+        src/D3D12NrCodecInit.cpp
+        src/D3D12NrCodecDispatch.cpp
+        src/D3D12CarrierNativeAcquire.cpp
+        src/D3D12CommandStateRestore.cpp
+        src/D3D12CarrierExecutor.cpp
+        src/D3D12RetiredTimingSource.cpp
         src/SyntheticVulkanProvider.cpp
         src/SyntheticOpenGlProvider.cpp
+        src/SyntheticOpenGlProviderLifecycle.cpp
+        src/SyntheticOpenGlProviderInterop.cpp
+        src/SyntheticOpenGlProviderPublish.cpp
+        src/RuntimeToast.cpp
+        src/RuntimeLocalization.cpp
+        src/RuntimeMenuDrawing.cpp
+        src/RuntimeOverlayWindow.cpp
+        src/RuntimeOverlay.cpp
+        src/RuntimeOverlayInput.cpp
+        src/RuntimeOverlayWorker.cpp
     )
+    target_link_libraries(nrfusion_core PUBLIC user32 gdi32 dxgi version)
+    include(cmake/NRFusionRuntimeOverlay.cmake)
 endif()
 
 include(CheckLanguage)
@@ -85,7 +162,13 @@ endif()
 target_include_directories(nrfusion_core PUBLIC include)
 target_compile_definitions(nrfusion_core PUBLIC NRFUSION_CAPTURE32_STATIC=1)
 if (MSVC)
-    target_compile_options(nrfusion_core PRIVATE $<$<COMPILE_LANGUAGE:CXX>:/W4 /permissive->)
+    target_compile_options(nrfusion_core PRIVATE $<$<COMPILE_LANGUAGE:CXX>:/W4 /permissive->
+        PUBLIC $<$<COMPILE_LANGUAGE:CXX>:/utf-8>)
 else()
     target_compile_options(nrfusion_core PRIVATE $<$<COMPILE_LANGUAGE:CXX>:-Wall -Wextra -Wpedantic -Werror>)
+endif()
+
+if (WIN32)
+    add_dependencies(nrfusion_core nrfusion_dlssnr_shader_codegen)
+    target_include_directories(nrfusion_core PRIVATE "${NRFUSION_DLSSNR_GENERATED_DIR}")
 endif()

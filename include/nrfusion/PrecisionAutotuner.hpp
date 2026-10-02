@@ -79,7 +79,7 @@ public:
     std::uint64_t ConfigurationGeneration() const noexcept { return generation_; }
 
 private:
-    static double Percentile(std::vector<double> values, double q);
+    double Percentile(const std::vector<double>& values, double q);
     void FinishCandidate();
 
     PrecisionAutotuneConfig config_;
@@ -91,6 +91,7 @@ private:
     bool qualityRejected_ = false;
     std::vector<double> baseline_;
     std::vector<double> candidate_;
+    std::vector<double> percentileScratch_;
 };
 
 } // namespace nrfusion

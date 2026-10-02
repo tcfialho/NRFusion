@@ -7,18 +7,26 @@
 
 namespace nrfusion {
 
-// Time per kernel of the neural pass, measured from inside the running game.
-//
-// Three earlier readings disagreed about what limits that pass, and each was inferring from
-// something other than the kernels: a roofline from weight shapes, a synthetic loop from
-// instruction throughput, a published instruction mix from static counts. None of them says
-// which block costs what. This does, because it times the launches as they happen.
-//
-// It needs no profiler installed and no capture session: it hooks the CUDA launch entry the
-// vendor runtime already calls, records a pair of events around each launch, and resolves
-// them a few frames later so nothing waits on the GPU.
+struct NrDriverInterfaceObservation {
+    std::uint32_t interfaceId = 0;
+    std::uintptr_t functionId = 0;
+    std::uint64_t observations = 0;
+};
+
+struct NrKernelLaunchShape {
+    std::uint32_t gridX = 0, gridY = 0, gridZ = 0;
+    std::uint32_t blockX = 0, blockY = 0, blockZ = 0;
+    std::uint32_t sharedBytes = 0;
+};
+
+// NVAPI identities remain distinct from CUDA-driver handles; their lifetimes and submission APIs differ.
 struct NrKernelStat {
     std::string name;
+    std::string backend = "cuda_driver";
+    std::string moduleHash;
+    std::uintptr_t functionId = 0, moduleId = 0, deviceId = 0, queueId = 0;
+    std::uint64_t generation = 0;
+    NrKernelLaunchShape shape{};
     std::uint64_t calls = 0;
     double totalMs = 0.0;
     double minMs = 0.0;
@@ -31,13 +39,15 @@ struct NrKernelReport {
     std::vector<NrKernelStat> kernels;   // heaviest first
     std::uint64_t frames = 0;
     double measuredMsPerFrame = 0.0;     // sum over kernels, divided by frames
+    double unattributedMsPerFrame = 0.0;
     std::uint64_t droppedSamples = 0;    // launches that outran the event ring
 
     // What share of the measured time one kernel carries. This is the number that decides
     // where optimisation goes, and it is the one no static analysis can produce.
     double shareOf(const NrKernelStat& kernel) const noexcept {
-        double total = 0.0;
-        for (const auto& k : kernels) total += k.totalMs;
+        double total = measuredMsPerFrame * static_cast<double>(frames);
+        if (total == 0.0)
+            for (const auto& k : kernels) total += k.totalMs;
         return total > 0.0 ? kernel.totalMs / total : 0.0;
     }
 };
@@ -46,8 +56,7 @@ class NrKernelProfiler {
 public:
     static NrKernelProfiler& Instance();
 
-    // Off by default and free when off: no hook is installed until this is called, so a
-    // player who never asks for a measurement never pays for one.
+    // Driver discovery requires NRFUSION_KERNEL_DISCOVERY=1 before feature creation.
     bool Start();
     void Stop();
     bool Running() const noexcept;
@@ -60,6 +69,10 @@ public:
 
     // Human-readable table, ordered by total time per frame.
     std::string FormatReport() const;
+
+    bool StartDriverDiscovery();
+    void StopDriverDiscovery();
+    std::vector<NrDriverInterfaceObservation> DriverInterfaces() const;
 
 private:
     NrKernelProfiler() = default;

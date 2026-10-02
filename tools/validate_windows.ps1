@@ -1,5 +1,7 @@
 param(
     [string]$RuntimePath = '',
+    [string]$ForwarderPath = '',
+    [string]$ForwarderSha256 = '',
     [string]$AdaRuntimePath = '',
     [switch]$EnableAdaRuntime,
     [switch]$AutoFetchRuntime,
@@ -51,18 +53,23 @@ if ($LASTEXITCODE -ne 0) { throw 'Portable Windows build failed.' }
 & ctest --test-dir $build -C Release --output-on-failure
 if ($LASTEXITCODE -ne 0) { throw 'Portable Windows tests failed.' }
 
-$distParams = @{}
-if ($RuntimePath) { $distParams['RuntimePath'] = $RuntimePath }
-if ($AdaRuntimePath) { $distParams['AdaRuntimePath'] = $AdaRuntimePath }
-if ($EnableAdaRuntime) { $distParams['EnableAdaRuntime'] = $true }
-if ($AutoFetchRuntime) { $distParams['AutoFetchRuntime'] = $true }
-if ($CompileEndUserInstaller) {
-    if (-not $RuntimePath -and -not $AutoFetchRuntime) {
-        throw '-CompileEndUserInstaller requires -RuntimePath or -AutoFetchRuntime.'
-    }
-    $distParams['CompileInstaller'] = $true
+if ($AutoFetchRuntime -or $AdaRuntimePath -or $EnableAdaRuntime) {
+    throw 'The legacy OptiScaler distribution options are not supported by standalone packaging.'
 }
-& (Join-Path $root 'tools\build_dist.ps1') @distParams
+if (-not $RuntimePath -or -not $ForwarderPath -or -not $ForwarderSha256) {
+    throw 'Full Windows validation requires approved RuntimePath, ForwarderPath and ForwarderSha256 sidecars.'
+}
+
+$packageBuild = Join-Path $build 'Release'
+if (-not (Test-Path -LiteralPath $packageBuild -PathType Container)) { $packageBuild = $build }
+$distParams = @{
+    BuildDir = $packageBuild
+    RuntimePath = $RuntimePath
+    ForwarderPath = $ForwarderPath
+    ForwarderSha256 = $ForwarderSha256
+}
+if ($CompileEndUserInstaller) { $distParams['CompileInstaller'] = $true }
+& (Join-Path $root 'tools\package_standalone_dist.ps1') @distParams
 if ($LASTEXITCODE -ne 0) { throw 'Integrated NRFusion distribution build failed.' }
 
 if (-not $CompileEndUserInstaller) {

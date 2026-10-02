@@ -1,0 +1,29 @@
+- [ ] R03.01 — Depender de G02-NR e G02-MFG para entrega completa; resultados parciais permanecem parciais e não encerram a proposta standalone NR+MFG.
+- [ ] R03.02 — Separar testes unitários, mocks, harness GPU, integração de processo e jogo real; apresentar cobertura e falhas por categoria, não só percentual CTest.
+- [ ] R03.03 — Corrigir o teste Neural roundtrip para exigir avaliação real e saída correspondente; manter teste distinto para transporte e fallback de cópia.
+- [ ] R03.04 — Usar entrada adequada à avaliação visual/numérica; cor uniforme ou primeiro pixel não preto não distingue inferência de cópia.
+- [ ] R03.05 — Fazer qualificação neural falhar quando tentativas ou avaliações forem zero; indisponibilidade de runtime/hardware deve bloquear o gate, não produzir aprovação neural.
+- [ ] R03.06 — Acrescentar teste de regressão da causa confirmada do incidente; complementar o teste controlado com repetição no Cyberpunk usando o proxy oficial.
+- [ ] R03.07 — Validar identidades e conteúdo em múltiplos frames em voo; introduzir atraso controlado para revelar sobrescrita, saída obsoleta e fences incompletas.
+- [ ] R03.08 — Verificar configuração aplicada, modo efetivo e medições no menu contra os eventos reais do backend; reprovar divergência entre UI e processamento.
+- [ ] R03.09 — Auditar W4A8 separadamente: provar carregamento, pesos compatíveis e execução no call graph oficial; arquivo cubin no pacote não conta como integração.
+- [ ] R03.10 — Se W4A8 for usado, comparar qualidade, tempo GPU e estabilidade com executor de referência; manter a otimização somente com ganho medido e sem regressão relevante.
+- [ ] R03.11 — Não condicionar a recuperação funcional a W4A8; se não estiver integrado, declarar isso e retirar claims de aceleração W4A8 do estado apresentado ao usuário.
+- [ ] R03.12 — Comparar NRFusion com baseline OptiScaler fixo e jogo sem mod, usando mesma cena e configurações; separar efeito NR de redução de resolução e multiplicação MFG.
+- [ ] R03.13 — Executar aquecimento e pelo menos três rodadas alternadas A/B e B/A; registrar duração, dispersão e condições térmicas antes de atribuir ganho à implementação.
+- [ ] R03.14 — Medir frame times p50/p95/p99, FPS renderizado/apresentado, latência, CPU, VRAM e GPU time; não alegar desempenho superior com ganho dentro da variação medida.
+- [ ] R03.15 — Aceitar vantagem de performance somente acima da variabilidade observada e sem regressão relevante de qualidade, p99, latência ou VRAM equivalente.
+- [ ] R03.16 — Definir enxuto por bytes distribuídos, memória e overhead mensurados; número de arquivos ou limite de linhas não prova menor custo do produto.
+- [ ] R03.17 — Auditar módulos tocados por responsabilidade e lifetime; respeitar 300 linhas sem repartir a mesma God class em .inc apenas para satisfazer o checker.
+- [ ] R03.18 — Executar os checkers changed e all com escopo documentado; não apresentar zero violações locais como ausência de dívida global.
+- [ ] R03.19 — Compilar os alvos oficiais com versões de dependências registradas; gerar proxy, runtime necessário e instalador a partir do mesmo checkout identificado.
+- [ ] R03.20 — Conferir exports, arquitetura, hashes e payload; incluir todos os recursos realmente carregados e não depender de DLLs acidentalmente presentes no diretório de build.
+- [ ] R03.21 — Atualizar GameProbe e instalador somente para rotas qualificadas; aceitar Cyberpunk DX12 após seus gates e rejeitar APIs não integradas com mensagem precisa.
+- [ ] R03.22 — Validar instalação, atualização, rollback e desinstalação em ambiente recuperável; preservar arquivos preexistentes e verificar hashes restaurados.
+- [ ] R03.23 — Executar o Cyberpunk com o pacote oficial instalado; provar módulos carregados, menu, NR, MFG, persistência e encerramento sem depender da pasta de desenvolvimento.
+- [ ] R03.24 — Executar pelo menos 30 minutos de gameplay com câmera, combate, menus e transições; registrar crashes, device removal, crescimento de memória e falhas de apresentação.
+- [ ] R03.25 — Executar regressão D3D11 com o pacote oficial; manter rotas adicionais fora da alegação de suporte até passarem seus próprios testes em jogo.
+- [ ] R03.26 — Atualizar fases 16–23 e matriz com resultados efetivos, comandos e limites; não manter checkboxes de integração incompatíveis com blockers registrados.
+- [ ] R03.27 — Conferir Git final, branch, alterações geradas e artefatos; informar o que foi preservado, modificado e não commitado, sem criar commit automaticamente.
+- [ ] R03.28 — Entregar handoff em checklist: resultado, evidências, testes, hashes, commit existente, limitações e próxima ação exata; separar débitos técnicos sem implementá-los.
+- [ ] G03 — Encerrar somente com pacote instalado e fluxo completo aprovado no Cyberpunk; qualquer gate obrigatório aberto significa recuperação incompleta, mesmo com CTest 100%.

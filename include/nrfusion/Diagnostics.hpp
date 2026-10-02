@@ -4,10 +4,14 @@
 #include "nrfusion/PrecisionAutotuner.hpp"
 #include "nrfusion/RuntimeCapabilities.hpp"
 
+#include <algorithm>
+#include <cmath>
 #include <cstddef>
 #include <cstdint>
 #include <filesystem>
+#include <fstream>
 #include <string>
+#include <utility>
 #include <vector>
 
 namespace nrfusion {
@@ -46,14 +50,40 @@ public:
     static std::string ToText(const DiagnosticsSnapshot& snapshot);
     static std::string ToJson(const DiagnosticsSnapshot& snapshot);
     static bool AppendJsonLine(const std::filesystem::path& path,
-                               const DiagnosticsSnapshot& snapshot);
+                               const DiagnosticsSnapshot& snapshot) {
+        std::error_code ec;
+        if (const auto parent = path.parent_path(); !parent.empty())
+            std::filesystem::create_directories(parent, ec);
+        if (ec) return false;
+        std::ofstream out(path, std::ios::binary | std::ios::app);
+        if (!out) return false;
+        out << ToJson(snapshot) << '\n';
+        return static_cast<bool>(out);
+    }
+
+private:
+    static const char* TransportName(ProcessTransport value) noexcept {
+        return value == ProcessTransport::X86Carrier ? "x86-carrier" : "in-process";
+    }
+    static const char* PrecisionName(NrPrecision value) noexcept {
+        return value == NrPrecision::HybridNvfp4 ? "hybrid-nvfp4" : "fp8";
+    }
+    static double Finite(double value) noexcept {
+        return std::isfinite(value) ? value : 0.0;
+    }
 };
 
 class DecisionTraceBuffer {
 public:
-    explicit DecisionTraceBuffer(std::size_t capacity = 256);
-    void Push(DiagnosticsSnapshot snapshot);
-    void Clear();
+    explicit DecisionTraceBuffer(std::size_t capacity = 256)
+        : capacity_(std::max<std::size_t>(1, capacity)) {
+        entries_.reserve(capacity_);
+    }
+    void Push(DiagnosticsSnapshot snapshot) {
+        if (entries_.size() == capacity_) entries_.erase(entries_.begin());
+        entries_.push_back(std::move(snapshot));
+    }
+    void Clear() { entries_.clear(); }
     const std::vector<DiagnosticsSnapshot>& Entries() const noexcept { return entries_; }
 
 private:

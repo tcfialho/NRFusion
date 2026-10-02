@@ -1,0 +1,343 @@
+[
+  {
+    "file": "fat39.fatbin",
+    "bytes": 39542,
+    "sha256": "ee78a570e68e924b8df5c29e2a12551c56a89fda66b61c492997b2769b6737c7",
+    "fnv1a64": "1ddb45ec587d4411",
+    "div_approx_count": 43,
+    "entry_names": [
+      ".visible .entry main_kernel("
+    ],
+    "matches_upstream": false
+  },
+  {
+    "file": "fat40.fatbin",
+    "bytes": 1047,
+    "sha256": "1e13008e14222e74d265015c8b0b25f3768c80b15a68d29e0d552a811eb2e21f",
+    "fnv1a64": "8422e78d217611d5",
+    "div_approx_count": 0,
+    "entry_names": [
+      ".visible .entry main_kernel("
+    ],
+    "matches_upstream": false
+  },
+  {
+    "file": "fat41.fatbin",
+    "bytes": 6818,
+    "sha256": "b38cec16e6352c12d35d924db899e379b07fd4be59babd6b64722026c6a27f25",
+    "fnv1a64": "58378c78ad89dde2",
+    "div_approx_count": 0,
+    "entry_names": [
+      ".visible .entry main_kernel("
+    ],
+    "matches_upstream": false
+  },
+  {
+    "file": "fat42.fatbin",
+    "bytes": 8051,
+    "sha256": "a44c0415864c68aff8270d0fcfdf86da0b439dbfa04b3d8af973fdc3ac0fb99f",
+    "fnv1a64": "652dcdfeba013b63",
+    "div_approx_count": 15,
+    "entry_names": [
+      ".visible .entry main_kernel("
+    ],
+    "matches_upstream": false
+  },
+  {
+    "file": "fat43.fatbin",
+    "bytes": 2520,
+    "sha256": "1cf9f66b99940ef09318e5cecc3b7e169117e07675dd5e876665b8238e68a430",
+    "fnv1a64": "7a5c9c2fca8b84db",
+    "div_approx_count": 4,
+    "entry_names": [
+      ".visible .entry main_kernel("
+    ],
+    "matches_upstream": false
+  },
+  {
+    "file": "fat44.fatbin",
+    "bytes": 2347,
+    "sha256": "8f2381bb445fe4ba21798c176ccb0925a32ef9048ac13f4a1239eda063aefc3d",
+    "fnv1a64": "c3f25cf1f5eac031",
+    "div_approx_count": 2,
+    "entry_names": [
+      ".visible .entry main_kernel("
+    ],
+    "matches_upstream": false
+  },
+  {
+    "file": "fat45.fatbin",
+    "bytes": 51622,
+    "sha256": "cb6dc126ff18bf2d5cfbc78cf2d36a4c2ec2aab5adce84ed102683133e65a722",
+    "fnv1a64": "8ccb661924fd4367",
+    "div_approx_count": 44,
+    "entry_names": [
+      ".visible .entry main_kernel("
+    ],
+    "matches_upstream": false
+  },
+  {
+    "file": "fat46.fatbin",
+    "bytes": 90489,
+    "sha256": "b682de9ff8a1ecfcf59887756aad9cd92b33bc9d5874887c95aeddba67995edd",
+    "fnv1a64": "7701f019f879ebe1",
+    "div_approx_count": 54,
+    "entry_names": [
+      ".visible .entry main_kernel("
+    ],
+    "matches_upstream": false
+  },
+  {
+    "file": "fat47.fatbin",
+    "bytes": 8284,
+    "sha256": "e04fae5e2f08398b5bf5e089f6942a165500159b7caa77823625272a8e3c43e4",
+    "fnv1a64": "f1c47f08560c00fd",
+    "div_approx_count": 9,
+    "entry_names": [
+      ".visible .entry main_kernel("
+    ],
+    "matches_upstream": false
+  },
+  {
+    "file": "fat48.fatbin",
+    "bytes": 7324,
+    "sha256": "04beb09611a67fed874819d6681e77f79392706c87f23e375df82fafbe163ee7",
+    "fnv1a64": "afd0234c5e04b62f",
+    "div_approx_count": 6,
+    "entry_names": [
+      ".visible .entry main_kernel("
+    ],
+    "matches_upstream": false
+  },
+  {
+    "file": "fat49.fatbin",
+    "bytes": 995,
+    "sha256": "d8cfd211cd679305c8adc3039729e3f14b3f9ef39169038fd2184cae040cb4bb",
+    "fnv1a64": "b56e241868ea76a6",
+    "div_approx_count": 1,
+    "entry_names": [
+      ".visible .entry main_kernel("
+    ],
+    "matches_upstream": false
+  },
+  {
+    "file": "fat50.fatbin",
+    "bytes": 8008,
+    "sha256": "b045babb40a9a030af7168edeb591cae2b2fe35b323d0e427ee7f3f2df4aa612",
+    "fnv1a64": "6c6fa11298a22913",
+    "div_approx_count": 4,
+    "entry_names": [
+      ".visible .entry main_kernel("
+    ],
+    "matches_upstream": false
+  },
+  {
+    "file": "fat51.fatbin",
+    "bytes": 2944,
+    "sha256": "2f27520adcbda49755beb4f76018c4d91819328703777b0638fda8ffddae1f8c",
+    "fnv1a64": "f3c8f2b10bb8e021",
+    "div_approx_count": 4,
+    "entry_names": [
+      ".visible .entry main_kernel("
+    ],
+    "matches_upstream": false
+  },
+  {
+    "file": "fat52.fatbin",
+    "bytes": 9756,
+    "sha256": "82915b87f5b13c3ce99dfc3846ba59f6f1bb9137626235bba0d3cb23bba8e351",
+    "fnv1a64": "8a34be26e1180f1e",
+    "div_approx_count": 6,
+    "entry_names": [
+      ".visible .entry main_kernel("
+    ],
+    "matches_upstream": false
+  },
+  {
+    "file": "fat53.fatbin",
+    "bytes": 4559,
+    "sha256": "f1283da1bd96ed73030c84fe818ff36f1f90001897f378df01aa93ccceb9b851",
+    "fnv1a64": "21bd5aff46f6b1d9",
+    "div_approx_count": 1,
+    "entry_names": [
+      ".visible .entry main_kernel("
+    ],
+    "matches_upstream": false
+  },
+  {
+    "file": "fat54.fatbin",
+    "bytes": 3566,
+    "sha256": "30b24737e82448f9953864b665ef661d502ae405e7847d3b1e7755a5ad38c33f",
+    "fnv1a64": "0d9baf1d215c24ee",
+    "div_approx_count": 4,
+    "entry_names": [
+      ".visible .entry main_kernel("
+    ],
+    "matches_upstream": false
+  },
+  {
+    "file": "fat55.fatbin",
+    "bytes": 588,
+    "sha256": "57f2f98b17407982c28fde9306ea1cd8816ca4e89e379420dc2a7f30cd38adb3",
+    "fnv1a64": "2445934ba8fbfb33",
+    "div_approx_count": 0,
+    "entry_names": [
+      ".visible .entry main_kernel("
+    ],
+    "matches_upstream": false
+  },
+  {
+    "file": "fat56.fatbin",
+    "bytes": 26364,
+    "sha256": "c7b34293d13af0df92a99b9504afc5da4c98bf0b47c764d5ad512ecf405c15c5",
+    "fnv1a64": "5ade164361586334",
+    "div_approx_count": 24,
+    "entry_names": [
+      ".visible .entry main_kernel("
+    ],
+    "matches_upstream": false
+  },
+  {
+    "file": "fat57.fatbin",
+    "bytes": 9894,
+    "sha256": "5960cf5be4c3598bdc2d076d45a500a25b552d9bf36d76ac7a0e516235b885fa",
+    "fnv1a64": "7bebf1167a9d94e7",
+    "div_approx_count": 12,
+    "entry_names": [
+      ".visible .entry main_kernel("
+    ],
+    "matches_upstream": false
+  },
+  {
+    "file": "fat58.fatbin",
+    "bytes": 45401,
+    "sha256": "e3a53b4457fc0d0a05d67d3bb1a93b0d5a545c8104393fd81d8181f56773c638",
+    "fnv1a64": "458df3b7ece395bf",
+    "div_approx_count": 48,
+    "entry_names": [
+      ".visible .entry main_kernel("
+    ],
+    "matches_upstream": false
+  },
+  {
+    "file": "fat59.fatbin",
+    "bytes": 18347,
+    "sha256": "8596719610570bb15d33e3cd887574b040a0cc710fc26bbd227fb223537b5ec6",
+    "fnv1a64": "050e7e19d1c49928",
+    "div_approx_count": 8,
+    "entry_names": [
+      ".visible .entry main_kernel("
+    ],
+    "matches_upstream": false
+  },
+  {
+    "file": "fat60.fatbin",
+    "bytes": 23086,
+    "sha256": "33d25d07e8864826beade648c25fd423b2e593dbb474cb9365c8624176255ddd",
+    "fnv1a64": "0be341346637048e",
+    "div_approx_count": 16,
+    "entry_names": [
+      ".visible .entry main_kernel("
+    ],
+    "matches_upstream": false
+  },
+  {
+    "file": "fat61.fatbin",
+    "bytes": 10278,
+    "sha256": "2f971bed4f07035fca51a1bb68d83fd74241e6030e1a95188621cae7233a2e4e",
+    "fnv1a64": "a1634c7edf0afe48",
+    "div_approx_count": 16,
+    "entry_names": [
+      ".visible .entry main_kernel("
+    ],
+    "matches_upstream": false
+  },
+  {
+    "file": "fat62.fatbin",
+    "bytes": 49943,
+    "sha256": "923f0680c561c50b5b8a01409bdf32e57e5e7c57c0bc320a6633bad6423e532d",
+    "fnv1a64": "de54d21e221c7911",
+    "div_approx_count": 67,
+    "entry_names": [
+      ".visible .entry main_kernel("
+    ],
+    "matches_upstream": false
+  },
+  {
+    "file": "fat63.fatbin",
+    "bytes": 20094,
+    "sha256": "45f275c2d68dc5b2d256fde4519bb75e2990a7ffadcc2bafba6446fe206ef6b0",
+    "fnv1a64": "63bc9d63558f47f7",
+    "div_approx_count": 12,
+    "entry_names": [
+      ".visible .entry main_kernel("
+    ],
+    "matches_upstream": false
+  },
+  {
+    "file": "fat64.fatbin",
+    "bytes": 2684,
+    "sha256": "399edf7646b3afb085ac5b8773f70fad3e1058518005e6e126a90911429e7e61",
+    "fnv1a64": "60ec9a61cf23e6ae",
+    "div_approx_count": 1,
+    "entry_names": [
+      ".visible .entry cuda_font_kernel("
+    ],
+    "matches_upstream": false
+  },
+  {
+    "file": "fat65.fatbin",
+    "bytes": 4008,
+    "sha256": "baa2f0ff96b850d349dfa64de02a96f6529db5169195089a3d671a1c4c10e964",
+    "fnv1a64": "705408b5309e7dba",
+    "div_approx_count": 0,
+    "entry_names": [
+      ".visible .entry cuda_capture_kernel("
+    ],
+    "matches_upstream": false
+  },
+  {
+    "file": "fat66.fatbin",
+    "bytes": 4790,
+    "sha256": "70bef8a86be9f422f405bf81b53728e658a734206721c2fa1fc010757c62fb88",
+    "fnv1a64": "68e6e0a996e8b975",
+    "div_approx_count": 0,
+    "entry_names": [
+      ".visible .entry cuda_capture_output_exposure_scale_kernel("
+    ],
+    "matches_upstream": false
+  },
+  {
+    "file": "fat67.fatbin",
+    "bytes": 5587,
+    "sha256": "0eb8149563bd531adef186d0db8d1aef7b649b390ae7c02534f211bd6e36a9f4",
+    "fnv1a64": "501fe5931cced4a1",
+    "div_approx_count": 0,
+    "entry_names": [
+      ".visible .entry cuda_capture_mv_dilate_kernel("
+    ],
+    "matches_upstream": false
+  },
+  {
+    "file": "fat68.fatbin",
+    "bytes": 3364,
+    "sha256": "bd8e68c95b54ae0c68af4718529a0dd53d6e5ff4e8ba9d86dd18388c8446cc8a",
+    "fnv1a64": "d2faa6c82c9f9bf3",
+    "div_approx_count": 12,
+    "entry_names": [
+      ".visible .entry cuda_capture_buffer_as_texture("
+    ],
+    "matches_upstream": false
+  },
+  {
+    "file": "fat69.fatbin",
+    "bytes": 1051,
+    "sha256": "e3407d15cdc62adb2789887c5ccfe4a52b27a754e8ae95284583b7530a590b32",
+    "fnv1a64": "081f6b530eba7f26",
+    "div_approx_count": 0,
+    "entry_names": [
+      ".visible .entry cuda_clear_view_kernel("
+    ],
+    "matches_upstream": false
+  }
+]

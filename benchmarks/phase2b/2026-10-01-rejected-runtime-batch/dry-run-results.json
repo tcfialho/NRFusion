@@ -1,0 +1,16 @@
+[
+  {
+    "mode": "0",
+    "exit": 0,
+    "samples": 40,
+    "image_sha256": "e739c922f660bc366c6a5d9220594b4a97f4106389567d8dcdcd26054e34a83d",
+    "nr_gpu_p50": 8.503295
+  },
+  {
+    "mode": "1",
+    "exit": 0,
+    "samples": 40,
+    "image_sha256": "e739c922f660bc366c6a5d9220594b4a97f4106389567d8dcdcd26054e34a83d",
+    "nr_gpu_p50": 8.29184
+  }
+]

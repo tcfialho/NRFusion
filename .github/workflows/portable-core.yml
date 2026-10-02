@@ -4,6 +4,7 @@ on:
   push:
     branches:
       - master
+      - standalone/integration
     paths-ignore:
       - 'docs/**'
       - '**/*.md'

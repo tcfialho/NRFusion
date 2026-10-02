@@ -1,8 +1,5 @@
 #include "nrfusion/Diagnostics.hpp"
 
-#include <algorithm>
-#include <cmath>
-#include <fstream>
 #include <iomanip>
 #include <sstream>
 
@@ -28,10 +25,6 @@ const char* ProviderName(FrameProvider value) noexcept {
     case FrameProvider::Synthetic: return "synthetic";
     default: return "unsupported";
     }
-}
-
-const char* TransportName(ProcessTransport value) noexcept {
-    return value == ProcessTransport::X86Carrier ? "x86-carrier" : "in-process";
 }
 
 const char* PlacementName(NrPlacement value) noexcept {
@@ -61,10 +54,6 @@ const char* MotionName(MotionSource value) noexcept {
     case MotionSource::ShaderEstimated: return "shader";
     default: return "zero";
     }
-}
-
-const char* PrecisionName(NrPrecision value) noexcept {
-    return value == NrPrecision::HybridNvfp4 ? "hybrid-nvfp4" : "fp8";
 }
 
 const char* AdaptiveStateName(AdaptiveState value) noexcept {
@@ -132,8 +121,6 @@ const char* ReasonName(DecisionReason value) noexcept {
     default: return "stable";
     }
 }
-
-double Finite(double value) noexcept { return std::isfinite(value) ? value : 0.0; }
 
 } // namespace
 
@@ -257,29 +244,5 @@ std::string Diagnostics::ToJson(const DiagnosticsSnapshot& s) {
         << '}';
     return out.str();
 }
-
-bool Diagnostics::AppendJsonLine(const std::filesystem::path& path,
-                                 const DiagnosticsSnapshot& snapshot) {
-    std::error_code ec;
-    if (const auto parent = path.parent_path(); !parent.empty())
-        std::filesystem::create_directories(parent, ec);
-    if (ec) return false;
-    std::ofstream out(path, std::ios::binary | std::ios::app);
-    if (!out) return false;
-    out << ToJson(snapshot) << '\n';
-    return static_cast<bool>(out);
-}
-
-DecisionTraceBuffer::DecisionTraceBuffer(std::size_t capacity)
-    : capacity_(std::max<std::size_t>(1, capacity)) {
-    entries_.reserve(capacity_);
-}
-
-void DecisionTraceBuffer::Push(DiagnosticsSnapshot snapshot) {
-    if (entries_.size() == capacity_) entries_.erase(entries_.begin());
-    entries_.push_back(std::move(snapshot));
-}
-
-void DecisionTraceBuffer::Clear() { entries_.clear(); }
 
 } // namespace nrfusion

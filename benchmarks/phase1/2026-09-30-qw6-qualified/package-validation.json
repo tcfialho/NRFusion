@@ -1,0 +1,64 @@
+{
+  "manifest_entries_verified": 47,
+  "code_commit": "16e2ee4363897f812386864c91b22749e622c5f4",
+  "proxy_sha256": "0815140865555fd009285d51c633592dc3fe0164c9261ec0458ba742363c8898",
+  "setup_sha256": "de5261f6e96e42aa0fc876b28f4883fff6d4da3b29e2fbaa6d302b51b8a354ab",
+  "setup_bytes": 125282761,
+  "official_package_smoke": [
+    {
+      "typeless": false,
+      "exit": 0,
+      "samples": 120,
+      "NR_successes_per_frame": 1,
+      "guide_copies_per_frame": 0,
+      "captured_rgb_exact": true,
+      "command": [
+        "D:\\Users\\tcfialho\\Documents\\NRFusion\\dist\\RequiemGame\\RequiemGame.exe",
+        "--require-nrfusion-proxy",
+        "--require-nr",
+        "--deterministic-motion",
+        "--width",
+        "1920",
+        "--height",
+        "1080",
+        "--frames",
+        "180",
+        "--warmup",
+        "60",
+        "--csv",
+        "D:\\Users\\tcfialho\\Documents\\NRFusion\\.temp\\phase1-quickwins\\package-typed-smoke\\frames.csv",
+        "--capture",
+        "D:\\Users\\tcfialho\\Documents\\NRFusion\\.temp\\phase1-quickwins\\package-typed-smoke\\capture.ppm"
+      ]
+    },
+    {
+      "typeless": true,
+      "exit": 0,
+      "samples": 120,
+      "NR_successes_per_frame": 1,
+      "guide_copies_per_frame": 0,
+      "captured_rgb_exact": true,
+      "command": [
+        "D:\\Users\\tcfialho\\Documents\\NRFusion\\dist\\RequiemGame\\RequiemGame.exe",
+        "--require-nrfusion-proxy",
+        "--require-nr",
+        "--deterministic-motion",
+        "--width",
+        "1920",
+        "--height",
+        "1080",
+        "--frames",
+        "180",
+        "--warmup",
+        "60",
+        "--csv",
+        "D:\\Users\\tcfialho\\Documents\\NRFusion\\.temp\\phase1-quickwins\\package-typeless-smoke\\frames.csv",
+        "--capture",
+        "D:\\Users\\tcfialho\\Documents\\NRFusion\\.temp\\phase1-quickwins\\package-typeless-smoke\\capture.ppm",
+        "--typeless-guides"
+      ]
+    }
+  ],
+  "qualification": "Package target, not commercial gameplay FPS",
+  "original_configs_restored": true
+}
