@@ -1,6 +1,7 @@
 #pragma once
 #include "NrKernelAbiDiscovery.hpp"
 #include <wrl/client.h>
+#include <atomic>
 #include <filesystem>
 #include <mutex>
 #include <string>
@@ -35,7 +36,8 @@ struct CaptureState {
     ModuleImage image;
     std::uint64_t lastFrame = UINT64_MAX;
     unsigned count = 0, active = UINT32_MAX;
-    bool enabled = false, failed = false;
+    std::atomic<bool> enabled{false};
+    bool failed = false;
 };
 CaptureState& Captures();
 void ConfigureCapture();

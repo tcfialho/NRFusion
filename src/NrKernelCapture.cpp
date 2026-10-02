@@ -46,20 +46,21 @@ void ConfigureCapture() {
         if (range.parameterOffset != offsets[index] || range.bytes != sizes[index] ||
             range.name != names[index]) return;
     }
-    state.enabled = input && schema == "NRKCAP1" && parameterBytes == 72 &&
+    state.enabled.store(input && schema == "NRKCAP1" && parameterBytes == 72 &&
         state.name == "cc_vit_1d_ffn_expand_chained_fp8" &&
         state.moduleHash == "bdc0cafe89442d2fa64ab168905e5ebcfe4bb7592604d0b4b2fca2db063b7a2b" &&
         state.width == 12 && state.height == 24 && !state.shared &&
         state.grid == std::array<unsigned, 3>{96, 1, 1} &&
-        state.block == std::array<unsigned, 3>{32, 4, 1} && total <= 32 * 1024 * 1024;
+        state.block == std::array<unsigned, 3>{32, 4, 1} && total <= 32 * 1024 * 1024, std::memory_order_relaxed);
 }
 
 void SelectCaptureModule(const FunctionIdentity& identity, ModuleImage image) {
     SelectSwinCaptureModule(identity, image);
     SelectChainCaptureModule(identity, image);
     auto& state = Captures();
+    if (!state.enabled.load(std::memory_order_relaxed)) return;
     std::lock_guard lock(state.mutex);
-    if (state.enabled && state.name == identity.name.data() &&
+    if (state.name == identity.name.data() &&
         state.moduleHash == identity.moduleHash.data()) state.image = std::move(image);
 }
 
@@ -67,8 +68,8 @@ bool PrepareCaptureFrame(ID3D12Device* device) {
     if (!PrepareSwinCaptureFrame(device)) return false;
     if (!PrepareChainCaptureFrame(device)) return false;
     auto& state = Captures();
+    if (!state.enabled.load(std::memory_order_relaxed)) return true;
     std::lock_guard lock(state.mutex);
-    if (!state.enabled) return true;
     for (auto& capture : state.captures) {
         if (capture.written || capture.readback) continue;
         std::uint64_t total = 0;
@@ -112,8 +113,9 @@ void CopySlice(ID3D12GraphicsCommandList* commands, KernelCapture& capture, Capt
 
 void CaptureBefore(ID3D12GraphicsCommandList* commands, const LaunchRecord& record, const void* parameters) {
     auto& state = Captures();
+    if (!state.enabled.load(std::memory_order_relaxed)) return;
     std::lock_guard lock(state.mutex);
-    if (!state.enabled || state.failed || !state.image || state.count == state.captures.size() ||
+    if (state.failed || !state.image || state.count == state.captures.size() ||
         state.lastFrame == record.frame || state.name != record.identity.name.data() ||
         state.moduleHash != record.identity.moduleHash.data() || record.parameterBytes != 72 ||
         record.grid != state.grid || record.block != state.block || record.sharedBytes != state.shared ||
@@ -151,6 +153,7 @@ void CaptureBefore(ID3D12GraphicsCommandList* commands, const LaunchRecord& reco
 
 void CaptureAfter(ID3D12GraphicsCommandList* commands, bool successful) {
     auto& state = Captures();
+    if (!state.enabled.load(std::memory_order_relaxed)) return;
     std::lock_guard lock(state.mutex);
     if (state.active == UINT32_MAX) return;
     auto& capture = state.captures[state.active];
@@ -169,8 +172,8 @@ bool RetireCaptures(ID3D12CommandQueue* queue) {
     if (!RetireSwinCaptures(queue)) return false;
     if (!RetireChainCaptures(queue)) return false;
     auto& state = Captures();
+    if (!state.enabled.load(std::memory_order_relaxed)) return true;
     std::lock_guard lock(state.mutex);
-    if (!state.enabled) return true;
     if (state.failed) return false;
     for (unsigned index = 0; index < state.count; ++index) {
         auto& capture = state.captures[index];
