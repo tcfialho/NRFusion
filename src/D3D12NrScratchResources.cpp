@@ -184,6 +184,7 @@ bool D3D12NrScratchResources::RetireUnused(
     }
     if (retireCount > NrDeferredRetirementQueue::kCapacity - retirement.Size())
         return false;
+    if (retireCount == 0) return true;
 
     for (const auto& candidate : candidates) {
         if (candidate.keep) continue;
