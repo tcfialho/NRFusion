@@ -137,8 +137,8 @@ ResourceRef SyntheticDx12Provider::GetResidual(const SyntheticWorkHandle& handle
     if (!ready_ || !handle.valid) return ref;
 
     for (const auto& s : ringSlots_) {
-        if (s.activeWorkId == handle.workId && s.lowResidual) {
-            ref.opaqueId = reinterpret_cast<uint64_t>(s.lowResidual.Get());
+        if (s.activeWorkId == handle.workId && s.lowNeuralOut) {
+            ref.opaqueId = reinterpret_cast<uint64_t>(s.lowNeuralOut.Get());
             ref.resolution = s.resolution;
             ref.format = ResourceFormat::Rgba16Float;
             return ref;

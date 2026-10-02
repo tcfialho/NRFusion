@@ -31,7 +31,11 @@ struct SyntheticDx12ResourceAccounting {
     std::size_t resourceCount = 0;
     std::size_t descriptorHeapCount = 0;
     std::uint64_t logicalBytes = 0;
+    std::uint64_t physicalBytes = 0;
+    std::uint64_t peakLogicalBytes = 0;
+    std::uint64_t peakPhysicalBytes = 0;
     bool logicalBytesExact = true;
+    bool physicalBytesExact = true;
 };
 
 class SyntheticDx12Provider : public ISyntheticProvider {
@@ -84,7 +88,7 @@ private:
         ComPtr<ID3D12Resource> lowDepth;
         ComPtr<ID3D12Resource> lowMotion;
         ComPtr<ID3D12Resource> lowNeuralOut;
-        ComPtr<ID3D12Resource> lowResidual;
+        std::uint64_t physicalBytes = 0;
         bool inUse = false;
     };
 
@@ -110,6 +114,8 @@ private:
     uint32_t currentSlot_ = 0;
     bool ready_ = false;
     mutable std::mutex mutex_;
+    mutable std::uint64_t peakLogicalBytes_ = 0;
+    mutable std::uint64_t peakPhysicalBytes_ = 0;
 };
 
 } // namespace nrfusion

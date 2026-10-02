@@ -10,11 +10,10 @@ bool SyntheticDx12Provider::ExtractResidual(const SyntheticWorkHandle& handle, v
     const uint32_t slotIdx = SlotForWork(handle.workId);
     if (slotIdx >= kRingSlots) return false;
     Slot& slot = ringSlots_[slotIdx];
-    if (!slot.lowColor || !slot.lowNeuralOut || !slot.lowResidual) return false;
+    if (!slot.lowColor || !slot.lowNeuralOut) return false;
 
-    Transition(cmdList, slot.lowNeuralOut.Get(), D3D12_RESOURCE_STATE_COMMON, D3D12_RESOURCE_STATE_NON_PIXEL_SHADER_RESOURCE);
+    Transition(cmdList, slot.lowNeuralOut.Get(), D3D12_RESOURCE_STATE_COMMON, D3D12_RESOURCE_STATE_UNORDERED_ACCESS);
     Transition(cmdList, slot.lowColor.Get(), D3D12_RESOURCE_STATE_COMMON, D3D12_RESOURCE_STATE_NON_PIXEL_SHADER_RESOURCE);
-    Transition(cmdList, slot.lowResidual.Get(), D3D12_RESOURCE_STATE_COMMON, D3D12_RESOURCE_STATE_UNORDERED_ACCESS);
 
     // Same 16-descriptor-per-slot layout Submit/ComposeNative use; +8..10 is this dispatch's own
     // sub-range so it never overwrites a descriptor either of those still needs this frame.
@@ -28,20 +27,23 @@ bool SyntheticDx12Provider::ExtractResidual(const SyntheticWorkHandle& handle, v
     srvDesc.Shader4ComponentMapping = D3D12_DEFAULT_SHADER_4_COMPONENT_MAPPING;
     srvDesc.Texture2D.MipLevels = 1;
 
+    // t0: proxy / neural input (lowColor)
     D3D12_CPU_DESCRIPTOR_HANDLE srv0Cpu = cpuHandle;
     srv0Cpu.ptr += (baseDesc + 0) * descriptorSize_;
-    device_->CreateShaderResourceView(slot.lowNeuralOut.Get(), &srvDesc, srv0Cpu);
+    device_->CreateShaderResourceView(slot.lowColor.Get(), &srvDesc, srv0Cpu);
 
+    // t1: unused by in-place shader, clear with null SRV
     D3D12_CPU_DESCRIPTOR_HANDLE srv1Cpu = cpuHandle;
     srv1Cpu.ptr += (baseDesc + 1) * descriptorSize_;
-    device_->CreateShaderResourceView(slot.lowColor.Get(), &srvDesc, srv1Cpu);
+    device_->CreateShaderResourceView(nullptr, &srvDesc, srv1Cpu);
 
+    // u0: model output transformed in-place into residual (lowNeuralOut)
     D3D12_CPU_DESCRIPTOR_HANDLE uavCpu = cpuHandle;
     uavCpu.ptr += (baseDesc + 2) * descriptorSize_;
     D3D12_UNORDERED_ACCESS_VIEW_DESC uavDesc{};
     uavDesc.Format = DXGI_FORMAT_R16G16B16A16_FLOAT;
     uavDesc.ViewDimension = D3D12_UAV_DIMENSION_TEXTURE2D;
-    device_->CreateUnorderedAccessView(slot.lowResidual.Get(), nullptr, &uavDesc, uavCpu);
+    device_->CreateUnorderedAccessView(slot.lowNeuralOut.Get(), nullptr, &uavDesc, uavCpu);
 
     ID3D12DescriptorHeap* heaps[] = { srvUavHeap_.Get() };
     cmdList->SetDescriptorHeaps(1, heaps);
@@ -65,9 +67,8 @@ bool SyntheticDx12Provider::ExtractResidual(const SyntheticWorkHandle& handle, v
 
     cmdList->Dispatch((slot.resolution.width + 15) / 16, (slot.resolution.height + 15) / 16, 1);
 
-    Transition(cmdList, slot.lowNeuralOut.Get(), D3D12_RESOURCE_STATE_NON_PIXEL_SHADER_RESOURCE, D3D12_RESOURCE_STATE_COMMON);
+    Transition(cmdList, slot.lowNeuralOut.Get(), D3D12_RESOURCE_STATE_UNORDERED_ACCESS, D3D12_RESOURCE_STATE_COMMON);
     Transition(cmdList, slot.lowColor.Get(), D3D12_RESOURCE_STATE_NON_PIXEL_SHADER_RESOURCE, D3D12_RESOURCE_STATE_COMMON);
-    Transition(cmdList, slot.lowResidual.Get(), D3D12_RESOURCE_STATE_UNORDERED_ACCESS, D3D12_RESOURCE_STATE_COMMON);
     return true;
 }
 
@@ -88,7 +89,7 @@ bool SyntheticDx12Provider::ComposeNative(const SyntheticWorkHandle& handle,
     uint32_t slotIdx = 0;
     for (size_t i = 0; i < ringSlots_.size(); ++i) {
         if (ringSlots_[i].activeWorkId == handle.workId) {
-            residualRes = ringSlots_[i].lowResidual.Get();
+            residualRes = ringSlots_[i].lowNeuralOut.Get();
             slotIdx = static_cast<uint32_t>(i);
             break;
         }
@@ -178,7 +179,7 @@ ID3D12Resource* SyntheticDx12Provider::GetSlotLowColor(uint32_t slot) const {
 
 ID3D12Resource* SyntheticDx12Provider::GetSlotLowResidual(uint32_t slot) const {
     if (slot >= kRingSlots) return nullptr;
-    return ringSlots_[slot].lowResidual.Get();
+    return ringSlots_[slot].lowNeuralOut.Get();
 }
 
 ID3D12Resource* SyntheticDx12Provider::GetSlotLowNeuralOut(uint32_t slot) const {
