@@ -261,13 +261,6 @@ bool D3D12NrExecutor::RunFrameModel(
             cmd, context.target,
             scratch_.Get(D3D12NrScratchKind::ActiveColor),
             context.plan.activeColor);
-        if (!TransitionExternal(
-                cmd, context.target, context.targetState, context.targetArrival) ||
-            !scratch_.Transition(
-                cmd, D3D12NrScratchKind::ActiveColor,
-                D3D12_RESOURCE_STATE_COPY_SOURCE,
-                D3D12_RESOURCE_STATE_UNORDERED_ACCESS))
-            return false;
     }
     return true;
 }
