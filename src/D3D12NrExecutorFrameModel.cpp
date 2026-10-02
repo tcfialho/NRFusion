@@ -246,14 +246,6 @@ bool D3D12NrExecutor::RunFrameModel(
                 D3D12_RESOURCE_STATE_COPY_DEST))
             return false;
         cmd->CopyResource(context.activeTarget, hdrCopy);
-        if (!TransitionExternal(
-                cmd, context.activeTarget, context.targetState,
-                D3D12_RESOURCE_STATE_NON_PIXEL_SHADER_RESOURCE) ||
-            !scratch_.Transition(
-                cmd, D3D12NrScratchKind::HdrCopy,
-                D3D12_RESOURCE_STATE_COPY_SOURCE,
-                D3D12_RESOURCE_STATE_NON_PIXEL_SHADER_RESOURCE))
-            return false;
     }
 
     if (context.cropColor) {
