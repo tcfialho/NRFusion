@@ -146,10 +146,7 @@ inline ID3D12Resource* GetResource(Param* params, const char* name) {
 bool RunNeuralPass(ProxyFeature& feature, ID3D12GraphicsCommandList* commands,
                    Param* params) {
     if (!feature.nrReady || !commands || !params) return false;
-    nrfusion::RuntimeConfig config{};
-    nrfusion::RuntimeAdvancedConfig advanced{};
-    nrfusion::RuntimeOverlay::Instance().GetActiveConfiguration(config, advanced);
-    if (!config.enabled) return false;
+    if (!nrfusion::RuntimeOverlay::Instance().IsActiveEnabled()) return false;
 
     ID3D12Resource* color = GetResource(params, "Color");
     ID3D12Resource* depth = GetResource(params, "Depth");

@@ -125,6 +125,7 @@ void RuntimeOverlay::LoadConfigurations() {
     }
 
     generation_ = activeMain_.generation;
+    activeEnabled_.store(activeMain_.enabled, std::memory_order_relaxed);
 }
 
 bool RuntimeOverlay::SaveConfigurations() {
@@ -251,6 +252,7 @@ void RuntimeOverlay::ApplyStagedConfiguration() {
         menuDrawing_.AcceptCommit(proposedMain, proposedAdv);
         activeMain_ = proposedMain;
         activeAdv_ = proposedAdv;
+        activeEnabled_.store(activeMain_.enabled, std::memory_order_relaxed);
 
         ConfigureFrameGeneration();
         const bool saved = SaveConfigurations();
