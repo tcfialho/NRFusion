@@ -229,6 +229,32 @@ bool D3D12NrScratchResources::Transition(
     return true;
 }
 
+bool D3D12NrScratchResources::RestoreAllToUav(ID3D12GraphicsCommandList* cmdList) noexcept {
+    if (cmdList == nullptr) return false;
+    D3D12_RESOURCE_BARRIER barriers[11]{};
+    Surface* surfaces[11]{};
+    UINT count = 0;
+    for (Surface* s : {&output_, &colorCopy_, &hdrCopy_, &passScratch_,
+                       &colorSmall_, &outputNative_, &activeColor_,
+                       &residualEdited_, &residualHistory0_, &residualHistory1_,
+                       &residualComposed_}) {
+        if (s->resource == nullptr || s->state == D3D12_RESOURCE_STATE_UNORDERED_ACCESS)
+            continue;
+        barriers[count].Type = D3D12_RESOURCE_BARRIER_TYPE_TRANSITION;
+        barriers[count].Transition.pResource = s->resource;
+        barriers[count].Transition.Subresource = D3D12_RESOURCE_BARRIER_ALL_SUBRESOURCES;
+        barriers[count].Transition.StateBefore = s->state;
+        barriers[count].Transition.StateAfter = D3D12_RESOURCE_STATE_UNORDERED_ACCESS;
+        surfaces[count++] = s;
+    }
+    if (count > 0) {
+        cmdList->ResourceBarrier(count, barriers);
+        for (UINT i = 0; i < count; ++i)
+            surfaces[i]->state = D3D12_RESOURCE_STATE_UNORDERED_ACCESS;
+    }
+    return true;
+}
+
 void D3D12NrScratchResources::ReleaseAfterIdle() noexcept {
     Release(output_);
     Release(colorCopy_);

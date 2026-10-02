@@ -62,6 +62,7 @@ public:
     bool Retire(NrDeferredRetirementQueue& retirement) noexcept;
     bool Transition(ID3D12GraphicsCommandList* cmdList, D3D12NrScratchKind kind,
                     D3D12_RESOURCE_STATES expected, D3D12_RESOURCE_STATES next) noexcept;
+    bool RestoreAllToUav(ID3D12GraphicsCommandList* cmdList) noexcept;
     void ReleaseAfterIdle() noexcept;
 
     bool Complete() const noexcept;

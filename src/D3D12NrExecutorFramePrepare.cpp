@@ -213,15 +213,26 @@ bool D3D12NrExecutor::PrepareFrameResources(
 void D3D12NrExecutor::RestoreFrameResources(
     ID3D12GraphicsCommandList* cmd, const D3D12NrFrameResources& resources,
     const D3D12NrFrameRequest& request, FrameContext& context) noexcept {
-    for (D3D12NrScratchKind kind : {
-             D3D12NrScratchKind::Output, D3D12NrScratchKind::PassScratch,
-             D3D12NrScratchKind::ColorCopy, D3D12NrScratchKind::HdrCopy,
-             D3D12NrScratchKind::ColorSmall, D3D12NrScratchKind::ActiveColor}) {
-        if (scratch_.Get(kind) == nullptr) continue;
-        const D3D12_RESOURCE_STATES state = scratch_.State(kind);
-        if (state != D3D12_RESOURCE_STATE_UNORDERED_ACCESS)
-            scratch_.Transition(cmd, kind, state, D3D12_RESOURCE_STATE_UNORDERED_ACCESS);
-    }
+    if (cmd == nullptr) return;
+
+    scratch_.RestoreAllToUav(cmd);
+
+    D3D12_RESOURCE_BARRIER barriers[4]{};
+    D3D12_RESOURCE_STATES* states[4]{};
+    D3D12_RESOURCE_STATES nextStates[4]{};
+    UINT extCount = 0;
+
+    auto addExt = [&](ID3D12Resource* res, D3D12_RESOURCE_STATES& cur, D3D12_RESOURCE_STATES target) {
+        if (res == nullptr || cur == target) return;
+        barriers[extCount].Type = D3D12_RESOURCE_BARRIER_TYPE_TRANSITION;
+        barriers[extCount].Transition.pResource = res;
+        barriers[extCount].Transition.Subresource = D3D12_RESOURCE_BARRIER_ALL_SUBRESOURCES;
+        barriers[extCount].Transition.StateBefore = cur;
+        barriers[extCount].Transition.StateAfter = target;
+        states[extCount] = &cur;
+        nextStates[extCount] = target;
+        ++extCount;
+    };
 
     if (context.depthCloned) {
         if (guideClones_.State(D3D12NrGuideKind::Depth) ==
@@ -231,7 +242,7 @@ void D3D12NrExecutor::RestoreFrameResources(
                 D3D12_RESOURCE_STATE_NON_PIXEL_SHADER_RESOURCE,
                 D3D12_RESOURCE_STATE_COPY_DEST);
     } else {
-        TransitionExternal(cmd, resources.depth, context.depthState, request.depthState);
+        addExt(resources.depth, context.depthState, request.depthState);
     }
 
     if (context.motionCloned) {
@@ -242,13 +253,18 @@ void D3D12NrExecutor::RestoreFrameResources(
                 D3D12_RESOURCE_STATE_NON_PIXEL_SHADER_RESOURCE,
                 D3D12_RESOURCE_STATE_COPY_DEST);
     } else {
-        TransitionExternal(cmd, resources.motion, context.motionState, request.motionState);
+        addExt(resources.motion, context.motionState, request.motionState);
     }
 
     if (request.composition.useGameExposure && resources.exposure != nullptr)
-        TransitionExternal(
-            cmd, resources.exposure, context.exposureState, request.exposureState);
-    TransitionExternal(cmd, context.target, context.targetState, context.targetArrival);
+        addExt(resources.exposure, context.exposureState, request.exposureState);
+    addExt(context.target, context.targetState, context.targetArrival);
+
+    if (extCount > 0) {
+        cmd->ResourceBarrier(extCount, barriers);
+        for (UINT i = 0; i < extCount; ++i)
+            *states[i] = nextStates[i];
+    }
 }
 
 } // namespace nrfusion

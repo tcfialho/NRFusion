@@ -147,6 +147,17 @@ int main() {
         gpu.list.Get(), D3D12NrScratchKind::PassScratch,
         D3D12_RESOURCE_STATE_NON_PIXEL_SHADER_RESOURCE,
         D3D12_RESOURCE_STATE_UNORDERED_ACCESS));
+    assert(scratch.Transition(
+        gpu.list.Get(), D3D12NrScratchKind::PassScratch,
+        D3D12_RESOURCE_STATE_UNORDERED_ACCESS,
+        D3D12_RESOURCE_STATE_NON_PIXEL_SHADER_RESOURCE));
+    assert(scratch.Transition(
+        gpu.list.Get(), D3D12NrScratchKind::Output,
+        D3D12_RESOURCE_STATE_UNORDERED_ACCESS,
+        D3D12_RESOURCE_STATE_NON_PIXEL_SHADER_RESOURCE));
+    assert(scratch.RestoreAllToUav(gpu.list.Get()));
+    assert(scratch.State(D3D12NrScratchKind::PassScratch) == D3D12_RESOURCE_STATE_UNORDERED_ACCESS);
+    assert(scratch.State(D3D12NrScratchKind::Output) == D3D12_RESOURCE_STATE_UNORDERED_ACCESS);
 
     assert(scratch.Retire(D3D12NrScratchKind::ActiveColor, retirement));
     assert(scratch.Get(D3D12NrScratchKind::ActiveColor) == nullptr);
