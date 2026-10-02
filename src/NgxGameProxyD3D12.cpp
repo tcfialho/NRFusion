@@ -65,34 +65,23 @@ bool IsNgxDriver(HMODULE module) {
 HMODULE LoadFromDriverStore() {
     wchar_t systemDir[MAX_PATH]{};
     if (GetSystemDirectoryW(systemDir, MAX_PATH) == 0) return nullptr;
-
-    std::wstring pattern =
-        std::wstring(systemDir) + L"\\DriverStore\\FileRepository\\*";
+    std::wstring pattern = std::wstring(systemDir) + L"\\DriverStore\\FileRepository\\*";
     WIN32_FIND_DATAW data{};
     HANDLE find = FindFirstFileW(pattern.c_str(), &data);
     if (find == INVALID_HANDLE_VALUE) return nullptr;
-
     HMODULE result = nullptr;
     do {
-        if ((data.dwFileAttributes & FILE_ATTRIBUTE_DIRECTORY) == 0) continue;
-        if (data.cFileName[0] == L'.') continue;
-        const std::wstring path =
-            std::wstring(systemDir) + L"\\DriverStore\\FileRepository\\" +
-            data.cFileName + L"\\nvngx.dll";
+        if ((data.dwFileAttributes & FILE_ATTRIBUTE_DIRECTORY) == 0 || data.cFileName[0] == L'.') continue;
+        const std::wstring path = std::wstring(systemDir) + L"\\DriverStore\\FileRepository\\" + data.cFileName + L"\\nvngx.dll";
         HMODULE module = LoadLibraryW(path.c_str());
-        if (IsNgxDriver(module)) {
-            result = module;
-            break;
-        }
+        if (IsNgxDriver(module)) { result = module; break; }
         if (module) FreeLibrary(module);
     } while (FindNextFileW(find, &data));
     FindClose(find);
     return result;
 }
 DriverApi ResolveDriver() {
-    static constexpr std::array<const wchar_t*, 3> candidates{
-        L"nvngx.dll", L"_nvngx.dll", L"nvngx_dlss.dll"};
-
+    static constexpr std::array<const wchar_t*, 3> candidates{L"nvngx.dll", L"_nvngx.dll", L"nvngx_dlss.dll"};
     HMODULE module = nullptr;
     for (const wchar_t* candidate : candidates) {
         module = GetModuleHandleW(candidate);
@@ -102,14 +91,12 @@ DriverApi ResolveDriver() {
         module = nullptr;
     }
     if (!module) module = LoadFromDriverStore();
-
     DriverApi api{};
     api.module = module;
     if (!module) return api;
     api.init = Symbol<InitFn>(module, "NVSDK_NGX_D3D12_Init");
     api.allocate = Symbol<AllocFn>(module, "NVSDK_NGX_D3D12_AllocateParameters");
-    api.capabilities =
-        Symbol<AllocFn>(module, "NVSDK_NGX_D3D12_GetCapabilityParameters");
+    api.capabilities = Symbol<AllocFn>(module, "NVSDK_NGX_D3D12_GetCapabilityParameters");
     api.create = Symbol<CreateFn>(module, "NVSDK_NGX_D3D12_CreateFeature");
     api.evaluate = Symbol<EvalFn>(module, "NVSDK_NGX_D3D12_EvaluateFeature");
     api.release = Symbol<ReleaseFn>(module, "NVSDK_NGX_D3D12_ReleaseFeature");
@@ -129,9 +116,15 @@ struct ProxyFeature {
     std::uint64_t epoch = 0;
     unsigned int createFlags = 0;
     bool nrReady = false;
+    ID3D12Resource* cachedColor = nullptr;
+    ID3D12Resource* cachedDepth = nullptr;
+    ID3D12Resource* cachedMotion = nullptr;
+    D3D12_RESOURCE_DESC cachedColorDesc{};
+    D3D12_RESOURCE_DESC cachedDepthDesc{};
+    D3D12_RESOURCE_DESC cachedMotionDesc{};
 };
 
-unsigned int GetUInt(Param* params, const char* name, unsigned int fallback = 0) {
+inline unsigned int GetUInt(Param* params, const char* name, unsigned int fallback = 0) {
     if (!params) return fallback;
     unsigned int value = fallback;
     if (params->Get(name, &value) == kNgxSuccess) return value;
@@ -140,15 +133,16 @@ unsigned int GetUInt(Param* params, const char* name, unsigned int fallback = 0)
         ? static_cast<unsigned int>(signedValue) : fallback;
 }
 
-float GetFloat(Param* params, const char* name, float fallback) {
+inline float GetFloat(Param* params, const char* name, float fallback) {
     float value = fallback;
     return params && params->Get(name, &value) == kNgxSuccess ? value : fallback;
 }
 
-ID3D12Resource* GetResource(Param* params, const char* name) {
+inline ID3D12Resource* GetResource(Param* params, const char* name) {
     ID3D12Resource* value = nullptr;
     return params && params->Get(name, &value) == kNgxSuccess ? value : nullptr;
 }
+
 bool RunNeuralPass(ProxyFeature& feature, ID3D12GraphicsCommandList* commands,
                    Param* params) {
     if (!feature.nrReady || !commands || !params) return false;
@@ -163,9 +157,21 @@ bool RunNeuralPass(ProxyFeature& feature, ID3D12GraphicsCommandList* commands,
     ID3D12Resource* output = GetResource(params, "Output");
     if (!color || !depth || !motion || !output) return false;
 
-    const auto colorDesc = color->GetDesc();
-    const auto depthDesc = depth->GetDesc();
-    const auto motionDesc = motion->GetDesc();
+    if (feature.cachedColor != color) {
+        feature.cachedColor = color;
+        feature.cachedColorDesc = color->GetDesc();
+    }
+    const auto& colorDesc = feature.cachedColorDesc;
+    if (feature.cachedDepth != depth) {
+        feature.cachedDepth = depth;
+        feature.cachedDepthDesc = depth->GetDesc();
+    }
+    const auto& depthDesc = feature.cachedDepthDesc;
+    if (feature.cachedMotion != motion) {
+        feature.cachedMotion = motion;
+        feature.cachedMotionDesc = motion->GetDesc();
+    }
+    const auto& motionDesc = feature.cachedMotionDesc;
     if (colorDesc.Dimension != D3D12_RESOURCE_DIMENSION_TEXTURE2D ||
         depthDesc.Dimension != D3D12_RESOURCE_DIMENSION_TEXTURE2D ||
         motionDesc.Dimension != D3D12_RESOURCE_DIMENSION_TEXTURE2D)
@@ -270,17 +276,14 @@ extern "C" __declspec(dllexport) int __cdecl NVSDK_NGX_D3D12_EvaluateFeature(
     RunNeuralPass(*feature, commands, params);
     auto& driver = Driver();
     if (!driver.evaluate) return 0;
-    const int result =
-        driver.evaluate(commands, feature->driverFeature, params, callback);
-    if (result == kNgxSuccess)
+    const int result = driver.evaluate(commands, feature->driverFeature, params, callback);
+    if (result == kNgxSuccess && nrfusion::RuntimeOverlay::Instance().IsMenuOpen())
         feature->overlay.Draw(commands, GetResource(params, "Output"));
     return result;
 }
-extern "C" __declspec(dllexport) int __cdecl NVSDK_NGX_D3D12_ReleaseFeature(
-    void* opaqueFeature) {
+extern "C" __declspec(dllexport) int __cdecl NVSDK_NGX_D3D12_ReleaseFeature(void* opaqueFeature) {
     if (!opaqueFeature) return 0;
-    std::unique_ptr<ProxyFeature> feature(
-        static_cast<ProxyFeature*>(opaqueFeature));
+    std::unique_ptr<ProxyFeature> feature(static_cast<ProxyFeature*>(opaqueFeature));
     feature->nr.Shutdown();
     nrfusion::kernelprofile::ResetObservedResources(feature->diagnosticDevice);
     auto& driver = Driver();
