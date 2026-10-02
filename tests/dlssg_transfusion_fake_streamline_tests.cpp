@@ -119,11 +119,11 @@ int main()
     assert(client.mode == 1 && client.frames == 1);
     assert(!transfusion.ObserveVramWarning(1));
     transfusion.SetRespectVramBudget(false);
-    assert(transfusion.AutomaticMultiplierLimit() == 4);
+    assert(transfusion.AutomaticMultiplierLimit() == 6);
     assert(!transfusion.ObserveVramWarning(3));
     transfusion.SetControlMode(nrfusion::MfgControlMode::OverrideFixed);
     assert(!transfusion.ObserveVramWarning(3));
-    assert(transfusion.AutomaticMultiplierLimit() == 4);
+    assert(transfusion.AutomaticMultiplierLimit() == 6);
 
     transfusion.SetControlMode(nrfusion::MfgControlMode::FollowGame);
     for (int i = 0; i < 12; ++i)

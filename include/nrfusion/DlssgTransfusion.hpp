@@ -141,7 +141,7 @@ private:
     std::atomic<MfgQualityMode> m_qualityMode{MfgQualityMode::Performance};
     std::atomic<MfgUiMode> m_uiMode{MfgUiMode::Auto};
     std::atomic<MfgMotionVectorMode> m_mvMode{MfgMotionVectorMode::Auto};
-    std::atomic<uint32_t> m_dynamicTargetFps{0};
+    std::atomic<uint32_t> m_dynamicTargetFps{60};
     std::atomic<uint32_t> m_displayRefreshHz{60};
     std::atomic<float> m_renderedFps{0};
     std::atomic<std::uint64_t> m_lastRenderCounter{0};
@@ -149,7 +149,7 @@ private:
     std::atomic<std::uint64_t> m_pendingStartFrame{0};
     std::atomic<uint32_t> m_dynamicMultiplier{2};
     std::atomic<uint32_t> m_reportedGenerationLimit{0};
-    std::atomic<uint32_t> m_automaticMultiplierLimit{4};
+    std::atomic<uint32_t> m_automaticMultiplierLimit{6};
     std::atomic<uint32_t> m_memoryMultiplierLimit{6};
     std::atomic<bool> m_respectVramBudget{false};
     std::atomic<uint32_t> m_requestedByGame{0};
