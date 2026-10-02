@@ -132,6 +132,12 @@ private:
         std::uint32_t slot, std::uint32_t index) const noexcept;
     D3D12_GPU_DESCRIPTOR_HANDLE GpuHandle(std::uint32_t slot) const noexcept;
     static DXGI_FORMAT TypedFormat(DXGI_FORMAT format) noexcept;
+    static bool BuildSrvDesc(
+        const D3D12_RESOURCE_DESC& source,
+        D3D12_SHADER_RESOURCE_VIEW_DESC& desc) noexcept;
+    static bool BuildUavDesc(
+        const D3D12_RESOURCE_DESC& source,
+        D3D12_UNORDERED_ACCESS_VIEW_DESC& desc) noexcept;
 
     ID3D12Device* device_ = nullptr;
     ID3D12RootSignature* rootSignature_ = nullptr;

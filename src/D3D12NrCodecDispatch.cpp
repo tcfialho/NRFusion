@@ -38,21 +38,43 @@ DXGI_FORMAT D3D12NrCodec::TypedFormat(DXGI_FORMAT format) noexcept {
     }
 }
 
-bool D3D12NrCodec::WriteSrv(
-    ID3D12Resource* resource, D3D12_CPU_DESCRIPTOR_HANDLE handle) noexcept {
-    if (resource == nullptr) return false;
-    const D3D12_RESOURCE_DESC source = resource->GetDesc();
+bool D3D12NrCodec::BuildSrvDesc(
+    const D3D12_RESOURCE_DESC& source,
+    D3D12_SHADER_RESOURCE_VIEW_DESC& desc) noexcept {
     if (source.Dimension != D3D12_RESOURCE_DIMENSION_TEXTURE2D ||
         source.SampleDesc.Count != 1 ||
         (source.Flags & D3D12_RESOURCE_FLAG_DENY_SHADER_RESOURCE) != 0)
         return false;
 
-    D3D12_SHADER_RESOURCE_VIEW_DESC desc{};
+    desc = {};
     desc.Format = TypedFormat(source.Format);
     if (desc.Format == DXGI_FORMAT_UNKNOWN) return false;
     desc.Shader4ComponentMapping = D3D12_DEFAULT_SHADER_4_COMPONENT_MAPPING;
     desc.ViewDimension = D3D12_SRV_DIMENSION_TEXTURE2D;
     desc.Texture2D.MipLevels = source.MipLevels == 0 ? UINT(-1) : source.MipLevels;
+    return true;
+}
+
+bool D3D12NrCodec::BuildUavDesc(
+    const D3D12_RESOURCE_DESC& source,
+    D3D12_UNORDERED_ACCESS_VIEW_DESC& desc) noexcept {
+    if (source.Dimension != D3D12_RESOURCE_DIMENSION_TEXTURE2D ||
+        source.SampleDesc.Count != 1 ||
+        (source.Flags & D3D12_RESOURCE_FLAG_ALLOW_UNORDERED_ACCESS) == 0)
+        return false;
+
+    desc = {};
+    desc.Format = TypedFormat(source.Format);
+    if (desc.Format == DXGI_FORMAT_UNKNOWN) return false;
+    desc.ViewDimension = D3D12_UAV_DIMENSION_TEXTURE2D;
+    return true;
+}
+
+bool D3D12NrCodec::WriteSrv(
+    ID3D12Resource* resource, D3D12_CPU_DESCRIPTOR_HANDLE handle) noexcept {
+    if (resource == nullptr) return false;
+    D3D12_SHADER_RESOURCE_VIEW_DESC desc{};
+    if (!BuildSrvDesc(resource->GetDesc(), desc)) return false;
     device_->CreateShaderResourceView(resource, &desc, handle);
     return true;
 }
@@ -60,16 +82,8 @@ bool D3D12NrCodec::WriteSrv(
 bool D3D12NrCodec::WriteUav(
     ID3D12Resource* resource, D3D12_CPU_DESCRIPTOR_HANDLE handle) noexcept {
     if (resource == nullptr) return false;
-    const D3D12_RESOURCE_DESC source = resource->GetDesc();
-    if (source.Dimension != D3D12_RESOURCE_DIMENSION_TEXTURE2D ||
-        source.SampleDesc.Count != 1 ||
-        (source.Flags & D3D12_RESOURCE_FLAG_ALLOW_UNORDERED_ACCESS) == 0)
-        return false;
-
     D3D12_UNORDERED_ACCESS_VIEW_DESC desc{};
-    desc.Format = TypedFormat(source.Format);
-    if (desc.Format == DXGI_FORMAT_UNKNOWN) return false;
-    desc.ViewDimension = D3D12_UAV_DIMENSION_TEXTURE2D;
+    if (!BuildUavDesc(resource->GetDesc(), desc)) return false;
     device_->CreateUnorderedAccessView(resource, nullptr, &desc, handle);
     return true;
 }
@@ -115,6 +129,12 @@ bool D3D12NrCodec::DispatchWithPipeline(
         targetDesc.Width < constants.width || targetDesc.Height < constants.height)
         return false;
 
+    D3D12_UNORDERED_ACCESS_VIEW_DESC targetUavDesc{};
+    if (!BuildUavDesc(targetDesc, targetUavDesc)) return false;
+
+    D3D12_SHADER_RESOURCE_VIEW_DESC sourceSrvDesc{};
+    if (!BuildSrvDesc(resources.source->GetDesc(), sourceSrvDesc)) return false;
+
     const std::uint32_t slotNumber = slotIndex_;
     Slot& slot = slots_[slotNumber];
     slotIndex_ = (slotIndex_ + 1) % kSlotCount;
@@ -132,10 +152,18 @@ bool D3D12NrCodec::DispatchWithPipeline(
     };
 
     for (std::uint32_t i = 0; i < kSrvCount; ++i) {
-        if (!WriteSrv(srvs[i], Handle(slotNumber, i))) return false;
+        if (srvs[i] == resources.source) {
+            device_->CreateShaderResourceView(srvs[i], &sourceSrvDesc, Handle(slotNumber, i));
+        } else {
+            if (!WriteSrv(srvs[i], Handle(slotNumber, i))) return false;
+        }
     }
     for (std::uint32_t i = 0; i < kUavCount; ++i) {
-        if (!WriteUav(uavs[i], Handle(slotNumber, kSrvCount + i))) return false;
+        if (uavs[i] == resources.target) {
+            device_->CreateUnorderedAccessView(uavs[i], nullptr, &targetUavDesc, Handle(slotNumber, kSrvCount + i));
+        } else {
+            if (!WriteUav(uavs[i], Handle(slotNumber, kSrvCount + i))) return false;
+        }
     }
     if (!WriteConstants(slot, constants))
         return false;
@@ -145,8 +173,8 @@ bool D3D12NrCodec::DispatchWithPipeline(
     commandList->SetComputeRootSignature(rootSignature_);
     commandList->SetPipelineState(pipeline);
     commandList->SetComputeRootDescriptorTable(0, GpuHandle(slotNumber));
-    const UINT groupsX = constants.width / 8u + static_cast<UINT>(constants.width % 8u != 0);
-    const UINT groupsY = constants.height / 8u + static_cast<UINT>(constants.height % 8u != 0);
+    const UINT groupsX = (constants.width + 7u) / 8u;
+    const UINT groupsY = (constants.height + 7u) / 8u;
     commandList->Dispatch(groupsX, groupsY, 1);
     return true;
 }
