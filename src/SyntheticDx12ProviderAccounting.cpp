@@ -1,11 +1,13 @@
 #include "nrfusion/SyntheticDx12Provider.hpp"
 
+#include <algorithm>
 #include <limits>
 
 namespace nrfusion {
 namespace {
 
 void AddResource(
+    ID3D12Device* device,
     ID3D12Resource* resource,
     SyntheticDx12ResourceAccounting& result) noexcept {
     if (resource == nullptr) return;
@@ -27,16 +29,29 @@ void AddResource(
     if (pixels > max / bytesPerPixel) {
         result.logicalBytes = max;
         result.logicalBytesExact = false;
-        return;
+    } else {
+        const std::uint64_t bytes = pixels * bytesPerPixel;
+        if (result.logicalBytes > max - bytes) {
+            result.logicalBytes = max;
+            result.logicalBytesExact = false;
+        } else {
+            result.logicalBytes += bytes;
+        }
     }
 
-    const std::uint64_t bytes = pixels * bytesPerPixel;
-    if (result.logicalBytes > max - bytes) {
-        result.logicalBytes = max;
-        result.logicalBytesExact = false;
-        return;
+    if (device != nullptr) {
+        const auto allocInfo = device->GetResourceAllocationInfo(0, 1, &desc);
+        if (allocInfo.SizeInBytes == max) {
+            result.physicalBytesExact = false;
+        } else if (result.physicalBytes > max - allocInfo.SizeInBytes) {
+            result.physicalBytes = max;
+            result.physicalBytesExact = false;
+        } else {
+            result.physicalBytes += allocInfo.SizeInBytes;
+        }
+    } else {
+        result.physicalBytesExact = false;
     }
-    result.logicalBytes += bytes;
 }
 
 } // namespace
@@ -47,13 +62,17 @@ SyntheticDx12Provider::Accounting() const noexcept {
     SyntheticDx12ResourceAccounting result{};
     result.descriptorHeapCount = srvUavHeap_ ? 1u : 0u;
     for (const Slot& slot : ringSlots_) {
-        AddResource(slot.lowColor.Get(), result);
-        AddResource(slot.lowDepth.Get(), result);
-        AddResource(slot.lowMotion.Get(), result);
-        AddResource(slot.lowNeuralOut.Get(), result);
-        AddResource(slot.lowResidual.Get(), result);
+        AddResource(device_.Get(), slot.lowColor.Get(), result);
+        AddResource(device_.Get(), slot.lowDepth.Get(), result);
+        AddResource(device_.Get(), slot.lowMotion.Get(), result);
+        AddResource(device_.Get(), slot.lowNeuralOut.Get(), result);
     }
+    peakLogicalBytes_ = (std::max)(peakLogicalBytes_, result.logicalBytes);
+    peakPhysicalBytes_ = (std::max)(peakPhysicalBytes_, result.physicalBytes);
+    result.peakLogicalBytes = peakLogicalBytes_;
+    result.peakPhysicalBytes = peakPhysicalBytes_;
     return result;
 }
 
 } // namespace nrfusion
+

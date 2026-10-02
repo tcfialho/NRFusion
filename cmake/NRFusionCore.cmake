@@ -120,6 +120,7 @@ if (WIN32)
         src/D3D12NrScratchResources.cpp
         src/D3D12NrScratchEnsure.cpp
         src/D3D12NrScratchAccounting.cpp
+        src/D3D12NrAllocationTracker.cpp
         src/D3D12NrGuideClones.cpp
         src/D3D12NrCodecInit.cpp
         src/D3D12NrCodecDispatch.cpp
