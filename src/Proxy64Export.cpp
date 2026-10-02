@@ -112,6 +112,31 @@ extern "C" __declspec(dllexport) int NRFusion_PatchMfgModule(HMODULE module) {
     return (state.archGatesPatched && state.blackwellTransfusionActive) ? 1 : 0;
 }
 
+extern "C" __declspec(dllexport) void NRFusion_MfgFollowGameControl() {
+    nrfusion::DlssgTransfusion::Instance().SetControlMode(
+        nrfusion::MfgControlMode::FollowGame);
+}
+
+extern "C" __declspec(dllexport) int NRFusion_MfgProcessSetOptions(
+    unsigned int* mode, unsigned int* framesToGenerate) {
+    if (!mode || !framesToGenerate) return 0;
+    nrfusion::DlssgTransfusion::Instance().ProcessSetOptions(
+        *mode, *framesToGenerate);
+    return 1;
+}
+
+extern "C" __declspec(dllexport) int NRFusion_MfgProcessGetState(
+    unsigned int* maximumFramesToGenerate) {
+    if (!maximumFramesToGenerate) return 0;
+    nrfusion::DlssgTransfusion::Instance().ProcessGetState(
+        *maximumFramesToGenerate);
+    return 1;
+}
+
+extern "C" __declspec(dllexport) void NRFusion_MfgNotifyFrameBoundary() {
+    nrfusion::DlssgTransfusion::Instance().NotifyFrameBoundary();
+}
+
 BOOL WINAPI DllMain(HINSTANCE hinstDLL, DWORD fdwReason, LPVOID) {
     if (fdwReason == DLL_PROCESS_ATTACH) {
         DisableThreadLibraryCalls(hinstDLL);

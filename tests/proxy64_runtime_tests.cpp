@@ -31,7 +31,12 @@ int main() {
     const bool hasMfgDiagnostics =
         GetProcAddress(proxy, "NRFusion_MfgModuleObserved") != nullptr &&
         GetProcAddress(proxy, "NRFusion_MfgUnlockedMax") != nullptr &&
-        GetProcAddress(proxy, "NRFusion_MfgPatchQualified") != nullptr;
+        GetProcAddress(proxy, "NRFusion_MfgPatchQualified") != nullptr &&
+        GetProcAddress(proxy, "NRFusion_PatchMfgModule") != nullptr &&
+        GetProcAddress(proxy, "NRFusion_MfgFollowGameControl") != nullptr &&
+        GetProcAddress(proxy, "NRFusion_MfgProcessSetOptions") != nullptr &&
+        GetProcAddress(proxy, "NRFusion_MfgProcessGetState") != nullptr &&
+        GetProcAddress(proxy, "NRFusion_MfgNotifyFrameBoundary") != nullptr;
     using RuntimeFn = void(*)();
     auto ensureRuntime = reinterpret_cast<RuntimeFn>(
         GetProcAddress(proxy, "NRFusion_EnsureRuntime"));

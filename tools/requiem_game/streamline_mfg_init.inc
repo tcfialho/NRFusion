@@ -30,16 +30,30 @@ bool StreamlineMfg::Initialize(
         impl_->status = "nvngx_dlssg.dll not found";
         return false;
     }
-    using PatchMfgFn = int(__cdecl*)(HMODULE);
-    bool patched = false;
-    if (const auto proxy = GetModuleHandleW(L"version.dll")) {
-        if (const auto patchMfg = reinterpret_cast<PatchMfgFn>(
-                GetProcAddress(proxy, "NRFusion_PatchMfgModule"))) {
-            patched = (patchMfg(impl_->dlssgModule) != 0);
-        }
+    const auto proxy = GetModuleHandleW(L"version.dll");
+    if (!proxy) {
+        impl_->status = "NRFusion version.dll not loaded";
+        return false;
     }
-    if (!patched) {
-        nrfusion::DlssgTransfusion::Instance().TryApply(impl_->dlssgModule);
+    impl_->patchMfgModule = Symbol<decltype(impl_->patchMfgModule)>(
+        proxy, "NRFusion_PatchMfgModule");
+    impl_->followGameControl = Symbol<decltype(impl_->followGameControl)>(
+        proxy, "NRFusion_MfgFollowGameControl");
+    impl_->processSetOptions = Symbol<decltype(impl_->processSetOptions)>(
+        proxy, "NRFusion_MfgProcessSetOptions");
+    impl_->processGetState = Symbol<decltype(impl_->processGetState)>(
+        proxy, "NRFusion_MfgProcessGetState");
+    impl_->notifyFrameBoundary = Symbol<decltype(impl_->notifyFrameBoundary)>(
+        proxy, "NRFusion_MfgNotifyFrameBoundary");
+    if (!impl_->patchMfgModule || !impl_->followGameControl ||
+        !impl_->processSetOptions || !impl_->processGetState ||
+        !impl_->notifyFrameBoundary) {
+        impl_->status = "NRFusion version.dll lacks the MFG control API";
+        return false;
+    }
+    if (!impl_->patchMfgModule(impl_->dlssgModule)) {
+        impl_->status = "NRFusion version.dll did not qualify nvngx_dlssg.dll";
+        return false;
     }
 
     const auto interposerPath =
@@ -111,12 +125,7 @@ bool StreamlineMfg::Initialize(
         return false;
     }
 
-    if (const auto proxy = GetModuleHandleW(L"version.dll")) {
-        if (const auto patchMfg = reinterpret_cast<PatchMfgFn>(
-                GetProcAddress(proxy, "NRFusion_PatchMfgModule"))) {
-            patchMfg(nullptr);
-        }
-    }
+    impl_->patchMfgModule(nullptr);
 
     impl_->initialized = true;
     impl_->status = "Streamline initialized";
@@ -221,74 +230,6 @@ bool StreamlineMfg::UpgradeFactory(
         return false;
     }
     *proxyFactory = static_cast<IDXGIFactory4*>(upgraded);
-    return true;
-#endif
-}
-bool StreamlineMfg::Configure(
-    std::uint32_t outputWidth, std::uint32_t outputHeight,
-    std::uint32_t renderWidth, std::uint32_t renderHeight,
-    std::uint32_t backBuffers) {
-    if (!impl_->requested) return true;
-#if !defined(NRFUSION_REQUIEM_STREAMLINE)
-    (void)outputWidth; (void)outputHeight;
-    (void)renderWidth; (void)renderHeight; (void)backBuffers;
-    return false;
-#else
-    if (!impl_->setDlssgOptions || !impl_->getDlssgState) return false;
-    impl_->outputWidth = outputWidth;
-    impl_->outputHeight = outputHeight;
-    impl_->backBuffers = backBuffers;
-
-    impl_->options = {};
-    impl_->options.mode = sl::DLSSGMode::eOn;
-    impl_->options.numFramesToGenerate = impl_->multiplier - 1;
-    impl_->options.flags = sl::DLSSGFlags::eRetainResourcesWhenOff;
-    impl_->options.numBackBuffers = backBuffers;
-    impl_->options.mvecDepthWidth = renderWidth;
-    impl_->options.mvecDepthHeight = renderHeight;
-    impl_->options.colorWidth = outputWidth;
-    impl_->options.colorHeight = outputHeight;
-    impl_->options.colorBufferFormat =
-        static_cast<std::uint32_t>(DXGI_FORMAT_R8G8B8A8_UNORM);
-    impl_->options.mvecBufferFormat =
-        static_cast<std::uint32_t>(DXGI_FORMAT_R32G32_FLOAT);
-    impl_->options.depthBufferFormat =
-        static_cast<std::uint32_t>(DXGI_FORMAT_R32_FLOAT);
-    impl_->options.hudLessBufferFormat =
-        static_cast<std::uint32_t>(DXGI_FORMAT_R8G8B8A8_UNORM);
-    impl_->options.uiBufferFormat =
-        static_cast<std::uint32_t>(DXGI_FORMAT_R8G8B8A8_UNORM);
-    impl_->options.onErrorCallback = &OnDlssgApiError;
-
-    auto mode = static_cast<std::uint32_t>(impl_->options.mode);
-    auto frames = impl_->options.numFramesToGenerate;
-    auto& transfusion = nrfusion::DlssgTransfusion::Instance();
-    transfusion.SetControlMode(nrfusion::MfgControlMode::FollowGame);
-    transfusion.ProcessSetOptions(mode, frames);
-    impl_->options.mode = static_cast<sl::DLSSGMode>(mode);
-    impl_->options.numFramesToGenerate = frames;
-
-    auto result =
-        impl_->setDlssgOptions(impl_->viewport, impl_->options);
-    if (result != sl::Result::eOk) {
-        impl_->status = ResultText("slDLSSGSetOptions", result);
-        return false;
-    }
-    sl::DLSSGState state{};
-    result = impl_->getDlssgState(
-        impl_->viewport, state, &impl_->options);
-    if (result == sl::Result::eOk) {
-        impl_->reportedMax = state.numFramesToGenerateMax;
-        auto exposed = state.numFramesToGenerateMax;
-        transfusion.ProcessGetState(exposed);
-        impl_->reportedMax = std::max(impl_->reportedMax, exposed);
-        impl_->lastDlssgStatus =
-            static_cast<std::uint32_t>(state.status);
-    }
-
-    ApplyFocusHooks();
-    impl_->ready = true;
-    impl_->status = "DLSS-G configured";
     return true;
 #endif
 }

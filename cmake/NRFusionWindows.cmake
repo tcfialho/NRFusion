@@ -245,7 +245,7 @@ add_executable(nrfusion_harness_3d
                                             tools/requiem_game/streamline_mfg.cpp)
         # windowscodecs and ole32 decode the reference frames, as the original linked them too.
         target_link_libraries(nrfusion_requiem_game PRIVATE
-            nrfusion_core d3d12 dxgi d3dcompiler windowscodecs ole32 bcrypt)
+            d3d12 dxgi d3dcompiler windowscodecs ole32 bcrypt)
         target_include_directories(nrfusion_requiem_game PRIVATE include)
         if (NRFUSION_STREAMLINE_INCLUDE)
             target_include_directories(nrfusion_requiem_game PRIVATE

@@ -18,7 +18,6 @@
 #include <utility>
 
 #if defined(NRFUSION_REQUIEM_STREAMLINE)
-#include "nrfusion/DlssgTransfusion.hpp"
 #include <sl.h>
 #include <sl_dlss_g.h>
 #include <sl_pcl.h>
@@ -64,6 +63,11 @@ struct StreamlineMfg::Impl {
     PFun_slReflexSetOptions* setReflexOptions = nullptr;
     PFun_slReflexSleep* reflexSleep = nullptr;
     PFun_slPCLSetMarker* pclSetMarker = nullptr;
+    int(__cdecl* patchMfgModule)(HMODULE) = nullptr;
+    void(__cdecl* followGameControl)() = nullptr;
+    int(__cdecl* processSetOptions)(unsigned int*, unsigned int*) = nullptr;
+    int(__cdecl* processGetState)(unsigned int*) = nullptr;
+    void(__cdecl* notifyFrameBoundary)() = nullptr;
 #endif
 };
 
@@ -207,6 +211,7 @@ void StreamlineMfg::SetWindow(void* hwnd) {
 StreamlineMfg::StreamlineMfg() : impl_(std::make_unique<Impl>()) {}
 StreamlineMfg::~StreamlineMfg() = default;
 #include "streamline_mfg_init.inc"
+#include "streamline_mfg_configure.inc"
 #include "streamline_mfg_frame.inc"
 bool StreamlineMfg::Requested() const noexcept {
     return impl_->requested;

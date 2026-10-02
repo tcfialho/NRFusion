@@ -190,7 +190,7 @@ void StreamlineMfg::PresentEnd() {
                  static_cast<unsigned>(state.numFramesActuallyPresented),
                  static_cast<unsigned>(state.numFramesToGenerateMax),
                  static_cast<int>(state.status));
-    nrfusion::DlssgTransfusion::Instance().NotifyFrameBoundary();
+    impl_->notifyFrameBoundary();
 #endif
 }
 void StreamlineMfg::Shutdown() {
