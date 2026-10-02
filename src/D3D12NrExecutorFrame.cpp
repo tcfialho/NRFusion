@@ -49,9 +49,23 @@ D3D12NrFrameResult D3D12NrExecutor::ExecuteMainFrame(
                        request.composition.runBeforeUpscale &&
                        request.composition.rayReconstruction;
 
-    const D3D12_RESOURCE_DESC targetDesc = context.target->GetDesc();
-    const D3D12_RESOURCE_DESC depthDesc = resources.depth->GetDesc();
-    const D3D12_RESOURCE_DESC motionDesc = resources.motion->GetDesc();
+    if (cachedTargetResource_ != context.target) {
+        cachedTargetResource_ = context.target;
+        cachedTargetDesc_ = context.target->GetDesc();
+    }
+    const D3D12_RESOURCE_DESC& targetDesc = cachedTargetDesc_;
+
+    if (cachedGuideResources_[0] != resources.depth) {
+        cachedGuideResources_[0] = resources.depth;
+        cachedGuideDescs_[0] = resources.depth->GetDesc();
+    }
+    const D3D12_RESOURCE_DESC& depthDesc = cachedGuideDescs_[0];
+
+    if (cachedGuideResources_[1] != resources.motion) {
+        cachedGuideResources_[1] = resources.motion;
+        cachedGuideDescs_[1] = resources.motion->GetDesc();
+    }
+    const D3D12_RESOURCE_DESC& motionDesc = cachedGuideDescs_[1];
     if (targetDesc.Dimension != D3D12_RESOURCE_DIMENSION_TEXTURE2D ||
         targetDesc.SampleDesc.Count != 1 || targetDesc.DepthOrArraySize != 1 ||
         targetDesc.MipLevels != 1 ||

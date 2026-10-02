@@ -283,6 +283,8 @@ private:
     bool featureRayReconstruction_ = false;
     std::wstring snippetPath_;
     ID3D12Device* device_ = nullptr;
+    ID3D12Resource* cachedTargetResource_ = nullptr;
+    D3D12_RESOURCE_DESC cachedTargetDesc_{};
     ID3D12Resource* cachedGuideResources_[2]{};
     D3D12_RESOURCE_DESC cachedGuideDescs_[2]{};
     std::string status_ = "not loaded";
