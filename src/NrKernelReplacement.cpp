@@ -97,6 +97,10 @@ void ForgetReplacement(ID3D12Device* device, NVDX_ObjectHandle function,
     if (destroyModule) destroyModule(device, replacement.module);
 }
 
+bool IsReplacementActive() noexcept {
+    return registryActive.load(std::memory_order_relaxed);
+}
+
 bool SelectReplacement(const NVAPI_CU_KERNEL_LAUNCH_PARAMS& stock,
     NVAPI_CU_KERNEL_LAUNCH_PARAMS& selected) noexcept {
     if (!registryActive.load(std::memory_order_acquire)) return false;

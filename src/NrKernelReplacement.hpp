@@ -12,6 +12,7 @@ void DeactivateReplacements(ID3D12Device* device);
 void ForgetReplacement(ID3D12Device* device, NVDX_ObjectHandle function,
     decltype(&NvAPI_D3D12_DestroyCuFunction) destroyFunction,
     decltype(&NvAPI_D3D12_DestroyCuModule) destroyModule);
+bool IsReplacementActive() noexcept;
 bool SelectReplacement(const NVAPI_CU_KERNEL_LAUNCH_PARAMS& stock,
     NVAPI_CU_KERNEL_LAUNCH_PARAMS& selected) noexcept;
 }

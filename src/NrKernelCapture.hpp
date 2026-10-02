@@ -40,6 +40,9 @@ struct CaptureState {
     bool failed = false;
 };
 CaptureState& Captures();
+inline bool IsKernelCaptureActive() noexcept {
+    return Captures().enabled.load(std::memory_order_relaxed);
+}
 void ConfigureCapture();
 void SelectCaptureModule(const FunctionIdentity& identity, ModuleImage image);
 bool PrepareCaptureFrame(ID3D12Device* device);

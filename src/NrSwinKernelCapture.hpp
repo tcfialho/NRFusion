@@ -36,6 +36,9 @@ struct SwinCaptureState {
     bool failed = false;
 };
 SwinCaptureState& SwinCaptures();
+inline bool IsSwinCaptureActive() noexcept {
+    return SwinCaptures().enabled.load(std::memory_order_relaxed);
+}
 void ConfigureSwinCapture();
 void SelectSwinCaptureModule(const FunctionIdentity&, ModuleImage);
 bool PrepareSwinCaptureFrame(ID3D12Device*);

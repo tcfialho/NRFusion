@@ -125,7 +125,10 @@ NvAPI_Status __cdecl Launch(ID3D12GraphicsCommandList* commands,
                             const NVAPI_CU_KERNEL_LAUNCH_PARAMS* kernels, NvU32 count) {
     auto& state = Nvapi();
     NVAPI_CU_KERNEL_LAUNCH_PARAMS selected{};
-    const bool custom = count == 1 && kernels && SelectReplacement(kernels[0], selected);
+    bool custom = false;
+    if (count == 1 && kernels != nullptr && IsReplacementActive()) {
+        custom = SelectReplacement(kernels[0], selected);
+    }
     const bool enabled = state.enabled.load(std::memory_order_relaxed);
     const unsigned query = enabled ? BeginChain(commands, count) : UINT32_MAX;
     if (query != UINT32_MAX && kernels) {
@@ -149,13 +152,14 @@ NvAPI_Status __cdecl Launch(ID3D12GraphicsCommandList* commands,
         }
     }
     if (query != UINT32_MAX) StartChainTimer(commands, query);
-    const auto result = state.launch.load()(commands, custom ? &selected : kernels, count);
+    const auto launchFunc = state.launch.load(std::memory_order_relaxed);
+    const auto result = launchFunc(commands, custom ? &selected : kernels, count);
     if (query != UINT32_MAX) {
         EndChain(commands, query, result == NVAPI_OK);
         CaptureChainAfter(commands, result == NVAPI_OK);
     }
-    CaptureAfter(commands, result == NVAPI_OK);
-    CaptureSwinAfter(commands, result == NVAPI_OK);
+    if (IsKernelCaptureActive()) CaptureAfter(commands, result == NVAPI_OK);
+    if (IsSwinCaptureActive()) CaptureSwinAfter(commands, result == NVAPI_OK);
     return result;
 }
 
