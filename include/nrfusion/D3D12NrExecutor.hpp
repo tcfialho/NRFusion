@@ -185,6 +185,7 @@ private:
 
     struct FrameContext {
         D3D12NrFramePlan plan{};
+        ID3D12Device* device = nullptr;
         ID3D12Resource* target = nullptr;
         ID3D12Resource* activeTarget = nullptr;
         ID3D12Resource* modelInput = nullptr;
@@ -281,6 +282,7 @@ private:
     bool featureBeforeUpscale_ = false;
     bool featureRayReconstruction_ = false;
     std::wstring snippetPath_;
+    ID3D12Device* device_ = nullptr;
     std::string status_ = "not loaded";
 };
 

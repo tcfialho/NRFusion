@@ -122,6 +122,10 @@ void D3D12NrExecutor::Shutdown() {
     if (driverModule_ != nullptr && driverModuleOwned_) FreeLibrary(driverModule_);
     driverModule_ = nullptr;
     driverModuleOwned_ = false;
+    if (device_ != nullptr) {
+        device_->Release();
+        device_ = nullptr;
+    }
     snippetPath_.clear();
     status_ = "shut down";
 }

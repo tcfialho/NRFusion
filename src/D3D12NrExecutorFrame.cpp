@@ -105,9 +105,13 @@ D3D12NrFrameResult D3D12NrExecutor::ExecuteMainFrame(
     if (pending) return D3D12NrFrameResult::PendingFeature;
     if (effectivePasses == 0) return D3D12NrFrameResult::Failed;
 
-    ID3D12Device* device = nullptr;
-    if (FAILED(context.target->GetDevice(IID_PPV_ARGS(&device))) || device == nullptr)
-        return D3D12NrFrameResult::Failed;
+    ID3D12Device* device = device_;
+    if (device == nullptr) {
+        if (FAILED(context.target->GetDevice(IID_PPV_ARGS(&device_))) || device_ == nullptr)
+            return D3D12NrFrameResult::Failed;
+        device = device_;
+    }
+    context.device = device;
     D3D12NrScratchDesc scratchDesc{
         targetDesc.Format, context.plan.activeColor.width, context.plan.activeColor.height,
         context.plan.work.width, context.plan.work.height};
@@ -150,7 +154,6 @@ D3D12NrFrameResult D3D12NrExecutor::ExecuteMainFrame(
                 device, D3D12NrScratchKind::ResidualComposed, outputDesc.Format,
                 static_cast<std::uint32_t>(outputDesc.Width), outputDesc.Height, retirement_);
     }
-    device->Release();
     if (!ok) return D3D12NrFrameResult::Failed;
 
     if (!PrepareFrameResources(cmdList, resources, request, context)) {

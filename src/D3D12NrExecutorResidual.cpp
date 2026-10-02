@@ -49,16 +49,18 @@ D3D12NrFrameResult D3D12NrExecutor::ApplyStoredResidual(
         return D3D12NrFrameResult::Failed;
     }
 
-    ID3D12Device* device = nullptr;
-    if (FAILED(resources.output->GetDevice(IID_PPV_ARGS(&device))) || device == nullptr) {
-        residualHistoryPrimed_ = false;
-        return D3D12NrFrameResult::Failed;
+    ID3D12Device* device = device_;
+    if (device == nullptr) {
+        if (FAILED(resources.output->GetDevice(IID_PPV_ARGS(&device_))) || device_ == nullptr) {
+            residualHistoryPrimed_ = false;
+            return D3D12NrFrameResult::Failed;
+        }
+        device = device_;
     }
     const bool ready = codec_.Init(device) &&
         scratch_.EnsureOptional(
             device, D3D12NrScratchKind::ResidualComposed, outputDesc.Format,
             static_cast<std::uint32_t>(outputDesc.Width), outputDesc.Height, retirement_);
-    device->Release();
     if (!ready) {
         residualHistoryPrimed_ = false;
         return D3D12NrFrameResult::Failed;

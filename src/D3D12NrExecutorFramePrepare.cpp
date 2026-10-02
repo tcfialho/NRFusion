@@ -183,12 +183,9 @@ bool D3D12NrExecutor::PrepareFrameResources(
                 ? source : nullptr;
         }
 
-        ID3D12Device* device = nullptr;
-        if (FAILED(source->GetDevice(IID_PPV_ARGS(&device))) || device == nullptr)
+        if (!guideClones_.Ensure(context.device, kind, source, typed, retirement_))
             return nullptr;
-        const bool ensured = guideClones_.Ensure(device, kind, source, typed, retirement_);
-        device->Release();
-        if (!ensured || !TransitionExternal(
+        if (!TransitionExternal(
                 cmd, source, state, D3D12_RESOURCE_STATE_COPY_SOURCE))
             return nullptr;
         cmd->CopyResource(guideClones_.Get(kind), source);

@@ -191,6 +191,11 @@ bool D3D12NrExecutor::Init(ID3D12Device* device) {
         status_ = "invalid NR init request";
         return false;
     }
+    if (device_ != device) {
+        if (device_ != nullptr) device_->Release();
+        device_ = device;
+        device_->AddRef();
+    }
     if (capabilityParams_) return true;
 
     if (driverInit_(0x24480451ull, L"", device, nullptr, 0x15u) != kNgxSuccess) {
