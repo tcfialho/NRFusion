@@ -52,6 +52,7 @@ struct ReflexValidationStats {
     std::uint64_t mixedTokens = 0;
     std::uint64_t staleTokens = 0;
     std::uint64_t orderViolations = 0;
+    std::uint64_t missingMarkerFrames = 0;
     std::uint64_t perfectFrames = 0;
 };
 

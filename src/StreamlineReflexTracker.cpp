@@ -192,8 +192,14 @@ void StreamlineReflexTracker::CompleteFrameRecordLocked(FrameRecord& record) {
         stats_.missingSleeps++;
     }
 
+    constexpr std::uint32_t kMandatoryStageMask = 0x1FE;
+    const bool hasAllStages = (record.stageMask & kMandatoryStageMask) == kMandatoryStageMask;
+    if (!hasAllStages) {
+        stats_.missingMarkerFrames++;
+    }
+
     if (record.sleepCount == 1 && !record.duplicateSleep &&
-        !record.mixedToken && !record.orderViolation) {
+        !record.mixedToken && !record.orderViolation && hasAllStages) {
         stats_.perfectFrames++;
     }
 

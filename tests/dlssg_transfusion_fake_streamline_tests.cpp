@@ -262,6 +262,7 @@ int main()
     assert(stats.duplicateSleeps == 0);
     assert(stats.mixedTokens == 0);
     assert(stats.orderViolations == 0);
+    assert(stats.missingMarkerFrames == 0);
     assert(stats.perfectFrames == 1);
 
     // 8. Missing sleep detection
@@ -276,6 +277,13 @@ int main()
 
     const auto stats2 = tracker.GetValidationStats();
     assert(stats2.missingSleeps == 1);
+    assert(stats2.missingMarkerFrames >= 1);
+
+    // 9. Missing intermediate marker detection (sleep only)
+    MockFrameToken frame60(60);
+    tracker.RecordSleep(frame60);
+    tracker.RecordMarker(sl::PCLMarker::ePresentEnd, frame60);
+    assert(tracker.GetValidationStats().missingMarkerFrames >= 2);
 
     return 0;
 }

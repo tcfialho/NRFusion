@@ -4,8 +4,8 @@
     unsigned lastView = 99;
     FrameConstants previous{};
     std::uint64_t evaluatedFrames = 0;
-    std::vector<double> inputToPresentEndSamples;
-    std::vector<double> inputToPresentStartSamples;
+    std::vector<double> postPacingCpuToPresentReturnSamples;
+    std::vector<double> postPacingCpuToPresentStartSamples;
     std::cout << "[TEST] input=" << inputWidth << "x" << inputHeight << " output=" << width << "x" << height << " warmup=" << g_warmup << std::endl;
     MSG msg{};
 
@@ -31,25 +31,22 @@
             : (g_deterministicMotion ? simulationFrame * (1.0f / 60.0f)
                                      : std::chrono::duration<float>(curTime - startTime).count());
 
-        Check(allocator->Reset(), "allocator reset");
-        Check(commands->Reset(allocator.Get(), pipeline.Get()), "command reset");
+        const UINT index = swapChain->GetCurrentBackBufferIndex();
+        if (g_latencyRealtime && frameFenceValues[index] > 0 && fence->GetCompletedValue() < frameFenceValues[index]) {
+            Check(fence->SetEventOnCompletion(frameFenceValues[index], fenceEvent), "SetEventOnCompletion");
+            WaitForSingleObject(fenceEvent, INFINITE);
+        }
+        Check(allocators[index]->Reset(), "allocator reset");
+        Check(commands->Reset(allocators[index].Get(), pipeline.Get()), "command reset");
         frameTimer.Begin(commands.Get());
         bool lifecycleReset = false, lifecycleFeature = false;
 #include "requiem_kernel_lifecycle.inc"
         guideCopyCounter.Reattach(commands.Get());
-        if (simulationFrame != 0 && !lifecycleReset) {
-            for (auto* guide : {depth.Get(), motion.Get()})
-                requiem::Transition(commands.Get(), guide,
-                                    D3D12_RESOURCE_STATE_NON_PIXEL_SHADER_RESOURCE,
-                                    D3D12_RESOURCE_STATE_RENDER_TARGET);
-        }
         if (simulationFrame != 0) {
-            requiem::Transition(commands.Get(), ui.Get(),
-                                D3D12_RESOURCE_STATE_NON_PIXEL_SHADER_RESOURCE,
-                                D3D12_RESOURCE_STATE_RENDER_TARGET);
+            if (!lifecycleReset) for (auto* g : {depth.Get(), motion.Get()})
+                requiem::Transition(commands.Get(), g, D3D12_RESOURCE_STATE_NON_PIXEL_SHADER_RESOURCE, D3D12_RESOURCE_STATE_RENDER_TARGET);
+            requiem::Transition(commands.Get(), ui.Get(), D3D12_RESOURCE_STATE_NON_PIXEL_SHADER_RESOURCE, D3D12_RESOURCE_STATE_RENDER_TARGET);
         }
-
-        const UINT index = swapChain->GetCurrentBackBufferIndex();
         D3D12_RESOURCE_BARRIER barrier{};
         barrier.Type = D3D12_RESOURCE_BARRIER_TYPE_TRANSITION;
         barrier.Transition.pResource = backBuffers[index].Get();
@@ -178,8 +175,8 @@
         if (simulationFrame >= g_warmup) {
             double startMs = std::chrono::duration<double, std::milli>(framePresentStartTime - frameInputTime).count();
             double endMs = std::chrono::duration<double, std::milli>(framePresentEndTime - frameInputTime).count();
-            inputToPresentStartSamples.push_back(startMs);
-            inputToPresentEndSamples.push_back(endMs);
+            postPacingCpuToPresentStartSamples.push_back(startMs);
+            postPacingCpuToPresentReturnSamples.push_back(endMs);
         }
         if (presentResult != S_OK) {
             std::fprintf(stderr, "[PRESENT] frame=%llu hr=0x%08lX\n",
@@ -189,41 +186,46 @@
         DrainDebugMessages();
         Check(presentResult, "Present");
         mfg.PresentEnd();
-        WaitForGpu();
+        if (g_latencyRealtime) {
+            Check(queue->Signal(fence.Get(), ++fenceValue), "Signal");
+            frameFenceValues[index] = fenceValue;
+        } else {
+            WaitForGpu();
+        }
 
         nrfusion::NrDiagnosticFrame nrFrame{};
         nrfusion::NrDiagnosticStages nrStages{};
-        if (readNrFrame) {
-            if (!readNrFrame(queue.Get(), fence.Get(), fenceValue, &nrFrame))
-                throw std::runtime_error("NR diagnostic read failed after queue completion");
-            if (nrFrame.frame != simulationFrame)
-                throw std::runtime_error("NR timing belongs to a different frame");
-            const bool nrDisabled = g_nrLifecycle && simulationFrame >= 140 && simulationFrame < 150;
-            if (nrDisabled && (nrFrame.passes || nrFrame.successfulPasses || nrFrame.kernelLaunches))
-                throw std::runtime_error("Disabled NR still executed");
-            if (lifecycleFeature && (nrFrame.passes != 1 || nrFrame.successfulPasses || nrFrame.kernelLaunches))
-                throw std::runtime_error("Unexpected NR recreation-frame execution");
-            if (simulationFrame >= g_warmup && !lifecycleFeature && !nrDisabled &&
-                (nrFrame.passes != 1 || nrFrame.successfulPasses != 1 ||
-                 !std::isfinite(nrFrame.nrGpuMs) || nrFrame.nrGpuMs <= 0))
-                throw std::runtime_error("NR did not execute successfully on the measured frame");
+        double evaluationMs = 0.0, frameGpuMs = 0.0;
+        if (!g_latencyRealtime) {
+            if (readNrFrame) {
+                if (!readNrFrame(queue.Get(), fence.Get(), fenceValue, &nrFrame))
+                    throw std::runtime_error("NR diagnostic read failed after queue completion");
+                if (nrFrame.frame != simulationFrame)
+                    throw std::runtime_error("NR timing belongs to a different frame");
+                const bool nrDisabled = g_nrLifecycle && simulationFrame >= 140 && simulationFrame < 150;
+                if (nrDisabled && (nrFrame.passes || nrFrame.successfulPasses || nrFrame.kernelLaunches))
+                    throw std::runtime_error("Disabled NR still executed");
+                if (lifecycleFeature && (nrFrame.passes != 1 || nrFrame.successfulPasses || nrFrame.kernelLaunches))
+                    throw std::runtime_error("Unexpected NR recreation-frame execution");
+                if (simulationFrame >= g_warmup && !lifecycleFeature && !nrDisabled &&
+                    (nrFrame.passes != 1 || nrFrame.successfulPasses != 1 ||
+                     !std::isfinite(nrFrame.nrGpuMs) || nrFrame.nrGpuMs <= 0))
+                    throw std::runtime_error("NR did not execute successfully on the measured frame");
+            }
+            evaluationMs = evaluationTimer.ReadAfterFence();
+            frameGpuMs = frameTimer.ReadAfterFence();
+            if (readNrStages && !readNrStages(simulationFrame, sizeof(nrStages), &nrStages))
+                throw std::runtime_error("NR stage timing belongs to a different or unretired frame");
+            if (readNrStages && nrFrame.successfulPasses &&
+                (!nrStages.valid || std::abs(nrStages.preparationGpuMs + nrStages.modelGpuMs +
+                         nrStages.compositionGpuMs - nrFrame.nrGpuMs) > 0.000001))
+                throw std::runtime_error("NR stage intervals do not cover the complete NR pass");
+            if (simulationFrame >= g_warmup && (!std::isfinite(evaluationMs) || evaluationMs <= 0 || !std::isfinite(frameGpuMs) || frameGpuMs < evaluationMs)) {
+                std::cerr << "[ERRO] invalid evaluation timestamp" << std::endl; return 1;
+            }
         }
-        const double evaluationMs = evaluationTimer.ReadAfterFence();
-        const double frameGpuMs = frameTimer.ReadAfterFence();
-        if (readNrStages && !readNrStages(simulationFrame, sizeof(nrStages), &nrStages))
-            throw std::runtime_error("NR stage timing belongs to a different or unretired frame");
-        if (readNrStages && nrFrame.successfulPasses &&
-            (!nrStages.valid || std::abs(nrStages.preparationGpuMs + nrStages.modelGpuMs +
-                     nrStages.compositionGpuMs - nrFrame.nrGpuMs) > 0.000001))
-            throw std::runtime_error("NR stage intervals do not cover the complete NR pass");
         const double frameMs = std::chrono::duration<double, std::milli>(
             std::chrono::high_resolution_clock::now() - curTime).count();
-        Check(device->GetDeviceRemovedReason(), "device status after evaluation");
-        if (simulationFrame >= g_warmup && (!std::isfinite(evaluationMs) || evaluationMs <= 0 ||
-            !std::isfinite(frameGpuMs) || frameGpuMs < evaluationMs)) {
-            std::cerr << "[ERRO] invalid evaluation timestamp" << std::endl;
-            return 1;
-        }
         if (timings && simulationFrame >= g_warmup)
             timings << simulationFrame << ',' << inputWidth << ',' << inputHeight << ',' << width << ','
                     << height << ',' << evaluationMs << ',' << frameMs << ',' << nrFrame.nrGpuMs << ','

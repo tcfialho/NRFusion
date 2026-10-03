@@ -53,9 +53,13 @@
     std::unique_ptr<requiem::RgbaFrameHasher> frameHasher;
     if (!g_frameHashes.empty()) frameHasher = std::make_unique<requiem::RgbaFrameHasher>();
 
-    ComPtr<ID3D12CommandAllocator> allocator;
-    Check(device->CreateCommandAllocator(D3D12_COMMAND_LIST_TYPE_DIRECT, IID_PPV_ARGS(&allocator)),
-          "CreateCommandAllocator");
+    ComPtr<ID3D12CommandAllocator> allocators[kBackBuffers];
+    UINT64 frameFenceValues[kBackBuffers]{};
+    for (UINT b = 0; b < kBackBuffers; ++b) {
+        Check(device->CreateCommandAllocator(D3D12_COMMAND_LIST_TYPE_DIRECT, IID_PPV_ARGS(&allocators[b])),
+              "CreateCommandAllocator");
+    }
+    ComPtr<ID3D12CommandAllocator>& allocator = allocators[0];
     ComPtr<ID3D12GraphicsCommandList> commands;
     Check(device->CreateCommandList(0, D3D12_COMMAND_LIST_TYPE_DIRECT, allocator.Get(), nullptr,
                                     IID_PPV_ARGS(&commands)), "CreateCommandList");

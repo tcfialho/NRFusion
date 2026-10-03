@@ -259,6 +259,16 @@
           "CreateSwapChainForHwnd");
     ComPtr<IDXGISwapChain3> swapChain;
     Check(swapChain1.As(&swapChain), "IDXGISwapChain3");
+    g_swapChainFlags = swapDesc.Flags;
+    g_hasWaitableFlag = (swapDesc.Flags & DXGI_SWAP_CHAIN_FLAG_FRAME_LATENCY_WAITABLE_OBJECT) != 0;
+    ComPtr<IDXGISwapChain2> swapChain2;
+    if (SUCCEEDED(swapChain.As(&swapChain2))) {
+        g_hasWaitableObject = (swapChain2->GetFrameLatencyWaitableObject() != nullptr);
+        UINT maxLat = 0;
+        if (SUCCEEDED(swapChain2->GetMaximumFrameLatency(&maxLat))) {
+            g_effectiveMaxLatency = maxLat;
+        }
+    }
     if (mfg.Requested() &&
         !mfg.Configure(width, height, inputWidth, inputHeight, kBackBuffers)) {
         std::cerr << "[MFG] " << mfg.Status() << std::endl;

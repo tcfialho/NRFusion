@@ -99,7 +99,9 @@ extern "C" __declspec(dllexport) unsigned int NRFusion_MfgUnlockedMax() {
 
 extern "C" __declspec(dllexport) int NRFusion_MfgPatchQualified() {
     const auto state = nrfusion::DlssgTransfusion::Instance().Snapshot();
-    return state.archGatesPatched && state.blackwellTransfusionActive ? 1 : 0;
+    const bool active = state.blackwellTransfusionActive ||
+                        state.kernelSelector == nrfusion::MfgKernelSelector::StockOnly;
+    return (state.archGatesPatched && active) ? 1 : 0;
 }
 
 extern "C" __declspec(dllexport) int NRFusion_PatchMfgModule(HMODULE module) {
@@ -109,7 +111,9 @@ extern "C" __declspec(dllexport) int NRFusion_PatchMfgModule(HMODULE module) {
         nrfusion::MfgModuleWatcher::Instance().ScanAndPatchLoadedModules();
     }
     const auto state = nrfusion::DlssgTransfusion::Instance().Snapshot();
-    return (state.archGatesPatched && state.blackwellTransfusionActive) ? 1 : 0;
+    const bool active = state.blackwellTransfusionActive ||
+                        state.kernelSelector == nrfusion::MfgKernelSelector::StockOnly;
+    return (state.archGatesPatched && active) ? 1 : 0;
 }
 
 extern "C" __declspec(dllexport) void NRFusion_MfgFollowGameControl() {

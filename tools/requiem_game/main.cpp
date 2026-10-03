@@ -82,6 +82,11 @@ bool g_requireMenu = false;
 std::uint32_t g_mfgMultiplier = 0;
 bool g_requireMfg = false;
 std::uint64_t g_frameLimit = 0;
+bool g_latencyRealtime = false;
+bool g_hasWaitableFlag = false;
+bool g_hasWaitableObject = false;
+UINT g_effectiveMaxLatency = 0;
+UINT g_swapChainFlags = 0;
 
 LRESULT CALLBACK WindowProc(HWND hwnd, UINT message, WPARAM wparam, LPARAM lparam) {
     switch (message) {

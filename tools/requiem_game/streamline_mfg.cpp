@@ -70,6 +70,20 @@ struct StreamlineMfg::Impl {
     int(__cdecl* processSetOptions)(unsigned int*, unsigned int*) = nullptr;
     int(__cdecl* processGetState)(unsigned int*) = nullptr;
     void(__cdecl* notifyFrameBoundary)() = nullptr;
+
+    struct ReflexDataPoint {
+        uint64_t frameId = 0;
+        double simStart = 0.0;
+        double renderSubmitStart = 0.0;
+        double presentStart = 0.0;
+        double presentEnd = 0.0;
+        double driverEnd = 0.0;
+        double osQueueEnd = 0.0;
+        double gpuRenderEnd = 0.0;
+    };
+    std::vector<ReflexDataPoint> reflexData;
+    uint64_t lastReflexFrameId = 0;
+    bool reflexReportEverAvailable = false;
 #endif
 };
 

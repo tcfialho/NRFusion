@@ -50,6 +50,10 @@
             g_csv = argv[++i];
         else if (argument == "--capture" && i + 1 < argc)
             g_capture = argv[++i];
+        else if (argument == "--realtime" || (argument == "--latency-mode" && i + 1 < argc && std::string(argv[i + 1]) == "realtime")) {
+            g_latencyRealtime = true;
+            if (argument == "--latency-mode") ++i;
+        }
         else if (argument == "--frame-hashes" && i + 1 < argc)
             g_frameHashes = argv[++i];
         else { std::cerr << "Invalid argument: " << argument << std::endl; return 2; }

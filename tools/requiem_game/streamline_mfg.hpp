@@ -54,6 +54,25 @@ public:
     std::uint32_t DlssgStatus() const noexcept;
     const std::string& Status() const noexcept;
 
+    struct ReflexMetricPercentiles {
+        double p50 = 0.0;
+        double p95 = 0.0;
+        double p99 = 0.0;
+    };
+
+    struct ReflexLatencyStats {
+        bool available = false;
+        std::uint64_t samples = 0;
+        ReflexMetricPercentiles inputToSimStart{};
+        ReflexMetricPercentiles inputToRenderSubmitStart{};
+        ReflexMetricPercentiles inputToPresentStart{};
+        ReflexMetricPercentiles inputToPresentEnd{};
+        ReflexMetricPercentiles inputToDriverEnd{};
+        ReflexMetricPercentiles inputToOsQueueEnd{};
+        ReflexMetricPercentiles inputToGpuRenderEnd{};
+    };
+    ReflexLatencyStats GetReflexLatencyStats() const noexcept;
+
 private:
     struct Impl;
     std::unique_ptr<Impl> impl_;
