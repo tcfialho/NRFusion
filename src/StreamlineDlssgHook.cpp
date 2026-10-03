@@ -106,6 +106,10 @@ bool StreamlineDlssgHook::IsAutoPerformance() const noexcept {
     return streamline::StreamlineReflexTracker::Instance().IsAutoPerformance();
 }
 
+std::uint32_t StreamlineDlssgHook::GetMfgAutoState() const noexcept {
+    return streamline::StreamlineReflexTracker::Instance().GetAutoState();
+}
+
 void StreamlineDlssgHook::SetMfgPacerMode(MfgPacerMode mode) noexcept {
     streamline::StreamlineReflexTracker::Instance().SetPacerMode(mode);
 }

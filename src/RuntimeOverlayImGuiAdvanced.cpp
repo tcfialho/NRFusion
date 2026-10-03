@@ -1,6 +1,7 @@
 #include "RuntimeOverlayImGuiControls.hpp"
 #include "nrfusion/StreamlineDlssgHook.hpp"
 #include "nrfusion/DlssgTransfusion.hpp"
+#include "nrfusion/AdaptiveWorkloadGate.hpp"
 #include <array>
 #include <algorithm>
 
@@ -257,6 +258,17 @@ void DrawRuntimeOverlayAdvanced(RuntimeOverlay& overlay) {
                                       "Pacing Reflex: %s (%s) | meta %u Hz | limite %u us"),
                             modeName, pacerName, reflex.targetDisplayFps, reflex.effectiveFrameLimitUs);
             }
+        }
+
+        const bool sampleValid = AdaptiveWorkloadGate::Instance().IsSampleValid();
+        ImGui::Text(MenuLabel("Adaptive workload: %s", "Carga adaptativa: %s"),
+                    sampleValid ? MenuLabel("Valid", "Válida") : MenuLabel("Waiting", "Aguardando"));
+        if (reflex.autoPerformance && reflex.latencyMode == 1) {
+            const char* autoStateStr = "Armed";
+            if (reflex.autoState == 1) autoStateStr = "Discovering";
+            else if (reflex.autoState == 2) autoStateStr = "Active";
+            else if (reflex.autoState == 3) autoStateStr = "Hold";
+            ImGui::Text(MenuLabel("Auto MFG: %s", "MFG Automático: %s"), autoStateStr);
         }
     }
 }

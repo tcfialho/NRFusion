@@ -44,6 +44,8 @@ public:
     std::uint32_t GetTargetNativeFps() const noexcept;
     void SetAutoPerformance(bool enabled) noexcept;
     bool IsAutoPerformance() const noexcept;
+    std::uint32_t GetAutoState() const noexcept;
+    void ResetDiscovery() noexcept;
     void SetMfgMultiplier(std::uint32_t multiplier) noexcept;
     bool ApplyCurrentLatencyPolicy(bool mfgActive, sl::ReflexOptions& outOptions);
 

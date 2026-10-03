@@ -11,6 +11,13 @@
 
 namespace nrfusion::streamline {
 
+enum class AutoMfgState : std::uint32_t {
+    Armed = 0,
+    Discovering = 1,
+    Active = 2,
+    Hold = 3
+};
+
 struct AutoPerformanceResult {
     bool changed = false;
     std::uint32_t targetNativeFps = 0;
@@ -27,25 +34,37 @@ public:
     bool IsEnabled() const noexcept;
 
     void Reset(std::uint32_t initialNativeFps = 0) noexcept;
+    void ResetDiscovery() noexcept;
     void SetMultiplier(std::uint32_t multiplier) noexcept;
 
     bool Evaluate(std::uint32_t multiplier, float observedNativeFps, AutoPerformanceResult& outResult) noexcept;
 
+    AutoMfgState GetState() const noexcept;
+    bool IsLimiterActive() const noexcept;
+
     std::uint32_t GetCurrentNativeFps() const noexcept;
     std::uint32_t GetCurrentMfgFps() const noexcept;
     std::uint32_t GetLastGpuUtilization() const noexcept;
+
+    void SetTickOverride(std::uint64_t tick) noexcept;
 
 private:
     StreamlineAutoPerformance() noexcept;
     ~StreamlineAutoPerformance() noexcept = default;
 
     bool QueryGpuUtilization(std::uint32_t& outGpuPercent) noexcept;
+    std::uint64_t GetCurrentTick() const noexcept;
 
     bool enabled_ = true;
+    AutoMfgState state_ = AutoMfgState::Armed;
     std::uint32_t targetNativeFps_ = 60;
     std::uint32_t targetMfgFps_ = 120;
     std::uint32_t lastGpuPercent_ = 0;
     std::uint64_t lastEvaluationTick_ = 0;
+    std::uint64_t discoveryStartTick_ = 0;
+    std::uint32_t discoverySampleCount_ = 0;
+    float discoveryFpsSum_ = 0.0f;
+    std::uint64_t tickOverride_ = 0;
     bool initializedGpuQuery_ = false;
 
     using NvAPI_QueryInterface_t = void*(*)(unsigned int);
