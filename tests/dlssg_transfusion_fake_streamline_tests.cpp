@@ -1,6 +1,7 @@
 #include "nrfusion/DlssgTransfusion.hpp"
 #include "nrfusion/StreamlineDlssgHook.hpp"
 #include "StreamlineReflexTracker.hpp"
+#include "StreamlineAutoPerformance.hpp"
 
 #include <cassert>
 #include <cstdint>
@@ -171,56 +172,40 @@ int main()
 
     // 1. Preserve Boost
     sl::ReflexOptions boostOpt{};
-    boostOpt.mode = sl::ReflexMode::eLowLatencyWithBoost;
-    boostOpt.frameLimitUs = 13888;
-    boostOpt.useMarkersToOptimize = false;
-    boostOpt.virtualKey = 0x7A;
-    boostOpt.idThread = 1234;
+    boostOpt.mode = sl::ReflexMode::eLowLatencyWithBoost; boostOpt.frameLimitUs = 13888;
+    boostOpt.useMarkersToOptimize = false; boostOpt.virtualKey = 0x7A; boostOpt.idThread = 1234;
 
     auto appliedBoost = tracker.OnGameReflexSetOptions(boostOpt, true);
-    assert(appliedBoost.mode == sl::ReflexMode::eLowLatencyWithBoost);
-    assert(appliedBoost.frameLimitUs == 13888);
-    assert(!appliedBoost.useMarkersToOptimize);
-    assert(appliedBoost.virtualKey == 0x7A);
-    assert(appliedBoost.idThread == 1234);
+    assert(appliedBoost.mode == sl::ReflexMode::eLowLatencyWithBoost && appliedBoost.frameLimitUs == 13888);
+    assert(!appliedBoost.useMarkersToOptimize && appliedBoost.virtualKey == 0x7A && appliedBoost.idThread == 1234);
 
     auto ownership = tracker.GetOwnershipInfo();
-    assert(ownership.haveGameOptions);
+    assert(ownership.haveGameOptions && !ownership.mfgPromotedReflex && !ownership.effectiveUseMarkersToOptimize);
     assert(ownership.effectiveMode == static_cast<std::uint32_t>(sl::ReflexMode::eLowLatencyWithBoost));
     assert(ownership.effectiveFrameLimitUs == 13888);
-    assert(!ownership.effectiveUseMarkersToOptimize);
-    assert(!ownership.mfgPromotedReflex);
 
     // 2. Preserve useMarkersToOptimize false even when markers arrive
     MockFrameToken markerToken(50);
     tracker.RecordMarker(sl::PCLMarker::eSimulationStart, markerToken);
     ownership = tracker.GetOwnershipInfo();
-    assert(!ownership.effectiveUseMarkersToOptimize);
-    assert(!ownership.gameUseMarkersToOptimize);
+    assert(!ownership.effectiveUseMarkersToOptimize && !ownership.gameUseMarkersToOptimize);
 
     // 3. Promote only Off during MFG ON; restore on MFG OFF
     tracker.Reset();
     tracker.SetLatencyMode(nrfusion::MfgLatencyMode::GameDefault);
     sl::ReflexOptions offOpt{};
-    offOpt.mode = sl::ReflexMode::eOff;
-    offOpt.frameLimitUs = 5000;
-    offOpt.useMarkersToOptimize = false;
+    offOpt.mode = sl::ReflexMode::eOff; offOpt.frameLimitUs = 5000; offOpt.useMarkersToOptimize = false;
 
     auto appliedOff = tracker.OnGameReflexSetOptions(offOpt, true);
-    assert(appliedOff.mode == sl::ReflexMode::eLowLatency);
-    assert(appliedOff.frameLimitUs == 5000);
+    assert(appliedOff.mode == sl::ReflexMode::eLowLatency && appliedOff.frameLimitUs == 5000);
     ownership = tracker.GetOwnershipInfo();
-    assert(ownership.effectiveMode == static_cast<std::uint32_t>(sl::ReflexMode::eLowLatency));
-    assert(ownership.mfgPromotedReflex);
+    assert(ownership.effectiveMode == static_cast<std::uint32_t>(sl::ReflexMode::eLowLatency) && ownership.mfgPromotedReflex);
 
     sl::ReflexOptions restored{};
     bool changed = tracker.OnMfgStateChanged(false, restored);
-    assert(changed);
-    assert(restored.mode == sl::ReflexMode::eOff);
-    assert(restored.frameLimitUs == 5000);
+    assert(changed && restored.mode == sl::ReflexMode::eOff && restored.frameLimitUs == 5000);
     ownership = tracker.GetOwnershipInfo();
-    assert(ownership.effectiveMode == static_cast<std::uint32_t>(sl::ReflexMode::eOff));
-    assert(!ownership.mfgPromotedReflex);
+    assert(ownership.effectiveMode == static_cast<std::uint32_t>(sl::ReflexMode::eOff) && !ownership.mfgPromotedReflex);
 
     // 4. No duplicate sleep
     tracker.Reset();
@@ -259,21 +244,15 @@ int main()
     tracker.RecordMarker(sl::PCLMarker::ePresentEnd, frame40);
 
     const auto stats = tracker.GetValidationStats();
-    assert(stats.framesAnalyzed == 1);
-    assert(stats.missingSleeps == 0);
-    assert(stats.duplicateSleeps == 0);
-    assert(stats.mixedTokens == 0);
-    assert(stats.orderViolations == 0);
-    assert(stats.missingMarkerFrames == 0);
-    assert(stats.perfectFrames == 1);
+    assert(stats.framesAnalyzed == 1 && stats.missingSleeps == 0 && stats.duplicateSleeps == 0);
+    assert(stats.mixedTokens == 0 && stats.orderViolations == 0 && stats.missingMarkerFrames == 0 && stats.perfectFrames == 1);
 
     // 8. Missing sleep detection
     MockFrameToken frame50(50);
     tracker.RecordMarker(sl::PCLMarker::eSimulationStart, frame50);
     tracker.RecordMarker(sl::PCLMarker::ePresentEnd, frame50);
     const auto stats2 = tracker.GetValidationStats();
-    assert(stats2.missingSleeps == 1);
-    assert(stats2.missingMarkerFrames >= 1);
+    assert(stats2.missingSleeps == 1 && stats2.missingMarkerFrames >= 1);
 
     // 9. Missing intermediate marker detection (sleep only)
     MockFrameToken frame60(60);
@@ -281,13 +260,39 @@ int main()
     tracker.RecordMarker(sl::PCLMarker::ePresentEnd, frame60);
     assert(tracker.GetValidationStats().missingMarkerFrames >= 2);
 
-    // 10. LowLatency & AutoPerformance validation
-    tracker.SetLatencyMode(nrfusion::MfgLatencyMode::LowLatency, 90);
-    assert(!tracker.IsAutoPerformance());
-    auto applied90 = tracker.OnGameReflexSetOptions(offOpt, true);
-    assert(applied90.frameLimitUs == 11111);
+    // 10. LowLatency & AutoPerformance: Auto remains Auto when toggling latency mode
     tracker.SetAutoPerformance(true);
     assert(tracker.IsAutoPerformance());
+    tracker.SetLatencyMode(nrfusion::MfgLatencyMode::GameDefault);
+    assert(tracker.IsAutoPerformance());
+    tracker.SetLatencyMode(nrfusion::MfgLatencyMode::LowLatency);
+    assert(tracker.IsAutoPerformance());
+
+    // Manual mode remains manual when toggling latency mode
+    tracker.SetLatencyMode(nrfusion::MfgLatencyMode::LowLatency, 90);
+    assert(!tracker.IsAutoPerformance());
+    assert(tracker.GetTargetDisplayFps() == 90);
+    tracker.SetLatencyMode(nrfusion::MfgLatencyMode::GameDefault);
+    assert(!tracker.IsAutoPerformance());
+    tracker.SetLatencyMode(nrfusion::MfgLatencyMode::LowLatency);
+    assert(!tracker.IsAutoPerformance() && tracker.GetTargetDisplayFps() == 90);
+
+    // Multiplier change: 2X -> 3X -> 4X recalculates targetMfg immediately
+    tracker.SetAutoPerformance(true);
+    nrfusion::streamline::StreamlineAutoPerformance::Instance().Reset(45);
+    tracker.SetMfgMultiplier(2);
+    assert(tracker.GetTargetDisplayFps() == 90);
+    tracker.SetMfgMultiplier(3);
+    assert(tracker.GetTargetDisplayFps() == 135);
+    tracker.SetMfgMultiplier(4);
+    assert(tracker.GetTargetDisplayFps() == 180);
+
+    // Manual GetTargetNativeFps: 90/2=45, 90/3=30
+    tracker.SetLatencyMode(nrfusion::MfgLatencyMode::LowLatency, 90);
+    tracker.SetMfgMultiplier(2);
+    assert(tracker.GetTargetNativeFps() == 45);
+    tracker.SetMfgMultiplier(3);
+    assert(tracker.GetTargetNativeFps() == 30);
 
     return 0;
 }

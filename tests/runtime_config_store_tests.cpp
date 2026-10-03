@@ -46,6 +46,26 @@ int main() {
     assert(store.Load(config.generation, loaded));
     assert(loaded == config);
 
+    // Test persistent MFG settings: manual 90, Auto, Pacer
+    config.mfgLatencyMode = MfgLatencyMode::LowLatency;
+    config.mfgTargetAuto = false;
+    config.mfgTargetFps = 90;
+    config.mfgPacer = MfgPacerMode::CpuPacer;
+    assert(store.Save(config));
+    assert(store.Load(config.generation, loaded));
+    assert(loaded.mfgLatencyMode == MfgLatencyMode::LowLatency);
+    assert(!loaded.mfgTargetAuto);
+    assert(loaded.mfgTargetFps == 90);
+    assert(loaded.mfgPacer == MfgPacerMode::CpuPacer);
+
+    // Test Auto target and FlipMetering persist/reload
+    config.mfgTargetAuto = true;
+    config.mfgPacer = MfgPacerMode::FlipMetering;
+    assert(store.Save(config));
+    assert(store.Load(config.generation, loaded));
+    assert(loaded.mfgTargetAuto);
+    assert(loaded.mfgPacer == MfgPacerMode::FlipMetering);
+
     const RuntimeConfig stable = loaded;
     {
         std::ofstream bad(path, std::ios::binary | std::ios::trunc);
