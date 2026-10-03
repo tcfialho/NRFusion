@@ -4,8 +4,9 @@
     unsigned lastView = 99;
     FrameConstants previous{};
     std::uint64_t evaluatedFrames = 0;
-    std::vector<double> postPacingCpuToPresentReturnSamples;
-    std::vector<double> postPacingCpuToPresentStartSamples;
+    std::vector<double> postPacingCpuToPresentReturnSamples, postPacingCpuToPresentStartSamples;
+    std::vector<double> pacingSleepSamples, nativeFrameIntervalSamples;
+    auto lastFrameStartTime = std::chrono::high_resolution_clock::now();
     std::cout << "[TEST] input=" << inputWidth << "x" << inputHeight << " output=" << width << "x" << height << " warmup=" << g_warmup << std::endl;
     MSG msg{};
 
@@ -22,12 +23,16 @@
             g_pendingPclPing = false;
         }
         guideCopyCounter.Reset();
+        const auto frameLoopStart = std::chrono::high_resolution_clock::now();
+        if (simulationFrame == 0) EnsureWindowFocus(g_hwnd);
+        double pacingDurationMs = 0.0;
         if (mfg.Requested()) {
-            EnsureWindowFocus(g_hwnd);
+            const auto t0 = std::chrono::high_resolution_clock::now();
             if (!mfg.BeginFramePacing(static_cast<std::uint32_t>(simulationFrame))) {
                 std::cerr << "[MFG] " << mfg.Status() << std::endl;
                 return 1;
             }
+            pacingDurationMs = std::chrono::duration<double, std::milli>(std::chrono::high_resolution_clock::now() - t0).count();
         }
         auto frameInputTime = std::chrono::high_resolution_clock::now();
 
@@ -53,12 +58,8 @@
                 requiem::Transition(commands.Get(), g, D3D12_RESOURCE_STATE_NON_PIXEL_SHADER_RESOURCE, D3D12_RESOURCE_STATE_RENDER_TARGET);
             requiem::Transition(commands.Get(), ui.Get(), D3D12_RESOURCE_STATE_NON_PIXEL_SHADER_RESOURCE, D3D12_RESOURCE_STATE_RENDER_TARGET);
         }
-        D3D12_RESOURCE_BARRIER barrier{};
-        barrier.Type = D3D12_RESOURCE_BARRIER_TYPE_TRANSITION;
-        barrier.Transition.pResource = backBuffers[index].Get();
-        barrier.Transition.StateBefore = D3D12_RESOURCE_STATE_PRESENT;
-        barrier.Transition.StateAfter = D3D12_RESOURCE_STATE_RENDER_TARGET;
-        barrier.Transition.Subresource = D3D12_RESOURCE_BARRIER_ALL_SUBRESOURCES;
+        D3D12_RESOURCE_BARRIER barrier{D3D12_RESOURCE_BARRIER_TYPE_TRANSITION, D3D12_RESOURCE_BARRIER_FLAG_NONE,
+            {backBuffers[index].Get(), D3D12_RESOURCE_BARRIER_ALL_SUBRESOURCES, D3D12_RESOURCE_STATE_PRESENT, D3D12_RESOURCE_STATE_RENDER_TARGET}};
         commands->ResourceBarrier(1, &barrier);
 
         D3D12_CPU_DESCRIPTOR_HANDLE rtv = rtvHeap->GetCPUDescriptorHandleForHeapStart();
@@ -176,11 +177,14 @@
             double endMs = std::chrono::duration<double, std::milli>(framePresentEndTime - frameInputTime).count();
             postPacingCpuToPresentStartSamples.push_back(startMs);
             postPacingCpuToPresentReturnSamples.push_back(endMs);
+            pacingSleepSamples.push_back(pacingDurationMs);
+            double intervalMs = std::chrono::duration<double, std::milli>(frameLoopStart - lastFrameStartTime).count();
+            if (simulationFrame > g_warmup) nativeFrameIntervalSamples.push_back(intervalMs);
         }
-        if (presentResult != S_OK) {
+        lastFrameStartTime = frameLoopStart;
+        if (presentResult != S_OK && presentResult != DXGI_STATUS_OCCLUDED) {
             std::fprintf(stderr, "[PRESENT] frame=%llu hr=0x%08lX\n",
-                         static_cast<unsigned long long>(simulationFrame),
-                         static_cast<unsigned long>(presentResult));
+                         static_cast<unsigned long long>(simulationFrame), static_cast<unsigned long>(presentResult));
         }
         DrainDebugMessages();
         Check(presentResult, "Present");

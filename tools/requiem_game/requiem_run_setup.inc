@@ -73,6 +73,8 @@
 
     HMODULE standaloneProxy = nullptr;
     if (g_requireNrfusionProxy || g_mfgMultiplier >= 2) {
+        if (!g_mfgPacerMode.empty())
+            SetEnvironmentVariableA("NRFUSION_MFG_PACER", g_mfgPacerMode.c_str());
         wchar_t proxyPath[MAX_PATH]{};
         GetModuleFileNameW(nullptr, proxyPath, MAX_PATH);
         if (wchar_t* slash = wcsrchr(proxyPath, L'\\'))
@@ -86,6 +88,19 @@
         const auto ensureRuntime = reinterpret_cast<EnsureRuntimeFn>(
             GetProcAddress(standaloneProxy, "NRFusion_EnsureRuntime"));
         if (ensureRuntime) ensureRuntime();
+
+        using SetMfgLatencyModeFn = int(__cdecl*)(unsigned int, unsigned int);
+        const auto setLatencyMode = reinterpret_cast<SetMfgLatencyModeFn>(
+            GetProcAddress(standaloneProxy, "NRFusion_SetMfgLatencyMode"));
+        if (setLatencyMode) {
+            unsigned int modeVal = 0;
+            if (g_mfgLatencyModeStr == "LowLatency" || g_mfgLatencyModeStr == "lowlatency" || g_mfgLatencyModeStr == "1") {
+                modeVal = 1;
+            } else if (g_mfgLatencyModeStr == "OptiScalerEquivalent" || g_mfgLatencyModeStr == "optiscaler" || g_mfgLatencyModeStr == "2") {
+                modeVal = 2;
+            }
+            setLatencyMode(modeVal, g_mfgTargetFps);
+        }
     }
 
     requiem::StreamlineMfg mfg;

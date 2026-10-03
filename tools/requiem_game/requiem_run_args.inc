@@ -56,6 +56,12 @@
         }
         else if (argument == "--frame-hashes" && i + 1 < argc)
             g_frameHashes = argv[++i];
+        else if (argument == "--mfg-latency" && i + 1 < argc)
+            g_mfgLatencyModeStr = argv[++i];
+        else if (argument == "--target-fps" && i + 1 < argc)
+            g_mfgTargetFps = static_cast<std::uint32_t>(ParseCount(argv[++i]));
+        else if (argument == "--pacer" && i + 1 < argc)
+            g_mfgPacerMode = argv[++i];
         else { std::cerr << "Invalid argument: " << argument << std::endl; return 2; }
     }
 

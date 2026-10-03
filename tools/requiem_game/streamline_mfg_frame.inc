@@ -18,14 +18,14 @@ bool StreamlineMfg::BeginFramePacing(std::uint32_t frameIndex) {
         impl_->status = ResultText("slReflexSleep", result);
         return false;
     }
-    // NVIDIA NVAPI requirement: SIMULATION_START must be the first marker after sleep
-    if (!SetMarker(*impl_, sl::PCLMarker::eSimulationStart))
+    // Streamline recommended marker order: InputSample followed by SimulationStart
+    if (!SetMarker(*impl_, sl::PCLMarker::eControllerInputSample))
         return false;
     if (impl_->pendingPclPing) {
         impl_->pendingPclPing = false;
         SetMarker(*impl_, sl::PCLMarker::ePCLatencyPing);
     }
-    if (!SetMarker(*impl_, sl::PCLMarker::eControllerInputSample))
+    if (!SetMarker(*impl_, sl::PCLMarker::eSimulationStart))
         return false;
     return true;
 #endif

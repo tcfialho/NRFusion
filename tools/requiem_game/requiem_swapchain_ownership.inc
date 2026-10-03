@@ -46,12 +46,18 @@ if (!g_clientRequestedWaitableFlag && (g_isProxySwapchain || mfg.Requested())) {
     g_waitableOwner = "DXGI_DEFAULT";
 }
 
-ComPtr<IDXGISwapChain2> swapChain2;
-if (SUCCEEDED(swapChain.As(&swapChain2))) {
-    HANDLE hWait = swapChain2->GetFrameLatencyWaitableObject();
-    g_hasWaitableObject = (hWait != nullptr);
-    UINT maxLat = 0;
-    if (SUCCEEDED(swapChain2->GetMaximumFrameLatency(&maxLat))) {
-        g_effectiveMaxLatency = maxLat;
+if (g_waitableOwner != "STREAMLINE_SL_PACER") {
+    ComPtr<IDXGISwapChain2> swapChain2;
+    if (SUCCEEDED(swapChain.As(&swapChain2))) {
+        HANDLE hWait = swapChain2->GetFrameLatencyWaitableObject();
+        g_hasWaitableObject = (hWait != nullptr);
+        UINT maxLat = 0;
+        if (SUCCEEDED(swapChain2->GetMaximumFrameLatency(&maxLat))) {
+            g_effectiveMaxLatency = maxLat;
+        }
     }
+} else {
+    // Streamline DLSS-G pacer owns the waitable object; client application must not query or wait on it
+    g_hasWaitableObject = false;
+    g_effectiveMaxLatency = 1;
 }

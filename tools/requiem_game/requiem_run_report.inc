@@ -1,3 +1,19 @@
+    if (!nativeFrameIntervalSamples.empty()) {
+        std::sort(nativeFrameIntervalSamples.begin(), nativeFrameIntervalSamples.end());
+        std::sort(pacingSleepSamples.begin(), pacingSleepSamples.end());
+        const size_t ni = nativeFrameIntervalSamples.size();
+        const double i50 = nativeFrameIntervalSamples[ni * 50 / 100];
+        const double i95 = nativeFrameIntervalSamples[ni * 95 / 100];
+        const double nativeFps = (i50 > 0.0) ? (1000.0 / i50) : 0.0;
+        const size_t ns = pacingSleepSamples.size();
+        const double s50 = pacingSleepSamples[ns * 50 / 100];
+        const double s95 = pacingSleepSamples[ns * 95 / 100];
+        std::cout << "[PACER-TIMING-REPORT] samples=" << ni
+                  << " NativeFrameInterval p50=" << i50 << "ms p95=" << i95 << "ms"
+                  << " -> NativeFPS=" << nativeFps
+                  << " | PacingSleep p50=" << s50 << "ms p95=" << s95 << "ms"
+                  << std::endl;
+    }
     if (!postPacingCpuToPresentReturnSamples.empty()) {
         std::sort(postPacingCpuToPresentReturnSamples.begin(), postPacingCpuToPresentReturnSamples.end());
         std::sort(postPacingCpuToPresentStartSamples.begin(), postPacingCpuToPresentStartSamples.end());
@@ -32,6 +48,9 @@
                   << " thread=" << reflexOwnership.gameIdThread
                   << " effectiveMode=" << reflexOwnership.effectiveMode
                   << " promoted=" << (reflexOwnership.mfgPromotedReflex ? 1 : 0)
+                  << " latencyMode=" << reflexOwnership.latencyMode
+                  << " targetFps=" << reflexOwnership.targetNativeFps
+                  << " effectiveFrameLimitUs=" << reflexOwnership.effectiveFrameLimitUs
                   << std::endl;
     }
     std::cout << "[REFLEX-VALIDATION] frames=" << reflexStats.framesAnalyzed

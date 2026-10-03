@@ -106,8 +106,9 @@ std::wstring ExeDirectory() {
 }
 
 void OnDlssgApiError(const sl::APIError& error) {
-    std::fprintf(stderr, "[MFG] underlying API error=0x%08lX\n",
-                 static_cast<unsigned long>(error.hres));
+    if (error.hres != DXGI_STATUS_OCCLUDED)
+        std::fprintf(stderr, "[MFG] underlying API error=0x%08lX\n",
+                     static_cast<unsigned long>(error.hres));
 }
 
 std::string ResultText(const char* action, sl::Result result) {

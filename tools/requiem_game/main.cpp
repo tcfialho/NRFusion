@@ -95,6 +95,9 @@ UINT g_effectiveMaxLatency = 0;
 UINT g_swapChainFlags = 0;
 UINT g_statsWindowMessage = 0;
 bool g_pendingPclPing = false;
+std::string g_mfgLatencyModeStr;
+std::uint32_t g_mfgTargetFps = 0;
+std::string g_mfgPacerMode;
 
 LRESULT CALLBACK WindowProc(HWND hwnd, UINT message, WPARAM wparam, LPARAM lparam) {
     switch (message) {
