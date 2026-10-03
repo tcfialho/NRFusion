@@ -49,8 +49,11 @@ bool DrawPlacement(RuntimeAdvancedConfig& config, const MenuStatusSnapshot& stat
     ImGui::EndDisabled();
     MenuHelp("Runs NR before RR, then adds only its difference to the RR output. Requires active RR and before-DLSS placement.",
              "Executa NR antes do RR e soma apenas sua diferença ao resultado do RR. Exige RR ativo e posição antes do DLSS.");
-    if (config.nr.residualEnabled && residualAvailable)
-        changed |= ImGui::SliderFloat(MenuLabel("Detail accumulation", "Acúmulo de detalhe"), &config.nr.residualBlend, .01f, 1, "%.2f");
+    if (config.nr.residualEnabled && residualAvailable) {
+        changed |= ImGui::SliderFloat(MenuLabel("Residual temporal response", "Resposta temporal do residual"), &config.nr.residualBlend, .01f, 1, "%.2f");
+        MenuHelp("Lower values average the NR residual over more frames and reduce noise. Higher values follow the current frame more aggressively.",
+                 "Valores menores acumulam o residual de NR por mais quadros e reduzem ruído. Valores maiores seguem o quadro atual mais agressivamente.");
+    }
     return changed;
 }
 

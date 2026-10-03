@@ -215,6 +215,9 @@ bool D3D12NrExecutor::RunFrameModel(
         accum.guideHeight = context.plan.motion.height;
         accum.residualMotionBaseX = context.plan.motion.x;
         accum.residualMotionBaseY = context.plan.motion.y;
+        accum.maxRatio = std::max(request.composition.maxRatio, 1.0f);
+        accum.colourStrength = request.composition.colourStrength;
+        accum.debugView = request.composition.debugView;
         accum.motionScaleX = request.motionScaleX /
             static_cast<float>(context.plan.activeColor.width);
         accum.motionScaleY = request.motionScaleY /

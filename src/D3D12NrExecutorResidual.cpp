@@ -77,6 +77,9 @@ D3D12NrFrameResult D3D12NrExecutor::ApplyStoredResidual(
     constants.width = static_cast<std::uint32_t>(outputDesc.Width);
     constants.height = outputDesc.Height;
     constants.transferStrength = std::clamp(strength, 0.0f, 1.0f);
+    constants.maxRatio = std::max(request.composition.maxRatio, 1.0f);
+    constants.colourStrength = request.composition.colourStrength;
+    constants.debugView = request.composition.debugView;
 
     ID3D12Resource* history = scratch_.Get(
         residualHistoryIndex_ == 0
