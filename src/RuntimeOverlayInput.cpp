@@ -28,6 +28,15 @@ void RuntimeOverlay::ConfigureFrameGeneration() {
         generation.SetControlMode(MfgControlMode::FollowGame);
     }
 
+    auto& hook = StreamlineDlssgHook::Instance();
+    hook.SetMfgLatencyMode(activeMain_.mfgLatencyMode);
+    if (activeMain_.mfgTargetAuto) {
+        hook.SetMfgTargetAutoPerformance(true);
+    } else {
+        hook.SetMfgLatencyMode(activeMain_.mfgLatencyMode, activeMain_.mfgTargetFps);
+    }
+    hook.SetMfgPacerMode(activeMain_.mfgPacer);
+
     NRF_LOG_INFO("Overlay", "Configured NR=%d MFG mode=%u multiplier=%u target=%u",
         activeMain_.enabled, static_cast<unsigned>(activeMain_.mfgMode), activeMain_.mfgMultiplier,
         generation.GetDynamicTargetFps());

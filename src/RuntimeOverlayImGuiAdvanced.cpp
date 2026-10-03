@@ -109,8 +109,8 @@ void DrawGenerationOptions(RuntimeOverlay& overlay) {
         for (int i = 0; i < 2; ++i) {
             if (ImGui::Selectable(latencyLabels[i], i == selectedLatency)) {
                 currentLatencyMode = (i == 1) ? MfgLatencyMode::LowLatency : MfgLatencyMode::GameDefault;
-                const auto targetHz = StreamlineDlssgHook::Instance().GetTargetDisplayFps();
-                StreamlineDlssgHook::Instance().SetMfgLatencyMode(currentLatencyMode, targetHz > 0 ? targetHz : 60);
+                StreamlineDlssgHook::Instance().SetMfgLatencyMode(currentLatencyMode);
+                main.mfgLatencyMode = currentLatencyMode;
                 changed = true;
             }
         }
@@ -138,18 +138,24 @@ void DrawGenerationOptions(RuntimeOverlay& overlay) {
         if (ImGui::BeginCombo(MenuLabel("MFG Target FPS", "Meta de FPS MFG"), targetFpsLabels[presetIdx])) {
             if (ImGui::Selectable(targetFpsLabels[0], presetIdx == 0)) {
                 StreamlineDlssgHook::Instance().SetMfgTargetAutoPerformance(true);
+                main.mfgTargetAuto = true;
                 changed = true;
             }
             const uint32_t presets[] = {60, 90, 120, 144};
             for (int i = 0; i < 4; ++i) {
                 if (ImGui::Selectable(targetFpsLabels[i + 1], presetIdx == (i + 1))) {
                     StreamlineDlssgHook::Instance().SetMfgLatencyMode(currentLatencyMode, presets[i]);
+                    main.mfgTargetAuto = false;
+                    main.mfgTargetFps = presets[i];
                     main.displayHz = static_cast<float>(presets[i]);
                     changed = true;
                 }
             }
             if (ImGui::Selectable(targetFpsLabels[5], presetIdx == 5)) {
-                StreamlineDlssgHook::Instance().SetMfgLatencyMode(currentLatencyMode, currentTargetFps > 0 ? currentTargetFps : 60);
+                const auto fps = currentTargetFps > 0 ? currentTargetFps : 60;
+                StreamlineDlssgHook::Instance().SetMfgLatencyMode(currentLatencyMode, fps);
+                main.mfgTargetAuto = false;
+                main.mfgTargetFps = fps;
                 changed = true;
             }
             ImGui::EndCombo();
@@ -161,6 +167,8 @@ void DrawGenerationOptions(RuntimeOverlay& overlay) {
             int customFps = static_cast<int>(currentTargetFps > 0 ? currentTargetFps : 60);
             if (ImGui::SliderInt(MenuLabel("Custom Target FPS", "FPS Personalizado"), &customFps, 30, 360, "%d FPS")) {
                 StreamlineDlssgHook::Instance().SetMfgLatencyMode(currentLatencyMode, static_cast<uint32_t>(customFps));
+                main.mfgTargetAuto = false;
+                main.mfgTargetFps = static_cast<uint32_t>(customFps);
                 main.displayHz = static_cast<float>(customFps);
                 changed = true;
             }
@@ -179,6 +187,7 @@ void DrawGenerationOptions(RuntimeOverlay& overlay) {
             if (ImGui::Selectable(pacerLabels[i], i == selectedPacer)) {
                 currentPacer = static_cast<MfgPacerMode>(i);
                 StreamlineDlssgHook::Instance().SetMfgPacerMode(currentPacer);
+                main.mfgPacer = currentPacer;
                 changed = true;
             }
         }

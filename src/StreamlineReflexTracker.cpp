@@ -1,11 +1,17 @@
 #include "StreamlineReflexTracker.hpp"
 #include "StreamlineAutoPerformance.hpp"
+#include "nrfusion/RuntimeConfigStore.hpp"
 #include <algorithm>
 #include <cmath>
 
 namespace nrfusion::streamline {
 
 StreamlineReflexTracker::StreamlineReflexTracker() noexcept {
+    RuntimeConfigStore store("nrfusion.ini"); RuntimeConfig cfg{};
+    if (store.Load(1, cfg)) {
+        latencyMode_ = cfg.mfgLatencyMode; isAutoPerformance_ = cfg.mfgTargetAuto;
+        targetDisplayFps_ = cfg.mfgTargetAuto ? 0 : cfg.mfgTargetFps; pacerMode_ = cfg.mfgPacer;
+    }
     wchar_t buf[64]{};
     if (GetEnvironmentVariableW(L"NRFUSION_MFG_LATENCY_MODE", buf, 64) > 0) {
         if (_wcsicmp(buf, L"GameDefault") == 0 || wcscmp(buf, L"0") == 0) latencyMode_ = MfgLatencyMode::GameDefault;
@@ -13,8 +19,7 @@ StreamlineReflexTracker::StreamlineReflexTracker() noexcept {
     }
     if (GetEnvironmentVariableW(L"NRFUSION_MFG_TARGET_DISPLAY_FPS", buf, 32) > 0) {
         if (_wcsicmp(buf, L"Auto") == 0 || _wcsicmp(buf, L"AutoPerformance") == 0 || wcscmp(buf, L"0") == 0) {
-            isAutoPerformance_ = true;
-            targetDisplayFps_ = 0;
+            isAutoPerformance_ = true; targetDisplayFps_ = 0;
         } else {
             const auto fps = wcstoul(buf, nullptr, 10);
             if (fps >= 20 && fps <= 1000) { targetDisplayFps_ = static_cast<std::uint32_t>(fps); isAutoPerformance_ = false; }
@@ -22,9 +27,6 @@ StreamlineReflexTracker::StreamlineReflexTracker() noexcept {
     } else if (GetEnvironmentVariableW(L"NRFUSION_MFG_TARGET_FPS", buf, 32) > 0) {
         const auto fps = wcstoul(buf, nullptr, 10);
         if (fps >= 20 && fps <= 1000) { targetDisplayFps_ = static_cast<std::uint32_t>(fps); isAutoPerformance_ = false; }
-    } else {
-        isAutoPerformance_ = true;
-        targetDisplayFps_ = 0;
     }
     StreamlineAutoPerformance::Instance().SetEnabled(isAutoPerformance_);
     if (GetEnvironmentVariableW(L"NRFUSION_MFG_PACER", buf, 32) > 0) {
@@ -91,10 +93,6 @@ void StreamlineReflexTracker::SetLatencyMode(
         wchar_t numBuf[16]{};
         swprintf_s(numBuf, L"%u", targetDisplayFps);
         SetEnvironmentVariableW(L"NRFUSION_MFG_TARGET_DISPLAY_FPS", numBuf);
-    } else {
-        isAutoPerformance_ = true;
-        StreamlineAutoPerformance::Instance().SetEnabled(true);
-        SetEnvironmentVariableW(L"NRFUSION_MFG_TARGET_DISPLAY_FPS", L"Auto");
     }
     if (targetNativeFps > 0) targetNativeFps_ = targetNativeFps;
 }
@@ -131,12 +129,24 @@ std::uint32_t StreamlineReflexTracker::GetTargetDisplayFps() const noexcept {
 std::uint32_t StreamlineReflexTracker::GetTargetNativeFps() const noexcept {
     std::lock_guard lock(mutex_);
     if (isAutoPerformance_) return StreamlineAutoPerformance::Instance().GetCurrentNativeFps();
-    return targetNativeFps_;
+    const uint32_t mult = mfgMultiplier_ > 0 ? mfgMultiplier_ : 2;
+    const uint32_t mfgFps = targetDisplayFps_ > 0 ? targetDisplayFps_ : 60;
+    return mfgFps / mult;
 }
 
 void StreamlineReflexTracker::SetMfgMultiplier(std::uint32_t multiplier) noexcept {
     std::lock_guard lock(mutex_);
     mfgMultiplier_ = multiplier > 0 ? multiplier : 2;
+    StreamlineAutoPerformance::Instance().SetMultiplier(mfgMultiplier_);
+    if (latencyMode_ == MfgLatencyMode::LowLatency && haveGameRequested_) {
+        uint32_t effectiveDisplayFps = targetDisplayFps_;
+        if (isAutoPerformance_) {
+            const auto autoFps = StreamlineAutoPerformance::Instance().GetCurrentMfgFps();
+            if (autoFps > 0) effectiveDisplayFps = autoFps;
+        }
+        if (effectiveDisplayFps == 0) effectiveDisplayFps = 60;
+        lastEffective_.frameLimitUs = static_cast<std::uint32_t>(std::round(1'000'000.0 / effectiveDisplayFps));
+    }
 }
 
 bool StreamlineReflexTracker::ApplyCurrentLatencyPolicy(bool mfgActive, sl::ReflexOptions& outOptions) {
@@ -159,10 +169,9 @@ void StreamlineReflexTracker::RecordSleep(const sl::FrameToken& frame) {
     rec.sleepCount++;
     if (rec.sleepCount > 1) { rec.duplicateSleep = true; stats_.duplicateSleeps++; }
     else { rec.firstSleepTick = GetTickCount64(); }
-    const auto sleepStage = static_cast<std::uint32_t>(FrameStage::Sleep);
+    constexpr auto sleepStage = static_cast<std::uint32_t>(FrameStage::Sleep);
     if (rec.lastStage > sleepStage) { rec.orderViolation = true; stats_.orderViolations++; }
-    rec.lastStage = std::max(rec.lastStage, sleepStage);
-    rec.stageMask |= (1u << sleepStage);
+    rec.lastStage = std::max(rec.lastStage, sleepStage); rec.stageMask |= (1u << sleepStage);
 
     LARGE_INTEGER qpc{}, freq{};
     QueryPerformanceCounter(&qpc);
@@ -200,10 +209,7 @@ void StreamlineReflexTracker::RecordMarker(sl::PCLMarker marker, const sl::Frame
     const bool wasStart = (rec.lastStage == static_cast<std::uint32_t>(FrameStage::Sleep) ||
                            rec.lastStage == static_cast<std::uint32_t>(FrameStage::SimulationStart) ||
                            rec.lastStage == static_cast<std::uint32_t>(FrameStage::InputSample));
-    if (!(isStart && wasStart) && currentStage < rec.lastStage) {
-        rec.orderViolation = true;
-        stats_.orderViolations++;
-    }
+    if (!(isStart && wasStart) && currentStage < rec.lastStage) { rec.orderViolation = true; stats_.orderViolations++; }
     rec.lastStage = std::max(rec.lastStage, currentStage);
     rec.stageMask |= (1u << currentStage);
     if (stage == FrameStage::PresentEnd) CompleteFrameRecordLocked(rec);
@@ -216,15 +222,12 @@ ReflexOwnershipInfo StreamlineReflexTracker::GetOwnershipInfo() const noexcept {
     info.gameMode = static_cast<std::uint32_t>(lastGameRequested_.mode);
     info.gameFrameLimitUs = lastGameRequested_.frameLimitUs;
     info.gameUseMarkersToOptimize = lastGameRequested_.useMarkersToOptimize;
-    info.gameVirtualKey = lastGameRequested_.virtualKey;
-    info.gameIdThread = lastGameRequested_.idThread;
+    info.gameVirtualKey = lastGameRequested_.virtualKey; info.gameIdThread = lastGameRequested_.idThread;
     info.effectiveMode = static_cast<std::uint32_t>(lastEffective_.mode);
     info.effectiveFrameLimitUs = lastEffective_.frameLimitUs;
     info.effectiveUseMarkersToOptimize = lastEffective_.useMarkersToOptimize;
-    info.effectiveVirtualKey = lastEffective_.virtualKey;
-    info.effectiveIdThread = lastEffective_.idThread;
-    info.mfgPromotedReflex = mfgPromotedReflex_;
-    info.latencyMode = static_cast<std::uint32_t>(latencyMode_);
+    info.effectiveVirtualKey = lastEffective_.virtualKey; info.effectiveIdThread = lastEffective_.idThread;
+    info.mfgPromotedReflex = mfgPromotedReflex_; info.latencyMode = static_cast<std::uint32_t>(latencyMode_);
     info.autoPerformance = isAutoPerformance_;
 
     const uint32_t mult = mfgMultiplier_ > 0 ? mfgMultiplier_ : 2;
@@ -269,17 +272,12 @@ StreamlineReflexTracker::FrameRecord& StreamlineReflexTracker::GetOrCreateFrameR
     std::uint32_t frameId, const void* token) {
     for (auto& rec : activeFrames_) {
         if (rec.frameId == frameId) {
-            if (rec.tokenPtr != nullptr && token != nullptr && rec.tokenPtr != token && !rec.mixedToken) {
-                rec.mixedToken = true; stats_.mixedTokens++;
-            }
+            if (rec.tokenPtr && token && rec.tokenPtr != token && !rec.mixedToken) { rec.mixedToken = true; stats_.mixedTokens++; }
             return rec;
         }
     }
     if (highestRetiredFrameId_ > 0 && frameId <= highestRetiredFrameId_) stats_.staleTokens++;
-    if (activeFrames_.size() >= 128) {
-        CompleteFrameRecordLocked(activeFrames_.front());
-        activeFrames_.pop_front();
-    }
+    if (activeFrames_.size() >= 128) { CompleteFrameRecordLocked(activeFrames_.front()); activeFrames_.pop_front(); }
     activeFrames_.push_back({frameId, token, 0, 0, 0, 0, false, false, false, false});
     return activeFrames_.back();
 }

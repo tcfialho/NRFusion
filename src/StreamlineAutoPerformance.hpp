@@ -27,6 +27,7 @@ public:
     bool IsEnabled() const noexcept;
 
     void Reset(std::uint32_t initialNativeFps = 0) noexcept;
+    void SetMultiplier(std::uint32_t multiplier) noexcept;
 
     bool Evaluate(std::uint32_t multiplier, float observedNativeFps, AutoPerformanceResult& outResult) noexcept;
 

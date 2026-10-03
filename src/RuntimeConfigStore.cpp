@@ -60,6 +60,21 @@ bool ParseMfgQuality(std::string_view text, RuntimeMfgQuality& out) noexcept {
     return true;
 }
 
+bool ParseMfgLatencyMode(std::string_view text, MfgLatencyMode& out) noexcept {
+    if (text == "game_default" || text == "0") out = MfgLatencyMode::GameDefault;
+    else if (text == "low_latency" || text == "1") out = MfgLatencyMode::LowLatency;
+    else return false;
+    return true;
+}
+
+bool ParseMfgPacerMode(std::string_view text, MfgPacerMode& out) noexcept {
+    if (text == "auto" || text == "0") out = MfgPacerMode::Auto;
+    else if (text == "cpu_pacer" || text == "1") out = MfgPacerMode::CpuPacer;
+    else if (text == "flip_metering" || text == "2") out = MfgPacerMode::FlipMetering;
+    else return false;
+    return true;
+}
+
 const char* NrModeName(RuntimeNrMode mode) noexcept {
     switch (mode) {
     case RuntimeNrMode::Auto: return "auto";
@@ -82,6 +97,19 @@ const char* MfgModeName(RuntimeMfgMode mode) noexcept {
 
 const char* MfgQualityName(RuntimeMfgQuality quality) noexcept {
     return quality == RuntimeMfgQuality::Enhanced ? "enhanced" : "performance";
+}
+
+const char* MfgLatencyModeName(MfgLatencyMode mode) noexcept {
+    return mode == MfgLatencyMode::LowLatency ? "low_latency" : "game_default";
+}
+
+const char* MfgPacerModeName(MfgPacerMode mode) noexcept {
+    switch (mode) {
+    case MfgPacerMode::Auto: return "auto";
+    case MfgPacerMode::CpuPacer: return "cpu_pacer";
+    case MfgPacerMode::FlipMetering: return "flip_metering";
+    }
+    return "auto";
 }
 
 } // namespace
@@ -141,6 +169,20 @@ bool RuntimeConfigStore::Load(
             unsigned multiplier = 0;
             valid = ParseNumber(value, multiplier) && multiplier <= 255;
             if (valid) candidate.mfgMultiplier = static_cast<std::uint8_t>(multiplier);
+        } else if (key == "mfg_latency_mode") {
+            bit = 1u << 9;
+            valid = ParseMfgLatencyMode(value, candidate.mfgLatencyMode);
+        } else if (key == "mfg_target_auto") {
+            bit = 1u << 10;
+            valid = ParseBool(value, candidate.mfgTargetAuto);
+        } else if (key == "mfg_target_fps") {
+            bit = 1u << 11;
+            unsigned fps = 0;
+            valid = ParseNumber(value, fps) && fps >= 20 && fps <= 1000;
+            if (valid) candidate.mfgTargetFps = fps;
+        } else if (key == "mfg_pacer") {
+            bit = 1u << 12;
+            valid = ParseMfgPacerMode(value, candidate.mfgPacer);
         } else {
             return false;
         }
@@ -172,7 +214,11 @@ bool RuntimeConfigStore::Save(const RuntimeConfig& config) const {
            << "display_hz_auto=" << (config.displayHzAuto ? "true" : "false") << '\n'
            << "mfg_mode=" << MfgModeName(config.mfgMode) << '\n'
            << "mfg_quality=" << MfgQualityName(config.mfgQuality) << '\n'
-           << "mfg_multiplier=" << static_cast<unsigned>(config.mfgMultiplier) << '\n';
+           << "mfg_multiplier=" << static_cast<unsigned>(config.mfgMultiplier) << '\n'
+           << "mfg_latency_mode=" << MfgLatencyModeName(config.mfgLatencyMode) << '\n'
+           << "mfg_target_auto=" << (config.mfgTargetAuto ? "true" : "false") << '\n'
+           << "mfg_target_fps=" << config.mfgTargetFps << '\n'
+           << "mfg_pacer=" << MfgPacerModeName(config.mfgPacer) << '\n';
     output.flush();
     return static_cast<bool>(output);
 }

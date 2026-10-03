@@ -9,6 +9,7 @@
 #include <windows.h>
 #include <cstdint>
 #include <atomic>
+#include "nrfusion/RuntimeConfig.hpp"
 
 namespace nrfusion {
 
@@ -26,17 +27,6 @@ struct StreamlineMfgStatus {
     bool markersActive = false;
     std::uint32_t markerCount = 0;
     std::uint32_t queueParallelismMode = 0;
-};
-
-enum class MfgLatencyMode : std::uint32_t {
-    GameDefault = 0,
-    LowLatency = 1
-};
-
-enum class MfgPacerMode : std::uint32_t {
-    Auto = 0,
-    CpuPacer = 1,
-    FlipMetering = 2
 };
 
 struct ReflexOwnershipInfo {

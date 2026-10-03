@@ -24,6 +24,17 @@ enum class RuntimeMfgQuality : std::uint8_t {
     Enhanced
 };
 
+enum class MfgLatencyMode : std::uint32_t {
+    GameDefault = 0,
+    LowLatency = 1
+};
+
+enum class MfgPacerMode : std::uint32_t {
+    Auto = 0,
+    CpuPacer = 1,
+    FlipMetering = 2
+};
+
 struct RuntimeConfig {
     std::uint64_t generation = 1;
     bool enabled = false;
@@ -34,6 +45,10 @@ struct RuntimeConfig {
     RuntimeMfgMode mfgMode = RuntimeMfgMode::FollowGame;
     RuntimeMfgQuality mfgQuality = RuntimeMfgQuality::Performance;
     std::uint8_t mfgMultiplier = 2;
+    MfgLatencyMode mfgLatencyMode = MfgLatencyMode::LowLatency;
+    bool mfgTargetAuto = true;
+    std::uint32_t mfgTargetFps = 60;
+    MfgPacerMode mfgPacer = MfgPacerMode::Auto;
 
     constexpr bool operator==(const RuntimeConfig&) const noexcept = default;
 
@@ -50,8 +65,15 @@ struct RuntimeConfig {
             mfgQuality == RuntimeMfgQuality::Performance ||
             mfgQuality == RuntimeMfgQuality::Enhanced;
         const bool validMultiplier = mfgMultiplier >= 2 && mfgMultiplier <= 6;
+        const bool knownLatencyMode = mfgLatencyMode == MfgLatencyMode::GameDefault ||
+                                      mfgLatencyMode == MfgLatencyMode::LowLatency;
+        const bool knownPacer = mfgPacer == MfgPacerMode::Auto ||
+                                mfgPacer == MfgPacerMode::CpuPacer ||
+                                mfgPacer == MfgPacerMode::FlipMetering;
+        const bool validTargetFps = mfgTargetFps >= 20 && mfgTargetFps <= 1000;
         return generation != 0 && knownNrMode && knownMfgMode &&
-               knownMfgQuality && validMultiplier &&
+               knownMfgQuality && validMultiplier && knownLatencyMode &&
+               knownPacer && validTargetFps &&
                std::isfinite(targetFps) && targetFps >= 1.0f &&
                targetFps <= 1000.0f && std::isfinite(displayHz) &&
                displayHz >= 1.0f && displayHz <= 1000.0f;

@@ -37,6 +37,11 @@ void StreamlineAutoPerformance::Reset(std::uint32_t initialNativeFps) noexcept {
     lastGpuPercent_ = 0;
 }
 
+void StreamlineAutoPerformance::SetMultiplier(std::uint32_t multiplier) noexcept {
+    const uint32_t mult = multiplier > 0 ? multiplier : 2;
+    targetMfgFps_ = targetNativeFps_ * mult;
+}
+
 bool StreamlineAutoPerformance::QueryGpuUtilization(std::uint32_t& outGpuPercent) noexcept {
     if (!initializedGpuQuery_) {
         initializedGpuQuery_ = true;
@@ -52,6 +57,9 @@ bool StreamlineAutoPerformance::QueryGpuUtilization(std::uint32_t& outGpuPercent
                 if (nvapiInit_ && nvapiEnumGpus_ && nvapiGetPstates_ && nvapiInit_() == 0) {
                     void* handles[64]{};
                     unsigned int gpuCount = 0;
+                    // Single NVIDIA GPU target is sufficient for current architecture.
+                    // TODO(mfg): Map NVAPI physical GPU handle to target D3D12 adapter LUID via
+                    // NvAPI_D3D12_CreateDevice / NvAPI_GPU_GetAdapterIdFromPhysicalGPU for multi-GPU setups.
                     if (nvapiEnumGpus_(handles, &gpuCount) == 0 && gpuCount > 0 && handles[0]) {
                         physicalGpuHandle_ = handles[0];
                         gpuQueryAvailable_ = true;
