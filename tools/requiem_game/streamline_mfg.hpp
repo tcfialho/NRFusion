@@ -53,6 +53,8 @@ public:
     std::uint32_t ReportedMaxGenerated() const noexcept;
     std::uint32_t DlssgStatus() const noexcept;
     const std::string& Status() const noexcept;
+    std::uint32_t GetStatsWindowMessage() const noexcept;
+    void SetPendingPclPing(bool pending) noexcept;
 
     struct ReflexMetricPercentiles {
         double p50 = 0.0;

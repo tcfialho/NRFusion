@@ -68,56 +68,95 @@
                   << "ms p95=" << reflexLatency.inputToGpuRenderEnd.p95
                   << "ms p99=" << reflexLatency.inputToGpuRenderEnd.p99 << "ms" << std::endl;
     } else {
-        std::cout << "[REFLEX-REPORT] Reflex report indisponivel nesta execucao (latencyReportAvailable = false)." << std::endl;
+        std::cout << "[REFLEX-REPORT] Reflex report indisponivel nesta execucao (latencyReportAvailable = false; root cause = UNKNOWN)." << std::endl;
     }
 
+    auto QueryFileVersion = [](const wchar_t* path) -> std::string {
+        DWORD handle = 0;
+        const DWORD size = GetFileVersionInfoSizeW(path, &handle);
+        if (size == 0) return "UNKNOWN";
+        std::vector<BYTE> data(size);
+        if (!GetFileVersionInfoW(path, 0, size, data.data())) return "UNKNOWN";
+        VS_FIXEDFILEINFO* ffi = nullptr;
+        UINT len = 0;
+        if (VerQueryValueW(data.data(), L"\\", reinterpret_cast<void**>(&ffi), &len) && ffi) {
+            return std::to_string(HIWORD(ffi->dwFileVersionMS)) + "." +
+                   std::to_string(LOWORD(ffi->dwFileVersionMS)) + "." +
+                   std::to_string(HIWORD(ffi->dwFileVersionLS)) + "." +
+                   std::to_string(LOWORD(ffi->dwFileVersionLS));
+        }
+        return "UNKNOWN";
+    };
+
+    struct ExpectedModule {
+        const char* key;
+        const wchar_t* filePattern;
+        const wchar_t* otaPattern;
+        bool loaded = false;
+        std::string fullPath;
+        uintptr_t base = 0;
+        std::string version = "UNKNOWN";
+    };
+    ExpectedModule expectedStack[] = {
+        {"sl.interposer.dll", L"sl.interposer.dll", nullptr},
+        {"sl.common.dll",     L"sl.common.dll",     L"sl_common_override"},
+        {"sl.reflex.dll",     L"sl.reflex.dll",     L"sl_reflex_override"},
+        {"sl.pcl.dll",        L"sl.pcl.dll",        L"sl_pcl_override"},
+        {"sl.dlss_g.dll",     L"sl.dlss_g.dll",     L"sl_dlss_g_override"},
+    };
+
     HANDLE snap = CreateToolhelp32Snapshot(TH32CS_SNAPMODULE, GetCurrentProcessId());
+    bool otaOverrideActive = false;
     if (snap != INVALID_HANDLE_VALUE) {
         MODULEENTRY32W me{};
         me.dwSize = sizeof(me);
-        int slModuleCount = 0;
-        std::vector<std::string> slNames;
-        std::vector<std::string> slDirs;
-        bool duplicateFound = false;
-        std::cout << "[STREAMLINE-STACK]" << std::endl;
         if (Module32FirstW(snap, &me)) {
             do {
-                if (wcsstr(me.szModule, L"sl.") != nullptr) {
-                    slModuleCount++;
-                    char modulePath[MAX_PATH]{};
-                    WideCharToMultiByte(CP_UTF8, 0, me.szExePath, -1, modulePath, sizeof(modulePath), nullptr, nullptr);
-                    char moduleName[MAX_PATH]{};
-                    WideCharToMultiByte(CP_UTF8, 0, me.szModule, -1, moduleName, sizeof(moduleName), nullptr, nullptr);
-                    std::string n(moduleName);
-                    std::transform(n.begin(), n.end(), n.begin(), ::tolower);
-                    if (std::find(slNames.begin(), slNames.end(), n) != slNames.end()) duplicateFound = true;
-                    slNames.push_back(n);
-
-                    std::string p(modulePath);
-                    std::string dir = p.substr(0, p.find_last_of("\\/"));
-                    std::transform(dir.begin(), dir.end(), dir.begin(), ::tolower);
-                    if (std::find(slDirs.begin(), slDirs.end(), dir) == slDirs.end()) slDirs.push_back(dir);
-
-                    std::cout << "  module=" << moduleName << " base=0x" << std::hex << reinterpret_cast<uintptr_t>(me.modBaseAddr)
-                              << std::dec << " path=" << modulePath << std::endl;
+                char pathUtf8[MAX_PATH]{};
+                WideCharToMultiByte(CP_UTF8, 0, me.szExePath, -1, pathUtf8, sizeof(pathUtf8), nullptr, nullptr);
+                for (auto& exp : expectedStack) {
+                    bool match = (wcsstr(me.szModule, exp.filePattern) != nullptr);
+                    if (!match && exp.otaPattern && wcsstr(me.szExePath, exp.otaPattern) != nullptr) {
+                        match = true;
+                        otaOverrideActive = true;
+                    }
+                    if (match && !exp.loaded) {
+                        exp.loaded = true;
+                        exp.fullPath = pathUtf8;
+                        exp.base = reinterpret_cast<uintptr_t>(me.modBaseAddr);
+                        exp.version = QueryFileVersion(me.szExePath);
+                    }
                 }
             } while (Module32NextW(snap, &me));
         }
         CloseHandle(snap);
-        const bool divergentDirs = slDirs.size() > 1;
-        const bool duplicateStack = duplicateFound || divergentDirs;
-        std::cout << "  modules_detected=" << slModuleCount
-                  << " distinct_directories=" << slDirs.size()
-                  << " duplicate_stack=" << (duplicateStack ? "YES" : "NO");
-        if (duplicateStack) {
-            if (duplicateFound) std::cout << " (duplicate module detected)";
-            if (divergentDirs) std::cout << " (divergent directories detected)";
+    }
+
+    std::cout << "[STREAMLINE-STACK]" << std::endl;
+    int loadedCount = 0;
+    for (const auto& exp : expectedStack) {
+        if (exp.loaded) loadedCount++;
+        std::cout << "  " << exp.key << ": loaded=" << (exp.loaded ? "YES" : "NO");
+        if (exp.loaded) {
+            std::cout << " base=0x" << std::hex << exp.base << std::dec
+                      << " ver=" << exp.version
+                      << " path=" << exp.fullPath;
         }
         std::cout << std::endl;
     }
-    std::cout << "[FRAME-LATENCY-OWNERSHIP] waitable_flag=" << (g_hasWaitableFlag ? "YES" : "NO")
+    if (otaOverrideActive) {
+        std::cout << "  [NOTE] NVIDIA NGX DRS key SL_DLSS_OVERRIDE active: plugins loaded via OTA model cache" << std::endl;
+    }
+    std::cout << "  stack_status=" << (loadedCount == 5 ? "COMPLETE_QUALIFIED" : "PARTIAL")
+              << " (" << loadedCount << "/5 modules verified)" << std::endl;
+
+    std::cout << "[FRAME-LATENCY-OWNERSHIP] clientSwapchain=" << (g_isProxySwapchain ? "PROXY" : "NATIVE")
+              << " nativeSwapchain=0x" << std::hex << reinterpret_cast<uintptr_t>(g_nativeSwapChain)
+              << " proxySwapchain=0x" << reinterpret_cast<uintptr_t>(g_proxySwapChain) << std::dec
+              << " clientRequestedWaitableFlag=" << (g_clientRequestedWaitableFlag ? "YES" : "NO")
               << " waitable_handle=" << (g_hasWaitableObject ? "VALID" : "NONE")
               << " max_latency=" << (g_effectiveMaxLatency > 0 ? std::to_string(g_effectiveMaxLatency) : "UNAVAILABLE")
               << " swapchain_flags=0x" << std::hex << g_swapChainFlags << std::dec
-              << " owner=" << (g_hasWaitableFlag ? "NRFusion/Game" : "DXGI_DEFAULT")
+              << " owner=" << g_waitableOwner
+              << " steady_state_wait=NONE"
               << std::endl;

@@ -51,6 +51,7 @@
 #pragma comment(lib, "d3d12.lib")
 #pragma comment(lib, "dxgi.lib")
 #pragma comment(lib, "d3dcompiler.lib")
+#pragma comment(lib, "version.lib")
 
 using Microsoft::WRL::ComPtr;
 
@@ -84,9 +85,16 @@ bool g_requireMfg = false;
 std::uint64_t g_frameLimit = 0;
 bool g_latencyRealtime = false;
 bool g_hasWaitableFlag = false;
+bool g_clientRequestedWaitableFlag = false;
+bool g_isProxySwapchain = false;
+void* g_proxySwapChain = nullptr;
+void* g_nativeSwapChain = nullptr;
+std::string g_waitableOwner = "DXGI_DEFAULT";
 bool g_hasWaitableObject = false;
 UINT g_effectiveMaxLatency = 0;
 UINT g_swapChainFlags = 0;
+UINT g_statsWindowMessage = 0;
+bool g_pendingPclPing = false;
 
 LRESULT CALLBACK WindowProc(HWND hwnd, UINT message, WPARAM wparam, LPARAM lparam) {
     switch (message) {
@@ -99,6 +107,10 @@ LRESULT CALLBACK WindowProc(HWND hwnd, UINT message, WPARAM wparam, LPARAM lpara
         PostQuitMessage(0);
         return 0;
     default:
+        if (g_statsWindowMessage != 0 && message == g_statsWindowMessage) {
+            g_pendingPclPing = true;
+            return 0;
+        }
         return DefWindowProcW(hwnd, message, wparam, lparam);
     }
 }

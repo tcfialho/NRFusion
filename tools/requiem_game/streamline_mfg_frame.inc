@@ -18,9 +18,14 @@ bool StreamlineMfg::BeginFramePacing(std::uint32_t frameIndex) {
         impl_->status = ResultText("slReflexSleep", result);
         return false;
     }
-    if (!SetMarker(*impl_, sl::PCLMarker::eControllerInputSample))
-        return false;
+    // NVIDIA NVAPI requirement: SIMULATION_START must be the first marker after sleep
     if (!SetMarker(*impl_, sl::PCLMarker::eSimulationStart))
+        return false;
+    if (impl_->pendingPclPing) {
+        impl_->pendingPclPing = false;
+        SetMarker(*impl_, sl::PCLMarker::ePCLatencyPing);
+    }
+    if (!SetMarker(*impl_, sl::PCLMarker::eControllerInputSample))
         return false;
     return true;
 #endif
@@ -208,25 +213,27 @@ void StreamlineMfg::PresentEnd() {
                  static_cast<int>(state.status));
     if (impl_->getReflexState) {
         sl::ReflexState reflexState{};
-        reflexState.structVersion = sl::kStructVersion1;
         const auto refRes = impl_->getReflexState(reflexState);
-        if (refRes == sl::Result::eOk && reflexState.latencyReportAvailable) {
-            impl_->reflexReportEverAvailable = true;
-            for (int i = 0; i < sl::kReflexFrameReportCount; ++i) {
-                const auto& r = reflexState.frameReport[i];
-                if (r.frameID > impl_->lastReflexFrameId && r.inputSampleTime > 0) {
-                    impl_->lastReflexFrameId = r.frameID;
-                    Impl::ReflexDataPoint dp{};
-                    dp.frameId = r.frameID;
-                    const auto base = r.inputSampleTime;
-                    if (r.simStartTime >= base) dp.simStart = (r.simStartTime - base) / 1000.0;
-                    if (r.renderSubmitStartTime >= base) dp.renderSubmitStart = (r.renderSubmitStartTime - base) / 1000.0;
-                    if (r.presentStartTime >= base) dp.presentStart = (r.presentStartTime - base) / 1000.0;
-                    if (r.presentEndTime >= base) dp.presentEnd = (r.presentEndTime - base) / 1000.0;
-                    if (r.driverEndTime >= base) dp.driverEnd = (r.driverEndTime - base) / 1000.0;
-                    if (r.osRenderQueueEndTime >= base) dp.osQueueEnd = (r.osRenderQueueEndTime - base) / 1000.0;
-                    if (r.gpuRenderEndTime >= base) dp.gpuRenderEnd = (r.gpuRenderEndTime - base) / 1000.0;
-                    impl_->reflexData.push_back(dp);
+        if (refRes == sl::Result::eOk) {
+            impl_->statsWindowMessage = reflexState.statsWindowMessage;
+            if (reflexState.latencyReportAvailable) {
+                impl_->reflexReportEverAvailable = true;
+                for (int i = 0; i < sl::kReflexFrameReportCount; ++i) {
+                    const auto& r = reflexState.frameReport[i];
+                    if (r.frameID > impl_->lastReflexFrameId && r.inputSampleTime > 0) {
+                        impl_->lastReflexFrameId = r.frameID;
+                        Impl::ReflexDataPoint dp{};
+                        dp.frameId = r.frameID;
+                        const auto base = r.inputSampleTime;
+                        if (r.simStartTime >= base) dp.simStart = (r.simStartTime - base) / 1000.0;
+                        if (r.renderSubmitStartTime >= base) dp.renderSubmitStart = (r.renderSubmitStartTime - base) / 1000.0;
+                        if (r.presentStartTime >= base) dp.presentStart = (r.presentStartTime - base) / 1000.0;
+                        if (r.presentEndTime >= base) dp.presentEnd = (r.presentEndTime - base) / 1000.0;
+                        if (r.driverEndTime >= base) dp.driverEnd = (r.driverEndTime - base) / 1000.0;
+                        if (r.osRenderQueueEndTime >= base) dp.osQueueEnd = (r.osRenderQueueEndTime - base) / 1000.0;
+                        if (r.gpuRenderEndTime >= base) dp.gpuRenderEnd = (r.gpuRenderEndTime - base) / 1000.0;
+                        impl_->reflexData.push_back(dp);
+                    }
                 }
             }
         }
@@ -248,45 +255,5 @@ void StreamlineMfg::Shutdown() {
         impl_->ready = false;
     }
 #endif
-}
-
-StreamlineMfg::ReflexLatencyStats StreamlineMfg::GetReflexLatencyStats() const noexcept {
-    ReflexLatencyStats stats{};
-#if defined(NRFUSION_REQUIEM_STREAMLINE)
-    if (!impl_->reflexReportEverAvailable || impl_->reflexData.empty()) return stats;
-    stats.available = true;
-    stats.samples = impl_->reflexData.size();
-
-    auto calc = [](std::vector<double>& v) -> ReflexMetricPercentiles {
-        if (v.empty()) return {};
-        std::sort(v.begin(), v.end());
-        const size_t n = v.size();
-        return {v[n * 50 / 100], v[n * 95 / 100], v[n * 99 / 100]};
-    };
-
-    std::vector<double> sim, rsub, pstart, pend, drv, osq, gpu;
-    sim.reserve(stats.samples); rsub.reserve(stats.samples);
-    pstart.reserve(stats.samples); pend.reserve(stats.samples);
-    drv.reserve(stats.samples); osq.reserve(stats.samples); gpu.reserve(stats.samples);
-
-    for (const auto& dp : impl_->reflexData) {
-        if (dp.simStart > 0.0) sim.push_back(dp.simStart);
-        if (dp.renderSubmitStart > 0.0) rsub.push_back(dp.renderSubmitStart);
-        if (dp.presentStart > 0.0) pstart.push_back(dp.presentStart);
-        if (dp.presentEnd > 0.0) pend.push_back(dp.presentEnd);
-        if (dp.driverEnd > 0.0) drv.push_back(dp.driverEnd);
-        if (dp.osQueueEnd > 0.0) osq.push_back(dp.osQueueEnd);
-        if (dp.gpuRenderEnd > 0.0) gpu.push_back(dp.gpuRenderEnd);
-    }
-
-    stats.inputToSimStart = calc(sim);
-    stats.inputToRenderSubmitStart = calc(rsub);
-    stats.inputToPresentStart = calc(pstart);
-    stats.inputToPresentEnd = calc(pend);
-    stats.inputToDriverEnd = calc(drv);
-    stats.inputToOsQueueEnd = calc(osq);
-    stats.inputToGpuRenderEnd = calc(gpu);
-#endif
-    return stats;
 }
 

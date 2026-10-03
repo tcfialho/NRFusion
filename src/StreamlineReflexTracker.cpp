@@ -109,7 +109,14 @@ void StreamlineReflexTracker::RecordMarker(sl::PCLMarker marker, const sl::Frame
     auto& rec = GetOrCreateFrameRecordLocked(fid, token);
     const auto currentStage = static_cast<std::uint32_t>(stage);
 
-    if (currentStage < rec.lastStage) {
+    const bool isStartPhase = (stage == FrameStage::InputSample || stage == FrameStage::SimulationStart);
+    const bool wasStartPhase = (rec.lastStage == static_cast<std::uint32_t>(FrameStage::Sleep) ||
+                                rec.lastStage == static_cast<std::uint32_t>(FrameStage::SimulationStart) ||
+                                rec.lastStage == static_cast<std::uint32_t>(FrameStage::InputSample));
+
+    if (isStartPhase && wasStartPhase) {
+        // Both orders (SimulationStart <-> InputSample) are valid start phase markers
+    } else if (currentStage < rec.lastStage) {
         rec.orderViolation = true;
         stats_.orderViolations++;
     }

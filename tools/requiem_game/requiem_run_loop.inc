@@ -15,6 +15,12 @@
             DispatchMessageW(&msg);
         }
         if (!g_running) break;
+        if (g_statsWindowMessage == 0 && mfg.GetStatsWindowMessage() != 0)
+            g_statsWindowMessage = mfg.GetStatsWindowMessage();
+        if (g_pendingPclPing) {
+            mfg.SetPendingPclPing(true);
+            g_pendingPclPing = false;
+        }
         guideCopyCounter.Reset();
         if (mfg.Requested()) {
             EnsureWindowFocus(g_hwnd);
@@ -61,10 +67,9 @@
         commands->ClearRenderTargetView(rtv, clear, 0, nullptr);
         commands->OMSetRenderTargets(1, &rtv, FALSE, nullptr);
 
-        D3D12_VIEWPORT viewport{0.0f, 0.0f, (float) width, (float) height, 0.0f, 1.0f};
-        D3D12_RECT scissor{0, 0, (LONG) width, (LONG) height};
-        commands->RSSetViewports(1, &viewport);
-        commands->RSSetScissorRects(1, &scissor);
+        D3D12_VIEWPORT viewport{0.0f, 0.0f, (float)width, (float)height, 0.0f, 1.0f};
+        D3D12_RECT scissor{0, 0, (LONG)width, (LONG)height};
+        commands->RSSetViewports(1, &viewport); commands->RSSetScissorRects(1, &scissor);
         commands->SetGraphicsRootSignature(rootSignature.Get());
         commands->IASetPrimitiveTopology(D3D_PRIMITIVE_TOPOLOGY_TRIANGLELIST);
 
@@ -72,22 +77,16 @@
         ID3D12DescriptorHeap* heaps[] = {srvHeap.Get()};
         commands->SetDescriptorHeaps(1, heaps);
         D3D12_GPU_DESCRIPTOR_HANDLE table = srvHeap->GetGPUDescriptorHandleForHeapStart();
-        // The input always comes from OFF, independently of the selected view.
         commands->SetGraphicsRootDescriptorTable(0, table);
 
         FrameConstants constants{};
-        // A slow crop-and-pan across the reference, which gives the temporal path real motion
-        // without inventing geometry the reference does not contain.
         constants.pan[2] = 0.88f;
         constants.pan[0] = g_fixedScene ? 0.06f : 0.06f + std::sin(totalTime * 0.25f) * 0.05f;
         constants.pan[1] = g_fixedScene ? 0.06f : 0.06f + std::cos(totalTime * 0.19f) * 0.05f;
-        // Render a textured planar scene. Its depth is constant and its motion follows
-        // the UV translation analytically: previous pixel = current pixel + deltaPan / zoom.
         commands->OMSetRenderTargets(1, &inputRtvs[0], FALSE, nullptr);
         D3D12_VIEWPORT inputViewport{0, 0, (float)inputWidth, (float)inputHeight, 0, 1};
         D3D12_RECT inputScissor{0, 0, (LONG)inputWidth, (LONG)inputHeight};
-        commands->RSSetViewports(1, &inputViewport);
-        commands->RSSetScissorRects(1, &inputScissor);
+        commands->RSSetViewports(1, &inputViewport); commands->RSSetScissorRects(1, &inputScissor);
         commands->SetGraphicsRoot32BitConstants(1, 4, &constants, 0);
         commands->DrawInstanced(3, 1, 0, 0);
         const float depthValue[4] = {0.5f, 0, 0, 0};

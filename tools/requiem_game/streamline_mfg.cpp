@@ -84,6 +84,8 @@ struct StreamlineMfg::Impl {
     std::vector<ReflexDataPoint> reflexData;
     uint64_t lastReflexFrameId = 0;
     bool reflexReportEverAvailable = false;
+    uint32_t statsWindowMessage = 0;
+    bool pendingPclPing = false;
 #endif
 };
 
@@ -236,6 +238,7 @@ StreamlineMfg::~StreamlineMfg() = default;
 #include "streamline_mfg_init.inc"
 #include "streamline_mfg_configure.inc"
 #include "streamline_mfg_frame.inc"
+#include "streamline_mfg_stats.inc"
 bool StreamlineMfg::Requested() const noexcept {
     return impl_->requested;
 }
@@ -256,6 +259,20 @@ std::uint32_t StreamlineMfg::DlssgStatus() const noexcept {
 }
 const std::string& StreamlineMfg::Status() const noexcept {
     return impl_->status;
+}
+std::uint32_t StreamlineMfg::GetStatsWindowMessage() const noexcept {
+#if defined(NRFUSION_REQUIEM_STREAMLINE)
+    return impl_->statsWindowMessage;
+#else
+    return 0;
+#endif
+}
+void StreamlineMfg::SetPendingPclPing(bool pending) noexcept {
+#if defined(NRFUSION_REQUIEM_STREAMLINE)
+    impl_->pendingPclPing = pending;
+#else
+    (void)pending;
+#endif
 }
 
 bool StreamlineMfg::GatePassed() const noexcept {

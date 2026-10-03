@@ -20,8 +20,8 @@ namespace nrfusion::streamline {
 enum class FrameStage : std::uint32_t {
     None = 0,
     Sleep = 1,
-    InputSample = 2,
-    SimulationStart = 3,
+    SimulationStart = 2,
+    InputSample = 3,
     SimulationEnd = 4,
     RenderSubmitStart = 5,
     RenderSubmitEnd = 6,
