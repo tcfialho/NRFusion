@@ -13,8 +13,14 @@ std::mutex installMutex;
 
 uint32_t HookGetFeatureFunction(uint32_t feature, const char* name, void** function) {
     const uint32_t result = originalGetFeatureFunction(feature, name, function);
-    if (result == 0 && feature == static_cast<uint32_t>(sl::kFeatureDLSS_G) && function && *function && name)
-        streamline::InterceptDlssgFunction(name, function);
+    if (result == 0 && function && *function && name) {
+        if (feature == static_cast<uint32_t>(sl::kFeatureDLSS_G))
+            streamline::InterceptDlssgFunction(name, function);
+        else if (feature == static_cast<uint32_t>(sl::kFeatureReflex))
+            streamline::InterceptReflexFunction(name, function);
+        else if (feature == static_cast<uint32_t>(sl::kFeaturePCL))
+            streamline::InterceptPclFunction(name, function);
+    }
     return result;
 }
 } // namespace
@@ -52,6 +58,7 @@ bool StreamlineDlssgHook::Install(HMODULE interposerModule) noexcept {
         return false;
     }
     installed_.store(true);
+    streamline::SetFeatureDispatcher(reinterpret_cast<void*>(originalGetFeatureFunction));
     NRF_LOG_INFO("StreamlineHook", "Versioned Streamline interception installed");
     return true;
 }

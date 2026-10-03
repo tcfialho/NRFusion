@@ -17,6 +17,8 @@ bool StreamlineMfg::Configure(
     impl_->options.mode = sl::DLSSGMode::eOn;
     impl_->options.numFramesToGenerate = impl_->multiplier - 1;
     impl_->options.flags = sl::DLSSGFlags::eRetainResourcesWhenOff;
+    impl_->options.queueParallelismMode =
+        sl::DLSSGQueueParallelismMode::eBlockPresentingClientQueue;
     impl_->options.numBackBuffers = backBuffers;
     impl_->options.mvecDepthWidth = renderWidth;
     impl_->options.mvecDepthHeight = renderHeight;

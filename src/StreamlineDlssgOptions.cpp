@@ -3,6 +3,8 @@
 #include "nrfusion/Logger.hpp"
 #include "PeMemoryUtils.hpp"
 #include <sl_dlss_g.h>
+#include <sl_reflex.h>
+#include <sl_pcl.h>
 #include <atomic>
 #include <algorithm>
 #include <cstddef>
@@ -13,8 +15,18 @@ namespace nrfusion::streamline {
 namespace {
 using SetOptions = sl::Result(*)(const sl::ViewportHandle&, const sl::DLSSGOptions&);
 using GetState = sl::Result(*)(const sl::ViewportHandle&, sl::DLSSGState&, const sl::DLSSGOptions*);
+using SetReflexOptions = sl::Result(*)(const sl::ReflexOptions&);
+using ReflexSleep = sl::Result(*)(const sl::FrameToken&);
+using SetPclMarker = sl::Result(*)(sl::PCLMarker, const sl::FrameToken&);
+using GetFeatureFunction = uint32_t(*)(uint32_t, const char*, void**);
+
 std::atomic<SetOptions> originalSetOptions{nullptr};
 std::atomic<GetState> originalGetState{nullptr};
+std::atomic<SetReflexOptions> originalReflexSetOptions{nullptr};
+std::atomic<ReflexSleep> originalReflexSleep{nullptr};
+std::atomic<SetPclMarker> originalPclSetMarker{nullptr};
+std::atomic<GetFeatureFunction> featureDispatcher{nullptr};
+
 std::atomic<bool> updatePending{false};
 std::atomic<bool> dynamicSupported{false};
 std::atomic<uint32_t> optionsVersion{0};
@@ -25,10 +37,50 @@ std::atomic<bool> dynamicActive{false};
 std::atomic<uint32_t> framesPresentedInSample{0};
 std::atomic<uint32_t> stateVersion{2};
 std::atomic<uint64_t> lastStateProbe{0};
+
+std::atomic<bool> mfgActive{false};
+std::atomic<bool> markersActive{false};
+std::atomic<uint32_t> markerCount{0};
+std::atomic<uint64_t> lastMarkerTick{0};
+std::atomic<uint32_t> reflexSleepCount{0};
+std::atomic<uint32_t> appliedQueueParallelismMode{0};
+
 std::mutex presentationMutex;
 std::recursive_mutex optionsMutex;
+std::mutex reflexMutex;
+std::mutex loggingMutex;
 
 sl::Result HookGetState(const sl::ViewportHandle&, sl::DLSSGState&, const sl::DLSSGOptions*);
+
+bool GameSendsMarkers() noexcept {
+    if (markerCount.load(std::memory_order_relaxed) == 0) return false;
+    const uint64_t now = GetTickCount64();
+    const uint64_t last = lastMarkerTick.load(std::memory_order_relaxed);
+    return (now - last) <= 3000;
+}
+
+void SyncReflexOptions(bool forceLowLatency = true) noexcept {
+    auto reflexFunc = originalReflexSetOptions.load(std::memory_order_relaxed);
+    if (!reflexFunc) {
+        auto dispatcher = featureDispatcher.load(std::memory_order_relaxed);
+        if (dispatcher) {
+            void* target = nullptr;
+            if (dispatcher(static_cast<uint32_t>(sl::kFeatureReflex), "slReflexSetOptions", &target) == 0 && target) {
+                reflexFunc = reinterpret_cast<SetReflexOptions>(target);
+                originalReflexSetOptions.store(reflexFunc, std::memory_order_release);
+            }
+        }
+    }
+    if (reflexFunc) {
+        sl::ReflexOptions options{};
+        options.mode = forceLowLatency ? sl::ReflexMode::eLowLatency : sl::ReflexMode::eOff;
+        options.useMarkersToOptimize = GameSendsMarkers();
+        const auto result = reflexFunc(options);
+        NRF_LOG_INFO("StreamlineHook", "Reflex sync: mode=%d markersOpt=%d result=%u",
+                     static_cast<int>(options.mode), options.useMarkersToOptimize ? 1 : 0,
+                     static_cast<uint32_t>(result));
+    }
+}
 
 void ObservePresentedFrames(uint32_t presented) {
     std::lock_guard lock(presentationMutex);
@@ -40,7 +92,6 @@ void ObservePresentedFrames(uint32_t presented) {
     NRF_LOG_INFO("StreamlinePresentation", "SDK presented sample=%u status=%u optionsResult=%u",
                  presented, runtimeStatus.load(), lastResult.load());
 }
-std::mutex loggingMutex;
 
 size_t OptionsBytes(size_t version) {
     if (version >= 5) return sizeof(sl::DLSSGOptions);
@@ -54,19 +105,42 @@ size_t OptionsBytes(size_t version) {
 
 void LogOptions(const sl::DLSSGOptions& requested, const sl::DLSSGOptions& applied, sl::Result result) {
     std::lock_guard lock(loggingMutex);
-    static uint32_t previousMode = UINT32_MAX, previousFrames = UINT32_MAX, previousResult = UINT32_MAX;
-    static float previousTarget = -1;
+    static uint32_t prevMode = UINT32_MAX, prevFrames = UINT32_MAX, prevResult = UINT32_MAX, prevQueue = UINT32_MAX;
     const uint32_t mode = static_cast<uint32_t>(applied.mode);
-    const uint32_t returned = static_cast<uint32_t>(result);
-    if (previousMode == mode && previousFrames == applied.numFramesToGenerate && previousResult == returned &&
-        previousTarget == applied.dynamicTargetFrameRate) return;
-    previousMode = mode;
-    previousFrames = applied.numFramesToGenerate;
-    previousResult = returned;
-    previousTarget = applied.dynamicTargetFrameRate;
-    NRF_LOG_INFO("StreamlineHook", "MFG options v%zu mode=%u->%u generated=%u->%u target=%.1f result=%u",
-        requested.structVersion, static_cast<uint32_t>(requested.mode), mode, requested.numFramesToGenerate,
-        applied.numFramesToGenerate, applied.dynamicTargetFrameRate, returned);
+    const uint32_t queue = static_cast<uint32_t>(applied.queueParallelismMode);
+    const uint32_t ret = static_cast<uint32_t>(result);
+    if (prevMode == mode && prevFrames == applied.numFramesToGenerate && prevResult == ret && prevQueue == queue) return;
+    prevMode = mode; prevFrames = applied.numFramesToGenerate; prevResult = ret; prevQueue = queue;
+    NRF_LOG_INFO("StreamlineHook", "MFG options v%zu mode=%u->%u generated=%u queue=%u result=%u",
+        applied.structVersion, static_cast<uint32_t>(requested.mode), mode, applied.numFramesToGenerate, queue, ret);
+}
+
+sl::Result HookReflexSetOptions(const sl::ReflexOptions& requested) {
+    std::lock_guard lock(reflexMutex);
+    auto original = originalReflexSetOptions.load(std::memory_order_relaxed);
+    if (!original) return sl::Result::eErrorNotInitialized;
+    sl::ReflexOptions applied = requested;
+    if (mfgActive.load(std::memory_order_relaxed)) {
+        if (applied.mode == sl::ReflexMode::eOff) applied.mode = sl::ReflexMode::eLowLatency;
+        applied.useMarkersToOptimize = GameSendsMarkers() || requested.useMarkersToOptimize;
+    }
+    return original(applied);
+}
+
+sl::Result HookReflexSleep(const sl::FrameToken& frame) {
+    reflexSleepCount.fetch_add(1, std::memory_order_relaxed);
+    auto original = originalReflexSleep.load(std::memory_order_relaxed);
+    if (!original) return sl::Result::eErrorNotInitialized;
+    return original(frame);
+}
+
+sl::Result HookPclSetMarker(sl::PCLMarker marker, const sl::FrameToken& frame) {
+    lastMarkerTick.store(GetTickCount64(), std::memory_order_relaxed);
+    markerCount.fetch_add(1, std::memory_order_relaxed);
+    if (!markersActive.exchange(true)) SyncReflexOptions(true);
+    auto original = originalPclSetMarker.load(std::memory_order_relaxed);
+    if (!original) return sl::Result::eErrorNotInitialized;
+    return original(marker, frame);
 }
 
 sl::Result HookSetOptions(const sl::ViewportHandle& viewport, const sl::DLSSGOptions& requested) {
@@ -99,6 +173,14 @@ sl::Result HookSetOptions(const sl::ViewportHandle& viewport, const sl::DLSSGOpt
     const uint32_t maximum = maximumFrames.load();
     if (maximum && applied.mode != sl::DLSSGMode::eOff)
         applied.numFramesToGenerate = std::clamp(applied.numFramesToGenerate, 1u, maximum);
+    const bool isMfgActive = (applied.mode != sl::DLSSGMode::eOff);
+    mfgActive.store(isMfgActive, std::memory_order_relaxed);
+    if (isMfgActive) {
+        if (applied.structVersion < sl::kStructVersion3) applied.structVersion = sl::kStructVersion3;
+        applied.queueParallelismMode = sl::DLSSGQueueParallelismMode::eBlockPresentingClientQueue;
+        appliedQueueParallelismMode.store(static_cast<uint32_t>(applied.queueParallelismMode), std::memory_order_relaxed);
+        SyncReflexOptions(true);
+    }
     const auto result = original(viewport, applied);
     lastResult.store(static_cast<uint32_t>(result));
     if (result == sl::Result::eOk || result == sl::Result::eWarnOutOfVRAM) {
@@ -108,7 +190,7 @@ sl::Result HookSetOptions(const sl::ViewportHandle& viewport, const sl::DLSSGOpt
         if (applied.mode != sl::DLSSGMode::eOff && result == sl::Result::eWarnOutOfVRAM &&
             generation.ObserveVramWarning(applied.numFramesToGenerate)) {
             updatePending.store(true);
-            NRF_LOG_WARN("StreamlineHook", "MFG Auto VRAM warning: limiting multiplier to %ux until control mode changes or restart", generation.AutomaticMultiplierLimit());
+            NRF_LOG_WARN("StreamlineHook", "MFG Auto VRAM warning: limiting multiplier to %ux", generation.AutomaticMultiplierLimit());
         }
     }
     LogOptions(requested, applied, result);
@@ -146,6 +228,10 @@ sl::Result HookGetState(const sl::ViewportHandle& viewport, sl::DLSSGState& stat
 }
 } // namespace
 
+void SetFeatureDispatcher(void* dispatcher) noexcept {
+    featureDispatcher.store(reinterpret_cast<GetFeatureFunction>(dispatcher), std::memory_order_release);
+}
+
 void InterceptDlssgFunction(const char* name, void** function) noexcept {
     if (std::strcmp(name, "slDLSSGSetOptions") == 0 && *function != reinterpret_cast<void*>(&HookSetOptions)) {
         originalSetOptions.store(reinterpret_cast<SetOptions>(*function));
@@ -156,11 +242,33 @@ void InterceptDlssgFunction(const char* name, void** function) noexcept {
     }
 }
 
+void InterceptReflexFunction(const char* name, void** function) noexcept {
+    if (std::strcmp(name, "slReflexSetOptions") == 0 && *function != reinterpret_cast<void*>(&HookReflexSetOptions)) {
+        originalReflexSetOptions.store(reinterpret_cast<SetReflexOptions>(*function));
+        *function = reinterpret_cast<void*>(&HookReflexSetOptions);
+    } else if (std::strcmp(name, "slReflexSleep") == 0 && *function != reinterpret_cast<void*>(&HookReflexSleep)) {
+        originalReflexSleep.store(reinterpret_cast<ReflexSleep>(*function));
+        *function = reinterpret_cast<void*>(&HookReflexSleep);
+    } else if (std::strcmp(name, "slReflexSetMarker") == 0 && *function != reinterpret_cast<void*>(&HookPclSetMarker)) {
+        originalPclSetMarker.store(reinterpret_cast<SetPclMarker>(*function));
+        *function = reinterpret_cast<void*>(&HookPclSetMarker);
+    }
+}
+
+void InterceptPclFunction(const char* name, void** function) noexcept {
+    if (std::strcmp(name, "slPCLSetMarker") == 0 && *function != reinterpret_cast<void*>(&HookPclSetMarker)) {
+        originalPclSetMarker.store(reinterpret_cast<SetPclMarker>(*function));
+        *function = reinterpret_cast<void*>(&HookPclSetMarker);
+    }
+}
+
 void RequestOptionsUpdate() noexcept { updatePending.store(true); }
 
 StreamlineMfgStatus ReadMfgStatus() noexcept {
     return {originalSetOptions.load() != nullptr && originalGetState.load() != nullptr, dynamicSupported.load(),
-            updatePending.load(), optionsVersion.load(), maximumFrames.load(), lastResult.load(), runtimeStatus.load(), dynamicActive.load(), framesPresentedInSample.load()};
+            updatePending.load(), optionsVersion.load(), maximumFrames.load(), lastResult.load(), runtimeStatus.load(),
+            dynamicActive.load(), framesPresentedInSample.load(), originalReflexSetOptions.load() != nullptr,
+            markersActive.load(), markerCount.load(), appliedQueueParallelismMode.load()};
 }
 
 static_assert(sizeof(void*) != 8 || offsetof(sl::DLSSGOptions, mode) == 32);

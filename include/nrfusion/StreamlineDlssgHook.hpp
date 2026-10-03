@@ -22,6 +22,10 @@ struct StreamlineMfgStatus {
     std::uint32_t runtimeStatus = 0;
     bool dynamicActive = false;
     std::uint32_t framesPresentedInSample = 0;
+    bool reflexLinked = false;
+    bool markersActive = false;
+    std::uint32_t markerCount = 0;
+    std::uint32_t queueParallelismMode = 0;
 };
 
 class StreamlineDlssgHook {

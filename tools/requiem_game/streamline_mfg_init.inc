@@ -194,6 +194,7 @@ bool StreamlineMfg::SetDevice(
     }
     sl::ReflexOptions reflex{};
     reflex.mode = sl::ReflexMode::eLowLatency;
+    reflex.useMarkersToOptimize = true;
     result = impl_->setReflexOptions(reflex);
     if (result != sl::Result::eOk) {
         impl_->status = ResultText("slReflexSetOptions", result);

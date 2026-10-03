@@ -1,4 +1,5 @@
 #include "nrfusion/DlssgTransfusion.hpp"
+#include "nrfusion/StreamlineDlssgHook.hpp"
 
 #include <cassert>
 #include <cstdint>
@@ -50,6 +51,13 @@ HMODULE CreateUnsupportedModule()
 
 int main()
 {
+    const auto initialMfgStatus = nrfusion::StreamlineDlssgHook::Instance().Status();
+    assert(!initialMfgStatus.linked);
+    assert(!initialMfgStatus.reflexLinked);
+    assert(!initialMfgStatus.markersActive);
+    assert(initialMfgStatus.markerCount == 0);
+    assert(initialMfgStatus.queueParallelismMode == 0);
+
     auto& transfusion = nrfusion::DlssgTransfusion::Instance();
     FakeStreamlineClient client;
 
