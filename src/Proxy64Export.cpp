@@ -153,6 +153,18 @@ extern "C" __declspec(dllexport) int NRFusion_GetReflexStats(nrfusion::ReflexVal
     return 1;
 }
 
+extern "C" __declspec(dllexport) int NRFusion_SetMfgLatencyMode(unsigned int mode, unsigned int targetNativeFps) {
+    nrfusion::StreamlineDlssgHook::Instance().SetMfgLatencyMode(
+        static_cast<nrfusion::MfgLatencyMode>(mode), targetNativeFps);
+    return 1;
+}
+
+extern "C" __declspec(dllexport) int NRFusion_GetMfgLatencyMode(unsigned int* outMode, unsigned int* outTargetFps) {
+    if (outMode) *outMode = static_cast<unsigned int>(nrfusion::StreamlineDlssgHook::Instance().GetMfgLatencyMode());
+    if (outTargetFps) *outTargetFps = nrfusion::StreamlineDlssgHook::Instance().GetTargetNativeFps();
+    return 1;
+}
+
 BOOL WINAPI DllMain(HINSTANCE hinstDLL, DWORD fdwReason, LPVOID) {
     if (fdwReason == DLL_PROCESS_ATTACH) {
         DisableThreadLibraryCalls(hinstDLL);

@@ -144,15 +144,15 @@ sl::Result HookSetOptions(const sl::ViewportHandle& viewport, const sl::DLSSGOpt
     if (maximum && applied.mode != sl::DLSSGMode::eOff)
         applied.numFramesToGenerate = std::clamp(applied.numFramesToGenerate, 1u, maximum);
     const bool isMfgActive = (applied.mode != sl::DLSSGMode::eOff);
-    const bool priorMfgActive = mfgActive.exchange(isMfgActive, std::memory_order_relaxed);
+    mfgActive.store(isMfgActive, std::memory_order_relaxed);
     if (isMfgActive) {
         if (applied.structVersion < sl::kStructVersion3) applied.structVersion = sl::kStructVersion3;
         applied.queueParallelismMode = sl::DLSSGQueueParallelismMode::eBlockPresentingClientQueue;
         appliedQueueParallelismMode.store(static_cast<uint32_t>(applied.queueParallelismMode), std::memory_order_relaxed);
     }
-    if (isMfgActive != priorMfgActive) {
-        sl::ReflexOptions reflexOptions{};
-        if (StreamlineReflexTracker::Instance().OnMfgStateChanged(isMfgActive, reflexOptions)) {
+    StreamlineReflexTracker::Instance().SetMfgMultiplier(applied.numFramesToGenerate + 1);
+    sl::ReflexOptions reflexOptions{};
+    if (StreamlineReflexTracker::Instance().ApplyCurrentLatencyPolicy(isMfgActive, reflexOptions)) {
             auto reflexFunc = originalReflexSetOptions.load(std::memory_order_relaxed);
             if (!reflexFunc) {
                 auto dispatcher = featureDispatcher.load(std::memory_order_relaxed);
@@ -168,7 +168,6 @@ sl::Result HookSetOptions(const sl::ViewportHandle& viewport, const sl::DLSSGOpt
                 reflexFunc(reflexOptions);
             }
         }
-    }
     const auto result = original(viewport, applied);
     lastResult.store(static_cast<uint32_t>(result));
     if (result == sl::Result::eOk || result == sl::Result::eWarnOutOfVRAM) {

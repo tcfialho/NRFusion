@@ -79,4 +79,17 @@ void StreamlineDlssgHook::ResetReflexValidation() noexcept {
     streamline::StreamlineReflexTracker::Instance().Reset();
 }
 
+void StreamlineDlssgHook::SetMfgLatencyMode(MfgLatencyMode mode, std::uint32_t targetNativeFps) noexcept {
+    streamline::StreamlineReflexTracker::Instance().SetLatencyMode(mode, targetNativeFps);
+    streamline::RequestOptionsUpdate();
+}
+
+MfgLatencyMode StreamlineDlssgHook::GetMfgLatencyMode() const noexcept {
+    return streamline::StreamlineReflexTracker::Instance().GetLatencyMode();
+}
+
+std::uint32_t StreamlineDlssgHook::GetTargetNativeFps() const noexcept {
+    return streamline::StreamlineReflexTracker::Instance().GetTargetNativeFps();
+}
+
 } // namespace nrfusion

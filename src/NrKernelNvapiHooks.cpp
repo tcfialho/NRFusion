@@ -213,6 +213,15 @@ bool NvapiObservationEnabled() noexcept {
 
 void* InterceptNvapiInterface(std::uint32_t id, void* original) noexcept {
     if (!original) return original;
+    if (id == 0xf3148c42) {
+        wchar_t pacerBuf[32]{};
+        if (GetEnvironmentVariableW(L"NRFUSION_MFG_PACER", pacerBuf, 32) > 0) {
+            if (_wcsicmp(pacerBuf, L"CpuPacer") == 0 || wcscmp(pacerBuf, L"1") == 0) {
+                return nullptr;
+            }
+        }
+        return original;
+    }
     auto& state = Nvapi();
     switch (id) {
     case 0xad1a677d: return Wrap(state.createModule, original, &CreateModule);

@@ -56,7 +56,10 @@ void* __cdecl ObserveInterface(unsigned id) {
 bool NrKernelProfiler::StartDriverDiscovery() {
 #if defined(_WIN32)
     wchar_t enabled[2]{};
-    if (GetEnvironmentVariableW(L"NRFUSION_KERNEL_DISCOVERY", enabled, 2) != 1 || enabled[0] != L'1')
+    const bool discoveryRequested = (GetEnvironmentVariableW(L"NRFUSION_KERNEL_DISCOVERY", enabled, 2) == 1 && enabled[0] == L'1');
+    wchar_t pacerBuf[32]{};
+    const bool pacerConfigured = (GetEnvironmentVariableW(L"NRFUSION_MFG_PACER", pacerBuf, 32) > 0);
+    if (!discoveryRequested && !pacerConfigured)
         return false;
     auto& state = Interfaces();
     std::unique_lock lock(state.mutex);

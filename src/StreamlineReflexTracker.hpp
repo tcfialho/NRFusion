@@ -38,6 +38,11 @@ public:
 
     void RecordSleep(const sl::FrameToken& frame);
     void RecordMarker(sl::PCLMarker marker, const sl::FrameToken& frame);
+    void SetLatencyMode(MfgLatencyMode mode, std::uint32_t targetNativeFps = 0) noexcept;
+    MfgLatencyMode GetLatencyMode() const noexcept;
+    std::uint32_t GetTargetNativeFps() const noexcept;
+    void SetMfgMultiplier(std::uint32_t multiplier) noexcept;
+    bool ApplyCurrentLatencyPolicy(bool mfgActive, sl::ReflexOptions& outOptions);
 
     ReflexOwnershipInfo GetOwnershipInfo() const noexcept;
     ReflexValidationStats GetValidationStats() const noexcept;
@@ -45,7 +50,7 @@ public:
     void Reset() noexcept;
 
 private:
-    StreamlineReflexTracker() noexcept = default;
+    StreamlineReflexTracker() noexcept;
     ~StreamlineReflexTracker() noexcept = default;
 
     struct FrameRecord {
@@ -63,12 +68,16 @@ private:
 
     FrameRecord& GetOrCreateFrameRecordLocked(std::uint32_t frameId, const void* token);
     void CompleteFrameRecordLocked(FrameRecord& record);
+    sl::ReflexOptions CalculateEffectiveOptionsLocked(bool mfgActive) const;
 
     mutable std::mutex mutex_;
     sl::ReflexOptions lastGameRequested_{};
     sl::ReflexOptions lastEffective_{};
     bool haveGameRequested_ = false;
     bool mfgPromotedReflex_ = false;
+    MfgLatencyMode latencyMode_ = MfgLatencyMode::GameDefault;
+    std::uint32_t targetNativeFps_ = 71;
+    std::uint32_t mfgMultiplier_ = 2;
 
     std::deque<FrameRecord> activeFrames_;
     std::uint32_t highestRetiredFrameId_ = 0;

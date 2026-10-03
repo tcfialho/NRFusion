@@ -1,11 +1,57 @@
 #include "StreamlineReflexTracker.hpp"
 #include <algorithm>
+#include <cmath>
 
 namespace nrfusion::streamline {
+
+StreamlineReflexTracker::StreamlineReflexTracker() noexcept {
+    wchar_t modeBuf[64]{};
+    if (GetEnvironmentVariableW(L"NRFUSION_MFG_LATENCY_MODE", modeBuf, 64) > 0) {
+        if (_wcsicmp(modeBuf, L"LowLatency") == 0 || wcscmp(modeBuf, L"1") == 0) {
+            latencyMode_ = MfgLatencyMode::LowLatency;
+        } else if (_wcsicmp(modeBuf, L"OptiScalerEquivalent") == 0 || wcscmp(modeBuf, L"2") == 0) {
+            latencyMode_ = MfgLatencyMode::OptiScalerEquivalent;
+        } else if (_wcsicmp(modeBuf, L"GameDefault") == 0 || wcscmp(modeBuf, L"0") == 0) {
+            latencyMode_ = MfgLatencyMode::GameDefault;
+        }
+    }
+    wchar_t fpsBuf[32]{};
+    if (GetEnvironmentVariableW(L"NRFUSION_MFG_TARGET_FPS", fpsBuf, 32) > 0) {
+        const unsigned long fps = wcstoul(fpsBuf, nullptr, 10);
+        if (fps >= 20 && fps <= 500) targetNativeFps_ = static_cast<std::uint32_t>(fps);
+    }
+}
 
 StreamlineReflexTracker& StreamlineReflexTracker::Instance() noexcept {
     static StreamlineReflexTracker instance;
     return instance;
+}
+
+sl::ReflexOptions StreamlineReflexTracker::CalculateEffectiveOptionsLocked(bool mfgActive) const {
+    sl::ReflexOptions applied = lastGameRequested_;
+    if (mfgActive) {
+        if (lastGameRequested_.mode == sl::ReflexMode::eOff) {
+            applied.mode = sl::ReflexMode::eLowLatency;
+        } else {
+            applied.mode = lastGameRequested_.mode;
+        }
+
+        if (latencyMode_ == MfgLatencyMode::LowLatency) {
+            const uint32_t target = targetNativeFps_ > 0 ? targetNativeFps_ : 71;
+            applied.frameLimitUs = static_cast<std::uint32_t>(std::round(1'000'000.0 / target));
+        } else if (latencyMode_ == MfgLatencyMode::OptiScalerEquivalent) {
+            const uint32_t refresh = targetNativeFps_ > 0 ? targetNativeFps_ : 144;
+            const uint32_t mult = mfgMultiplier_ > 0 ? mfgMultiplier_ : 2;
+            const uint32_t nativeTarget = refresh / mult;
+            applied.frameLimitUs = static_cast<std::uint32_t>(std::round(1'000'000.0 / (nativeTarget > 0 ? nativeTarget : 1)));
+        } else {
+            applied.frameLimitUs = lastGameRequested_.frameLimitUs;
+        }
+    } else {
+        applied.mode = lastGameRequested_.mode;
+        applied.frameLimitUs = lastGameRequested_.frameLimitUs;
+    }
+    return applied;
 }
 
 sl::ReflexOptions StreamlineReflexTracker::OnGameReflexSetOptions(
@@ -14,19 +60,8 @@ sl::ReflexOptions StreamlineReflexTracker::OnGameReflexSetOptions(
     lastGameRequested_ = requested;
     haveGameRequested_ = true;
 
-    sl::ReflexOptions applied = requested;
-    if (mfgActive) {
-        if (requested.mode == sl::ReflexMode::eOff) {
-            applied.mode = sl::ReflexMode::eLowLatency;
-            mfgPromotedReflex_ = true;
-        } else {
-            applied.mode = requested.mode;
-            mfgPromotedReflex_ = false;
-        }
-    } else {
-        applied.mode = requested.mode;
-        mfgPromotedReflex_ = false;
-    }
+    sl::ReflexOptions applied = CalculateEffectiveOptionsLocked(mfgActive);
+    mfgPromotedReflex_ = (mfgActive && lastGameRequested_.mode == sl::ReflexMode::eOff);
     lastEffective_ = applied;
     return applied;
 }
@@ -35,25 +70,46 @@ bool StreamlineReflexTracker::OnMfgStateChanged(bool mfgActive, sl::ReflexOption
     std::lock_guard lock(mutex_);
     if (!haveGameRequested_) return false;
 
-    if (mfgActive) {
-        if (lastGameRequested_.mode == sl::ReflexMode::eOff) {
-            if (!mfgPromotedReflex_) {
-                outOptions = lastGameRequested_;
-                outOptions.mode = sl::ReflexMode::eLowLatency;
-                mfgPromotedReflex_ = true;
-                lastEffective_ = outOptions;
-                return true;
-            }
-        } else {
-            mfgPromotedReflex_ = false;
-        }
-    } else {
-        if (mfgPromotedReflex_) {
-            outOptions = lastGameRequested_;
-            mfgPromotedReflex_ = false;
-            lastEffective_ = outOptions;
-            return true;
-        }
+    sl::ReflexOptions target = CalculateEffectiveOptionsLocked(mfgActive);
+    if (target.mode != lastEffective_.mode || target.frameLimitUs != lastEffective_.frameLimitUs) {
+        outOptions = target;
+        mfgPromotedReflex_ = (mfgActive && lastGameRequested_.mode == sl::ReflexMode::eOff);
+        lastEffective_ = target;
+        return true;
+    }
+    return false;
+}
+
+void StreamlineReflexTracker::SetLatencyMode(MfgLatencyMode mode, std::uint32_t targetNativeFps) noexcept {
+    std::lock_guard lock(mutex_);
+    latencyMode_ = mode;
+    if (targetNativeFps > 0) targetNativeFps_ = targetNativeFps;
+}
+
+MfgLatencyMode StreamlineReflexTracker::GetLatencyMode() const noexcept {
+    std::lock_guard lock(mutex_);
+    return latencyMode_;
+}
+
+std::uint32_t StreamlineReflexTracker::GetTargetNativeFps() const noexcept {
+    std::lock_guard lock(mutex_);
+    return targetNativeFps_;
+}
+
+void StreamlineReflexTracker::SetMfgMultiplier(std::uint32_t multiplier) noexcept {
+    std::lock_guard lock(mutex_);
+    mfgMultiplier_ = multiplier > 0 ? multiplier : 2;
+}
+
+bool StreamlineReflexTracker::ApplyCurrentLatencyPolicy(bool mfgActive, sl::ReflexOptions& outOptions) {
+    std::lock_guard lock(mutex_);
+    if (!haveGameRequested_) return false;
+    sl::ReflexOptions target = CalculateEffectiveOptionsLocked(mfgActive);
+    if (target.mode != lastEffective_.mode || target.frameLimitUs != lastEffective_.frameLimitUs) {
+        outOptions = target;
+        mfgPromotedReflex_ = (mfgActive && lastGameRequested_.mode == sl::ReflexMode::eOff);
+        lastEffective_ = target;
+        return true;
     }
     return false;
 }
@@ -144,6 +200,15 @@ ReflexOwnershipInfo StreamlineReflexTracker::GetOwnershipInfo() const noexcept {
     info.effectiveVirtualKey = lastEffective_.virtualKey;
     info.effectiveIdThread = lastEffective_.idThread;
     info.mfgPromotedReflex = mfgPromotedReflex_;
+    info.latencyMode = static_cast<std::uint32_t>(latencyMode_);
+    if (latencyMode_ == MfgLatencyMode::LowLatency) {
+        info.targetNativeFps = (targetNativeFps_ > 0) ? targetNativeFps_ : 71;
+    } else if (latencyMode_ == MfgLatencyMode::OptiScalerEquivalent) {
+        const uint32_t refresh = targetNativeFps_ > 0 ? targetNativeFps_ : 144;
+        info.targetNativeFps = refresh / (mfgMultiplier_ > 0 ? mfgMultiplier_ : 2);
+    } else {
+        info.targetNativeFps = 0;
+    }
     return info;
 }
 
