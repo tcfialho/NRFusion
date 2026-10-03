@@ -2,6 +2,7 @@
 #define NOMINMAX
 #endif
 #include "nrfusion/DlssgTransfusion.hpp"
+#include "nrfusion/AdaptiveWorkloadGate.hpp"
 #include <algorithm>
 #include <cmath>
 
@@ -153,17 +154,20 @@ void DlssgTransfusion::ProcessSetOptions(uint32_t& inOutMode, uint32_t& inOutNum
     }
     else if (control == MfgControlMode::Dynamic)
     {
-        const float sourceFps = m_renderedFps.load();
-        const uint32_t target = m_dynamicTargetFps.load() ? m_dynamicTargetFps.load() : m_displayRefreshHz.load();
-        const uint32_t available = std::max(UnlockedMax(), m_reportedGenerationLimit.load());
-        const uint32_t limit = std::max(2u, std::min(AutomaticMultiplierLimit(), available + 1u));
-        uint32_t desired = std::clamp(m_dynamicMultiplier.load(), 2u, limit);
-        if (sourceFps > 1) {
-            const float needed = target / sourceFps;
-            if (needed > desired + 0.15f || needed < desired - 1.15f)
-                desired = std::clamp(static_cast<uint32_t>(std::ceil(needed)), 2u, limit);
+        uint32_t desired = m_dynamicMultiplier.load();
+        if (AdaptiveWorkloadGate::Instance().IsSampleValid()) {
+            const float sourceFps = m_renderedFps.load();
+            const uint32_t target = m_dynamicTargetFps.load() ? m_dynamicTargetFps.load() : m_displayRefreshHz.load();
+            const uint32_t available = std::max(UnlockedMax(), m_reportedGenerationLimit.load());
+            const uint32_t limit = std::max(2u, std::min(AutomaticMultiplierLimit(), available + 1u));
+            desired = std::clamp(desired, 2u, limit);
+            if (sourceFps > 1) {
+                const float needed = target / sourceFps;
+                if (needed > desired + 0.15f || needed < desired - 1.15f)
+                    desired = std::clamp(static_cast<uint32_t>(std::ceil(needed)), 2u, limit);
+            }
+            m_dynamicMultiplier.store(desired);
         }
-        m_dynamicMultiplier.store(desired);
         inOutMode = 1;
         targetFrames = desired - 1;
     }

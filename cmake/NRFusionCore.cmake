@@ -48,6 +48,7 @@ add_library(nrfusion_core STATIC
     src/Dlss5NeuralRendering.cpp
     src/AdaptiveExposure.cpp
     src/AdaptiveExposureController.cpp
+    src/AdaptiveWorkloadGate.cpp
     src/RuntimeShell.cpp
     src/RuntimeConfigStore.cpp
     src/RuntimeMenuModel.cpp

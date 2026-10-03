@@ -1,4 +1,5 @@
 #include "nrfusion/AutoTuneCoordinator.hpp"
+#include "nrfusion/AdaptiveWorkloadGate.hpp"
 
 #include <algorithm>
 #include <cmath>
@@ -72,6 +73,7 @@ void AutoTuneCoordinator::Start(const RuntimeCapabilities& caps, float minScale,
 
 void AutoTuneCoordinator::Observe(const TelemetrySample& sample) {
     if (state_ != AutoTuneState::Warmup && state_ != AutoTuneState::Measure) return;
+    if (!AdaptiveWorkloadGate::Instance().IsSampleValid()) return;
     const double frameMs = sample.frameTimingSource == FrameTimingSource::GpuTimestamp
         ? FinitePositive(sample.frameGpuMs) : 0.0;
     const double nrMs = FinitePositive(sample.nrGpuMs);

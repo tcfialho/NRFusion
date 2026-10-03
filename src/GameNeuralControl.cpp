@@ -1,4 +1,5 @@
 #include "GameNeuralControl.hpp"
+#include "nrfusion/AdaptiveWorkloadGate.hpp"
 #include "nrfusion/DlssgTransfusion.hpp"
 #include "nrfusion/Logger.hpp"
 #include <cmath>
@@ -54,11 +55,13 @@ void GameNeuralControl::Consume(GameNeuralTiming& timings) {
         telemetry.sourceFps = DlssgTransfusion::Instance().RenderedFps();
         telemetry.processedFps = telemetry.sourceFps;
         controller_.ObserveScaleCost(scale_, sample.gpuMs);
-        const auto decision = controller_.Update(telemetry);
-        if (decision.changedScale) {
-            NRF_LOG_INFO("NeuralAuto", "GPU NR %.3f ms; scale %.2f -> %.2f targetRendered=%.1f generation=%llu",
-                sample.gpuMs, scale_, decision.workingScale, settings_.targetFps, generation_);
-            scale_ = decision.workingScale;
+        if (AdaptiveWorkloadGate::Instance().IsSampleValid()) {
+            const auto decision = controller_.Update(telemetry);
+            if (decision.changedScale) {
+                NRF_LOG_INFO("NeuralAuto", "GPU NR %.3f ms; scale %.2f -> %.2f targetRendered=%.1f generation=%llu",
+                    sample.gpuMs, scale_, decision.workingScale, settings_.targetFps, generation_);
+                scale_ = decision.workingScale;
+            }
         }
     }
 }
