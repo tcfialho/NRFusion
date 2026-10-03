@@ -117,6 +117,11 @@ if (WIN32)
         src
         "${nrfusion_streamline_source_SOURCE_DIR}/include"
         "${nrfusion_minhook_source_SOURCE_DIR}/include")
+    nrfusion_test(nrfusion_adaptive_workload_gate_tests tests/adaptive_workload_gate_tests.cpp)
+    target_include_directories(nrfusion_adaptive_workload_gate_tests PRIVATE
+        src
+        "${nrfusion_streamline_source_SOURCE_DIR}/include"
+        "${nrfusion_minhook_source_SOURCE_DIR}/include")
 endif()
 nrfusion_test(nrfusion_d3d12_carrier_contract_tests tests/d3d12_carrier_contract_tests.cpp)
 nrfusion_test(nrfusion_d3d12_carrier_session_tests tests/d3d12_carrier_session_tests.cpp)
