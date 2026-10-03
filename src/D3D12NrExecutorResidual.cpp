@@ -69,6 +69,7 @@ D3D12NrFrameResult D3D12NrExecutor::ApplyStoredResidual(
 
     const bool canApplyInPlace =
         (outputDesc.Flags & D3D12_RESOURCE_FLAG_ALLOW_UNORDERED_ACCESS) != 0 &&
+        outputDesc.Format == DXGI_FORMAT_R16G16B16A16_FLOAT &&
         formatSupportsUav &&
         codec_.CanApplyResidualInPlace();
 

@@ -141,14 +141,15 @@ D3D12NrFrameResult D3D12NrExecutor::ExecuteMainFrame(
         codec_.CanResolveInPlace() &&
         codec_.CanSkipKeep();
     const bool needsHdrCopy = !canResolveInPlace;
-    D3D12_FEATURE_DATA_FORMAT_SUPPORT targetFormatSupport{targetDesc.Format, D3D12_FORMAT_SUPPORT1_NONE, D3D12_FORMAT_SUPPORT2_NONE};
-    const bool targetSupportsUavTypedLoad =
-        SUCCEEDED(device->CheckFeatureSupport(D3D12_FEATURE_FORMAT_SUPPORT, &targetFormatSupport, sizeof(targetFormatSupport))) &&
-        (targetFormatSupport.Support2 & D3D12_FORMAT_SUPPORT2_UAV_TYPED_LOAD) != 0;
+    const D3D12_RESOURCE_DESC outputDesc = resources.output->GetDesc();
+    D3D12_FEATURE_DATA_FORMAT_SUPPORT outputFormatSupport{outputDesc.Format, D3D12_FORMAT_SUPPORT1_NONE, D3D12_FORMAT_SUPPORT2_NONE};
+    const bool outputSupportsUavTypedLoad =
+        SUCCEEDED(device->CheckFeatureSupport(D3D12_FEATURE_FORMAT_SUPPORT, &outputFormatSupport, sizeof(outputFormatSupport))) &&
+        (outputFormatSupport.Support2 & D3D12_FORMAT_SUPPORT2_UAV_TYPED_LOAD) != 0;
     const bool canApplyResidualInPlace =
-        context.targetSupportsUav &&
-        (targetDesc.Flags & D3D12_RESOURCE_FLAG_ALLOW_UNORDERED_ACCESS) != 0 &&
-        targetSupportsUavTypedLoad &&
+        (outputDesc.Flags & D3D12_RESOURCE_FLAG_ALLOW_UNORDERED_ACCESS) != 0 &&
+        outputDesc.Format == DXGI_FORMAT_R16G16B16A16_FLOAT &&
+        outputSupportsUavTypedLoad &&
         codec_.CanApplyResidualInPlace();
     const bool needsResidualComposed = context.acrossRr && !canApplyResidualInPlace;
 
