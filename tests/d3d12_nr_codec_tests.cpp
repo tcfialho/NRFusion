@@ -14,6 +14,7 @@
 
 #include "nrfusion/D3D12NrCodec.hpp"
 #include "D3D12CodecExactComparison.hpp"
+#include "D3D12CodecResidualOutlierTest.hpp"
 
 #include <cassert>
 
@@ -70,6 +71,7 @@ int main() {
     nrfusion::testing::CheckCodecEncodeExact(device.Get(), queue.Get());
     nrfusion::testing::CheckCodecResolveExact(device.Get(), queue.Get());
     nrfusion::testing::CheckCodecResidualExact(device.Get(), queue.Get());
+    nrfusion::testing::CheckCodecResidualOutlierScenario(device.Get(), queue.Get());
     nrfusion::testing::CodecApiCounters apiCalls(device.Get());
     D3D12NrCodec codec;
     assert(codec.Init(device.Get()));
