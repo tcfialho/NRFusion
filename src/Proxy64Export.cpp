@@ -33,16 +33,17 @@ void PinProxyModule() noexcept {
 
 extern "C" __declspec(dllexport) void NRFusion_EnsureRuntime() {
     bool expected = false;
-    if (!g_runtimeStarted.compare_exchange_strong(expected, true)) return;
-    PinProxyModule();
-    nrfusion::Logger::Instance().Initialize(nullptr);
-    NRF_LOG_INFO("Proxy", "NRFusion_EnsureRuntime: starting watchers and runtime");
+    if (g_runtimeStarted.compare_exchange_strong(expected, true)) {
+        PinProxyModule();
+        nrfusion::Logger::Instance().Initialize(nullptr);
+        NRF_LOG_INFO("Proxy", "NRFusion_EnsureRuntime: starting watchers and runtime");
+        nrfusion::StreamlineDlssgHook::Instance().Install();
+        nrfusion::MfgModuleWatcher::Instance().Start();
+        nrfusion::StartCaptureD3D11Runtime();
+        nrfusion::RuntimeOverlayWorker::Instance().Start(&nrfusion::RuntimeOverlay::Instance());
+    }
     if (nrfusion::NrKernelProfiler::Instance().StartDriverDiscovery())
         NRF_LOG_INFO("KernelDiscovery", "NVAPI interface observation enabled");
-    nrfusion::StreamlineDlssgHook::Instance().Install();
-    nrfusion::MfgModuleWatcher::Instance().Start();
-    nrfusion::StartCaptureD3D11Runtime();
-    nrfusion::RuntimeOverlayWorker::Instance().Start(&nrfusion::RuntimeOverlay::Instance());
 }
 
 extern "C" __declspec(dllexport) void NRFusion_ShutdownRuntime() {
@@ -153,15 +154,36 @@ extern "C" __declspec(dllexport) int NRFusion_GetReflexStats(nrfusion::ReflexVal
     return 1;
 }
 
-extern "C" __declspec(dllexport) int NRFusion_SetMfgLatencyMode(unsigned int mode, unsigned int targetNativeFps) {
+extern "C" __declspec(dllexport) int NRFusion_SetMfgLatencyMode(unsigned int mode, unsigned int targetDisplayFps) {
+    nrfusion::NrKernelProfiler::Instance().StartDriverDiscovery();
     nrfusion::StreamlineDlssgHook::Instance().SetMfgLatencyMode(
-        static_cast<nrfusion::MfgLatencyMode>(mode), targetNativeFps);
+        static_cast<nrfusion::MfgLatencyMode>(mode), targetDisplayFps, 0);
+    return 1;
+}
+
+extern "C" __declspec(dllexport) int NRFusion_SetMfgLatencyModeEx(
+    unsigned int mode, unsigned int targetDisplayFps, unsigned int targetNativeFps) {
+    nrfusion::NrKernelProfiler::Instance().StartDriverDiscovery();
+    nrfusion::StreamlineDlssgHook::Instance().SetMfgLatencyMode(
+        static_cast<nrfusion::MfgLatencyMode>(mode), targetDisplayFps, targetNativeFps);
     return 1;
 }
 
 extern "C" __declspec(dllexport) int NRFusion_GetMfgLatencyMode(unsigned int* outMode, unsigned int* outTargetFps) {
     if (outMode) *outMode = static_cast<unsigned int>(nrfusion::StreamlineDlssgHook::Instance().GetMfgLatencyMode());
-    if (outTargetFps) *outTargetFps = nrfusion::StreamlineDlssgHook::Instance().GetTargetNativeFps();
+    if (outTargetFps) *outTargetFps = nrfusion::StreamlineDlssgHook::Instance().GetTargetDisplayFps();
+    return 1;
+}
+
+extern "C" __declspec(dllexport) int NRFusion_SetMfgPacerMode(unsigned int mode) {
+    nrfusion::NrKernelProfiler::Instance().StartDriverDiscovery();
+    nrfusion::StreamlineDlssgHook::Instance().SetMfgPacerMode(
+        static_cast<nrfusion::MfgPacerMode>(mode));
+    return 1;
+}
+
+extern "C" __declspec(dllexport) int NRFusion_GetMfgPacerMode(unsigned int* outMode) {
+    if (outMode) *outMode = static_cast<unsigned int>(nrfusion::StreamlineDlssgHook::Instance().GetMfgPacerMode());
     return 1;
 }
 

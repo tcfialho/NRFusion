@@ -38,11 +38,15 @@ public:
 
     void RecordSleep(const sl::FrameToken& frame);
     void RecordMarker(sl::PCLMarker marker, const sl::FrameToken& frame);
-    void SetLatencyMode(MfgLatencyMode mode, std::uint32_t targetNativeFps = 0) noexcept;
+    void SetLatencyMode(MfgLatencyMode mode, std::uint32_t targetDisplayFps = 0, std::uint32_t targetNativeFps = 0) noexcept;
     MfgLatencyMode GetLatencyMode() const noexcept;
+    std::uint32_t GetTargetDisplayFps() const noexcept;
     std::uint32_t GetTargetNativeFps() const noexcept;
     void SetMfgMultiplier(std::uint32_t multiplier) noexcept;
     bool ApplyCurrentLatencyPolicy(bool mfgActive, sl::ReflexOptions& outOptions);
+
+    void SetPacerMode(MfgPacerMode mode) noexcept;
+    MfgPacerMode GetPacerMode() const noexcept;
 
     ReflexOwnershipInfo GetOwnershipInfo() const noexcept;
     ReflexValidationStats GetValidationStats() const noexcept;
@@ -75,8 +79,10 @@ private:
     sl::ReflexOptions lastEffective_{};
     bool haveGameRequested_ = false;
     bool mfgPromotedReflex_ = false;
-    MfgLatencyMode latencyMode_ = MfgLatencyMode::GameDefault;
-    std::uint32_t targetNativeFps_ = 71;
+    MfgLatencyMode latencyMode_ = MfgLatencyMode::LowLatency;
+    MfgPacerMode pacerMode_ = MfgPacerMode::Auto;
+    std::uint32_t targetDisplayFps_ = 60;
+    std::uint32_t targetNativeFps_ = 30;
     std::uint32_t mfgMultiplier_ = 2;
 
     std::deque<FrameRecord> activeFrames_;

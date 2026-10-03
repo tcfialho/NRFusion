@@ -35,7 +35,7 @@ void EnableNvapiObservation(bool enabled) noexcept;
 bool NvapiObservationEnabled() noexcept;
 void RefreshNvapiDevice(ID3D12Device* device);
 void RetireNvapiDevice(ID3D12Device* device);
-void* InterceptNvapiInterface(std::uint32_t id, void* original) noexcept;
+void* InterceptNvapiInterface(std::uint32_t id, void* original, const void* callerAddress = nullptr) noexcept;
 bool BeginFrame(ID3D12Device* device, std::uint64_t frame, const char* csvPath);
 void BeginNeuralPass(ID3D12GraphicsCommandList* commands) noexcept;
 void EndNeuralPass() noexcept;

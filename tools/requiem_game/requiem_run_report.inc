@@ -8,10 +8,16 @@
         const size_t ns = pacingSleepSamples.size();
         const double s50 = pacingSleepSamples[ns * 50 / 100];
         const double s95 = pacingSleepSamples[ns * 95 / 100];
+        const double effectiveDisplayCadence = nativeFps * (g_mfgMultiplier > 0 ? g_mfgMultiplier : 1);
         std::cout << "[PACER-TIMING-REPORT] samples=" << ni
                   << " NativeFrameInterval p50=" << i50 << "ms p95=" << i95 << "ms"
                   << " -> NativeFPS=" << nativeFps
                   << " | PacingSleep p50=" << s50 << "ms p95=" << s95 << "ms"
+                  << std::endl;
+        std::cout << "[DISPLAY-CADENCE-REPORT] OSReportedRefresh="
+                  << (g_osReportedRefresh > 0 ? std::to_string(g_osReportedRefresh) + " Hz" : "unknown")
+                  << " | EffectiveObservedDisplayCadence=" << effectiveDisplayCadence << " Hz"
+                  << " | RequestedTargetDisplayFps=" << (g_mfgTargetDisplayFps > 0 ? std::to_string(g_mfgTargetDisplayFps) + " Hz" : "default/unlimited")
                   << std::endl;
     }
     if (!postPacingCpuToPresentReturnSamples.empty()) {
@@ -49,7 +55,8 @@
                   << " effectiveMode=" << reflexOwnership.effectiveMode
                   << " promoted=" << (reflexOwnership.mfgPromotedReflex ? 1 : 0)
                   << " latencyMode=" << reflexOwnership.latencyMode
-                  << " targetFps=" << reflexOwnership.targetNativeFps
+                  << " targetDisplayFps=" << reflexOwnership.targetDisplayFps
+                  << " targetNativeFps=" << reflexOwnership.targetNativeFps
                   << " effectiveFrameLimitUs=" << reflexOwnership.effectiveFrameLimitUs
                   << std::endl;
     }

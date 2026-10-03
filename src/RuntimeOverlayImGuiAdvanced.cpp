@@ -98,10 +98,84 @@ void DrawGenerationOptions(RuntimeOverlay& overlay) {
     changed |= ImGui::Checkbox(MenuLabel("Use monitor refresh as Dynamic target", "Usar frequência do monitor como meta do Dinâmico"), &main.displayHzAuto);
     changed |= ImGui::Checkbox(MenuLabel("Enable 5X/6X in Dynamic", "Habilitar 5X/6X no Dinâmico"), &advanced.mfg.allowExperimental56x);
     changed |= ImGui::Checkbox(MenuLabel("Reduce Dynamic multiplier when VRAM is insufficient", "Reduzir multiplicador Dinâmico quando faltar VRAM"), &advanced.mfg.respectVramBudget);
-    if (!main.displayHzAuto)
-        changed |= ImGui::SliderFloat(MenuLabel("Output target", "Meta de saída"), &main.displayHz, 30, 360, "%.0f FPS");
-    MenuHelp("Output FPS includes generated frames. This target is separate from NR's rendered-FPS budget.",
-             "FPS de saída inclui os quadros gerados. Esta meta é separada do orçamento de FPS renderizados do NR.");
+
+    auto currentLatencyMode = StreamlineDlssgHook::Instance().GetMfgLatencyMode();
+    int selectedLatency = (currentLatencyMode == MfgLatencyMode::LowLatency) ? 1 : 0;
+    const char* latencyLabels[] = {
+        MenuLabel("Game Default", "Padrão do Jogo"),
+        MenuLabel("Low Latency", "Baixa Latência")
+    };
+    if (ImGui::BeginCombo(MenuLabel("MFG Latency Mode", "Modo de Latência MFG"), latencyLabels[selectedLatency])) {
+        for (int i = 0; i < 2; ++i) {
+            if (ImGui::Selectable(latencyLabels[i], i == selectedLatency)) {
+                currentLatencyMode = (i == 1) ? MfgLatencyMode::LowLatency : MfgLatencyMode::GameDefault;
+                const auto targetHz = StreamlineDlssgHook::Instance().GetTargetDisplayFps();
+                StreamlineDlssgHook::Instance().SetMfgLatencyMode(currentLatencyMode, targetHz > 0 ? targetHz : 60);
+                changed = true;
+            }
+        }
+        ImGui::EndCombo();
+    }
+    MenuHelp("Game Default preserves game Reflex options. Low Latency applies target display FPS via Reflex frameLimitUs.",
+             "Game Default preserva opções Reflex do jogo. Low Latency aplica meta de FPS de exibição via Reflex frameLimitUs.");
+
+    if (currentLatencyMode == MfgLatencyMode::LowLatency) {
+        uint32_t currentTargetFps = StreamlineDlssgHook::Instance().GetTargetDisplayFps();
+        if (currentTargetFps == 0) currentTargetFps = 60;
+        int presetIdx = 4;
+        if (currentTargetFps == 60) presetIdx = 0;
+        else if (currentTargetFps == 90) presetIdx = 1;
+        else if (currentTargetFps == 120) presetIdx = 2;
+        else if (currentTargetFps == 144) presetIdx = 3;
+
+        const char* targetFpsLabels[] = {"60 FPS", "90 FPS", "120 FPS", "144 FPS", MenuLabel("Custom", "Personalizado")};
+        if (ImGui::BeginCombo(MenuLabel("Target Display FPS", "Meta de FPS de Exibição"), targetFpsLabels[presetIdx])) {
+            const uint32_t presets[] = {60, 90, 120, 144};
+            for (int i = 0; i < 4; ++i) {
+                if (ImGui::Selectable(targetFpsLabels[i], i == presetIdx)) {
+                    StreamlineDlssgHook::Instance().SetMfgLatencyMode(currentLatencyMode, presets[i]);
+                    main.displayHz = static_cast<float>(presets[i]);
+                    changed = true;
+                }
+            }
+            if (ImGui::Selectable(targetFpsLabels[4], presetIdx == 4)) {
+                // Keep custom
+            }
+            ImGui::EndCombo();
+        }
+        MenuHelp("Final displayed FPS cadence. User manual selection always overrides monitor auto-detection.",
+                 "Cadência final de FPS de exibição. Seleção manual do usuário sempre tem prioridade sobre detecção do monitor.");
+
+        if (presetIdx == 4) {
+            int customFps = static_cast<int>(currentTargetFps);
+            if (ImGui::SliderInt(MenuLabel("Custom Target FPS", "FPS Personalizado"), &customFps, 30, 360, "%d FPS")) {
+                StreamlineDlssgHook::Instance().SetMfgLatencyMode(currentLatencyMode, static_cast<uint32_t>(customFps));
+                main.displayHz = static_cast<float>(customFps);
+                changed = true;
+            }
+        }
+    }
+
+    auto currentPacer = StreamlineDlssgHook::Instance().GetMfgPacerMode();
+    int selectedPacer = static_cast<int>(currentPacer);
+    const char* pacerLabels[] = {
+        MenuLabel("Auto", "Automático"),
+        MenuLabel("CPU Pacer", "Pacer por CPU"),
+        MenuLabel("Flip Metering", "Flip Metering")
+    };
+    if (ImGui::BeginCombo(MenuLabel("MFG Pacer", "Pacer MFG"), pacerLabels[selectedPacer])) {
+        for (int i = 0; i < 3; ++i) {
+            if (ImGui::Selectable(pacerLabels[i], i == selectedPacer)) {
+                currentPacer = static_cast<MfgPacerMode>(i);
+                StreamlineDlssgHook::Instance().SetMfgPacerMode(currentPacer);
+                changed = true;
+            }
+        }
+        ImGui::EndCombo();
+    }
+    MenuHelp("Auto uses NVIDIA default flip metering. CPU Pacer enables scoped CPU presentation pacing for sl.dlss_g on Ada GPUs.",
+             "Auto usa medição de flip padrão da NVIDIA. CPU Pacer ativa pacing de apresentação por CPU para sl.dlss_g em GPUs Ada.");
+
     if (runtime.linked && !runtime.nativeDynamicSupported)
         ImGui::TextWrapped("%s", MenuLabel("Auto uses NRFusion's stable multiplier selection; native Dynamic is unavailable.",
             "Automático usa a seleção estável de multiplicador do NRFusion; Dynamic nativo está indisponível."));
@@ -147,6 +221,17 @@ void DrawRuntimeOverlayAdvanced(RuntimeOverlay& overlay) {
         ImGui::TextUnformatted(status.beforeUpscale ? MenuLabel("Before DLSS", "Antes do DLSS") : MenuLabel("After DLSS", "Depois do DLSS"));
         ImGui::Text(MenuLabel("Rendered cadence: %.1f FPS", "Cadência renderizada: %.1f FPS"), DlssgTransfusion::Instance().RenderedFps());
         ImGui::Text(MenuLabel("Latest SDK sample: %u presented frames", "Última amostra SDK: %u quadros apresentados"), generation.framesPresentedInSample);
+
+        const auto reflex = StreamlineDlssgHook::Instance().ReflexOwnership();
+        if (reflex.haveGameOptions) {
+            const char* modeName = reflex.latencyMode == 1 ? "LowLatency" : "GameDefault";
+            const auto pacerMode = StreamlineDlssgHook::Instance().GetMfgPacerMode();
+            const char* pacerName = pacerMode == MfgPacerMode::CpuPacer ? "CpuPacer" :
+                                    (pacerMode == MfgPacerMode::FlipMetering ? "FlipMetering" : "Auto");
+            ImGui::Text(MenuLabel("Reflex pacing: %s (%s) | target %u Hz | limit %u us",
+                                  "Pacing Reflex: %s (%s) | meta %u Hz | limite %u us"),
+                        modeName, pacerName, reflex.targetDisplayFps, reflex.effectiveFrameLimitUs);
+        }
     }
 }
 } // namespace nrfusion

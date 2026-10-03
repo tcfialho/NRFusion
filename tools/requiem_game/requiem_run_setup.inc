@@ -93,13 +93,23 @@
         const auto setLatencyMode = reinterpret_cast<SetMfgLatencyModeFn>(
             GetProcAddress(standaloneProxy, "NRFusion_SetMfgLatencyMode"));
         if (setLatencyMode) {
-            unsigned int modeVal = 0;
-            if (g_mfgLatencyModeStr == "LowLatency" || g_mfgLatencyModeStr == "lowlatency" || g_mfgLatencyModeStr == "1") {
-                modeVal = 1;
-            } else if (g_mfgLatencyModeStr == "OptiScalerEquivalent" || g_mfgLatencyModeStr == "optiscaler" || g_mfgLatencyModeStr == "2") {
-                modeVal = 2;
-            }
-            setLatencyMode(modeVal, g_mfgTargetFps);
+            unsigned int modeVal = (g_mfgLatencyModeStr == "GameDefault" || g_mfgLatencyModeStr == "gamedefault" || g_mfgLatencyModeStr == "0") ? 0 : 1;
+            uint32_t discoveredRefresh = 0;
+            DEVMODEW dm{sizeof(dm)};
+            if (EnumDisplaySettingsW(nullptr, ENUM_CURRENT_SETTINGS, &dm) && dm.dmDisplayFrequency > 1)
+                g_osReportedRefresh = discoveredRefresh = dm.dmDisplayFrequency;
+            wchar_t envBuf[32]{};
+            if (g_mfgTargetDisplayFps == 0 && GetEnvironmentVariableW(L"NRFUSION_MFG_TARGET_DISPLAY_FPS", envBuf, 32) > 0)
+                g_mfgTargetDisplayFps = static_cast<std::uint32_t>(wcstoul(envBuf, nullptr, 10));
+            if (g_mfgTargetDisplayFps == 0 && modeVal == 1)
+                g_mfgTargetDisplayFps = 60;
+            g_mfgTargetNativeFps = g_mfgTargetDisplayFps / (g_mfgMultiplier > 0 ? g_mfgMultiplier : 2);
+
+            std::cout << "[MFG] display discovery: " << (discoveredRefresh > 0 ? std::to_string(discoveredRefresh) + " Hz" : "unknown") << std::endl;
+            std::cout << "[MFG] pacing targets: targetDisplayFps=" << g_mfgTargetDisplayFps
+                      << " targetNativeFps=" << g_mfgTargetNativeFps
+                      << " (multiplier=" << g_mfgMultiplier << "X)" << std::endl;
+            setLatencyMode(modeVal, g_mfgTargetDisplayFps);
         }
     }
 
@@ -112,27 +122,16 @@
     if (g_mfgMultiplier > 2 && standaloneProxy) {
         using MfgFlagFn = int(__cdecl*)();
         using MfgMaxFn = unsigned int(__cdecl*)();
-        const auto observed = reinterpret_cast<MfgFlagFn>(
-            GetProcAddress(standaloneProxy, "NRFusion_MfgModuleObserved"));
-        const auto qualified = reinterpret_cast<MfgFlagFn>(
-            GetProcAddress(standaloneProxy, "NRFusion_MfgPatchQualified"));
-        const auto unlockedMax = reinterpret_cast<MfgMaxFn>(
-            GetProcAddress(standaloneProxy, "NRFusion_MfgUnlockedMax"));
-        for (unsigned attempt = 0;
-             attempt < 2000 && qualified && !qualified(); ++attempt)
-            Sleep(1);
-        if (!observed || !qualified || !unlockedMax ||
-            !observed() || !qualified() ||
-            unlockedMax() < g_mfgMultiplier - 1) {
+        const auto observed = reinterpret_cast<MfgFlagFn>(GetProcAddress(standaloneProxy, "NRFusion_MfgModuleObserved"));
+        const auto qualified = reinterpret_cast<MfgFlagFn>(GetProcAddress(standaloneProxy, "NRFusion_MfgPatchQualified"));
+        const auto unlockedMax = reinterpret_cast<MfgMaxFn>(GetProcAddress(standaloneProxy, "NRFusion_MfgUnlockedMax"));
+        for (unsigned attempt = 0; attempt < 2000 && qualified && !qualified(); ++attempt) Sleep(1);
+        if (!observed || !qualified || !unlockedMax || !observed() || !qualified() || unlockedMax() < g_mfgMultiplier - 1) {
             using ReasonFn = const char*(__cdecl*)();
-            const auto reasonFn = reinterpret_cast<ReasonFn>(
-                GetProcAddress(standaloneProxy, "NRFusion_MfgFailureReason"));
-            std::cerr << "[ERRO] proxy NRFusion nao qualificou late-load DLSS-G: "
-                      << "observed=" << (observed ? observed() : -1)
-                      << " qualified=" << (qualified ? qualified() : -1)
-                      << " unlockedMax=" << (unlockedMax ? unlockedMax() : 0)
-                      << " reason=" << (reasonFn ? reasonFn() : "none")
-                      << std::endl;
+            const auto reasonFn = reinterpret_cast<ReasonFn>(GetProcAddress(standaloneProxy, "NRFusion_MfgFailureReason"));
+            std::cerr << "[ERRO] proxy NRFusion nao qualificou late-load DLSS-G: observed=" << (observed ? observed() : -1)
+                      << " qualified=" << (qualified ? qualified() : -1) << " unlockedMax=" << (unlockedMax ? unlockedMax() : 0)
+                      << " reason=" << (reasonFn ? reasonFn() : "none") << std::endl;
             return 1;
         }
     }

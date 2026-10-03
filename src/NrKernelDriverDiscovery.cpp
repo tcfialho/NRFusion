@@ -7,6 +7,7 @@
 #define WIN32_LEAN_AND_MEAN
 #define NOMINMAX
 #include <windows.h>
+#include <intrin.h>
 #include <MinHook.h>
 #include "NrKernelProfileD3D12.hpp"
 #endif
@@ -34,6 +35,7 @@ InterfaceState& Interfaces() {
 
 #if defined(_WIN32)
 void* __cdecl ObserveInterface(unsigned id) {
+    const void* callerAddress = _ReturnAddress();
     auto& state = Interfaces();
     void* function = state.original(id);
     std::lock_guard lock(state.mutex);
@@ -41,13 +43,13 @@ void* __cdecl ObserveInterface(unsigned id) {
         auto& record = state.records[index];
         if (record.interfaceId == id && record.functionId == reinterpret_cast<std::uintptr_t>(function)) {
             ++record.observations;
-            return kernelprofile::InterceptNvapiInterface(id, function);
+            return kernelprofile::InterceptNvapiInterface(id, function, callerAddress);
         }
     }
     if (state.count < state.records.size()) {
         state.records[state.count++] = {id, reinterpret_cast<std::uintptr_t>(function), 1};
     }
-    return kernelprofile::InterceptNvapiInterface(id, function);
+    return kernelprofile::InterceptNvapiInterface(id, function, callerAddress);
 }
 #endif
 

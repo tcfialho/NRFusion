@@ -79,8 +79,9 @@ void StreamlineDlssgHook::ResetReflexValidation() noexcept {
     streamline::StreamlineReflexTracker::Instance().Reset();
 }
 
-void StreamlineDlssgHook::SetMfgLatencyMode(MfgLatencyMode mode, std::uint32_t targetNativeFps) noexcept {
-    streamline::StreamlineReflexTracker::Instance().SetLatencyMode(mode, targetNativeFps);
+void StreamlineDlssgHook::SetMfgLatencyMode(
+    MfgLatencyMode mode, std::uint32_t targetDisplayFps, std::uint32_t targetNativeFps) noexcept {
+    streamline::StreamlineReflexTracker::Instance().SetLatencyMode(mode, targetDisplayFps, targetNativeFps);
     streamline::RequestOptionsUpdate();
 }
 
@@ -88,8 +89,20 @@ MfgLatencyMode StreamlineDlssgHook::GetMfgLatencyMode() const noexcept {
     return streamline::StreamlineReflexTracker::Instance().GetLatencyMode();
 }
 
+std::uint32_t StreamlineDlssgHook::GetTargetDisplayFps() const noexcept {
+    return streamline::StreamlineReflexTracker::Instance().GetTargetDisplayFps();
+}
+
 std::uint32_t StreamlineDlssgHook::GetTargetNativeFps() const noexcept {
     return streamline::StreamlineReflexTracker::Instance().GetTargetNativeFps();
+}
+
+void StreamlineDlssgHook::SetMfgPacerMode(MfgPacerMode mode) noexcept {
+    streamline::StreamlineReflexTracker::Instance().SetPacerMode(mode);
+}
+
+MfgPacerMode StreamlineDlssgHook::GetMfgPacerMode() const noexcept {
+    return streamline::StreamlineReflexTracker::Instance().GetPacerMode();
 }
 
 } // namespace nrfusion

@@ -211,16 +211,77 @@ bool NvapiObservationEnabled() noexcept {
     return Nvapi().enabled.load(std::memory_order_relaxed);
 }
 
-void* InterceptNvapiInterface(std::uint32_t id, void* original) noexcept {
+bool IsAdaGpu() noexcept {
+    static int s_isAda = -1;
+    if (s_isAda != -1) return s_isAda == 1;
+
+    const auto driver = LoadLibraryExW(L"nvcuda.dll", nullptr, LOAD_LIBRARY_SEARCH_SYSTEM32);
+    if (!driver) {
+        s_isAda = 0;
+        return false;
+    }
+    using Init = int(__stdcall*)(unsigned);
+    using Count = int(__stdcall*)(int*);
+    using Attribute = int(__stdcall*)(int*, int, int);
+    const auto init = reinterpret_cast<Init>(GetProcAddress(driver, "cuInit"));
+    const auto count = reinterpret_cast<Count>(GetProcAddress(driver, "cuDeviceGetCount"));
+    const auto attribute = reinterpret_cast<Attribute>(GetProcAddress(driver, "cuDeviceGetAttribute"));
+
+    int devices = 0;
+    bool foundAda = false;
+    if (init && count && attribute && init(0) == 0 && count(&devices) == 0) {
+        for (int i = 0; i < devices; ++i) {
+            int major = 0, minor = 0;
+            // CU_DEVICE_ATTRIBUTE_COMPUTE_CAPABILITY_MAJOR = 75
+            // CU_DEVICE_ATTRIBUTE_COMPUTE_CAPABILITY_MINOR = 76
+            if (attribute(&major, 75, i) == 0 && attribute(&minor, 76, i) == 0) {
+                if (major == 8 && minor == 9) {
+                    foundAda = true;
+                    break;
+                }
+            }
+        }
+    }
+    FreeLibrary(driver);
+    s_isAda = foundAda ? 1 : 0;
+    return foundAda;
+}
+
+bool IsDlssgCaller(const void* callerAddress) noexcept {
+    if (!callerAddress) return false;
+    HMODULE callerModule = nullptr;
+    if (!GetModuleHandleExW(
+            GET_MODULE_HANDLE_EX_FLAG_FROM_ADDRESS | GET_MODULE_HANDLE_EX_FLAG_UNCHANGED_REFCOUNT,
+            reinterpret_cast<LPCWSTR>(callerAddress),
+            &callerModule) || !callerModule) {
+        return false;
+    }
+    wchar_t modulePath[MAX_PATH]{};
+    const DWORD len = GetModuleFileNameW(callerModule, modulePath, MAX_PATH);
+    if (len == 0 || len >= MAX_PATH) return false;
+    const wchar_t* fileName = wcsrchr(modulePath, L'\\');
+    fileName = fileName ? fileName + 1 : modulePath;
+    if (_wcsicmp(fileName, L"sl.dlss_g.dll") == 0) return true;
+    _wcslwr_s(modulePath, len + 1);
+    return (wcsstr(modulePath, L"sl_dlss_g") != nullptr || wcsstr(modulePath, L"sl.dlss_g") != nullptr);
+}
+
+void* InterceptNvapiInterface(std::uint32_t id, void* original, const void* callerAddress) noexcept {
     if (!original) return original;
     if (id == 0xf3148c42) {
         wchar_t pacerBuf[32]{};
-        if (GetEnvironmentVariableW(L"NRFUSION_MFG_PACER", pacerBuf, 32) > 0) {
-            if (_wcsicmp(pacerBuf, L"CpuPacer") == 0 || wcscmp(pacerBuf, L"1") == 0) {
-                return nullptr;
-            }
+        const bool pacerRequested = (GetEnvironmentVariableW(L"NRFUSION_MFG_PACER", pacerBuf, 32) > 0 &&
+            (_wcsicmp(pacerBuf, L"CpuPacer") == 0 || wcscmp(pacerBuf, L"1") == 0));
+        if (!pacerRequested) {
+            return original;
         }
-        return original;
+        // Scoped CPU Pacer qualification (fail-closed):
+        // 1. Caller module MUST be verified as sl.dlss_g.dll
+        // 2. Hardware MUST be verified as Ada Lovelace SM89
+        if (!IsDlssgCaller(callerAddress) || !IsAdaGpu()) {
+            return original;
+        }
+        return nullptr;
     }
     auto& state = Nvapi();
     switch (id) {

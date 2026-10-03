@@ -30,8 +30,13 @@ struct StreamlineMfgStatus {
 
 enum class MfgLatencyMode : std::uint32_t {
     GameDefault = 0,
-    LowLatency = 1,
-    OptiScalerEquivalent = 2
+    LowLatency = 1
+};
+
+enum class MfgPacerMode : std::uint32_t {
+    Auto = 0,
+    CpuPacer = 1,
+    FlipMetering = 2
 };
 
 struct ReflexOwnershipInfo {
@@ -50,6 +55,7 @@ struct ReflexOwnershipInfo {
 
     bool mfgPromotedReflex = false;
     std::uint32_t latencyMode = 0;
+    std::uint32_t targetDisplayFps = 0;
     std::uint32_t targetNativeFps = 0;
 };
 
@@ -76,9 +82,13 @@ public:
     ReflexValidationStats ReflexStats() const noexcept;
     void ResetReflexValidation() noexcept;
 
-    void SetMfgLatencyMode(MfgLatencyMode mode, std::uint32_t targetNativeFps = 0) noexcept;
+    void SetMfgLatencyMode(MfgLatencyMode mode, std::uint32_t targetDisplayFps = 0, std::uint32_t targetNativeFps = 0) noexcept;
     MfgLatencyMode GetMfgLatencyMode() const noexcept;
+    std::uint32_t GetTargetDisplayFps() const noexcept;
     std::uint32_t GetTargetNativeFps() const noexcept;
+
+    void SetMfgPacerMode(MfgPacerMode mode) noexcept;
+    MfgPacerMode GetMfgPacerMode() const noexcept;
 
     bool IsInstalled() const noexcept { return installed_.load(); }
 

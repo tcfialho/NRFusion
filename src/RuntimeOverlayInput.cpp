@@ -2,6 +2,7 @@
 #include "nrfusion/Logger.hpp"
 #include "RuntimeOverlayCursor.hpp"
 #include "nrfusion/DlssgTransfusion.hpp"
+#include "nrfusion/StreamlineDlssgHook.hpp"
 
 #ifndef WIN32_LEAN_AND_MEAN
 #define WIN32_LEAN_AND_MEAN
@@ -26,6 +27,7 @@ void RuntimeOverlay::ConfigureFrameGeneration() {
     } else {
         generation.SetControlMode(MfgControlMode::FollowGame);
     }
+
     NRF_LOG_INFO("Overlay", "Configured NR=%d MFG mode=%u multiplier=%u target=%u",
         activeMain_.enabled, static_cast<unsigned>(activeMain_.mfgMode), activeMain_.mfgMultiplier,
         generation.GetDynamicTargetFps());
