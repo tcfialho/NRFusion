@@ -120,34 +120,45 @@ void DrawGenerationOptions(RuntimeOverlay& overlay) {
              "Game Default preserva opções Reflex do jogo. Low Latency aplica meta de FPS de exibição via Reflex frameLimitUs.");
 
     if (currentLatencyMode == MfgLatencyMode::LowLatency) {
+        const bool isAuto = StreamlineDlssgHook::Instance().IsAutoPerformance();
         uint32_t currentTargetFps = StreamlineDlssgHook::Instance().GetTargetDisplayFps();
-        if (currentTargetFps == 0) currentTargetFps = 60;
-        int presetIdx = 4;
-        if (currentTargetFps == 60) presetIdx = 0;
-        else if (currentTargetFps == 90) presetIdx = 1;
-        else if (currentTargetFps == 120) presetIdx = 2;
-        else if (currentTargetFps == 144) presetIdx = 3;
+        int presetIdx = 0;
+        if (isAuto) presetIdx = 0;
+        else if (currentTargetFps == 60) presetIdx = 1;
+        else if (currentTargetFps == 90) presetIdx = 2;
+        else if (currentTargetFps == 120) presetIdx = 3;
+        else if (currentTargetFps == 144) presetIdx = 4;
+        else presetIdx = 5;
 
-        const char* targetFpsLabels[] = {"60 FPS", "90 FPS", "120 FPS", "144 FPS", MenuLabel("Custom", "Personalizado")};
-        if (ImGui::BeginCombo(MenuLabel("Target Display FPS", "Meta de FPS de Exibição"), targetFpsLabels[presetIdx])) {
+        const char* targetFpsLabels[] = {
+            MenuLabel("Auto Performance", "Auto Performance"),
+            "60", "90", "120", "144",
+            MenuLabel("Custom", "Personalizado")
+        };
+        if (ImGui::BeginCombo(MenuLabel("MFG Target FPS", "Meta de FPS MFG"), targetFpsLabels[presetIdx])) {
+            if (ImGui::Selectable(targetFpsLabels[0], presetIdx == 0)) {
+                StreamlineDlssgHook::Instance().SetMfgTargetAutoPerformance(true);
+                changed = true;
+            }
             const uint32_t presets[] = {60, 90, 120, 144};
             for (int i = 0; i < 4; ++i) {
-                if (ImGui::Selectable(targetFpsLabels[i], i == presetIdx)) {
+                if (ImGui::Selectable(targetFpsLabels[i + 1], presetIdx == (i + 1))) {
                     StreamlineDlssgHook::Instance().SetMfgLatencyMode(currentLatencyMode, presets[i]);
                     main.displayHz = static_cast<float>(presets[i]);
                     changed = true;
                 }
             }
-            if (ImGui::Selectable(targetFpsLabels[4], presetIdx == 4)) {
-                // Keep custom
+            if (ImGui::Selectable(targetFpsLabels[5], presetIdx == 5)) {
+                StreamlineDlssgHook::Instance().SetMfgLatencyMode(currentLatencyMode, currentTargetFps > 0 ? currentTargetFps : 60);
+                changed = true;
             }
             ImGui::EndCombo();
         }
-        MenuHelp("Final displayed FPS cadence. User manual selection always overrides monitor auto-detection.",
-                 "Cadência final de FPS de exibição. Seleção manual do usuário sempre tem prioridade sobre detecção do monitor.");
+        MenuHelp("Auto selects highest sustainable target with 90-95% GPU headroom. Manual selection always overrides monitor.",
+                 "Auto escolhe a maior meta sustentável com 90-95% de folga de GPU. Seleção manual sempre tem prioridade sobre o monitor.");
 
-        if (presetIdx == 4) {
-            int customFps = static_cast<int>(currentTargetFps);
+        if (presetIdx == 5) {
+            int customFps = static_cast<int>(currentTargetFps > 0 ? currentTargetFps : 60);
             if (ImGui::SliderInt(MenuLabel("Custom Target FPS", "FPS Personalizado"), &customFps, 30, 360, "%d FPS")) {
                 StreamlineDlssgHook::Instance().SetMfgLatencyMode(currentLatencyMode, static_cast<uint32_t>(customFps));
                 main.displayHz = static_cast<float>(customFps);
@@ -228,9 +239,15 @@ void DrawRuntimeOverlayAdvanced(RuntimeOverlay& overlay) {
             const auto pacerMode = StreamlineDlssgHook::Instance().GetMfgPacerMode();
             const char* pacerName = pacerMode == MfgPacerMode::CpuPacer ? "CpuPacer" :
                                     (pacerMode == MfgPacerMode::FlipMetering ? "FlipMetering" : "Auto");
-            ImGui::Text(MenuLabel("Reflex pacing: %s (%s) | target %u Hz | limit %u us",
-                                  "Pacing Reflex: %s (%s) | meta %u Hz | limite %u us"),
-                        modeName, pacerName, reflex.targetDisplayFps, reflex.effectiveFrameLimitUs);
+            if (reflex.autoPerformance) {
+                ImGui::Text(MenuLabel("Reflex pacing: %s (%s) | target Auto (%u Hz) | limit %u us",
+                                      "Pacing Reflex: %s (%s) | meta Auto (%u Hz) | limite %u us"),
+                            modeName, pacerName, reflex.targetDisplayFps, reflex.effectiveFrameLimitUs);
+            } else {
+                ImGui::Text(MenuLabel("Reflex pacing: %s (%s) | target %u Hz | limit %u us",
+                                      "Pacing Reflex: %s (%s) | meta %u Hz | limite %u us"),
+                            modeName, pacerName, reflex.targetDisplayFps, reflex.effectiveFrameLimitUs);
+            }
         }
     }
 }

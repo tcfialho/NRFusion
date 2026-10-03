@@ -32,9 +32,10 @@ add_library(nrfusion_overlay_cursor STATIC src/RuntimeOverlayCursor.cpp)
 target_include_directories(nrfusion_overlay_cursor PRIVATE include src)
 target_link_libraries(nrfusion_overlay_cursor PRIVATE minhook user32)
 target_link_libraries(nrfusion_core PRIVATE nrfusion_overlay_cursor minhook)
-target_sources(nrfusion_core PRIVATE src/StreamlineDlssgOptions.cpp src/StreamlineReflexTracker.cpp)
+target_sources(nrfusion_core PRIVATE src/StreamlineDlssgOptions.cpp src/StreamlineReflexTracker.cpp
+    src/StreamlineAutoPerformance.cpp)
 set_property(SOURCE src/StreamlineDlssgHook.cpp src/StreamlineDlssgOptions.cpp
-    src/StreamlineReflexTracker.cpp
+    src/StreamlineReflexTracker.cpp src/StreamlineAutoPerformance.cpp
     src/NrKernelDriverDiscovery.cpp APPEND
     PROPERTY INCLUDE_DIRECTORIES "${nrfusion_minhook_source_SOURCE_DIR}/include"
                                 "${nrfusion_streamline_source_SOURCE_DIR}/include")

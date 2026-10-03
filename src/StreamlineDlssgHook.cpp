@@ -97,6 +97,15 @@ std::uint32_t StreamlineDlssgHook::GetTargetNativeFps() const noexcept {
     return streamline::StreamlineReflexTracker::Instance().GetTargetNativeFps();
 }
 
+void StreamlineDlssgHook::SetMfgTargetAutoPerformance(bool autoPerformance) noexcept {
+    streamline::StreamlineReflexTracker::Instance().SetAutoPerformance(autoPerformance);
+    streamline::RequestOptionsUpdate();
+}
+
+bool StreamlineDlssgHook::IsAutoPerformance() const noexcept {
+    return streamline::StreamlineReflexTracker::Instance().IsAutoPerformance();
+}
+
 void StreamlineDlssgHook::SetMfgPacerMode(MfgPacerMode mode) noexcept {
     streamline::StreamlineReflexTracker::Instance().SetPacerMode(mode);
 }

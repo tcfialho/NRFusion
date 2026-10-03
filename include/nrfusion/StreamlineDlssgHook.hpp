@@ -57,6 +57,7 @@ struct ReflexOwnershipInfo {
     std::uint32_t latencyMode = 0;
     std::uint32_t targetDisplayFps = 0;
     std::uint32_t targetNativeFps = 0;
+    bool autoPerformance = false;
 };
 
 struct ReflexValidationStats {
@@ -86,6 +87,9 @@ public:
     MfgLatencyMode GetMfgLatencyMode() const noexcept;
     std::uint32_t GetTargetDisplayFps() const noexcept;
     std::uint32_t GetTargetNativeFps() const noexcept;
+
+    void SetMfgTargetAutoPerformance(bool autoPerformance) noexcept;
+    bool IsAutoPerformance() const noexcept;
 
     void SetMfgPacerMode(MfgPacerMode mode) noexcept;
     MfgPacerMode GetMfgPacerMode() const noexcept;

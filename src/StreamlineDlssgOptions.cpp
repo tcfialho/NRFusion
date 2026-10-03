@@ -95,9 +95,29 @@ sl::Result HookReflexSetOptions(const sl::ReflexOptions& requested) {
     return original(applied);
 }
 
+void DispatchReflexOptionsIfPending() {
+    sl::ReflexOptions reflexOptions{};
+    if (StreamlineReflexTracker::Instance().ApplyCurrentLatencyPolicy(
+            mfgActive.load(std::memory_order_relaxed), reflexOptions)) {
+        auto reflexFunc = originalReflexSetOptions.load(std::memory_order_relaxed);
+        if (!reflexFunc) {
+            auto dispatcher = featureDispatcher.load(std::memory_order_relaxed);
+            if (dispatcher) {
+                void* target = nullptr;
+                if (dispatcher(static_cast<uint32_t>(sl::kFeatureReflex), "slReflexSetOptions", &target) == 0 && target) {
+                    reflexFunc = reinterpret_cast<SetReflexOptions>(target);
+                    originalReflexSetOptions.store(reflexFunc, std::memory_order_release);
+                }
+            }
+        }
+        if (reflexFunc) reflexFunc(reflexOptions);
+    }
+}
+
 sl::Result HookReflexSleep(const sl::FrameToken& frame) {
     reflexSleepCount.fetch_add(1, std::memory_order_relaxed);
     StreamlineReflexTracker::Instance().RecordSleep(frame);
+    DispatchReflexOptionsIfPending();
     auto original = originalReflexSleep.load(std::memory_order_relaxed);
     if (!original) return sl::Result::eErrorNotInitialized;
     return original(frame);
@@ -151,23 +171,7 @@ sl::Result HookSetOptions(const sl::ViewportHandle& viewport, const sl::DLSSGOpt
         appliedQueueParallelismMode.store(static_cast<uint32_t>(applied.queueParallelismMode), std::memory_order_relaxed);
     }
     StreamlineReflexTracker::Instance().SetMfgMultiplier(applied.numFramesToGenerate + 1);
-    sl::ReflexOptions reflexOptions{};
-    if (StreamlineReflexTracker::Instance().ApplyCurrentLatencyPolicy(isMfgActive, reflexOptions)) {
-            auto reflexFunc = originalReflexSetOptions.load(std::memory_order_relaxed);
-            if (!reflexFunc) {
-                auto dispatcher = featureDispatcher.load(std::memory_order_relaxed);
-                if (dispatcher) {
-                    void* target = nullptr;
-                    if (dispatcher(static_cast<uint32_t>(sl::kFeatureReflex), "slReflexSetOptions", &target) == 0 && target) {
-                        reflexFunc = reinterpret_cast<SetReflexOptions>(target);
-                        originalReflexSetOptions.store(reflexFunc, std::memory_order_release);
-                    }
-                }
-            }
-            if (reflexFunc) {
-                reflexFunc(reflexOptions);
-            }
-        }
+    DispatchReflexOptionsIfPending();
     const auto result = original(viewport, applied);
     lastResult.store(static_cast<uint32_t>(result));
     if (result == sl::Result::eOk || result == sl::Result::eWarnOutOfVRAM) {
@@ -249,7 +253,10 @@ void InterceptPclFunction(const char* name, void** function) noexcept {
     }
 }
 
-void RequestOptionsUpdate() noexcept { updatePending.store(true); }
+void RequestOptionsUpdate() noexcept {
+    updatePending.store(true);
+    DispatchReflexOptionsIfPending();
+}
 
 StreamlineMfgStatus ReadMfgStatus() noexcept {
     return {originalSetOptions.load() != nullptr && originalGetState.load() != nullptr, dynamicSupported.load(),

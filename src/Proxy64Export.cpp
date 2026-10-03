@@ -175,6 +175,16 @@ extern "C" __declspec(dllexport) int NRFusion_GetMfgLatencyMode(unsigned int* ou
     return 1;
 }
 
+extern "C" __declspec(dllexport) int NRFusion_SetMfgTargetAutoPerformance(int enabled) {
+    nrfusion::NrKernelProfiler::Instance().StartDriverDiscovery();
+    nrfusion::StreamlineDlssgHook::Instance().SetMfgTargetAutoPerformance(enabled != 0);
+    return 1;
+}
+
+extern "C" __declspec(dllexport) int NRFusion_IsMfgAutoPerformance() {
+    return nrfusion::StreamlineDlssgHook::Instance().IsAutoPerformance() ? 1 : 0;
+}
+
 extern "C" __declspec(dllexport) int NRFusion_SetMfgPacerMode(unsigned int mode) {
     nrfusion::NrKernelProfiler::Instance().StartDriverDiscovery();
     nrfusion::StreamlineDlssgHook::Instance().SetMfgPacerMode(

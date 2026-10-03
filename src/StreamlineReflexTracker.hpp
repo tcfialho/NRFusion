@@ -42,6 +42,8 @@ public:
     MfgLatencyMode GetLatencyMode() const noexcept;
     std::uint32_t GetTargetDisplayFps() const noexcept;
     std::uint32_t GetTargetNativeFps() const noexcept;
+    void SetAutoPerformance(bool enabled) noexcept;
+    bool IsAutoPerformance() const noexcept;
     void SetMfgMultiplier(std::uint32_t multiplier) noexcept;
     bool ApplyCurrentLatencyPolicy(bool mfgActive, sl::ReflexOptions& outOptions);
 
@@ -81,9 +83,12 @@ private:
     bool mfgPromotedReflex_ = false;
     MfgLatencyMode latencyMode_ = MfgLatencyMode::LowLatency;
     MfgPacerMode pacerMode_ = MfgPacerMode::Auto;
+    bool isAutoPerformance_ = true;
     std::uint32_t targetDisplayFps_ = 60;
     std::uint32_t targetNativeFps_ = 30;
     std::uint32_t mfgMultiplier_ = 2;
+    std::uint64_t lastFrameQpc_ = 0;
+    float measuredNativeFps_ = 0.0f;
 
     std::deque<FrameRecord> activeFrames_;
     std::uint32_t highestRetiredFrameId_ = 0;
