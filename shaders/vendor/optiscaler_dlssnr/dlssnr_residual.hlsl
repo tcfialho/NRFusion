@@ -101,6 +101,59 @@ float3 SanitizeFinite3(float3 v, float3 fallback)
                   SanitizeFinite(v.z, fallback.z));
 }
 
+static const float3 kLuma = float3(0.2126, 0.7152, 0.0722);
+
+float3 CbrtSigned(float3 v) { return sign(v) * pow(abs(v), 1.0 / 3.0); }
+
+float3 ToOkLab(float3 color)
+{
+    const float3x3 rgb_to_lms = { 0.4122214708, 0.5363325363, 0.0514459929,
+                                  0.2119034982, 0.6806995451, 0.1073969566,
+                                  0.0883024619, 0.2817188376, 0.6299787005 };
+    const float3x3 lms_to_lab = { 0.2104542553, 0.7936177850, -0.0040720468,
+                                  1.9779984951, -2.4285922050, 0.4505937099,
+                                  0.0259040371, 0.7827717662, -0.8086757660 };
+    return mul(lms_to_lab, CbrtSigned(mul(rgb_to_lms, color)));
+}
+
+float3 FromOkLab(float3 lab)
+{
+    const float3x3 lab_to_lms = { 1.0, 0.3963377774, 0.2158037573,
+                                  1.0, -0.1055613458, -0.0638541728,
+                                  1.0, -0.0894841775, -1.2914855480 };
+    const float3x3 lms_to_rgb = { 4.0767416621, -3.3077115913, 0.2309699292,
+                                  -1.2684380046, 2.6097574011, -0.3413193965,
+                                  -0.0041960863, -0.7034186147, 1.7076147010 };
+    float3 lms = mul(lab_to_lms, lab);
+    return mul(lms_to_rgb, lms * lms * lms);
+}
+
+float3 BoundResidualColor(float3 c, float3 ref, float maxRatio, float colourStrength)
+{
+    c = max(c, 0.0);
+    ref = max(ref, 0.0);
+    float cLuma = dot(c, kLuma);
+    float refLuma = dot(ref, kLuma);
+    const float kRatioFloor = 1.0 / 512.0;
+    float ratio = (cLuma + kRatioFloor) / (refLuma + kRatioFloor);
+    float guard = max(maxRatio, 1.0);
+    float boundedRatio = clamp(ratio, 1.0 / guard, guard);
+    float3 cScaled = c * (boundedRatio / max(ratio, 1e-6));
+
+    float3 labRef = ToOkLab(ref);
+    float3 labC = ToOkLab(cScaled);
+    float2 dChroma = labC.yz - labRef.yz;
+    float dist = length(dChroma);
+    float maxDist = max(labRef.x * 0.20 * saturate(colourStrength), 0.01 * saturate(colourStrength));
+    if (dist > maxDist && dist > 1e-6)
+    {
+        dChroma *= maxDist / dist;
+        labC.yz = labRef.yz + dChroma;
+        cScaled = FromOkLab(labC);
+    }
+    return max(cScaled, 0.0);
+}
+
 [numthreads(8, 8, 1)]
 void CSMain(uint3 id : SV_DispatchThreadID)
 {
@@ -109,8 +162,13 @@ void CSMain(uint3 id : SV_DispatchThreadID)
 
     if (gMode == 0)
     {
-        float3 delta = SanitizeFinite3(gModel.Load(int3(id.xy, 0)).rgb -
-                                       gSource.Load(int3(id.xy, 0)).rgb, float3(0.0, 0.0, 0.0));
+        float3 source = SanitizeFinite3(gSource.Load(int3(id.xy, 0)).rgb, float3(0.0, 0.0, 0.0));
+        float3 model  = SanitizeFinite3(gModel.Load(int3(id.xy, 0)).rgb, float3(0.0, 0.0, 0.0));
+
+        float3 boundedModel = BoundResidualColor(model, source, gMaxRatio, gColourStrength);
+        float3 rawDelta = model - source;
+        float3 boundedDelta = boundedModel - source;
+        float3 delta = (gDebugView == 1) ? rawDelta : boundedDelta;
 
         float2 uv = (float2(id.xy) + 0.5) / float2(gWidth, gHeight);
         uint2 guideSize = uint2(gGuideWidth, gGuideHeight);
@@ -139,7 +197,19 @@ void CSMain(uint3 id : SV_DispatchThreadID)
         float2 uv = (float2(id.xy) + 0.5) / float2(gWidth, gHeight);
         float3 delta = SanitizeFinite3(gModel.SampleLevel(gLinear, uv, 0).rgb, float3(0.0, 0.0, 0.0));
 
-        gTarget[id.xy] = float4(max(base.rgb + delta * gTransferStrength, 0.0), base.a);
+        if (gDebugView == 1 || gDebugView == 2 || gDebugView == 3)
+        {
+            float3 shown = saturate(0.5 + delta * 10.0);
+            gTarget[id.xy] = float4(shown, base.a);
+            return;
+        }
+
+        float guard = max(gMaxRatio, 1.0);
+        float3 rawComposed = base.rgb + delta * gTransferStrength;
+        float3 nonNegativeComposed = max(rawComposed, base.rgb / guard);
+        float3 composed = BoundResidualColor(nonNegativeComposed, base.rgb, guard, gColourStrength);
+
+        gTarget[id.xy] = float4(max(composed, 0.0), base.a);
         return;
     }
 
