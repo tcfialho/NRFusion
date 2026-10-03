@@ -99,16 +99,21 @@
             if (EnumDisplaySettingsW(nullptr, ENUM_CURRENT_SETTINGS, &dm) && dm.dmDisplayFrequency > 1)
                 g_osReportedRefresh = discoveredRefresh = dm.dmDisplayFrequency;
             wchar_t envBuf[32]{};
-            if (g_mfgTargetDisplayFps == 0 && GetEnvironmentVariableW(L"NRFUSION_MFG_TARGET_DISPLAY_FPS", envBuf, 32) > 0)
-                g_mfgTargetDisplayFps = static_cast<std::uint32_t>(wcstoul(envBuf, nullptr, 10));
-            if (g_mfgTargetDisplayFps == 0 && modeVal == 1)
-                g_mfgTargetDisplayFps = 60;
-            g_mfgTargetNativeFps = g_mfgTargetDisplayFps / (g_mfgMultiplier > 0 ? g_mfgMultiplier : 2);
+            if (g_mfgTargetDisplayFps == 0 && GetEnvironmentVariableW(L"NRFUSION_MFG_TARGET_DISPLAY_FPS", envBuf, 32) > 0) {
+                if (_wcsicmp(envBuf, L"Auto") != 0 && _wcsicmp(envBuf, L"AutoPerformance") != 0)
+                    g_mfgTargetDisplayFps = static_cast<std::uint32_t>(wcstoul(envBuf, nullptr, 10));
+            }
 
             std::cout << "[MFG] display discovery: " << (discoveredRefresh > 0 ? std::to_string(discoveredRefresh) + " Hz" : "unknown") << std::endl;
-            std::cout << "[MFG] pacing targets: targetDisplayFps=" << g_mfgTargetDisplayFps
-                      << " targetNativeFps=" << g_mfgTargetNativeFps
-                      << " (multiplier=" << g_mfgMultiplier << "X)" << std::endl;
+            if (g_mfgTargetDisplayFps == 0) {
+                std::cout << "[MFG] pacing targets: targetDisplayFps=Auto (Auto Performance)"
+                          << " (multiplier=" << g_mfgMultiplier << "X)" << std::endl;
+            } else {
+                g_mfgTargetNativeFps = g_mfgTargetDisplayFps / (g_mfgMultiplier > 0 ? g_mfgMultiplier : 2);
+                std::cout << "[MFG] pacing targets: targetDisplayFps=" << g_mfgTargetDisplayFps
+                          << " targetNativeFps=" << g_mfgTargetNativeFps
+                          << " (multiplier=" << g_mfgMultiplier << "X)" << std::endl;
+            }
             setLatencyMode(modeVal, g_mfgTargetDisplayFps);
         }
     }

@@ -58,8 +58,11 @@
             g_frameHashes = argv[++i];
         else if (argument == "--mfg-latency" && i + 1 < argc)
             g_mfgLatencyModeStr = argv[++i];
-        else if ((argument == "--target-display-fps" || argument == "--target-fps") && i + 1 < argc)
-            g_mfgTargetDisplayFps = static_cast<std::uint32_t>(ParseCount(argv[++i]));
+        else if ((argument == "--target-display-fps" || argument == "--target-fps") && i + 1 < argc) {
+            std::string val = argv[++i];
+            if (val == "auto" || val == "Auto" || val == "auto-performance" || val == "0") g_mfgTargetDisplayFps = 0;
+            else g_mfgTargetDisplayFps = static_cast<std::uint32_t>(ParseCount(val.c_str()));
+        }
         else if (argument == "--target-native-fps" && i + 1 < argc)
             g_mfgTargetNativeFps = static_cast<std::uint32_t>(ParseCount(argv[++i]));
         else if ((argument == "--pacer" || argument == "--mfg-pacer") && i + 1 < argc)

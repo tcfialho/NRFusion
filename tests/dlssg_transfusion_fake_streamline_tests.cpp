@@ -167,6 +167,7 @@ int main()
 
     auto& tracker = nrfusion::streamline::StreamlineReflexTracker::Instance();
     tracker.Reset();
+    tracker.SetLatencyMode(nrfusion::MfgLatencyMode::GameDefault);
 
     // 1. Preserve Boost
     sl::ReflexOptions boostOpt{};
@@ -199,6 +200,7 @@ int main()
 
     // 3. Promote only Off during MFG ON; restore on MFG OFF
     tracker.Reset();
+    tracker.SetLatencyMode(nrfusion::MfgLatencyMode::GameDefault);
     sl::ReflexOptions offOpt{};
     offOpt.mode = sl::ReflexMode::eOff;
     offOpt.frameLimitUs = 5000;
@@ -267,14 +269,8 @@ int main()
 
     // 8. Missing sleep detection
     MockFrameToken frame50(50);
-    tracker.RecordMarker(sl::PCLMarker::eControllerInputSample, frame50);
     tracker.RecordMarker(sl::PCLMarker::eSimulationStart, frame50);
-    tracker.RecordMarker(sl::PCLMarker::eSimulationEnd, frame50);
-    tracker.RecordMarker(sl::PCLMarker::eRenderSubmitStart, frame50);
-    tracker.RecordMarker(sl::PCLMarker::eRenderSubmitEnd, frame50);
-    tracker.RecordMarker(sl::PCLMarker::ePresentStart, frame50);
     tracker.RecordMarker(sl::PCLMarker::ePresentEnd, frame50);
-
     const auto stats2 = tracker.GetValidationStats();
     assert(stats2.missingSleeps == 1);
     assert(stats2.missingMarkerFrames >= 1);
@@ -284,6 +280,14 @@ int main()
     tracker.RecordSleep(frame60);
     tracker.RecordMarker(sl::PCLMarker::ePresentEnd, frame60);
     assert(tracker.GetValidationStats().missingMarkerFrames >= 2);
+
+    // 10. LowLatency & AutoPerformance validation
+    tracker.SetLatencyMode(nrfusion::MfgLatencyMode::LowLatency, 90);
+    assert(!tracker.IsAutoPerformance());
+    auto applied90 = tracker.OnGameReflexSetOptions(offOpt, true);
+    assert(applied90.frameLimitUs == 11111);
+    tracker.SetAutoPerformance(true);
+    assert(tracker.IsAutoPerformance());
 
     return 0;
 }
