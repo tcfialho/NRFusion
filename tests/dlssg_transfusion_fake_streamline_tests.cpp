@@ -1,5 +1,6 @@
 #include "nrfusion/DlssgTransfusion.hpp"
 #include "nrfusion/StreamlineDlssgHook.hpp"
+#include "StreamlineReflexTracker.hpp"
 
 #include <cassert>
 #include <cstdint>
@@ -154,6 +155,127 @@ int main()
     assert(transfusion.UnlockedMax() == 0);
     assert(!transfusion.IsPending());
     assert(VirtualFree(unsupported, 0, MEM_RELEASE) != 0);
+
+    // ==========================================
+    // Reflex Ownership & Frame-Token Validation Tests
+    // ==========================================
+    struct MockFrameToken : sl::FrameToken {
+        std::uint32_t frameId_;
+        explicit MockFrameToken(std::uint32_t id) : frameId_(id) {}
+        operator std::uint32_t() const override { return frameId_; }
+    };
+
+    auto& tracker = nrfusion::streamline::StreamlineReflexTracker::Instance();
+    tracker.Reset();
+
+    // 1. Preserve Boost
+    sl::ReflexOptions boostOpt{};
+    boostOpt.mode = sl::ReflexMode::eLowLatencyWithBoost;
+    boostOpt.frameLimitUs = 13888;
+    boostOpt.useMarkersToOptimize = false;
+    boostOpt.virtualKey = 0x7A;
+    boostOpt.idThread = 1234;
+
+    auto appliedBoost = tracker.OnGameReflexSetOptions(boostOpt, true);
+    assert(appliedBoost.mode == sl::ReflexMode::eLowLatencyWithBoost);
+    assert(appliedBoost.frameLimitUs == 13888);
+    assert(!appliedBoost.useMarkersToOptimize);
+    assert(appliedBoost.virtualKey == 0x7A);
+    assert(appliedBoost.idThread == 1234);
+
+    auto ownership = tracker.GetOwnershipInfo();
+    assert(ownership.haveGameOptions);
+    assert(ownership.effectiveMode == static_cast<std::uint32_t>(sl::ReflexMode::eLowLatencyWithBoost));
+    assert(ownership.effectiveFrameLimitUs == 13888);
+    assert(!ownership.effectiveUseMarkersToOptimize);
+    assert(!ownership.mfgPromotedReflex);
+
+    // 2. Preserve useMarkersToOptimize false even when markers arrive
+    MockFrameToken markerToken(50);
+    tracker.RecordMarker(sl::PCLMarker::eSimulationStart, markerToken);
+    ownership = tracker.GetOwnershipInfo();
+    assert(!ownership.effectiveUseMarkersToOptimize);
+    assert(!ownership.gameUseMarkersToOptimize);
+
+    // 3. Promote only Off during MFG ON; restore on MFG OFF
+    tracker.Reset();
+    sl::ReflexOptions offOpt{};
+    offOpt.mode = sl::ReflexMode::eOff;
+    offOpt.frameLimitUs = 5000;
+    offOpt.useMarkersToOptimize = false;
+
+    auto appliedOff = tracker.OnGameReflexSetOptions(offOpt, true);
+    assert(appliedOff.mode == sl::ReflexMode::eLowLatency);
+    assert(appliedOff.frameLimitUs == 5000);
+    ownership = tracker.GetOwnershipInfo();
+    assert(ownership.effectiveMode == static_cast<std::uint32_t>(sl::ReflexMode::eLowLatency));
+    assert(ownership.mfgPromotedReflex);
+
+    sl::ReflexOptions restored{};
+    bool changed = tracker.OnMfgStateChanged(false, restored);
+    assert(changed);
+    assert(restored.mode == sl::ReflexMode::eOff);
+    assert(restored.frameLimitUs == 5000);
+    ownership = tracker.GetOwnershipInfo();
+    assert(ownership.effectiveMode == static_cast<std::uint32_t>(sl::ReflexMode::eOff));
+    assert(!ownership.mfgPromotedReflex);
+
+    // 4. No duplicate sleep
+    tracker.Reset();
+    MockFrameToken frame10(10);
+    tracker.RecordSleep(frame10);
+    assert(tracker.GetValidationStats().duplicateSleeps == 0);
+    tracker.RecordSleep(frame10);
+    assert(tracker.GetValidationStats().duplicateSleeps == 1);
+
+    // 5. Correct token / mixed token
+    tracker.Reset();
+    MockFrameToken tokenA(20);
+    MockFrameToken tokenB(20);
+    tracker.RecordSleep(tokenA);
+    tracker.RecordMarker(sl::PCLMarker::eSimulationStart, tokenB);
+    assert(tracker.GetValidationStats().mixedTokens == 1);
+
+    // 6. Correct marker order
+    tracker.Reset();
+    MockFrameToken frame30(30);
+    tracker.RecordSleep(frame30);
+    tracker.RecordMarker(sl::PCLMarker::ePresentStart, frame30);
+    tracker.RecordMarker(sl::PCLMarker::eRenderSubmitEnd, frame30);
+    assert(tracker.GetValidationStats().orderViolations >= 1);
+
+    // 7. Full valid frame lifecycle
+    tracker.Reset();
+    MockFrameToken frame40(40);
+    tracker.RecordSleep(frame40);
+    tracker.RecordMarker(sl::PCLMarker::eControllerInputSample, frame40);
+    tracker.RecordMarker(sl::PCLMarker::eSimulationStart, frame40);
+    tracker.RecordMarker(sl::PCLMarker::eSimulationEnd, frame40);
+    tracker.RecordMarker(sl::PCLMarker::eRenderSubmitStart, frame40);
+    tracker.RecordMarker(sl::PCLMarker::eRenderSubmitEnd, frame40);
+    tracker.RecordMarker(sl::PCLMarker::ePresentStart, frame40);
+    tracker.RecordMarker(sl::PCLMarker::ePresentEnd, frame40);
+
+    const auto stats = tracker.GetValidationStats();
+    assert(stats.framesAnalyzed == 1);
+    assert(stats.missingSleeps == 0);
+    assert(stats.duplicateSleeps == 0);
+    assert(stats.mixedTokens == 0);
+    assert(stats.orderViolations == 0);
+    assert(stats.perfectFrames == 1);
+
+    // 8. Missing sleep detection
+    MockFrameToken frame50(50);
+    tracker.RecordMarker(sl::PCLMarker::eControllerInputSample, frame50);
+    tracker.RecordMarker(sl::PCLMarker::eSimulationStart, frame50);
+    tracker.RecordMarker(sl::PCLMarker::eSimulationEnd, frame50);
+    tracker.RecordMarker(sl::PCLMarker::eRenderSubmitStart, frame50);
+    tracker.RecordMarker(sl::PCLMarker::eRenderSubmitEnd, frame50);
+    tracker.RecordMarker(sl::PCLMarker::ePresentStart, frame50);
+    tracker.RecordMarker(sl::PCLMarker::ePresentEnd, frame50);
+
+    const auto stats2 = tracker.GetValidationStats();
+    assert(stats2.missingSleeps == 1);
 
     return 0;
 }

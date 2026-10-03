@@ -4,6 +4,8 @@
     unsigned lastView = 99;
     FrameConstants previous{};
     std::uint64_t evaluatedFrames = 0;
+    std::vector<double> inputToPresentEndSamples;
+    std::vector<double> inputToPresentStartSamples;
     std::cout << "[TEST] input=" << inputWidth << "x" << inputHeight << " output=" << width << "x" << height << " warmup=" << g_warmup << std::endl;
     MSG msg{};
 
@@ -16,7 +18,12 @@
         guideCopyCounter.Reset();
         if (mfg.Requested()) {
             EnsureWindowFocus(g_hwnd);
+            if (!mfg.BeginFramePacing(static_cast<std::uint32_t>(simulationFrame))) {
+                std::cerr << "[MFG] " << mfg.Status() << std::endl;
+                return 1;
+            }
         }
+        auto frameInputTime = std::chrono::high_resolution_clock::now();
 
         auto curTime = std::chrono::high_resolution_clock::now();
         float totalTime = g_fixedScene
@@ -163,9 +170,17 @@
         queue->ExecuteCommandLists(1, lists);
         mfg.RenderSubmitEnd();
         mfg.PresentStart();
+        auto framePresentStartTime = std::chrono::high_resolution_clock::now();
         const UINT syncInterval = allowTearing ? 0u : 1u;
         const UINT presentFlags = allowTearing ? DXGI_PRESENT_ALLOW_TEARING : 0u;
         const HRESULT presentResult = swapChain->Present(syncInterval, presentFlags);
+        auto framePresentEndTime = std::chrono::high_resolution_clock::now();
+        if (simulationFrame >= g_warmup) {
+            double startMs = std::chrono::duration<double, std::milli>(framePresentStartTime - frameInputTime).count();
+            double endMs = std::chrono::duration<double, std::milli>(framePresentEndTime - frameInputTime).count();
+            inputToPresentStartSamples.push_back(startMs);
+            inputToPresentEndSamples.push_back(endMs);
+        }
         if (presentResult != S_OK) {
             std::fprintf(stderr, "[PRESENT] frame=%llu hr=0x%08lX\n",
                          static_cast<unsigned long long>(simulationFrame),
@@ -272,6 +287,7 @@
         if (g_requireMfg && !mfg.GatePassed())
             throw std::runtime_error("DLSS-G/MFG physical gate failed");
     }
+#include "requiem_run_report.inc"
     if (dlssActive) dlss.Shutdown();
     mfg.Shutdown();
     std::cout << "[OK] " << simulationFrame << " quadros renderizados." << std::endl;

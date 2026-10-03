@@ -186,6 +186,9 @@ bool StreamlineMfg::SetDevice(
         impl_->status = "GetFeatureFunction(slReflexSleep) failed";
         return false;
     }
+    GetFeatureFunction(
+        *impl_, sl::kFeatureReflex, "slReflexGetState",
+        reinterpret_cast<void**>(&impl_->getReflexState));
     if (!GetFeatureFunction(
             *impl_, sl::kFeaturePCL, "slPCLSetMarker",
             reinterpret_cast<void**>(&impl_->pclSetMarker))) {
@@ -194,7 +197,7 @@ bool StreamlineMfg::SetDevice(
     }
     sl::ReflexOptions reflex{};
     reflex.mode = sl::ReflexMode::eLowLatency;
-    reflex.useMarkersToOptimize = true;
+    reflex.useMarkersToOptimize = false;
     result = impl_->setReflexOptions(reflex);
     if (result != sl::Result::eOk) {
         impl_->status = ResultText("slReflexSetOptions", result);

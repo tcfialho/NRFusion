@@ -1,6 +1,7 @@
 #include "nrfusion/StreamlineDlssgHook.hpp"
 #include "nrfusion/Logger.hpp"
 #include "StreamlineDlssgOptions.hpp"
+#include "StreamlineReflexTracker.hpp"
 #include <MinHook.h>
 #include <sl_core_types.h>
 #include <mutex>
@@ -65,4 +66,17 @@ bool StreamlineDlssgHook::Install(HMODULE interposerModule) noexcept {
 
 void StreamlineDlssgHook::TriggerLiveMultiplierUpdate() noexcept { streamline::RequestOptionsUpdate(); }
 StreamlineMfgStatus StreamlineDlssgHook::Status() const noexcept { return streamline::ReadMfgStatus(); }
+
+ReflexOwnershipInfo StreamlineDlssgHook::ReflexOwnership() const noexcept {
+    return streamline::StreamlineReflexTracker::Instance().GetOwnershipInfo();
+}
+
+ReflexValidationStats StreamlineDlssgHook::ReflexStats() const noexcept {
+    return streamline::StreamlineReflexTracker::Instance().GetValidationStats();
+}
+
+void StreamlineDlssgHook::ResetReflexValidation() noexcept {
+    streamline::StreamlineReflexTracker::Instance().Reset();
+}
+
 } // namespace nrfusion

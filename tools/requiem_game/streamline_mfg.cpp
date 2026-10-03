@@ -63,6 +63,7 @@ struct StreamlineMfg::Impl {
     PFun_slDLSSGGetState* getDlssgState = nullptr;
     PFun_slReflexSetOptions* setReflexOptions = nullptr;
     PFun_slReflexSleep* reflexSleep = nullptr;
+    PFun_slReflexGetState* getReflexState = nullptr;
     PFun_slPCLSetMarker* pclSetMarker = nullptr;
     int(__cdecl* patchMfgModule)(HMODULE) = nullptr;
     void(__cdecl* followGameControl)() = nullptr;

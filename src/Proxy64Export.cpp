@@ -137,6 +137,18 @@ extern "C" __declspec(dllexport) void NRFusion_MfgNotifyFrameBoundary() {
     nrfusion::DlssgTransfusion::Instance().NotifyFrameBoundary();
 }
 
+extern "C" __declspec(dllexport) int NRFusion_GetReflexOwnership(nrfusion::ReflexOwnershipInfo* outInfo) {
+    if (!outInfo) return 0;
+    *outInfo = nrfusion::StreamlineDlssgHook::Instance().ReflexOwnership();
+    return 1;
+}
+
+extern "C" __declspec(dllexport) int NRFusion_GetReflexStats(nrfusion::ReflexValidationStats* outStats) {
+    if (!outStats) return 0;
+    *outStats = nrfusion::StreamlineDlssgHook::Instance().ReflexStats();
+    return 1;
+}
+
 BOOL WINAPI DllMain(HINSTANCE hinstDLL, DWORD fdwReason, LPVOID) {
     if (fdwReason == DLL_PROCESS_ATTACH) {
         DisableThreadLibraryCalls(hinstDLL);

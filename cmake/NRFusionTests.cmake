@@ -113,6 +113,10 @@ nrfusion_test(nrfusion_phase15_integration_tests tests/phase15_integration_tests
 if (WIN32)
     nrfusion_test(nrfusion_mfg_capability_tests tests/dlssg_transfusion_capability_tests.cpp)
     nrfusion_test(nrfusion_mfg_fake_streamline_tests tests/dlssg_transfusion_fake_streamline_tests.cpp)
+    target_include_directories(nrfusion_mfg_fake_streamline_tests PRIVATE
+        src
+        "${nrfusion_streamline_source_SOURCE_DIR}/include"
+        "${nrfusion_minhook_source_SOURCE_DIR}/include")
 endif()
 nrfusion_test(nrfusion_d3d12_carrier_contract_tests tests/d3d12_carrier_contract_tests.cpp)
 nrfusion_test(nrfusion_d3d12_carrier_session_tests tests/d3d12_carrier_session_tests.cpp)

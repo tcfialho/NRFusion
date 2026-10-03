@@ -24,6 +24,7 @@ public:
                    std::uint32_t backBuffers);
     void SetWindow(void* hwnd);
 
+    bool BeginFramePacing(std::uint32_t frameIndex);
     bool BeginFrame(std::uint32_t frameIndex,
                     ID3D12GraphicsCommandList* commands,
                     ID3D12Resource* depth,

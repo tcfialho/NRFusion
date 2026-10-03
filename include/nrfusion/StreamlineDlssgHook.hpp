@@ -28,6 +28,33 @@ struct StreamlineMfgStatus {
     std::uint32_t queueParallelismMode = 0;
 };
 
+struct ReflexOwnershipInfo {
+    bool haveGameOptions = false;
+    std::uint32_t gameMode = 0;
+    std::uint32_t gameFrameLimitUs = 0;
+    bool gameUseMarkersToOptimize = false;
+    std::uint16_t gameVirtualKey = 0;
+    std::uint32_t gameIdThread = 0;
+
+    std::uint32_t effectiveMode = 0;
+    std::uint32_t effectiveFrameLimitUs = 0;
+    bool effectiveUseMarkersToOptimize = false;
+    std::uint16_t effectiveVirtualKey = 0;
+    std::uint32_t effectiveIdThread = 0;
+
+    bool mfgPromotedReflex = false;
+};
+
+struct ReflexValidationStats {
+    std::uint64_t framesAnalyzed = 0;
+    std::uint64_t missingSleeps = 0;
+    std::uint64_t duplicateSleeps = 0;
+    std::uint64_t mixedTokens = 0;
+    std::uint64_t staleTokens = 0;
+    std::uint64_t orderViolations = 0;
+    std::uint64_t perfectFrames = 0;
+};
+
 class StreamlineDlssgHook {
 public:
     static StreamlineDlssgHook& Instance() noexcept;
@@ -35,6 +62,10 @@ public:
     bool Install(HMODULE interposerModule = nullptr) noexcept;
     void TriggerLiveMultiplierUpdate() noexcept;
     StreamlineMfgStatus Status() const noexcept;
+
+    ReflexOwnershipInfo ReflexOwnership() const noexcept;
+    ReflexValidationStats ReflexStats() const noexcept;
+    void ResetReflexValidation() noexcept;
 
     bool IsInstalled() const noexcept { return installed_.load(); }
 

@@ -33,8 +33,12 @@
 #include "guide_copy_counter.hpp"
 #include "streamline_mfg.hpp"
 #include "nrfusion/NrDiagnosticsApi.hpp"
+#include "nrfusion/StreamlineDlssgHook.hpp"
+#include <tlhelp32.h>
 #include <memory>
 #include <charconv>
+#include <vector>
+#include <algorithm>
 
 #include <chrono>
 #include <cmath>

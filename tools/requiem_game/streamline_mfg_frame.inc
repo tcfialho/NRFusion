@@ -1,3 +1,31 @@
+bool StreamlineMfg::BeginFramePacing(std::uint32_t frameIndex) {
+    if (!impl_->requested) return true;
+#if !defined(NRFUSION_REQUIEM_STREAMLINE)
+    (void)frameIndex;
+    return false;
+#else
+    if (!impl_->ready) return false;
+    if (frameIndex <= 2) ApplyFocusHooks();
+    impl_->currentFrame = frameIndex;
+    impl_->frame = nullptr;
+    auto result = impl_->getNewFrameToken(impl_->frame, &frameIndex);
+    if (result != sl::Result::eOk || !impl_->frame) {
+        impl_->status = ResultText("slGetNewFrameToken", result);
+        return false;
+    }
+    result = impl_->reflexSleep(*impl_->frame);
+    if (result != sl::Result::eOk) {
+        impl_->status = ResultText("slReflexSleep", result);
+        return false;
+    }
+    if (!SetMarker(*impl_, sl::PCLMarker::eControllerInputSample))
+        return false;
+    if (!SetMarker(*impl_, sl::PCLMarker::eSimulationStart))
+        return false;
+    return true;
+#endif
+}
+
 bool StreamlineMfg::BeginFrame(
     std::uint32_t frameIndex,
     ID3D12GraphicsCommandList* commands,
@@ -13,22 +41,9 @@ bool StreamlineMfg::BeginFrame(
     return false;
 #else
     if (!impl_->ready || !commands || !depth || !motion) return false;
-    if (frameIndex <= 2) ApplyFocusHooks();
-    impl_->currentFrame = frameIndex;
-    impl_->frame = nullptr;
-    auto result =
-        impl_->getNewFrameToken(impl_->frame, &frameIndex);
-    if (result != sl::Result::eOk || !impl_->frame) {
-        impl_->status = ResultText("slGetNewFrameToken", result);
-        return false;
+    if (!impl_->frame) {
+        if (!BeginFramePacing(frameIndex)) return false;
     }
-    result = impl_->reflexSleep(*impl_->frame);
-    if (result != sl::Result::eOk) {
-        impl_->status = ResultText("slReflexSleep", result);
-        return false;
-    }
-    if (!SetMarker(*impl_, sl::PCLMarker::eSimulationStart))
-        return false;
     sl::Constants constants{};
     Identity(constants.cameraViewToClip);
     Identity(constants.clipToCameraView);
@@ -56,7 +71,7 @@ bool StreamlineMfg::BeginFrame(
     constants.motionVectorsDilated = sl::Boolean::eFalse;
     constants.motionVectorsJittered = sl::Boolean::eFalse;
 
-    result = impl_->setConstants(
+    auto result = impl_->setConstants(
         constants, *impl_->frame, impl_->viewport);
     if (result != sl::Result::eOk) {
         impl_->status = ResultText("slSetConstants", result);
@@ -191,7 +206,13 @@ void StreamlineMfg::PresentEnd() {
                  static_cast<unsigned>(state.numFramesActuallyPresented),
                  static_cast<unsigned>(state.numFramesToGenerateMax),
                  static_cast<int>(state.status));
+    if (impl_->getReflexState) {
+        sl::ReflexState reflexState{};
+        reflexState.structVersion = sl::kStructVersion1;
+        impl_->getReflexState(reflexState);
+    }
     impl_->notifyFrameBoundary();
+    impl_->frame = nullptr;
 #endif
 }
 void StreamlineMfg::Shutdown() {
