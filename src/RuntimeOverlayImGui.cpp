@@ -86,13 +86,20 @@ void DrawStatus(RuntimeOverlay& overlay) {
 }
 } // namespace
 
-void DrawRuntimeOverlayImGui() {
+void DrawRuntimeOverlayImGui(bool standaloneWindow) {
     auto& overlay = RuntimeOverlay::Instance();
     if (!overlay.IsMenuOpen()) return;
-    ImGui::SetNextWindowPos(ImVec2(50, 50), ImGuiCond_FirstUseEver);
-    ImGui::SetNextWindowSize(ImVec2(540, 440), ImGuiCond_FirstUseEver);
+    ImGuiWindowFlags flags = ImGuiWindowFlags_NoCollapse;
+    if (standaloneWindow) {
+        ImGui::SetNextWindowPos(ImVec2(0, 0), ImGuiCond_Always);
+        ImGui::SetNextWindowSize(ImGui::GetIO().DisplaySize, ImGuiCond_Always);
+        flags |= ImGuiWindowFlags_NoMove | ImGuiWindowFlags_NoResize | ImGuiWindowFlags_NoSavedSettings;
+    } else {
+        ImGui::SetNextWindowPos(ImVec2(50, 50), ImGuiCond_FirstUseEver);
+        ImGui::SetNextWindowSize(ImVec2(540, 440), ImGuiCond_FirstUseEver);
+    }
     bool open = true;
-    if (ImGui::Begin("NRFUSION", &open, ImGuiWindowFlags_NoCollapse)) {
+    if (ImGui::Begin("NRFUSION", &open, flags)) {
         ImGui::TextUnformatted(MenuLabel("Automatic by default", "Automático por padrão"));
         ImGui::SameLine();
         if (ImGui::Button(RuntimeLocalization::GetLanguage() == UiLanguage::Portuguese ? "EN" : "PT"))

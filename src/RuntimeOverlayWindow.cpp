@@ -16,8 +16,8 @@ extern IMGUI_IMPL_API LRESULT ImGui_ImplWin32_WndProcHandler(HWND, UINT, WPARAM,
 namespace nrfusion {
 namespace {
 constexpr const wchar_t* kOverlayClassName = L"NRFusion_Overlay_Menu";
-constexpr int kWindowWidth = 640;
-constexpr int kWindowHeight = 540;
+constexpr int kWindowWidth = 540;
+constexpr int kWindowHeight = 440;
 using Microsoft::WRL::ComPtr;
 
 struct WindowRenderer {
@@ -89,7 +89,7 @@ void Render(RuntimeOverlay* owner) {
     ImGui_ImplDX11_NewFrame();
     ImGui_ImplWin32_NewFrame();
     ImGui::NewFrame();
-    DrawRuntimeOverlayImGui();
+    DrawRuntimeOverlayImGui(true);
     ImGui::Render();
     const float clear[] = {0.02f, 0.02f, 0.025f, 1.0f};
     ID3D11RenderTargetView* target = g_renderer.renderTarget.Get();
@@ -118,7 +118,7 @@ HWND RuntimeOverlayWindow::Create(RuntimeOverlay* owner, HWND parent) {
         if (GetWindowRect(targetParent, &rc)) { x = rc.left + 50; y = rc.top + 50; }
     }
     HWND hwnd = CreateWindowExW(WS_EX_TOPMOST | WS_EX_TOOLWINDOW, kOverlayClassName, L"NRFusion",
-        WS_POPUP | WS_BORDER, x, y, kWindowWidth, kWindowHeight,
+        WS_POPUP, x, y, kWindowWidth, kWindowHeight,
         targetParent, nullptr, instance, owner);
     if (!hwnd || !InitializeRenderer(hwnd)) {
         if (hwnd) DestroyWindow(hwnd);
@@ -134,6 +134,15 @@ void RuntimeOverlayWindow::Destroy(HWND hwnd) {
 }
 
 LRESULT CALLBACK RuntimeOverlayWindow::WndProc(HWND hwnd, UINT msg, WPARAM wParam, LPARAM lParam) {
+    if (msg == WM_NCHITTEST) {
+        POINT point{GET_X_LPARAM(lParam), GET_Y_LPARAM(lParam)};
+        RECT rect{};
+        if (GetWindowRect(hwnd, &rect)) {
+            const int x = point.x - rect.left;
+            const int y = point.y - rect.top;
+            if (y >= 0 && y < 28 && x >= 0 && x < (rect.right - rect.left - 34)) return HTCAPTION;
+        }
+    }
     if (g_renderer.imgui) {
         ImGui::SetCurrentContext(g_renderer.imgui);
         if (ImGui_ImplWin32_WndProcHandler(hwnd, msg, wParam, lParam)) return 1;

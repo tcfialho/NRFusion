@@ -77,6 +77,6 @@ private:
     bool metricMenuOpen_ = false;
 };
 
-void DrawRuntimeOverlayImGui();
+void DrawRuntimeOverlayImGui(bool standaloneWindow = false);
 
 } // namespace nrfusion
