@@ -1,5 +1,4 @@
 #include "nrfusion/CaptureD3D11.hpp"
-#include "nrfusion/StreamlineSwapchainGuard.hpp"
 #include "nrfusion/RuntimeOverlay.hpp"
 #include "RuntimeOverlayD3D12.hpp"
 #ifdef NRFUSION_PROXY_RUNTIME
@@ -95,16 +94,6 @@ struct IatPatch {
     void** slot = nullptr;
     void* original = nullptr;
 };
-
-bool IsRequiemProcess() noexcept {
-    wchar_t path[MAX_PATH]{};
-    if (GetModuleFileNameW(nullptr, path, MAX_PATH) == 0) return false;
-    const wchar_t* base = path;
-    for (const wchar_t* p = path; *p; ++p) {
-        if (*p == L'\\' || *p == L'/') base = p + 1;
-    }
-    return _wcsicmp(base, L"re9.exe") == 0;
-}
 
 #include "CaptureD3D11Session.inc"
 #include "CaptureD3D11HookSetup.inc"

@@ -243,7 +243,6 @@ HRESULT STDMETHODCALLTYPE HookedPresent1(IDXGISwapChain1* swapChain, UINT syncIn
         if (found != g_swapChainVtables.end()) original = found->second.present1;
     }
     if (!original) return DXGI_ERROR_INVALID_CALL;
-    if (IsRequiemProcess()) StreamlineSwapchainGuard::Instance().Install();
     RuntimeOverlayD3D12::Instance().Draw(swapChain, flags);
     return original(swapChain, syncInterval, flags, parameters);
 }
