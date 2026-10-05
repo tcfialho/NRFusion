@@ -1,4 +1,5 @@
 #include "nrfusion/D3D12CommandStateRestore.hpp"
+#include "nrfusion/GameD3D12CommandState.hpp"
 
 #include <d3dcompiler.h>
 #include <dxgi1_6.h>
@@ -214,6 +215,26 @@ int main() {
         static_cast<long long>(compatibilityNs));
 
     assert(RestoreD3D12CommandState(list.Get(), &restore));
+
+    assert(InstallGameD3D12CommandStateTracking(list.Get()));
+    ID3D12DescriptorHeap* expectedHeaps[] = {expectedHeap.Get()};
+    list->SetDescriptorHeaps(1, expectedHeaps);
+    list->SetComputeRootSignature(expectedRoot.Get());
+    list->SetPipelineState(expectedPso.Get());
+    list->SetComputeRootDescriptorTable(
+        0, expectedHeap->GetGPUDescriptorHandleForHeapStart());
+
+    GameD3D12CommandStateSnapshot tracked{};
+    assert(SnapshotGameD3D12CommandState(list.Get(), tracked));
+    {
+        ScopedGameD3D12CommandStateSuppression suppress;
+        list->SetDescriptorHeaps(1, clobberHeaps);
+        list->SetComputeRootSignature(clobberRoot.Get());
+        list->SetPipelineState(clobberPso.Get());
+        list->SetComputeRootDescriptorTable(
+            0, clobberHeap->GetGPUDescriptorHandleForHeapStart());
+    }
+    assert(RestoreGameD3D12CommandState(list.Get(), tracked));
     list->Dispatch(1, 1, 1);
 
     D3D12_RESOURCE_BARRIER barrier{};
