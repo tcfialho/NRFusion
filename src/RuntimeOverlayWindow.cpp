@@ -91,7 +91,7 @@ void Render(RuntimeOverlay* owner) {
     ImGui::NewFrame();
     DrawRuntimeOverlayImGui(true);
     ImGui::Render();
-    const float clear[] = {0.0f, 0.0f, 0.0f, 1.0f};
+    const float clear[] = {0.02f, 0.02f, 0.025f, 1.0f};
     ID3D11RenderTargetView* target = g_renderer.renderTarget.Get();
     g_renderer.context->OMSetRenderTargets(1, &target, nullptr);
     g_renderer.context->ClearRenderTargetView(target, clear);
@@ -117,10 +117,9 @@ HWND RuntimeOverlayWindow::Create(RuntimeOverlay* owner, HWND parent) {
         RECT rc{};
         if (GetWindowRect(targetParent, &rc)) { x = rc.left + 50; y = rc.top + 50; }
     }
-    HWND hwnd = CreateWindowExW(WS_EX_TOPMOST | WS_EX_TOOLWINDOW | WS_EX_LAYERED, kOverlayClassName, L"NRFusion",
+    HWND hwnd = CreateWindowExW(WS_EX_TOPMOST | WS_EX_TOOLWINDOW, kOverlayClassName, L"NRFusion",
         WS_POPUP, x, y, kWindowWidth, kWindowHeight,
         targetParent, nullptr, instance, owner);
-    if (hwnd) SetLayeredWindowAttributes(hwnd, RGB(0, 0, 0), 0, LWA_COLORKEY);
     if (!hwnd || !InitializeRenderer(hwnd)) {
         if (hwnd) DestroyWindow(hwnd);
         ShutdownRenderer();
