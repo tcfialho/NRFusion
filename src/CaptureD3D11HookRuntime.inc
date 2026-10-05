@@ -80,6 +80,15 @@ struct ImportHookSpec {
 // Walks one module's import table and patches every IAT slot matching any spec's {dllName,
 // functionName}, across d3d11.dll (the monolithic path) and dxgi.dll (the factory-based split
 // path) in a single pass, so both creation styles are covered by the same retry loop.
+bool UseNeuralHookOnlyForCurrentProcess() noexcept {
+    wchar_t path[MAX_PATH]{};
+    if (GetModuleFileNameW(nullptr, path, MAX_PATH) == 0) return false;
+    const wchar_t* base = path;
+    for (const wchar_t* p = path; *p; ++p) {
+        if (*p == L'\\' || *p == L'/') base = p + 1;
+    }
+    return _wcsicmp(base, L"re9.exe") == 0;
+}
 bool PatchModuleImports(HMODULE module, const ImportHookSpec* specs, size_t specCount) {
     HMODULE heldModule = nullptr;
     if (!module || !GetModuleHandleExW(GET_MODULE_HANDLE_EX_FLAG_FROM_ADDRESS,
@@ -91,6 +100,7 @@ bool PatchModuleImports(HMODULE module, const ImportHookSpec* specs, size_t spec
     const ModuleReference reference{heldModule};
 #ifdef NRFUSION_PROXY_RUNTIME
     TryInstallGameNeuralHooks(heldModule);
+    if (UseNeuralHookOnlyForCurrentProcess()) return false;
 #endif
     auto* base = reinterpret_cast<std::byte*>(module);
     auto* dos = reinterpret_cast<IMAGE_DOS_HEADER*>(base);

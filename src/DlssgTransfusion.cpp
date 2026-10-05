@@ -17,6 +17,16 @@ bool HasFlag(std::uint32_t flags, std::uint32_t flag) noexcept
     return (flags & flag) != 0;
 }
 
+bool IsRequiemProcess() noexcept
+{
+    wchar_t path[MAX_PATH]{};
+    if (GetModuleFileNameW(nullptr, path, MAX_PATH) == 0) return false;
+    const wchar_t* base = path;
+    for (const wchar_t* p = path; *p; ++p) {
+        if (*p == L'\\' || *p == L'/') base = p + 1;
+    }
+    return _wcsicmp(base, L"re9.exe") == 0;
+}
 } // namespace
 
 DlssgTransfusion& DlssgTransfusion::Instance()
@@ -170,6 +180,8 @@ TransfusionStatus DlssgTransfusion::Status() const
 
 void DlssgTransfusion::TryApply(HMODULE module)
 {
+    if (IsRequiemProcess()) return;
+
     if (!module)
         module = GetModuleHandleW(L"nvngx_dlssg.dll");
 
@@ -235,3 +247,4 @@ void DlssgTransfusion::TryApply(HMODULE module)
 }
 
 } // namespace nrfusion
+

@@ -22,6 +22,15 @@ namespace {
 
 std::atomic<bool> g_runtimeStarted{false};
 
+bool IsRequiemProcess() noexcept {
+    wchar_t path[MAX_PATH]{};
+    if (GetModuleFileNameW(nullptr, path, MAX_PATH) == 0) return false;
+    const wchar_t* base = path;
+    for (const wchar_t* p = path; *p; ++p) {
+        if (*p == L'\\' || *p == L'/') base = p + 1;
+    }
+    return _wcsicmp(base, L"re9.exe") == 0;
+}
 void PinProxyModule() noexcept {
     HMODULE module = nullptr;
     GetModuleHandleExW(
@@ -37,8 +46,12 @@ extern "C" __declspec(dllexport) void NRFusion_EnsureRuntime() {
         PinProxyModule();
         nrfusion::Logger::Instance().Initialize(nullptr);
         NRF_LOG_INFO("Proxy", "NRFusion_EnsureRuntime: starting watchers and runtime");
-        nrfusion::StreamlineDlssgHook::Instance().Install();
-        nrfusion::MfgModuleWatcher::Instance().Start();
+        if (!IsRequiemProcess()) {
+            nrfusion::StreamlineDlssgHook::Instance().Install();
+            nrfusion::MfgModuleWatcher::Instance().Start();
+        } else {
+            NRF_LOG_INFO("Proxy", "Requiem compatibility: DLSS-G mutation disabled");
+        }
         nrfusion::StartCaptureD3D11Runtime();
         nrfusion::RuntimeOverlayWorker::Instance().Start(&nrfusion::RuntimeOverlay::Instance());
     }
