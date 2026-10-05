@@ -86,6 +86,7 @@ if (WIN32)
         src/DlssgTransfusionPatches.cpp
         src/DlssgTransfusionFatbin.cpp
         src/StreamlineDlssgHook.cpp
+        src/StreamlineSwapchainGuard.cpp
         src/GameWindowFinder.cpp
         src/Logger.cpp
         src/SyntheticDx12ProviderLifecycle.cpp

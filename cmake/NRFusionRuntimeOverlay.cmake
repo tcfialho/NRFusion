@@ -36,6 +36,7 @@ target_sources(nrfusion_core PRIVATE src/StreamlineDlssgOptions.cpp src/Streamli
     src/StreamlineAutoPerformance.cpp)
 set_property(SOURCE src/StreamlineDlssgHook.cpp src/StreamlineDlssgOptions.cpp
     src/StreamlineReflexTracker.cpp src/StreamlineAutoPerformance.cpp
+    src/StreamlineSwapchainGuard.cpp
     src/NrKernelDriverDiscovery.cpp APPEND
     PROPERTY INCLUDE_DIRECTORIES "${nrfusion_minhook_source_SOURCE_DIR}/include"
                                 "${nrfusion_streamline_source_SOURCE_DIR}/include")
