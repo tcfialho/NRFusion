@@ -12,15 +12,13 @@
 
 ## Current objective
 
-Rebuild the NRFusion installer, install it into D:\Games\Resident Evil Requiem, reproduce the crash, fix it, rebuild/reinstall, and validate in-game that the filter is active with observable evidence.
+Restore NRFusion's normal in-game interface in Resident Evil Requiem while keeping only the minimum compatibility fix needed to avoid the black-screen/crash path.
 
 ## Session checklist
 
-- [ ] Baseline build installer from current HEAD.
-- [ ] Install baseline into Resident Evil Requiem and reproduce the crash.
-- [ ] Capture crash/log evidence and identify the failing path.
-- [ ] Implement the smallest fix plus a regression test.
-- [ ] Build/test the fix and regenerate the installer.
-- [ ] Reinstall and launch the real game past the former crash point.
-- [ ] Capture in-game evidence that NRFusion/filter is active.
-- [ ] Commit final state, create external source ZIP, record handoff.
+- [ ] Separate neural discovery from capture/presentation hooks.
+- [ ] Restore the normal in-frame overlay path without re-enabling DLSS-G mutation/Streamline overrides.
+- [ ] Validate the normal UI with NRFusion disabled.
+- [ ] Validate NR enabled past the previous failure point.
+- [ ] Run focused regression tests.
+- [ ] Commit, create one external source ZIP, and record handoff.
