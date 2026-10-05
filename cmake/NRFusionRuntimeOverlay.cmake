@@ -51,9 +51,10 @@ add_library(nrfusion_imgui STATIC
     "${imgui_root}/imgui_tables.cpp"
     "${imgui_root}/imgui_widgets.cpp"
     "${imgui_root}/backends/imgui_impl_dx12.cpp"
+    "${imgui_root}/backends/imgui_impl_dx11.cpp"
     "${imgui_root}/backends/imgui_impl_win32.cpp")
 target_include_directories(nrfusion_imgui PUBLIC "${imgui_root}" "${imgui_root}/backends")
-target_link_libraries(nrfusion_imgui PUBLIC d3d12 d3dcompiler dxgi dwmapi)
+target_link_libraries(nrfusion_imgui PUBLIC d3d11 d3d12 d3dcompiler dxgi dwmapi)
 target_sources(nrfusion_core PRIVATE
     src/RuntimeOverlayD3D12.cpp
     src/RuntimeOverlayD3D12Input.cpp
