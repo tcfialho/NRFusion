@@ -2,6 +2,7 @@
 #include "nrfusion/RuntimeOverlay.hpp"
 #include "NgxGameProxyDiagnostics.hpp"
 #include <algorithm>
+#include <cmath>
 
 namespace nrfusion {
 namespace {
@@ -23,6 +24,12 @@ ID3D12Resource* ReadResource(NgxParameter* parameters, const char* name) {
     return parameters->Get(name, &resource) == 1 ? resource : nullptr;
 }
 
+ID3D12Resource* ReadOpaqueResource(NgxParameter* parameters, const char* name) {
+    if (ID3D12Resource* resource = ReadResource(parameters, name)) return resource;
+    void* opaque = nullptr;
+    return parameters->Get(name, &opaque) == 1 ? static_cast<ID3D12Resource*>(opaque) : nullptr;
+}
+
 D3D12NrSubrect GuideRect(NgxParameter* parameters, const D3D12_RESOURCE_DESC& desc,
                          const char* xKey, const char* yKey, UINT width, UINT height) {
     const UINT x = ReadUnsigned(parameters, xKey);
@@ -30,6 +37,23 @@ D3D12NrSubrect GuideRect(NgxParameter* parameters, const D3D12_RESOURCE_DESC& de
     const UINT availableWidth = x < desc.Width ? static_cast<UINT>(desc.Width) - x : 0;
     const UINT availableHeight = y < desc.Height ? desc.Height - y : 0;
     return {x, y, std::min(width, availableWidth), std::min(height, availableHeight)};
+}
+
+constexpr bool FormatCanHoldLinearHdr(DXGI_FORMAT format) noexcept {
+    switch (format) {
+    case DXGI_FORMAT_R16G16B16A16_FLOAT:
+    case DXGI_FORMAT_R16G16B16A16_TYPELESS:
+    case DXGI_FORMAT_R32G32B32A32_FLOAT:
+    case DXGI_FORMAT_R32G32B32A32_TYPELESS:
+    case DXGI_FORMAT_R11G11B10_FLOAT:
+        return true;
+    default:
+        return false;
+    }
+}
+
+bool WantsGameExposure(ExposureSource mode) noexcept {
+    return mode == ExposureSource::Auto || mode == ExposureSource::GameExposure;
 }
 
 } // namespace
@@ -43,6 +67,7 @@ D3D12NrFrameResult ExecuteGameNeuralFrame(D3D12NrExecutor& executor,
     resources.depth = ReadResource(parameters, "Depth");
     resources.motion = ReadResource(parameters, "MotionVectors");
     resources.output = ReadResource(parameters, "Output");
+    resources.exposure = ReadOpaqueResource(parameters, "ExposureTexture");
     if (!resources.output || !resources.depth || !resources.motion) return D3D12NrFrameResult::Failed;
     const auto output = resources.output->GetDesc();
     const auto depth = resources.depth->GetDesc();
@@ -71,7 +96,14 @@ D3D12NrFrameResult ExecuteGameNeuralFrame(D3D12NrExecutor& executor,
     request.composition.residualAcrossRr = context.rayReconstruction && context.runBeforeUpscale &&
                                           context.advanced.nr.residualEnabled;
     request.composition.residualBlend = context.advanced.nr.residualBlend;
-    request.composition.colourIsLinearHdr = (context.createFlags & 1u) != 0;
+    request.composition.colourIsLinearHdr = ((context.createFlags & 1u) != 0) &&
+                                            FormatCanHoldLinearHdr(output.Format);
+    request.composition.whitePoint = 1.0f;
+    const float preExposure = ReadFloat(parameters, "DLSS.Pre.Exposure", 1.0f);
+    request.composition.exposurePreMul = std::isfinite(preExposure) && preExposure > 1e-6f
+        ? preExposure : 1.0f;
+    request.composition.useGameExposure = request.composition.colourIsLinearHdr &&
+        resources.exposure != nullptr && WantsGameExposure(context.advanced.nr.exposure.mode);
     request.submissionEpoch = context.epoch;
     request.reset = ReadUnsigned(parameters, "Reset") != 0;
     request.depthInverted = (context.createFlags & (1u << 3)) != 0;
