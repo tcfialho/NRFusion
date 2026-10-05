@@ -12,13 +12,15 @@
 
 ## Current objective
 
-Restore NRFusion's normal in-game interface in Resident Evil Requiem while keeping only the minimum compatibility fix needed to avoid the black-screen/crash path.
+Fix Resident Evil Requiem's crash immediately after NRFusion reports `NR applied` by preserving and restoring the game's D3D12 command-list binding state around the real NGX neural hook, following the proven OptiScaler RE Engine pattern.
 
 ## Session checklist
 
-- [ ] Separate neural discovery from capture/presentation hooks.
-- [ ] Restore the normal in-frame overlay path without re-enabling DLSS-G mutation/Streamline overrides.
-- [ ] Validate the normal UI with NRFusion disabled.
-- [ ] Validate NR enabled past the previous failure point.
-- [ ] Run focused regression tests.
-- [ ] Commit, create one external source ZIP, and record handoff.
+- [ ] Add command-list state tracking for Reset, pipeline state, descriptor heaps, compute/graphics root signatures and root arguments.
+- [ ] Suppress tracking while NRFusion performs its own neural dispatches.
+- [ ] Snapshot/restore the tracked game state around ExecuteGameNeuralFrame in HookEvaluate.
+- [ ] Add focused regression tests for binding-state restoration.
+- [ ] Build proxy and tests.
+- [ ] Install with NR disabled and verify menu stability.
+- [ ] Enable NR and validate beyond the previous `NR applied` crash point.
+- [ ] Capture evidence, commit, ZIP, handoff.

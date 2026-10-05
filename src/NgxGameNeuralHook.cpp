@@ -2,6 +2,7 @@
 #include "nrfusion/RuntimeOverlay.hpp"
 #include "nrfusion/Logger.hpp"
 #include "nrfusion/DlssgTransfusion.hpp"
+#include "nrfusion/GameD3D12CommandState.hpp"
 #include "GameNeuralControl.hpp"
 #include <MinHook.h>
 #include <cwchar>
@@ -40,6 +41,7 @@ struct GameFeature {
 std::unordered_map<const void*, std::shared_ptr<GameFeature>> features;
 
 int __cdecl HookCreate(ID3D12GraphicsCommandList* commands, int featureId, NgxParameter* parameters, void** handle) {
+    if (commands) InstallGameD3D12CommandStateTracking(commands);
     const int result = originalCreate(commands, featureId, parameters, handle);
     if (internalNeuralCall || result != 1 || !handle || !*handle || !parameters ||
         (featureId != 1 && featureId != 13)) return result;
@@ -63,6 +65,7 @@ int __cdecl HookEvaluate(ID3D12GraphicsCommandList* commands, const void* handle
         if (found != features.end()) feature = found->second;
     }
     if (!feature) return originalEvaluate(commands, handle, parameters, callback);
+    const bool commandStateTracking = InstallGameD3D12CommandStateTracking(commands);
     std::lock_guard featureLock(feature->mutex);
     auto& overlay = RuntimeOverlay::Instance();
     RuntimeConfig config{};
@@ -105,9 +108,27 @@ int __cdecl HookEvaluate(ID3D12GraphicsCommandList* commands, const void* handle
         ? feature->timings.Begin(commands, feature->control.Generation(), context.workingScale) : UINT32_MAX;
     feature->timings.Mark(commands, timing, 0);
     auto result = D3D12NrFrameResult::SkippedPlacement;
+    auto executePreservingGameState = [&](GameNeuralFrameContext& frameContext) {
+        GameD3D12CommandStateSnapshot snapshot{};
+        if (!commandStateTracking || !SnapshotGameD3D12CommandState(commands, snapshot)) {
+            feature->lastStatus = "waiting for game D3D12 command state";
+            return D3D12NrFrameResult::SkippedPlacement;
+        }
+        D3D12NrFrameResult frameResult = D3D12NrFrameResult::Failed;
+        {
+            ScopedGameD3D12CommandStateSuppression suppress;
+            frameResult = ExecuteGameNeuralFrame(feature->executor, commands, parameters, frameContext);
+        }
+        if (!RestoreGameD3D12CommandState(commands, snapshot)) {
+            NRF_LOG_ERROR("NeuralHook", "Failed to restore game D3D12 command-list state handle=%p", handle);
+            feature->ready = false;
+            return D3D12NrFrameResult::Failed;
+        }
+        return frameResult;
+    };
     if (feature->ready && context.runBeforeUpscale) {
         context.beforeUpscale = true;
-        result = ExecuteGameNeuralFrame(feature->executor, commands, parameters, context);
+        result = executePreservingGameState(context);
     }
     feature->timings.Mark(commands, timing, 1);
     const bool appliedBefore = result == D3D12NrFrameResult::Applied;
@@ -115,7 +136,7 @@ int __cdecl HookEvaluate(ID3D12GraphicsCommandList* commands, const void* handle
     feature->timings.Mark(commands, timing, 2);
     if (driverResult == 1 && feature->ready && (!context.runBeforeUpscale || carryResidual)) {
         context.beforeUpscale = false;
-        result = ExecuteGameNeuralFrame(feature->executor, commands, parameters, context);
+        result = executePreservingGameState(context);
     }
     feature->timings.Mark(commands, timing, 3);
     const bool applied = driverResult == 1 && (appliedBefore || result == D3D12NrFrameResult::Applied);
