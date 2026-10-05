@@ -135,7 +135,7 @@ void RuntimeOverlayWindow::Destroy(HWND hwnd) {
 
 LRESULT CALLBACK RuntimeOverlayWindow::WndProc(HWND hwnd, UINT msg, WPARAM wParam, LPARAM lParam) {
     if (msg == WM_NCHITTEST) {
-        POINT point{GET_X_LPARAM(lParam), GET_Y_LPARAM(lParam)};
+        POINT point{static_cast<short>(LOWORD(lParam)), static_cast<short>(HIWORD(lParam))};
         RECT rect{};
         if (GetWindowRect(hwnd, &rect)) {
             const int x = point.x - rect.left;
